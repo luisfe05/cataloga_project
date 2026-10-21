@@ -333,3 +333,104 @@ class CatalogRepository:
             "media_type_breakdown": breakdown,
             "recent_activity": recent,
         }
+
+    def get_app_config(self):
+        """Return the single app_config row as a dict, or None if unset.
+
+        Returns:
+            dict or None: {'research_name', 'target_directory',
+                'app_lock_password_hash'}, or None before first setup.
+        """
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT research_name, target_directory, "
+                "app_lock_password_hash FROM app_config ORDER BY id LIMIT 1"
+            ).fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            return None
+        return dict(row)
+
+    def save_app_config(self, research_name, target_directory):
+        """Save research_name and target_directory.
+
+        The app has only one app_config row: it is created the first time
+        and updated after that.
+
+        Args:
+            research_name (str): Name of the current research project.
+            target_directory (str): Path to the archive folder.
+        """
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT id FROM app_config ORDER BY id LIMIT 1"
+            ).fetchone()
+            if row is None:
+                conn.execute(
+                    "INSERT INTO app_config (research_name, "
+                    "target_directory) VALUES (?, ?)",
+                    (research_name, target_directory),
+                )
+            else:
+                conn.execute(
+                    "UPDATE app_config SET research_name = ?, "
+                    "target_directory = ? WHERE id = ?",
+                    (research_name, target_directory, row["id"]),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_active_provider(self):
+        """Return the active AI provider and model, or None if unset.
+
+        Returns:
+            dict or None: {'provider_name': str, 'model': str}
+        """
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT provider_name, model FROM ai_provider_config "
+                "WHERE is_active = 1 LIMIT 1"
+            ).fetchone()
+        finally:
+            conn.close()
+        if row is None:
+            return None
+        return dict(row)
+
+    def set_active_provider(self, provider_name, model):
+        """Make one provider the active one and store its model.
+
+        Every other provider is marked inactive first, so only one is
+        active at a time. The API key is never stored here.
+
+        Args:
+            provider_name (str): e.g. 'gemini'.
+            model (str): e.g. 'gemini-2.5-flash'.
+        """
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE ai_provider_config SET is_active = 0")
+            row = conn.execute(
+                "SELECT id FROM ai_provider_config WHERE provider_name = ?",
+                (provider_name,),
+            ).fetchone()
+            if row is None:
+                conn.execute(
+                    "INSERT INTO ai_provider_config (provider_name, model, "
+                    "is_active) VALUES (?, ?, 1)",
+                    (provider_name, model),
+                )
+            else:
+                conn.execute(
+                    "UPDATE ai_provider_config SET model = ?, is_active = 1 "
+                    "WHERE id = ?",
+                    (model, row["id"]),
+                )
+            conn.commit()
+        finally:
+            conn.close()
