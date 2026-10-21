@@ -206,6 +206,30 @@ class ClassificationPipeline:
         """
         return self.ai_client.send_summary_request(text)
 
+    def regenerate_summary(self, document):
+        """Write a new summary that uses the source and date the user typed.
+
+        Called after the user edits source or document_date in Edit Mode.
+        Only works for files with readable text. If there is no text or
+        the AI fails, the document is returned unchanged.
+
+        Args:
+            document (Document): The document after the user's edit.
+
+        Returns:
+            Document: The document, with the new summary saved if one was
+                generated.
+        """
+        text = extract_text(document.file_path)
+        if not text:
+            return document
+        facts = {"source": document.source,
+                 "document_date": document.document_date}
+        summary = self.ai_client.send_summary_request(text, facts)
+        if not summary:
+            return document
+        return self.db.update_document(document.id, {"summary": summary})
+
     def extract_metadata(self, text):
         """Ask the AI to pull source and document date from the text.
 
