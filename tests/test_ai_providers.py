@@ -7,10 +7,14 @@ replaced with a fake that returns prepared answers.
 
 import pytest
 
-from backend.pipeline.ai_providers import base
-from backend.pipeline.ai_providers import gemini
+from backend.pipeline.ai_providers import (
+    base, claude, create_client, gemini, groq_provider, openai_provider, xai)
 from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline.ai_providers.claude import ClaudeClient
 from backend.pipeline.ai_providers.gemini import GeminiClient
+from backend.pipeline.ai_providers.groq_provider import GroqClient
+from backend.pipeline.ai_providers.openai_provider import OpenAIClient
+from backend.pipeline.ai_providers.xai import XAIClient
 
 
 @pytest.fixture(autouse=True)
@@ -180,3 +184,101 @@ def test_gemini_send_prompt(monkeypatch):
     assert models.last_call["contents"] == "Some article text"
     assert models.last_call["config"] == {
         "system_instruction": "Classify this."}
+
+
+# --- Groq, OpenAI, and xAI (all use the chat completions format) ---
+
+class FakeChatCompletions:
+    """Stands in for client.chat.completions in the groq/openai SDKs."""
+
+    def __init__(self, answer):
+        self.answer = answer
+        self.last_call = None
+
+    def create(self, model, messages):
+        self.last_call = {"model": model, "messages": messages}
+        message = type("Message", (), {"content": self.answer})
+        choice = type("Choice", (), {"message": message})
+        return type("Response", (), {"choices": [choice]})
+
+
+def make_fake_chat_sdk(answer, created_with):
+    """Build a fake SDK client class that records how it was created."""
+    completions = FakeChatCompletions(answer)
+
+    class FakeSDKClient:
+        def __init__(self, api_key, base_url=None):
+            created_with["api_key"] = api_key
+            created_with["base_url"] = base_url
+            self.chat = type("Chat", (), {"completions": completions})
+
+    return FakeSDKClient, completions
+
+
+@pytest.mark.parametrize("module, sdk_name, client_class, model, base_url", [
+    (groq_provider, "Groq", GroqClient, "llama-3.1-8b-instant", None),
+    (openai_provider, "OpenAI", OpenAIClient, "gpt-5.4-nano", None),
+    (xai, "OpenAI", XAIClient, "grok-4.7", "https://api.x.ai/v1"),
+])
+def test_chat_providers_send_prompt(monkeypatch, module, sdk_name,
+                                    client_class, model, base_url):
+    """Each chat-style client sends the key, model, and both messages."""
+    created_with = {}
+    fake_sdk, completions = make_fake_chat_sdk("Press", created_with)
+    monkeypatch.setattr(module, sdk_name, fake_sdk)
+
+    answer = client_class().send_prompt("Classify this.", "Article text")
+
+    assert answer == "Press"
+    assert created_with["api_key"] == "test-key"
+    assert created_with["base_url"] == base_url
+    assert completions.last_call["model"] == model
+    assert completions.last_call["messages"] == [
+        {"role": "system", "content": "Classify this."},
+        {"role": "user", "content": "Article text"},
+    ]
+
+
+# --- Claude (uses the Anthropic messages format) ---
+
+def test_claude_send_prompt(monkeypatch):
+    """ClaudeClient sends the system prompt separately and joins text."""
+    recorded = {}
+
+    class FakeMessages:
+        def create(self, model, max_tokens, system, messages):
+            recorded.update({"model": model, "system": system,
+                             "messages": messages})
+            text_block = type("Block", (), {"type": "text",
+                                            "text": "Documents"})
+            return type("Response", (), {"content": [text_block]})
+
+    class FakeAnthropic:
+        def __init__(self, api_key):
+            recorded["api_key"] = api_key
+            self.messages = FakeMessages()
+
+    monkeypatch.setattr(claude.anthropic, "Anthropic", FakeAnthropic)
+
+    answer = ClaudeClient().send_prompt("Classify this.", "A letter")
+
+    assert answer == "Documents"
+    assert recorded["api_key"] == "test-key"
+    assert recorded["model"] == "claude-haiku-5-5"
+    assert recorded["system"] == "Classify this."
+    assert recorded["messages"] == [{"role": "user", "content": "A letter"}]
+
+
+@pytest.mark.parametrize("name", ["gemini", "groq", "claude", "xai",
+                                  "openai"])
+def test_create_client_supports_all_five_providers(name):
+    """Every provider in the scope can be built by its settings name."""
+    client = create_client(name, "some-model")
+    assert client.provider_name == name
+    assert client.model == "some-model"
+
+
+def test_create_client_rejects_unknown_provider():
+    """A name that is not one of the five gives ValueError."""
+    with pytest.raises(ValueError):
+        create_client("skynet", "x")
