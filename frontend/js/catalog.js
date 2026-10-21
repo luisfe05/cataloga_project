@@ -147,7 +147,8 @@ async function loadCatalog() {
             `Manual Review (${reviewCount})`;
 
         if (allDocuments.length === 0) {
-            showMessage("Drop files into " + settings.target_directory
+            showMessage("Drop files into the Inbox folder inside "
+                + settings.target_directory
                 + " and they will appear here once they are classified.");
             return;
         }

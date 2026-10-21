@@ -57,13 +57,14 @@ def configure(project):
     project["repo"].set_active_provider("gemini", "gemini-2.5-flash")
 
 
-def test_find_new_files_skips_folders_and_hidden_files(project):
-    """Only regular, visible files in the main folder are returned."""
+def test_find_new_files_skips_folders_hidden_and_temporary_files(project):
+    """Only regular, visible, finished files are returned."""
     folder = project["folder"]
     (folder / "Press").mkdir()
     (folder / "Press" / "PR_001.txt").write_text("old")
     (folder / ".DS_Store").write_text("x")
     (folder / "big.pdf.download").write_text("x")
+    (folder / "Poster.af~lock~").write_text("x")
     (folder / "b.txt").write_text("new")
     (folder / "a.txt").write_text("new")
     names = [os.path.basename(path) for path in find_new_files(str(folder))]
@@ -77,15 +78,19 @@ def test_find_new_files_missing_folder():
 
 def test_scan_does_nothing_before_settings(project):
     """Without a project folder and provider, nothing is processed."""
-    (project["folder"] / "a.txt").write_text("Some text")
+    inbox = project["folder"] / "Inbox"
+    inbox.mkdir()
+    (inbox / "a.txt").write_text("Some text")
     assert scan_once(project["db_path"]) == []
-    assert (project["folder"] / "a.txt").exists()
+    assert (inbox / "a.txt").exists()
 
 
-def test_scan_processes_new_files_once(project):
-    """New files are cataloged and moved; a second scan finds nothing."""
+def test_scan_processes_inbox_files_once(project):
+    """Inbox files are cataloged and moved; a second scan finds nothing."""
     configure(project)
-    (project["folder"] / "clip.txt").write_text("Newspaper text")
+    inbox = project["folder"] / "Inbox"
+    inbox.mkdir()
+    (inbox / "clip.txt").write_text("Newspaper text")
 
     first = scan_once(project["db_path"])
     second = scan_once(project["db_path"])
@@ -93,4 +98,14 @@ def test_scan_processes_new_files_once(project):
     assert [doc.filename for doc in first] == ["PR_001.txt"]
     assert second == []
     assert (project["folder"] / "Press" / "PR_001.txt").is_file()
-    assert not (project["folder"] / "clip.txt").exists()
+    assert not (inbox / "clip.txt").exists()
+
+
+def test_scan_never_moves_files_outside_inbox(project):
+    """Files the user already had in the project folder stay untouched."""
+    configure(project)
+    existing = project["folder"] / "my_poster.pdf"
+    existing.write_text("The user's own work")
+
+    assert scan_once(project["db_path"]) == []
+    assert existing.is_file()
