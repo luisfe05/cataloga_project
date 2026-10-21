@@ -6,6 +6,8 @@ Endpoints:
 
 from flask import Blueprint, jsonify
 
+from backend.routes import get_repo
+
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
@@ -18,4 +20,4 @@ def get_stats():
              sources_tracked, media_type_breakdown (dict),
              recent_activity (list).
     """
-    pass
+    return jsonify(get_repo().get_dashboard_stats()), 200

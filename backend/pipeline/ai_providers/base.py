@@ -55,6 +55,19 @@ Respond with ONLY the summary text, with no labels or quotation marks."""
 CONNECTION_TEST_PROMPT = "Reply with the single word OK."
 
 
+def save_api_key(provider_name, api_key):
+    """Save a provider's API key in the OS keyring.
+
+    This is the only place the app writes a key. It is never written to
+    the database or to a file.
+
+    Args:
+        provider_name (str): e.g. 'gemini'. Used as the keyring username.
+        api_key (str): The key the user typed in Settings.
+    """
+    keyring.set_password(KEYRING_SERVICE, provider_name, api_key)
+
+
 class AIProviderClient:
     """Base class for AI provider integrations."""
 
