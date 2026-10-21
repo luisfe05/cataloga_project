@@ -39,6 +39,7 @@ EXTENSION_MEDIA_TYPES = {
     ".avi": "Video",
     ".mkv": "Video",
     ".wmv": "Video",
+    ".mxf": "Video",
 }
 
 # File types whose text the pipeline can read and send to the AI.
