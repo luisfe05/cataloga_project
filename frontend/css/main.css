@@ -1,0 +1,54 @@
+/* main.css - base styles for Cataloga */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+}
+
+/* Navigation bar */
+#nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #5a5f6b;
+    color: #ffffff;
+    padding: 0 24px;
+    height: 56px;
+}
+
+.app-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.nav-links {
+    display: flex;
+    gap: 24px;
+}
+
+.nav-link {
+    color: #d0d3d8;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.nav-link.active {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* View switching */
+.view {
+    padding: 32px;
+}
+
+.hidden {
+    display: none;
+}

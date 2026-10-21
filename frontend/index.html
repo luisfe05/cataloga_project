@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cataloga</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+    <!-- Navigation bar -->
+    <nav id="nav-bar">
+        <span class="app-title">Cataloga</span>
+        <div class="nav-links">
+            <a href="#" id="nav-catalog" class="nav-link active">Catalog</a>
+            <a href="#" id="nav-dashboard" class="nav-link">Dashboard</a>
+            <a href="#" id="nav-settings" class="nav-link">Settings</a>
+        </div>
+    </nav>
+
+    <!-- View containers: only one is visible at a time -->
+    <main>
+        <div id="view-catalog"  class="view active"></div>
+        <div id="view-dashboard" class="view hidden"></div>
+        <div id="view-settings"  class="view hidden"></div>
+    </main>
+
+    <!-- Scripts loaded in dependency order -->
+    <script src="js/api.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/settings.js"></script>
+
+</body>
+</html>

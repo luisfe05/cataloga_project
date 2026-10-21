@@ -1,0 +1,24 @@
+# Python cache files
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# Local database files (each user has their own archive)
+database/*.db
+database/*.sqlite
+
+# PyInstaller build output
+build/
+dist/
+
+# pytest cache
+.pytest_cache/
+
+# macOS system files
+.DS_Store
+
+# Environment files (API keys never go in the repo)
+.env

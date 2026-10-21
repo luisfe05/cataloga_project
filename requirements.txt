@@ -1,0 +1,11 @@
+flask
+flask-cors
+pywebview
+google-generativeai
+anthropic
+groq
+openai
+keyring
+openpyxl
+pytest
+pyinstaller
