@@ -8,6 +8,7 @@ file. The frontend communicates with Flask over localhost only.
 import logging
 import os
 import socket
+import sys
 import threading
 import time
 import urllib.request
@@ -21,10 +22,13 @@ from backend.folder_watcher import start_watcher
 # already listens on it and answers requests meant for Flask.
 PORT = 5050
 
-# Absolute path to the frontend, so the app works no matter which folder
-# it is started from.
-FRONTEND_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             "frontend", "index.html")
+# Folder that holds the frontend. Inside the packaged app, PyInstaller
+# unpacks the bundled files into sys._MEIPASS; when running from the
+# code, it is the folder of this file. An absolute path means the app
+# works no matter which folder it is started from.
+BASE_FOLDER = getattr(sys, "_MEIPASS",
+                      os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_PATH = os.path.join(BASE_FOLDER, "frontend", "index.html")
 
 
 class DesktopApi:
