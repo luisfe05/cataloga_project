@@ -251,3 +251,15 @@ def test_test_ai_provider_without_key(flask_client, fake_keyring):
     response = flask_client.post("/settings/ai-provider/test", json={
         "provider_name": "gemini", "model": "gemini-2.5-flash"})
     assert_error(response, 400, "connection_failed")
+
+
+def test_put_settings_expands_home_folder(flask_client, tmp_path,
+                                          monkeypatch):
+    """A path that starts with ~ is turned into the full home path."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    (tmp_path / "Research").mkdir()
+    response = flask_client.put("/settings", json={
+        "research_name": "X", "target_directory": "~/Research"})
+    assert response.status_code == 200
+    assert response.get_json()["target_directory"] == \
+        str(tmp_path / "Research")
