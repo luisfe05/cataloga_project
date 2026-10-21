@@ -93,6 +93,18 @@ def test_summary_is_capped_at_500_characters():
     assert summary.endswith("...")
 
 
+def test_summary_with_facts_sends_them_first():
+    """Facts typed by the researcher go before the document text."""
+    client = FakeClient(["A summary."])
+    client.send_summary_request("The text.", {"source": "Claridad",
+                                              "document_date": None})
+    sent = client.calls[0]
+    assert sent.startswith("Facts confirmed by the researcher")
+    assert "- source: Claridad" in sent
+    assert "document_date" not in sent
+    assert sent.endswith("Document text:\nThe text.")
+
+
 def test_summary_failure_returns_empty_string():
     """If every attempt fails, the summary is an empty string."""
     client = FakeClient([RuntimeError("down")] * 3)
