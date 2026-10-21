@@ -60,16 +60,25 @@ def update_settings():
     """Update research_name and target_directory.
 
     The folder must already exist (for example, an external drive must
-    be connected). The five media-type folders are created inside it.
+    be connected). The Inbox and the five media-type folders are created
+    inside it.
 
-    Request body (JSON): research_name, target_directory.
+    If the user picks a new folder that already has their own files, the
+    first request is answered with 409 and a warning. The frontend sends
+    the same request again with confirm_folder set to true once the user
+    agrees. Existing files are never moved either way: only Inbox is
+    processed.
+
+    Request body (JSON): research_name, target_directory, and optional
+                         confirm_folder (bool).
 
     Returns:
         200: JSON of updated settings.
         400: If a field is missing or the folder does not exist.
+        409: If a new folder has content and was not confirmed yet.
     """
-    values = read_text_fields(request.get_json(silent=True),
-                              ("research_name", "target_directory"))
+    body = request.get_json(silent=True)
+    values = read_text_fields(body, ("research_name", "target_directory"))
     if values is None:
         return error_response(
             "missing_field",
@@ -83,8 +92,19 @@ def update_settings():
             "invalid_directory",
             "The folder does not exist: " + values["target_directory"], 400)
 
-    FileOrganizer(values["target_directory"]).ensure_archive_structure()
     config = AppConfig(get_repo())
+    organizer = FileOrganizer(values["target_directory"])
+    is_new_folder = (values["target_directory"] !=
+                     config.get_settings()["target_directory"])
+    existing = organizer.count_existing_items()
+    if is_new_folder and existing and body.get("confirm_folder") is not True:
+        return error_response(
+            "folder_not_empty",
+            "This folder already has {} items. Cataloga will not move them: "
+            "only files you drop into its Inbox folder are cataloged. "
+            "Click Save anyway to use this folder.".format(existing), 409)
+
+    organizer.ensure_archive_structure()
     config.update_settings(values["research_name"],
                            values["target_directory"])
     return jsonify(config.get_settings()), 200
