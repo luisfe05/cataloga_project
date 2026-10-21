@@ -150,15 +150,25 @@ class AIProviderClient:
                 return media_type
         return None
 
-    def send_summary_request(self, text):
+    def send_summary_request(self, text, facts=None):
         """Send document text to the AI and return a summary.
 
         Args:
             text (str): Extracted text from the document.
+            facts (dict, optional): Details the researcher typed in by
+                hand, e.g. {'source': 'Claridad', 'document_date': '1980'}.
+                They are sent before the text so the AI uses them instead
+                of guessing.
 
         Returns:
             str: Summary, up to 500 characters. Empty string on failure.
         """
+        if facts:
+            lines = ["Facts confirmed by the researcher (use them):"]
+            for name, value in facts.items():
+                if value:
+                    lines.append("- {}: {}".format(name, value))
+            text = "\n".join(lines) + "\n\nDocument text:\n" + text
         answer = self.ask(SUMMARY_PROMPT, text)
         if not answer:
             return ""

@@ -218,3 +218,35 @@ def test_extract_text_reads_txt(tmp_path):
     """extract_text() returns the content of a .txt file."""
     path = make_text_file(tmp_path, "a.txt", "  Hello archive  ")
     assert classification_pipeline.extract_text(path) == "Hello archive"
+
+
+def test_regenerate_summary_uses_the_users_facts(setup):
+    """After an edit, the new summary is saved for a readable file."""
+    replies = {"classify": "Documents", "summary": "First summary.",
+               "metadata": '{"source": null, "document_date": null}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["inbox"], "letter.txt"))
+
+    # The user types the source by hand, then the summary is rewritten.
+    ai.replies["summary"] = "Letter from Claridad."
+    doc = setup["repo"].update_document(doc.id, {"source": "Claridad"})
+    doc = pipeline.regenerate_summary(doc)
+
+    assert doc.summary == "Letter from Claridad."
+    assert setup["repo"].get_document(doc.id).summary == \
+        "Letter from Claridad."
+
+
+def test_regenerate_summary_skips_files_without_text(setup):
+    """A photo has no text, so its summary is left as it was."""
+    pipeline, ai = setup["build"]()
+    path = str(setup["inbox"] / "team.jpg")
+    with open(path, "wb") as file:
+        file.write(b"fake image bytes")
+    doc = pipeline.classify_document(path)
+
+    doc = pipeline.regenerate_summary(doc)
+
+    assert doc.summary is None
+    assert ai.calls == 0

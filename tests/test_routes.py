@@ -299,3 +299,76 @@ def test_put_settings_same_folder_does_not_warn_again(
         "research_name": "B", "target_directory": str(folder)})
     assert response.status_code == 200
     assert response.get_json()["research_name"] == "B"
+
+
+def setup_project_with_text_doc(flask_client, repo, tmp_path, fake_keyring):
+    """Configure a project and add one document that has a text file."""
+    folder = tmp_path / "project"
+    folder.mkdir()
+    flask_client.put("/settings", json={
+        "research_name": "X", "target_directory": str(folder)})
+    flask_client.put("/settings/ai-provider", json={
+        "provider_name": "gemini", "model": "gemini-2.5-flash",
+        "api_key": "test-key"})
+    text_file = folder / "Documents" / "D_001.txt"
+    text_file.write_text("A letter about a swim meet.")
+    return repo.add_document(Document(
+        original_filename="letter.txt", filename="D_001.txt",
+        media_type="Documents", file_path=str(text_file),
+        date_added="2026-10-21T10:00:00", summary="Old summary.",
+        status="Manual Review"))
+
+
+def test_patch_source_regenerates_summary(flask_client, repo, tmp_path,
+                                          fake_keyring, monkeypatch):
+    """Editing the source rewrites the summary with the AI."""
+    doc = setup_project_with_text_doc(flask_client, repo, tmp_path,
+                                      fake_keyring)
+    sent = []
+
+    def fake_send(self, prompt, text):
+        sent.append(text)
+        return "New summary that mentions Claridad."
+
+    monkeypatch.setattr(GeminiClient, "send_prompt", fake_send)
+    response = flask_client.patch("/documents/{}".format(doc.id),
+                                  json={"source": "Claridad"})
+
+    assert response.status_code == 200
+    assert response.get_json()["source"] == "Claridad"
+    assert response.get_json()["summary"] == \
+        "New summary that mentions Claridad."
+    assert "- source: Claridad" in sent[0]
+
+
+def test_patch_with_own_summary_is_not_overwritten(
+        flask_client, repo, tmp_path, fake_keyring, monkeypatch):
+    """If the user writes the summary too, the AI is not called."""
+    doc = setup_project_with_text_doc(flask_client, repo, tmp_path,
+                                      fake_keyring)
+    calls = []
+    monkeypatch.setattr(GeminiClient, "send_prompt",
+                        lambda self, prompt, text: calls.append(1) or "AI")
+    response = flask_client.patch("/documents/{}".format(doc.id), json={
+        "source": "Claridad", "summary": "My own summary."})
+    assert response.get_json()["summary"] == "My own summary."
+    assert calls == []
+
+
+def test_patch_keeps_edit_when_ai_fails(flask_client, repo, tmp_path,
+                                        fake_keyring, monkeypatch):
+    """If the AI fails, the edit is saved and the old summary stays."""
+    doc = setup_project_with_text_doc(flask_client, repo, tmp_path,
+                                      fake_keyring)
+
+    def fail(self, prompt, text):
+        raise RuntimeError("quota exceeded")
+
+    monkeypatch.setattr(GeminiClient, "send_prompt", fail)
+    # Skip the waits between retries so the test stays fast.
+    monkeypatch.setattr(base.time, "sleep", lambda seconds: None)
+    response = flask_client.patch("/documents/{}".format(doc.id),
+                                  json={"document_date": "1980"})
+    assert response.status_code == 200
+    assert response.get_json()["document_date"] == "1980"
+    assert response.get_json()["summary"] == "Old summary."

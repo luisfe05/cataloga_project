@@ -13,6 +13,9 @@ import io
 
 from flask import Blueprint, Response, jsonify, request
 
+from backend.pipeline.ai_providers import create_client
+from backend.pipeline.classification_pipeline import ClassificationPipeline
+from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import error_response, get_repo
 
 documents_bp = Blueprint("documents", __name__)
@@ -28,6 +31,47 @@ EXPORT_COLUMNS = (
     ("Summary", "summary"),
     ("Status", "status"),
 )
+
+
+def summary_should_update(fields):
+    """Decide if a PATCH should regenerate the AI summary.
+
+    The summary is rewritten when the user changed the source or the date,
+    unless they also wrote the summary themselves in the same edit: a
+    summary typed by the user always wins.
+
+    Args:
+        fields (dict): The fields sent in the PATCH body.
+
+    Returns:
+        bool
+    """
+    changed_facts = "source" in fields or "document_date" in fields
+    return changed_facts and "summary" not in fields
+
+
+def regenerate_summary(repo, doc):
+    """Ask the active AI provider for a new summary of one document.
+
+    Nothing happens if no project folder or AI provider is set yet.
+
+    Args:
+        repo (CatalogRepository): The database layer.
+        doc (Document): The document after the user's edit.
+
+    Returns:
+        Document: The document, with a new summary if one was generated.
+    """
+    config = repo.get_app_config()
+    provider = repo.get_active_provider()
+    if not config or not provider:
+        return doc
+    pipeline = ClassificationPipeline(
+        create_client(provider["provider_name"], provider["model"]),
+        repo,
+        FileOrganizer(config["target_directory"]),
+    )
+    return pipeline.regenerate_summary(doc)
 
 
 def read_filters():
@@ -121,6 +165,8 @@ def update_document(doc_id):
     """Update editable fields on a document.
 
     Locked fields (original_filename, filename) are rejected with 400.
+    If the source or date changed, the AI summary is rewritten using them
+    (see summary_should_update). The edit is saved even if that fails.
 
     Args:
         doc_id (int): The document's primary key.
@@ -139,12 +185,19 @@ def update_document(doc_id):
     if not isinstance(fields, dict):
         return error_response("invalid_body",
                               "The request body must be a JSON object.", 400)
+    repo = get_repo()
     try:
-        doc = get_repo().update_document(doc_id, fields)
+        doc = repo.update_document(doc_id, fields)
     except ValueError as error:
         return error_response("invalid_field", str(error), 400)
     except KeyError:
         return error_response("not_found",
                               "Document {} does not exist.".format(doc_id),
                               404)
+    if summary_should_update(fields):
+        try:
+            doc = regenerate_summary(repo, doc)
+        except Exception:
+            # The user's edit is already saved; keep the old summary.
+            pass
     return jsonify(doc.to_dict()), 200
