@@ -10,6 +10,7 @@ import os
 import socket
 import threading
 import time
+import urllib.request
 
 import webview
 
@@ -44,6 +45,39 @@ class DesktopApi:
         if not result:
             return ""
         return result[0]
+
+    def save_worksheet(self, query):
+        """Ask where to save the worksheet, then save the CSV there.
+
+        The desktop window can't download files like a browser, so Python
+        asks Flask for the CSV and writes it to the chosen file.
+
+        Args:
+            query (str): The current filters as a URL query string,
+                for example 'status=Manual+Review'. Can be empty.
+
+        Returns:
+            str: The path the file was saved to, or an empty string if
+                the user cancelled.
+        """
+        window = webview.windows[0]
+        result = window.create_file_dialog(
+            webview.FileDialog.SAVE,
+            save_filename="cataloga_worksheet.csv",
+        )
+        if not result:
+            return ""
+        # Depending on the system, the dialog returns a path or a list.
+        path = result if isinstance(result, str) else result[0]
+
+        url = "http://127.0.0.1:{}/documents/export".format(PORT)
+        if query:
+            url += "?" + query
+        with urllib.request.urlopen(url) as response:
+            content = response.read()
+        with open(path, "wb") as file:
+            file.write(content)
+        return path
 
 
 def start_flask(app):
