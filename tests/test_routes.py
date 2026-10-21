@@ -179,6 +179,7 @@ def test_put_settings_creates_archive_folders(flask_client, tmp_path):
     assert response.status_code == 200
     assert response.get_json()["research_name"] == "El Delfin"
     assert (archive / "Press").is_dir()
+    assert (archive / "Inbox").is_dir()
     assert flask_client.get("/settings").get_json()["target_directory"] \
         == str(archive)
 
@@ -263,3 +264,38 @@ def test_put_settings_expands_home_folder(flask_client, tmp_path,
     assert response.status_code == 200
     assert response.get_json()["target_directory"] == \
         str(tmp_path / "Research")
+
+
+def test_put_settings_warns_before_using_a_folder_with_files(
+        flask_client, tmp_path):
+    """A new folder with the user's files needs confirmation first."""
+    folder = tmp_path / "PEDRO_NAVAJA"
+    folder.mkdir()
+    (folder / "poster.png").write_text("x")
+    body = {"research_name": "X", "target_directory": str(folder)}
+
+    first = flask_client.put("/settings", json=body)
+    assert_error(first, 409, "folder_not_empty")
+    assert not (folder / "Inbox").exists()
+    assert flask_client.get("/settings").get_json()["target_directory"] == ""
+
+    body["confirm_folder"] = True
+    second = flask_client.put("/settings", json=body)
+    assert second.status_code == 200
+    assert (folder / "Inbox").is_dir()
+    assert (folder / "poster.png").is_file()
+
+
+def test_put_settings_same_folder_does_not_warn_again(
+        flask_client, tmp_path):
+    """Saving again with the same folder (e.g. a new name) just works."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    (folder / "notes.txt").write_text("x")
+    flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder),
+        "confirm_folder": True})
+    response = flask_client.put("/settings", json={
+        "research_name": "B", "target_directory": str(folder)})
+    assert response.status_code == 200
+    assert response.get_json()["research_name"] == "B"

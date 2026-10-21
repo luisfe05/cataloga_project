@@ -11,6 +11,10 @@
  * 3. Only if the test passes, the provider is saved
  *    (PUT /settings/ai-provider), which writes the key to the keyring.
  * This way a wrong API key is never saved.
+ *
+ * If the chosen folder already has the user's own files, the backend
+ * answers step 1 with a "folder_not_empty" warning. The button then
+ * changes to "Save anyway", and the next click confirms the folder.
  */
 
 // Providers and models offered in the form. The value is the name the
@@ -21,6 +25,17 @@ const AI_PROVIDERS = {
         models: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
     },
 };
+
+// True after the user has seen the folder warning and may confirm it.
+let folderWarningShown = false;
+
+/**
+ * Put the Save button back to normal and forget any folder warning.
+ */
+function resetFolderWarning() {
+    folderWarningShown = false;
+    document.getElementById("save-button").textContent = "Save";
+}
 
 /**
  * Show a message under the Save button.
@@ -116,7 +131,9 @@ async function saveSettings(event) {
             research_name: document.getElementById("research-name").value,
             target_directory:
                 document.getElementById("target-directory").value,
+            confirm_folder: folderWarningShown,
         });
+        resetFolderWarning();
         await testAIProvider(providerData);
         await updateAIProvider(providerData);
         showSettingsMessage("Settings saved. The AI connection works.",
@@ -125,6 +142,10 @@ async function saveSettings(event) {
         // Refresh the catalog so the project name and folder update.
         loadCatalog();
     } catch (error) {
+        if (error.code === "folder_not_empty") {
+            folderWarningShown = true;
+            saveButton.textContent = "Save anyway";
+        }
         showSettingsMessage(error.message || "Could not save settings.",
             "error");
     } finally {
@@ -140,6 +161,7 @@ async function browseFolder() {
     const folder = await window.pywebview.api.choose_folder();
     if (folder) {
         document.getElementById("target-directory").value = folder;
+        resetFolderWarning();
     }
 }
 
@@ -156,6 +178,9 @@ document.getElementById("browse-button")
     .addEventListener("click", browseFolder);
 document.getElementById("ai-provider")
     .addEventListener("change", () => fillModels(""));
+// A different folder needs its own warning, so start over when it changes.
+document.getElementById("target-directory")
+    .addEventListener("input", resetFolderWarning);
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 

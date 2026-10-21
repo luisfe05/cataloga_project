@@ -5,6 +5,10 @@ after classification. Creates the five media-type subdirectories if they
 don't exist, generates the next serial filename for a given type, and
 moves the original file into the correct subdirectory.
 
+New files are dropped into the Inbox folder. Only Inbox is processed,
+so anything else the user already had in the project folder is never
+moved.
+
 FileOrganizer only works with folders and files. It never touches the
 database: CatalogRepository owns all database reads and writes.
 """
@@ -21,6 +25,9 @@ MEDIA_TYPE_PREFIXES = {
     "Photos": "P",
     "Documents": "D",
 }
+
+# Subfolder where the user drops new files to be cataloged.
+INBOX_FOLDER = "Inbox"
 
 
 class FileOrganizer:
@@ -51,15 +58,44 @@ class FileOrganizer:
             raise ValueError("Unknown media type: " + str(media_type))
         return os.path.join(self.target_directory, media_type)
 
-    def ensure_archive_structure(self):
-        """Create the five media-type subdirectories if they don't exist.
+    def inbox_folder(self):
+        """Return the path of the Inbox folder.
 
-        Creates: Press/, Audio/, Video/, Photos/, Documents/ inside
+        Returns:
+            str: For example /archive/Inbox.
+        """
+        return os.path.join(self.target_directory, INBOX_FOLDER)
+
+    def ensure_archive_structure(self):
+        """Create the Inbox and the five media-type folders if missing.
+
+        Creates: Inbox/, Press/, Audio/, Video/, Photos/, Documents/ inside
         target_directory. Folders that already exist are left alone.
         """
+        # exist_ok=True means no error if the folder is already there.
+        os.makedirs(self.inbox_folder(), exist_ok=True)
         for media_type in self.media_type_prefixes:
-            # exist_ok=True means no error if the folder is already there.
             os.makedirs(self.folder_for(media_type), exist_ok=True)
+
+    def count_existing_items(self):
+        """Count the user's own files and folders in the project folder.
+
+        Cataloga's folders (Inbox and the five media types) and hidden
+        files like .DS_Store are not counted. Settings uses this number to
+        warn the user before using a folder that already has content.
+
+        Returns:
+            int: How many of the user's items are in the folder.
+        """
+        if not os.path.isdir(self.target_directory):
+            return 0
+        own_folders = set(self.media_type_prefixes) | {INBOX_FOLDER}
+        count = 0
+        for name in os.listdir(self.target_directory):
+            if name.startswith(".") or name in own_folders:
+                continue
+            count += 1
+        return count
 
     def generate_serial_filename(self, media_type, extension):
         """Build the next available serial filename for a media type.
