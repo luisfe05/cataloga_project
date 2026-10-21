@@ -5,6 +5,7 @@ then opens the pywebview desktop window pointing at the frontend HTML
 file. The frontend communicates with Flask over localhost only.
 """
 
+import logging
 import os
 import socket
 import threading
@@ -25,12 +26,35 @@ FRONTEND_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              "frontend", "index.html")
 
 
+class DesktopApi:
+    """Python functions the frontend can call through pywebview.
+
+    pywebview makes each method available in JavaScript as
+    window.pywebview.api.<method name>().
+    """
+
+    def choose_folder(self):
+        """Open the system folder picker and return the chosen path.
+
+        Returns:
+            str: The chosen folder, or an empty string if cancelled.
+        """
+        window = webview.windows[0]
+        result = window.create_file_dialog(webview.FileDialog.FOLDER)
+        if not result:
+            return ""
+        return result[0]
+
+
 def start_flask(app):
     """Run the Flask development server in a background thread.
 
     Args:
         app: The Flask application instance.
     """
+    # Flask's server (werkzeug) prints one line per request. The catalog
+    # asks for data every 10 seconds, so only errors are shown.
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
     # debug=False is required when running inside a thread.
     app.run(host="127.0.0.1", port=PORT, debug=False,
             use_reloader=False)
@@ -65,6 +89,9 @@ def main():
     flask_thread.start()
     start_watcher(app.config["DB_PATH"])
     wait_for_server(PORT)
+    # The startup lines from Flask are hidden too, so print our own.
+    print("Cataloga is running on http://127.0.0.1:{}. "
+          "Close the window to quit.".format(PORT))
 
     # Open the frontend HTML file directly in a native desktop window.
     webview.create_window(
@@ -72,6 +99,7 @@ def main():
         FRONTEND_PATH,
         width=1280,
         height=720,
+        js_api=DesktopApi(),
     )
     webview.start()
 

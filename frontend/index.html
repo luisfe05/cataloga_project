@@ -75,7 +75,41 @@
         </div>
 
         <div id="view-dashboard" class="view hidden"></div>
-        <div id="view-settings" class="view hidden"></div>
+        <div id="view-settings" class="view hidden">
+            <form class="settings-form" id="settings-form">
+
+                <h2>Research Settings</h2>
+                <p class="hint">
+                    Configure your research project and where files are stored.
+                </p>
+
+                <label for="research-name">Research Name</label>
+                <input type="text" id="research-name" required>
+
+                <label for="target-directory">Target Data Folder</label>
+                <div class="folder-row">
+                    <input type="text" id="target-directory" required>
+                    <button type="button" class="secondary-button"
+                            id="browse-button">Browse</button>
+                </div>
+
+                <h2>AI Provider Plug in</h2>
+                <p class="hint">Plug in your own AI API key.</p>
+
+                <label for="ai-provider">AI Provider</label>
+                <select id="ai-provider"></select>
+
+                <label for="api-key">API Key</label>
+                <input type="password" id="api-key" autocomplete="off">
+
+                <label for="ai-model">Model</label>
+                <select id="ai-model"></select>
+
+                <button type="submit" class="primary-button"
+                        id="save-button">Save</button>
+                <p class="form-message" id="settings-message"></p>
+            </form>
+        </div>
     </main>
 
     <!-- Scripts loaded in dependency order -->
