@@ -1,7 +1,8 @@
 """Database schema and initialization.
 
-Defines the four tables (documents, activity_log, app_config, ai_provider_config)
-and provides the init_db() function that creates them on first run.
+Defines the four tables (documents, activity_log, app_config,
+ai_provider_config) and provides the init_db() function that creates
+them on first run.
 The database file lives at database/catalog.db relative to the project root.
 """
 
@@ -18,7 +19,10 @@ CREATE TABLE IF NOT EXISTS documents (
     original_filename TEXT    NOT NULL,
     filename          TEXT    NOT NULL,
     media_type        TEXT    NOT NULL CHECK(
-                          media_type IN ('Press', 'Audio', 'Video', 'Photos', 'Documents')
+                          media_type IN (
+                              'Press', 'Audio', 'Video',
+                              'Photos', 'Documents'
+                          )
                       ),
     source            TEXT,
     document_date     TEXT,
@@ -60,21 +64,30 @@ CREATE TABLE IF NOT EXISTS ai_provider_config (
 """
 
 
-def get_connection():
-    """Open and return a connection to catalog.db.
+def get_connection(db_path=DB_PATH):
+    """Open and return a connection to the SQLite database.
+
+    Args:
+        db_path (str): Path to the database file. Defaults to
+                       database/catalog.db. Tests pass a temporary file.
 
     Returns:
         sqlite3.Connection: Connection with row_factory set so rows behave
                             like dicts.
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def init_db():
-    """Create all tables if they don't already exist."""
-    conn = get_connection()
+def init_db(db_path=DB_PATH):
+    """Create all tables if they don't already exist.
+
+    Args:
+        db_path (str): Path to the database file. Defaults to
+                       database/catalog.db.
+    """
+    conn = get_connection(db_path)
     cursor = conn.cursor()
     cursor.execute(CREATE_DOCUMENTS)
     cursor.execute(CREATE_ACTIVITY_LOG)

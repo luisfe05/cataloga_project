@@ -7,8 +7,8 @@ venv/
 .venv/
 
 # Local database files (each user has their own archive)
-database/*.db
-database/*.sqlite
+database/*
+!database/.gitkeep
 
 # PyInstaller build output
 build/

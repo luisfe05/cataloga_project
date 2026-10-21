@@ -9,11 +9,15 @@ from flask_cors import CORS
 from backend.routes.documents import documents_bp
 from backend.routes.dashboard import dashboard_bp
 from backend.routes.settings import settings_bp
-from backend.db.schema import init_db
+from backend.db.schema import init_db, DB_PATH
 
 
-def create_app():
+def create_app(db_path=DB_PATH):
     """Create and configure the Flask application.
+
+    Args:
+        db_path (str): Path to the database file. Defaults to
+                       database/catalog.db. Tests pass a temporary file.
 
     Returns:
         Flask: The configured app instance.
@@ -29,7 +33,10 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(settings_bp)
 
+    # Save the database path so routes can find it later.
+    app.config["DB_PATH"] = db_path
+
     # Create database tables if they don't exist yet.
-    init_db()
+    init_db(db_path)
 
     return app
