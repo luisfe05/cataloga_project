@@ -15,6 +15,7 @@ def get_stats():
 
     Returns:
         200: JSON with documents_classified, needs_manual_review,
-             sources_tracked, media_type_breakdown (dict), recent_activity (list).
+             sources_tracked, media_type_breakdown (dict),
+             recent_activity (list).
     """
     pass

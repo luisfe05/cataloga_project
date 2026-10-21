@@ -4,7 +4,8 @@ Endpoints:
     GET  /documents                 List all documents, with optional filters.
     GET  /documents/<id>            Get a single document by id.
     PATCH /documents/<id>           Update editable fields on a document.
-    GET  /documents/export          Download the catalog as a file (default: csv).
+    GET  /documents/export          Download the catalog as a file
+                                    (default: csv).
 """
 
 from flask import Blueprint, jsonify, request

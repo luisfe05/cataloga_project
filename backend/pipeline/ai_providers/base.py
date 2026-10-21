@@ -5,7 +5,8 @@ The ClassificationPipeline always talks to an AIProviderClient, so
 swapping providers only means changing which subclass is instantiated.
 
 API keys are fetched from the OS keyring at runtime using the keyring library.
-They are never passed in at construction time or stored in memory longer than needed.
+They are never passed in at construction time or stored in memory
+longer than needed.
 """
 
 import keyring
@@ -21,8 +22,10 @@ class AIProviderClient:
         """Store provider identity; fetch the API key from the OS keyring.
 
         Args:
-            provider_name (str): Name used as the keyring username (e.g. 'gemini').
-            model (str): The model to use for requests (e.g. 'gemini-2.5-flash').
+            provider_name (str): Name used as the keyring username
+                (e.g. 'gemini').
+            model (str): The model to use for requests
+                (e.g. 'gemini-2.5-flash').
         """
         self.provider_name = provider_name
         self.model = model
@@ -53,7 +56,7 @@ class AIProviderClient:
         raise NotImplementedError
 
     def test_connection(self):
-        """Verify the API key and model are valid by making a minimal test call.
+        """Check that the API key and model work with a small test call.
 
         Returns:
             bool: True if the connection succeeds.

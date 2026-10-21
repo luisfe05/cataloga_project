@@ -32,16 +32,21 @@ class Document:
         """Build a Document.
 
         Args:
-            original_filename (str): The file's name before classification. Locked.
+            original_filename (str): The file's name before
+                classification. Locked.
             filename (str): The generated serial name (e.g. D_001.pdf). Locked.
             media_type (str): One of MEDIA_TYPES.
             file_path (str): Absolute path to the file after it was moved.
-            date_added (str): ISO timestamp when the file was added to the archive.
-            doc_id (int, optional): Primary key once the row is saved to the DB.
+            date_added (str): ISO timestamp when the file was added to
+                the archive.
+            doc_id (int, optional): Primary key once the row is saved
+                to the DB.
             source (str, optional): Where the document came from.
             document_date (str, optional): The date on the document itself.
-            summary (str, optional): AI-generated summary, up to 500 characters.
-            status (str): 'Classified' or 'Manual Review'. Defaults to 'Classified'.
+            summary (str, optional): AI-generated summary, up to 500
+                characters.
+            status (str): 'Classified' or 'Manual Review'. Defaults to
+                'Classified'.
             date_classified (str, optional): ISO timestamp of classification.
         """
         self.id = doc_id

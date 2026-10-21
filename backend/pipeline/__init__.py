@@ -1,1 +1,4 @@
-"""Classification pipeline: FileOrganizer, ClassificationPipeline, AIProviderClient."""
+"""Classification pipeline.
+
+Contains FileOrganizer, ClassificationPipeline, and AIProviderClient.
+"""

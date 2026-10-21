@@ -24,7 +24,9 @@ def main():
     """Bootstrap the app: start Flask, open the pywebview window."""
     app = create_app()
 
-    flask_thread = threading.Thread(target=start_flask, args=(app,), daemon=True)
+    flask_thread = threading.Thread(
+        target=start_flask, args=(app,), daemon=True
+    )
     flask_thread.start()
 
     # Open the frontend HTML file directly in a native desktop window.

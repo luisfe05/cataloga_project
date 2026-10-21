@@ -10,7 +10,8 @@ class ClaudeClient(AIProviderClient):
         """Initialize with the Claude provider name and chosen model.
 
         Args:
-            model (str): Claude model to use (e.g. 'claude-haiku-4-5-20251001').
+            model (str): Claude model to use
+                (e.g. 'claude-haiku-4-5-20251001').
         """
         super().__init__(provider_name="claude", model=model)
 

@@ -2,9 +2,12 @@
 
 Endpoints:
     GET  /settings                      Return current app config.
-    PUT  /settings                      Update research_name and target_directory.
-    PUT  /settings/ai-provider          Update provider, model; write API key to keyring.
-    POST /settings/ai-provider/test     Test whether the current provider config connects.
+    PUT  /settings                      Update research_name and
+                                        target_directory.
+    PUT  /settings/ai-provider          Update provider and model,
+                                        write API key to keyring.
+    POST /settings/ai-provider/test     Test whether the provider
+                                        config connects.
 """
 
 from flask import Blueprint, jsonify, request

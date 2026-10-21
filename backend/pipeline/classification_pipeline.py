@@ -20,7 +20,8 @@ class ClassificationPipeline:
         Args:
             ai_client: An AIProviderClient instance for making AI calls.
             catalog_repo: A CatalogRepository instance for database writes.
-            file_organizer: A FileOrganizer instance for renaming and moving files.
+            file_organizer: A FileOrganizer instance for renaming and
+                moving files.
         """
         self.ai_client = ai_client
         self.db = catalog_repo
@@ -33,7 +34,8 @@ class ClassificationPipeline:
             file_path (str): Absolute path to the file to process.
 
         Returns:
-            Document: The finished Document object, already saved to the database.
+            Document: The finished Document object, already saved to
+                the database.
         """
         pass
 
@@ -44,7 +46,8 @@ class ClassificationPipeline:
             text (str): Extracted text content of the document.
 
         Returns:
-            str: Summary, capped at 500 characters. Empty string if the AI fails.
+            str: Summary, capped at 500 characters. Empty string if the
+                AI fails.
         """
         pass
 
