@@ -82,7 +82,33 @@
             </table>
         </div>
 
-        <div id="view-dashboard" class="view hidden"></div>
+        <div id="view-dashboard" class="view hidden">
+            <div class="dashboard">
+
+                <!-- Three summary numbers -->
+                <div class="stat-cards">
+                    <div class="stat-card">
+                        <p class="stat-number" id="stat-classified">0</p>
+                        <p class="stat-label">Documents Classified</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-number" id="stat-review">0</p>
+                        <p class="stat-label">Needs Manual Review</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-number" id="stat-sources">0</p>
+                        <p class="stat-label">Sources Tracked</p>
+                    </div>
+                </div>
+
+                <h2>Media Type Breakdown</h2>
+                <div class="breakdown" id="media-breakdown"></div>
+
+                <h2>Recent Activity</h2>
+                <ul class="activity-list" id="activity-list"></ul>
+                <p class="empty-message hidden" id="dashboard-message"></p>
+            </div>
+        </div>
         <div id="view-settings" class="view hidden">
             <form class="settings-form" id="settings-form">
 
