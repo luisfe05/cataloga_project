@@ -61,16 +61,24 @@ async function updateDocument(id, fields) {
     return handleResponse(response);
 }
 
-/** GET /documents/export - download the catalog as a file.
- * @param {Object} filters - same as getDocuments, plus optional format ('csv'|'xlsx').
+/** GET /documents/export - save the catalog as a CSV file.
+ * Inside the desktop window, Python shows a "Save as" dialog and writes
+ * the file (see save_worksheet in main.py). In a normal browser, the
+ * browser downloads it instead.
+ * @param {Object} filters - same as getDocuments.
+ * @returns {Promise<string>} Where the file was saved ("" if cancelled
+ *     or unknown).
  */
-function exportDocuments(filters = {}) {
+async function exportDocuments(filters = {}) {
     const params = new URLSearchParams(filters).toString();
+    if (window.pywebview && window.pywebview.api) {
+        return window.pywebview.api.save_worksheet(params);
+    }
     const url = params
         ? `${BASE_URL}/documents/export?${params}`
         : `${BASE_URL}/documents/export`;
-    // Trigger a browser download by navigating to the URL.
     window.location.href = url;
+    return "";
 }
 
 // --- Dashboard ---
