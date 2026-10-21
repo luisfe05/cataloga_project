@@ -176,3 +176,89 @@ body {
 .status-review {
     color: #c0632b;
 }
+
+/* Settings form */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 420px;
+    padding: 32px;
+}
+
+.settings-form h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+.settings-form .hint {
+    color: #6b6b75;
+    font-size: 0.85rem;
+    margin: 12px 0 20px;
+}
+
+.settings-form label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #3a3a44;
+    margin-bottom: 6px;
+}
+
+.settings-form input,
+.settings-form select {
+    border: 1px solid #c9c9cf;
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.folder-row {
+    display: flex;
+    gap: 8px;
+}
+
+.folder-row input {
+    flex: 1;
+}
+
+.primary-button,
+.secondary-button {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.primary-button {
+    align-self: flex-start;
+    background: #5a5f6b;
+    color: #ffffff;
+}
+
+.primary-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.secondary-button {
+    background: #e3e3e6;
+    color: #3a3a44;
+    margin-bottom: 20px;
+}
+
+.form-message {
+    font-size: 0.85rem;
+    margin-top: 16px;
+}
+
+.form-message.error {
+    color: #b3261e;
+}
+
+.form-message.success {
+    color: #2e7d32;
+}
