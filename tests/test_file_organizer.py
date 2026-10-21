@@ -26,11 +26,29 @@ def make_file(folder, name, content="test"):
     return path
 
 
-def test_ensure_archive_structure_creates_five_folders(organizer):
-    """All five media-type folders exist after the call."""
+def test_ensure_archive_structure_creates_inbox_and_five_folders(
+        organizer):
+    """Inbox and all five media-type folders exist after the call."""
     organizer.ensure_archive_structure()
     folders = sorted(os.listdir(organizer.target_directory))
-    assert folders == ["Audio", "Documents", "Photos", "Press", "Video"]
+    assert folders == ["Audio", "Documents", "Inbox", "Photos", "Press",
+                       "Video"]
+
+
+def test_count_existing_items_ignores_cataloga_folders(organizer):
+    """Only the user's own visible files and folders are counted."""
+    organizer.ensure_archive_structure()
+    folder = organizer.target_directory
+    make_file(folder, "poster.png")
+    make_file(folder, ".DS_Store")
+    os.makedirs(os.path.join(folder, "REFERENCIA"))
+    assert organizer.count_existing_items() == 2
+
+
+def test_count_existing_items_empty_folder(organizer):
+    """A new, empty project folder has nothing to warn about."""
+    organizer.ensure_archive_structure()
+    assert organizer.count_existing_items() == 0
 
 
 def test_ensure_archive_structure_keeps_existing_files(organizer):
