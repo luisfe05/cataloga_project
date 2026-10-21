@@ -75,6 +75,9 @@ def update_settings():
             "missing_field",
             "research_name and target_directory are required.", 400)
 
+    # expanduser turns "~/Documents" into "/Users/<name>/Documents".
+    values["target_directory"] = os.path.expanduser(
+        values["target_directory"])
     if not os.path.isdir(values["target_directory"]):
         return error_response(
             "invalid_directory",
