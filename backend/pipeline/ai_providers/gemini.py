@@ -1,5 +1,7 @@
 """Google Gemini provider."""
 
+from google import genai
+
 from backend.pipeline.ai_providers.base import AIProviderClient
 
 
@@ -14,14 +16,21 @@ class GeminiClient(AIProviderClient):
         """
         super().__init__(provider_name="gemini", model=model)
 
-    def send_classification_request(self, text):
-        """Classify document text using Gemini."""
-        pass
+    def send_prompt(self, system_prompt, text):
+        """Send one request to the Gemini API and return its answer.
 
-    def send_summary_request(self, text):
-        """Summarize document text using Gemini."""
-        pass
+        Args:
+            system_prompt (str): The instructions for the AI.
+            text (str): The content the instructions apply to.
 
-    def test_connection(self):
-        """Test that the Gemini API key is valid."""
-        pass
+        Returns:
+            str: Gemini's answer as plain text.
+        """
+        client = genai.Client(api_key=self.api_key)
+        response = client.models.generate_content(
+            model=self.model,
+            contents=text,
+            config={"system_instruction": system_prompt},
+        )
+        # response.text can be None if Gemini returned no text.
+        return response.text or ""
