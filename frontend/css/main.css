@@ -262,3 +262,92 @@ body {
 .form-message.success {
     color: #2e7d32;
 }
+
+/* Download button and Edit Mode switch in the catalog toolbar */
+.pill-button {
+    border: 1px solid #c9c9cf;
+    border-radius: 18px;
+    background: #ffffff;
+    padding: 7px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.switch-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 32px;
+    font-size: 0.85rem;
+    color: #3a3a44;
+    cursor: pointer;
+}
+
+/* The real checkbox is hidden; .switch draws the toggle instead. */
+.switch-label input {
+    display: none;
+}
+
+.switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    background: #d5d5da;
+    transition: background 0.2s;
+}
+
+.switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: left 0.2s;
+}
+
+.switch-label input:checked + .switch {
+    background: #5a5f6b;
+}
+
+.switch-label input:checked + .switch::after {
+    left: 23px;
+}
+
+.toolbar-message {
+    padding: 8px 32px 0;
+    font-size: 0.85rem;
+    color: #6b6b75;
+    min-height: 1.5em;
+}
+
+.toolbar-message.error {
+    color: #b3261e;
+}
+
+/* Editable cells while Edit Mode is on */
+td.editable {
+    background: #fbfbfc;
+    outline: 1px dashed #c9c9cf;
+    outline-offset: -4px;
+    cursor: text;
+}
+
+td.editable:focus {
+    background: #ffffff;
+    outline: 2px solid #5a5f6b;
+}
+
+td.edit-error {
+    outline: 2px solid #b3261e;
+}
+
+.status-select {
+    border: 1px solid #c9c9cf;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 0.85rem;
+}
