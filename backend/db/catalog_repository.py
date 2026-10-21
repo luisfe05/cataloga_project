@@ -176,6 +176,27 @@ class CatalogRepository:
             conn.close()
         return [row_to_document(row) for row in rows]
 
+    def has_file_path(self, file_path):
+        """Return True if a document with this file_path is already saved.
+
+        ClassificationPipeline uses this to skip files that were already
+        processed, so only new files are sent to the AI.
+
+        Args:
+            file_path (str): Absolute path of the file.
+
+        Returns:
+            bool: True if the path is already in the documents table.
+        """
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT id FROM documents WHERE file_path = ?", (file_path,)
+            ).fetchone()
+        finally:
+            conn.close()
+        return row is not None
+
     def get_by_status(self, status):
         """Return all documents with the given status.
 
