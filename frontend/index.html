@@ -52,7 +52,15 @@
                 <select id="filter-source">
                     <option value="">Source: All</option>
                 </select>
+                <button type="button" class="pill-button"
+                        id="download-button">Download Worksheet</button>
+                <label class="switch-label">
+                    Edit Mode
+                    <input type="checkbox" id="edit-mode">
+                    <span class="switch"></span>
+                </label>
             </div>
+            <p class="toolbar-message" id="toolbar-message"></p>
 
             <!-- Message shown when there is nothing to list -->
             <p class="empty-message hidden" id="catalog-message"></p>
