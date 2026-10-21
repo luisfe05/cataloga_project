@@ -17,6 +17,10 @@ function showView(name) {
     document.querySelectorAll(".nav-link").forEach((link) => {
         link.classList.toggle("active", link.dataset.view === name);
     });
+    // Load fresh numbers every time the dashboard is opened.
+    if (name === "dashboard") {
+        loadDashboard();
+    }
 }
 
 document.querySelectorAll(".nav-link").forEach((link) => {
