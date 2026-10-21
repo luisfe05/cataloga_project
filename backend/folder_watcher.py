@@ -1,13 +1,14 @@
 """Folder watcher.
 
 Step 1 of the Stage 3 sequence diagram: "Detect new file in target
-directory". The user drops files into the project folder (the
-target_directory chosen in Settings). Every few seconds the watcher looks
-for files sitting directly in that folder and sends them through the
+directory". The user drops files into the Inbox folder inside the project
+folder (the target_directory chosen in Settings). Every few seconds the
+watcher looks for files in Inbox and sends them through the
 ClassificationPipeline, which moves each one into its media-type folder.
 
-Because processed files are moved out of the main folder, the next check
-only finds files added since. Nothing is processed twice.
+Only Inbox is watched, so files the user already had in the project
+folder are never moved. Because processed files leave Inbox, the next
+check only finds files added since. Nothing is processed twice.
 """
 
 import os
@@ -23,30 +24,34 @@ from backend.pipeline.file_organizer import FileOrganizer
 CHECK_INTERVAL = 10
 
 
-def find_new_files(target_directory):
-    """Return the files sitting directly in the project folder.
+# Endings of temporary files made by browsers and apps. These are
+# skipped because the real file is not finished or not the user's.
+TEMPORARY_ENDINGS = (".part", ".download", ".crdownload", ".tmp", "~lock~")
 
-    Subfolders (like Press/ or Documents/) are not opened, so files that
-    were already organized are never picked up again. Hidden files such
-    as .DS_Store, and files still being copied by the system (names
-    starting with '~$' or ending in '.part' or '.download'), are skipped.
+
+def find_new_files(folder):
+    """Return the files sitting directly in a folder.
+
+    Subfolders are not opened. Hidden files such as .DS_Store, Office
+    temporary files (names starting with '~$'), and temporary files from
+    downloads or apps (see TEMPORARY_ENDINGS) are skipped.
 
     Args:
-        target_directory (str): The project folder from Settings.
+        folder (str): The folder to look in (the Inbox).
 
     Returns:
         list[str]: Absolute paths, sorted by name.
     """
-    if not os.path.isdir(target_directory):
+    if not os.path.isdir(folder):
         return []
     files = []
-    for name in sorted(os.listdir(target_directory)):
-        path = os.path.join(target_directory, name)
+    for name in sorted(os.listdir(folder)):
+        path = os.path.join(folder, name)
         if not os.path.isfile(path):
             continue
         if name.startswith(".") or name.startswith("~$"):
             continue
-        if name.endswith(".part") or name.endswith(".download"):
+        if name.endswith(TEMPORARY_ENDINGS):
             continue
         files.append(path)
     return files
@@ -70,14 +75,15 @@ def scan_once(db_path):
     if not config or not provider:
         return []
 
-    files = find_new_files(config["target_directory"])
+    organizer = FileOrganizer(config["target_directory"])
+    files = find_new_files(organizer.inbox_folder())
     if not files:
         return []
 
     pipeline = ClassificationPipeline(
         create_client(provider["provider_name"], provider["model"]),
         repo,
-        FileOrganizer(config["target_directory"]),
+        organizer,
     )
     return pipeline.process_batch(files)
 
