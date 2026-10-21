@@ -3,15 +3,55 @@
 Defines the four tables (documents, activity_log, app_config,
 ai_provider_config) and provides the init_db() function that creates
 them on first run.
-The database file lives at database/catalog.db relative to the project root.
+
+Where the database file lives depends on how the app is started:
+- From the code (python main.py): database/catalog.db in the project.
+- From the packaged app (PyInstaller): the system's folder for app data,
+  because files inside the packaged app can't be changed and are
+  replaced on every update.
 """
 
-import sqlite3
 import os
+import sqlite3
+import sys
 
-DB_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "database", "catalog.db"
-)
+APP_NAME = "Cataloga"
+
+
+def app_data_folder():
+    """Return the folder where the packaged app keeps its data.
+
+    Returns:
+        str: For example ~/Library/Application Support/Cataloga on macOS.
+    """
+    home = os.path.expanduser("~")
+    if sys.platform == "darwin":
+        return os.path.join(home, "Library", "Application Support",
+                            APP_NAME)
+    if os.name == "nt":
+        # Windows keeps app data in the folder named by APPDATA.
+        return os.path.join(os.environ.get("APPDATA", home), APP_NAME)
+    return os.path.join(home, ".local", "share", APP_NAME)
+
+
+def default_db_path():
+    """Return the path of the database file for the way the app runs.
+
+    PyInstaller sets sys.frozen to True inside the packaged app.
+
+    Returns:
+        str: Absolute path to catalog.db.
+    """
+    if getattr(sys, "frozen", False):
+        folder = app_data_folder()
+        os.makedirs(folder, exist_ok=True)
+        return os.path.join(folder, "catalog.db")
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    return os.path.join(project_root, "database", "catalog.db")
+
+
+DB_PATH = default_db_path()
 
 CREATE_DOCUMENTS = """
 CREATE TABLE IF NOT EXISTS documents (

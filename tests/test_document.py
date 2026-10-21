@@ -1,4 +1,7 @@
-"""Tests for the Document model."""
+"""Tests for the Document model and where its database lives."""
+
+import os
+import sys
 
 import pytest
 from backend.models.document import Document
@@ -69,3 +72,25 @@ def test_to_dict_contains_all_keys():
         "file_path", "date_added", "date_classified",
     }
     assert expected_keys == set(result.keys())
+
+
+# --- Where the database file lives (backend/db/schema.py) ---
+
+def test_db_path_from_code_is_in_project_database_folder():
+    """Running from the code keeps using database/catalog.db."""
+    from backend.db import schema
+    path = schema.default_db_path()
+    assert path.endswith(os.path.join("database", "catalog.db"))
+
+
+def test_db_path_in_packaged_mac_app(monkeypatch, tmp_path):
+    """The packaged Mac app keeps its data in Application Support."""
+    from backend.db import schema
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    path = schema.default_db_path()
+    expected_folder = tmp_path / "Library" / "Application Support" / \
+        "Cataloga"
+    assert path == str(expected_folder / "catalog.db")
+    assert expected_folder.is_dir()
