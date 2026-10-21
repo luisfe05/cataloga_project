@@ -72,21 +72,27 @@ function showToolbarMessage(text, isError) {
 /**
  * Save one edited field with PATCH /documents/<id>.
  * An empty value is saved as null, so the field counts as missing.
+ * Editing the source or date also makes the backend rewrite the summary
+ * with the AI, which can take a few seconds.
  * @param {number} id
  * @param {string} field
  * @param {string} value
- * @returns {Promise<boolean>} true if it was saved.
+ * @returns {Promise<Object|null>} The updated document, or null on error.
  */
 async function saveField(id, field, value) {
     const fields = {};
     fields[field] = value.trim() === "" ? null : value.trim();
+    const updatesSummary = field === "source" || field === "document_date";
+    showToolbarMessage(updatesSummary
+        ? "Saving and updating the summary with your edit..."
+        : "Saving...", false);
     try {
-        await updateDocument(id, fields);
+        const updated = await updateDocument(id, fields);
         showToolbarMessage("Saved.", false);
-        return true;
+        return updated;
     } catch (error) {
         showToolbarMessage(error.message || "Could not save.", true);
-        return false;
+        return null;
     }
 }
 
@@ -103,6 +109,8 @@ function makeEditableCell(doc, field) {
     const className =
         field === "document_date" ? "editable nowrap" : "editable";
     const cell = makeCell(original, className);
+    // data-field lets other code find this cell, e.g. the summary.
+    cell.dataset.field = field;
     // contentEditable lets the user type straight into the cell.
     cell.contentEditable = "true";
 
@@ -117,11 +125,20 @@ function makeEditableCell(doc, field) {
         if (value.trim() === original.trim()) {
             return;
         }
-        const saved = await saveField(doc.id, field, value);
-        cell.classList.toggle("edit-error", !saved);
-        if (saved) {
-            doc[field] = value.trim() || null;
+        const updated = await saveField(doc.id, field, value);
+        cell.classList.toggle("edit-error", !updated);
+        if (!updated) {
+            return;
         }
+        // If the AI wrote a new summary, show it in the same row.
+        if (updated.summary !== doc.summary) {
+            const summaryCell = cell.parentElement
+                .querySelector('[data-field="summary"]');
+            summaryCell.textContent = updated.summary || "";
+            showToolbarMessage("Saved. The summary was updated using "
+                + "your edit.", false);
+        }
+        Object.assign(doc, updated);
     });
     return cell;
 }
@@ -148,9 +165,9 @@ function makeStatusCell(doc) {
     });
     select.value = doc.status;
     select.addEventListener("change", async () => {
-        const saved = await saveField(doc.id, "status", select.value);
-        if (saved) {
-            doc.status = select.value;
+        const updated = await saveField(doc.id, "status", select.value);
+        if (updated) {
+            doc.status = updated.status;
         } else {
             select.value = doc.status;
         }
