@@ -2,12 +2,15 @@
  * api.js
  *
  * Thin wrappers around fetch() for every Cataloga API endpoint.
- * All requests go to the Flask backend on localhost:5000.
+ * All requests go to the Flask backend on 127.0.0.1:5050.
+ * 127.0.0.1 is used instead of "localhost" because on a Mac
+ * "localhost" can point to a different address (IPv6) than the one
+ * Flask listens on.
  * Every function returns a Promise that resolves to parsed JSON,
  * or rejects with an error object shaped like {code, message}.
  */
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "http://127.0.0.1:5050";
 
 /**
  * Handle a fetch Response: parse JSON, reject on non-2xx status.

@@ -15,7 +15,9 @@ import webview
 from backend.app import create_app
 from backend.folder_watcher import start_watcher
 
-PORT = 5000
+# Port 5000 is avoided on purpose: on macOS the AirPlay Receiver
+# already listens on it and answers requests meant for Flask.
+PORT = 5050
 
 # Absolute path to the frontend, so the app works no matter which folder
 # it is started from.
@@ -30,7 +32,8 @@ def start_flask(app):
         app: The Flask application instance.
     """
     # debug=False is required when running inside a thread.
-    app.run(port=PORT, debug=False, use_reloader=False)
+    app.run(host="127.0.0.1", port=PORT, debug=False,
+            use_reloader=False)
 
 
 def wait_for_server(port, timeout=10):
