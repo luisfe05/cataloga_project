@@ -160,3 +160,10 @@ def test_dashboard_stats(repo):
     assert stats["recent_activity"][0]["action"] == "Edited"
     assert stats["recent_activity"][0]["filename"] == "D_001.pdf"
     assert len(stats["recent_activity"]) == 4
+
+
+def test_has_file_path(repo):
+    """has_file_path() is True only for a path that was saved."""
+    doc = repo.add_document(make_doc())
+    assert repo.has_file_path(doc.file_path) is True
+    assert repo.has_file_path("/somewhere/else.pdf") is False

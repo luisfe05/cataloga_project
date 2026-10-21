@@ -7,5 +7,6 @@ groq
 openai
 keyring
 openpyxl
+pypdf
 pytest
 pyinstaller
