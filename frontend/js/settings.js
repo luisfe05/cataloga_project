@@ -17,12 +17,30 @@
  * changes to "Save anyway", and the next click confirms the folder.
  */
 
-// Providers and models offered in the form. The value is the name the
-// backend uses. Groq, Claude, xAI, and OpenAI are added in task S2-4.
+// Providers and models offered in the form. The key is the name the
+// backend uses. The first model of each provider is the default, chosen
+// for a free tier or the lowest cost.
 const AI_PROVIDERS = {
     gemini: {
         label: "Google Gemini",
         models: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+    },
+    groq: {
+        label: "Groq",
+        models: ["llama-3.1-8b-instant", "llama-3.3-70b-versatile",
+            "openai/gpt-oss-20b"],
+    },
+    claude: {
+        label: "Anthropic Claude",
+        models: ["claude-haiku-5-5", "claude-sonnet-5-5"],
+    },
+    xai: {
+        label: "xAI Grok",
+        models: ["grok-4.7"],
+    },
+    openai: {
+        label: "OpenAI",
+        models: ["gpt-5.4-nano", "gpt-5.4-mini"],
     },
 };
 

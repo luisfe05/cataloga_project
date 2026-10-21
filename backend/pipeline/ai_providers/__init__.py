@@ -7,12 +7,19 @@ Supported providers: Gemini, Groq, Claude, xAI, OpenAI.
 API keys are read from the OS keyring at runtime, never from a file.
 """
 
+from backend.pipeline.ai_providers.claude import ClaudeClient
 from backend.pipeline.ai_providers.gemini import GeminiClient
+from backend.pipeline.ai_providers.groq_provider import GroqClient
+from backend.pipeline.ai_providers.openai_provider import OpenAIClient
+from backend.pipeline.ai_providers.xai import XAIClient
 
 # Maps the provider name used in settings to its client class.
-# Groq, Claude, xAI, and OpenAI are added in task S2-4.
 PROVIDERS = {
     "gemini": GeminiClient,
+    "groq": GroqClient,
+    "claude": ClaudeClient,
+    "xai": XAIClient,
+    "openai": OpenAIClient,
 }
 
 
