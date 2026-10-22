@@ -1,0 +1,101 @@
+original_filename,source_folder,file_type,has_text,expected_media_type,expected_status,note
+DAVID_TRIPLE_OROPrimera Hora.pdf,PERIODICO,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+DAVID_TRIPLE_OROPrimera Hora_2.pdf,PERIODICO,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+El_Nuevo_Da(2011-10-10)_page68.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2015-08-01)_page72.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2015-08-02)_page80.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2015-08-03)_page65.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2015-08-03)_page66.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2015-08-06)_page90.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2017-06-19)_page54.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2018-04-30)_page3.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2018-07-19)_page90.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2018-11-18)_page69.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2019-06-24)_page41.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2019-10-13)_page103.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2021-05-07)_page60.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2022-01-03)_page41.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2022-07-02)_page46.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2022-07-02)_page47.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2023-06-21)_page67.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2024-03-03)_page78.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2024-03-03)_page81.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2024-03-03)_page82 (1).pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+El_Nuevo_Da(2024-10-12)_page39.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Primera Hora - AMOR IN­CON­DI­CIO­NAL.pdf,PERIODICO,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+Primera Hora - Puerto Rico cerro con un botin de 63 medallas.pdf,PERIODICO,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+Primera Hora.pdf,PERIODICO,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+Primerahora_AnitaLallande_6_1_2022.pdf,PERIODICO,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+mndo_19860620_0040_AnitaLallande.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+mndo_19860620_0048_AnitaLallande.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+mndo_19860620_0049_AnitaLallande.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+¡63 medallas! Atletas de Olimpiadas Especiales sobresalen en Paraguay-LAPERLADELSUR.pdf,PERIODICO,pdf,yes,Press,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Heriberto Torres - Special Olympics World & National Games Dubai 2019 Results.pdf,DOCUMENTOS,pdf,yes,Documents,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Heriberto Torres LA 2015 World games Results_1.pdf,DOCUMENTOS,pdf,yes,Documents,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Heriberto Torres LA 2015 World games Results_2.pdf,DOCUMENTOS,pdf,yes,Documents,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Heriberto Torres LA 2015 World games Results_3.pdf,DOCUMENTOS,pdf,yes,Documents,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Resultados-LA2015.pdf,DOCUMENTOS,pdf,yes,Documents,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+Atleta con síndrome de Down nada cuatro horas consecutivas en Guaynabo como parte de la edición Braz.html,PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+"David Torres Rivera: el “Delfín Boricua” demuestra, una y otra vez, que “sí se puede” - El Nuevo Día.html",PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+Atletas salen para las Olimpiadas Especiales - El Nuevo Día.html,PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+Jesse Vassallo - Wikipedia.html,PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+Swimming at the 1979 Pan American Games – Men's 200 metre individual medley - Wikipedia.html,PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+Swimming at the 1979 Pan American Games – Men's 400 metre individual medley - Wikipedia.html,PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+Joel Matos Ortiz Takes 27 Days to Complete the Triple Crown of Open Water Swimming – World Open Wate.html,PERSONAJES,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+busquet-cartagena-2006-2.pdf,PERSONAJES,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+busquet-cartagena-2006-3.pdf,PERSONAJES,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+busquet-cartagena-2006.pdf,PERSONAJES,pdf,no,Documents,Manual Review,"Scanned PDF: no text, flagged for manual summary"
+List of World Aquatics Championships medalists in swimming (men) - Wikipedia.html,INVESTIGACION,html,no,Documents,Manual Review,"Unsupported format: Documents folder, Manual Review"
+natacion_centroamericanos_80anosdeaccionypasion.pdf,INVESTIGACION,pdf,yes,Documents,Classified or Manual Review,Readable PDF: AI classifies and summarizes
+490375663_1206755204783248_1762808624775728552_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+490751594_1209545534504215_3214747809873927951_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+490984769_1210182424440526_5998906019356554856_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+491850892_1208251954633573_1958840174500620664_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+491917876_1210184124440356_562579090135873427_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+493685747_1221875589937876_3077941340149678280_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+494047815_1222070423251726_3392782593318210760_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+494083597_1222071339918301_8595187011125426839_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+494108482_1220994810025954_2578974526967819826_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+494154563_1222069393251829_6652170390300093143_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+494232402_1222068703251898_3656197913319868496_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+494512011_1222068576585244_6147512660677625884_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+495377998_1227141646077937_211840315521738256_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+496842482_1231660915626010_6683446675955510221_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+499470870_1236461835145918_3962631134834285900_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+513177666_1272249908233777_4686188884954614227_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+526259536_1297785779013523_3091748298187526060_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+567964160_1372946348164132_6573798638378718671_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+582452364_1397796792345754_804821014419654116_n.jpg,IMAGENES DE DAVID,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+Screenshot 2026-04-10 at 12.12.33 AM.png,IMAGENES DE DAVID,png,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JETBLUE_LLEGADA_1.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JETBLUE_LLEGADA_2.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JETBLUE_LLEGADA_3.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JETBLUE_LLEGADA_4.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JETBLUE_LLEGADA_5.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JesseVasallo_gettyimages-1522228074-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JesseVasallogettyimages-1304795289-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JesseVasallogettyimages-1539863276-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JesseVasallogettyimages-1539863312-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+JesseVasallogettyimages-1539863335-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+gettyimages-1539863296-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+AP02112802555.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+gettyimages-2279210590-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+gettyimages-51189601-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+gettyimages-53301709-594x594.jpg,PERSONAJES,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-46.jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(1).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(10).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(11).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(12).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(13).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(14).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(15).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(16).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(17).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(18).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(19).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(2).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(20).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(21).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(22).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
+PHOTO-2026-05-21-08-20-47(23).jpg,FOTOS LULY,jpg,no,Photos,Manual Review,"Image: sorted by extension, no AI, Manual Review"
