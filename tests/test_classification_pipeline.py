@@ -53,13 +53,13 @@ def fake_keyring(monkeypatch):
 
 @pytest.fixture
 def setup(tmp_path):
-    """Build a pipeline with a temp database, archive, and inbox folder."""
+    """Build a pipeline with a temp database, archive, and Drop Zone folder."""
     db_path = str(tmp_path / "test.db")
     init_db(db_path)
     repo = CatalogRepository(db_path)
     organizer = FileOrganizer(str(tmp_path / "archive"))
-    inbox = tmp_path / "inbox"
-    inbox.mkdir()
+    drop_zone = tmp_path / "drop_zone"
+    drop_zone.mkdir()
 
     def build(replies=None):
         if replies is None:
@@ -68,7 +68,7 @@ def setup(tmp_path):
         ai = FakeAI(replies)
         return ClassificationPipeline(ai, repo, organizer), ai
 
-    return {"build": build, "repo": repo, "inbox": inbox}
+    return {"build": build, "repo": repo, "drop_zone": drop_zone}
 
 
 def make_text_file(folder, name, text="Article text about a swim meet."):
@@ -91,7 +91,7 @@ def make_blank_pdf(folder, name):
 def test_readable_file_is_fully_classified(setup):
     """A text file gets type, summary, source, date, and Classified."""
     pipeline, ai = setup["build"]()
-    path = make_text_file(setup["inbox"], "clipping.txt")
+    path = make_text_file(setup["drop_zone"], "clipping.txt")
 
     doc = pipeline.classify_document(path)
 
@@ -113,7 +113,8 @@ def test_missing_metadata_sends_to_manual_review(setup):
     replies = {"classify": "Documents", "summary": "A letter.",
                "metadata": '{"source": null, "document_date": "1970"}'}
     pipeline, ai = setup["build"](replies)
-    doc = pipeline.classify_document(make_text_file(setup["inbox"], "a.txt"))
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.source is None
     assert doc.document_date == "1970"
     assert doc.status == "Manual Review"
@@ -124,7 +125,8 @@ def test_invalid_classification_uses_fallback_folder(setup):
     replies = {"classify": "Newspaper", "summary": "Something.",
                "metadata": GOOD_METADATA}
     pipeline, ai = setup["build"](replies)
-    doc = pipeline.classify_document(make_text_file(setup["inbox"], "a.txt"))
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.media_type == "Documents"
     assert doc.filename == "D_001.txt"
 
@@ -132,7 +134,7 @@ def test_invalid_classification_uses_fallback_folder(setup):
 def test_photo_is_sorted_without_ai(setup):
     """A photo goes to Photos by extension, with no AI call."""
     pipeline, ai = setup["build"]()
-    path = str(setup["inbox"] / "team.JPG")
+    path = str(setup["drop_zone"] / "team.JPG")
     with open(path, "wb") as file:
         file.write(b"fake image bytes")
 
@@ -148,7 +150,7 @@ def test_scanned_pdf_is_flagged_for_manual_summary(setup):
     """A PDF with no text is moved and flagged, not skipped."""
     pipeline, ai = setup["build"]()
     doc = pipeline.classify_document(
-        make_blank_pdf(setup["inbox"], "scan.pdf"))
+        make_blank_pdf(setup["drop_zone"], "scan.pdf"))
     assert doc.media_type == "Documents"
     assert doc.filename == "D_001.pdf"
     assert doc.summary is None
@@ -159,7 +161,7 @@ def test_scanned_pdf_is_flagged_for_manual_summary(setup):
 def test_unsupported_format_is_flagged(setup):
     """A .docx is not read in the MVP: Documents folder, Manual Review."""
     pipeline, ai = setup["build"]()
-    path = str(setup["inbox"] / "notes.docx")
+    path = str(setup["drop_zone"] / "notes.docx")
     with open(path, "wb") as file:
         file.write(b"not really a docx")
     doc = pipeline.classify_document(path)
@@ -171,7 +173,7 @@ def test_unsupported_format_is_flagged(setup):
 def test_process_batch_handles_every_file(setup):
     """Every file in the list becomes one saved document."""
     pipeline, ai = setup["build"]()
-    paths = [make_text_file(setup["inbox"], name)
+    paths = [make_text_file(setup["drop_zone"], name)
              for name in ("a.txt", "b.txt", "c.txt")]
     documents = pipeline.process_batch(paths)
     assert [doc.filename for doc in documents] == [
@@ -182,11 +184,12 @@ def test_process_batch_handles_every_file(setup):
 def test_process_batch_skips_files_already_cataloged(setup):
     """Files already in the catalog are not sent to the AI again."""
     pipeline, ai = setup["build"]()
-    first = pipeline.process_batch([make_text_file(setup["inbox"], "a.txt")])
+    first = pipeline.process_batch(
+        [make_text_file(setup["drop_zone"], "a.txt")])
     calls_after_first_run = ai.calls
 
     # Run again with the cataloged file plus one new file.
-    new_file = make_text_file(setup["inbox"], "b.txt")
+    new_file = make_text_file(setup["drop_zone"], "b.txt")
     second = pipeline.process_batch([first[0].file_path, new_file])
 
     assert [doc.original_filename for doc in second] == ["b.txt"]
@@ -196,8 +199,8 @@ def test_process_batch_skips_files_already_cataloged(setup):
 def test_process_batch_continues_after_a_missing_file(setup):
     """A file that no longer exists is skipped, the rest still run."""
     pipeline, ai = setup["build"]()
-    good = make_text_file(setup["inbox"], "good.txt")
-    missing = str(setup["inbox"] / "deleted.txt")
+    good = make_text_file(setup["drop_zone"], "good.txt")
+    missing = str(setup["drop_zone"] / "deleted.txt")
     documents = pipeline.process_batch([missing, good])
     assert [doc.original_filename for doc in documents] == ["good.txt"]
 
@@ -226,7 +229,7 @@ def test_regenerate_summary_uses_the_users_facts(setup):
                "metadata": '{"source": null, "document_date": null}'}
     pipeline, ai = setup["build"](replies)
     doc = pipeline.classify_document(
-        make_text_file(setup["inbox"], "letter.txt"))
+        make_text_file(setup["drop_zone"], "letter.txt"))
 
     # The user types the source by hand, then the summary is rewritten.
     ai.replies["summary"] = "Letter from Claridad."
@@ -241,7 +244,7 @@ def test_regenerate_summary_uses_the_users_facts(setup):
 def test_regenerate_summary_skips_files_without_text(setup):
     """A photo has no text, so its summary is left as it was."""
     pipeline, ai = setup["build"]()
-    path = str(setup["inbox"] / "team.jpg")
+    path = str(setup["drop_zone"] / "team.jpg")
     with open(path, "wb") as file:
         file.write(b"fake image bytes")
     doc = pipeline.classify_document(path)
