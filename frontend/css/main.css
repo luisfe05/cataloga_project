@@ -129,6 +129,16 @@ body {
     color: #6b6b75;
 }
 
+/* Warning about the old Inbox folder. It only informs. */
+.warning-message {
+    margin: 8px 32px 0;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #fff4e5;
+    color: #8a4b00;
+    font-size: 0.85rem;
+}
+
 /* Catalog table */
 .catalog-table {
     width: calc(100% - 64px);

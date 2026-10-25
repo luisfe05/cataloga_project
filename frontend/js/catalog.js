@@ -4,7 +4,7 @@
  * Catalog view (Screen 1).
  * Renders the document table and handles the tabs, search box, filters,
  * Edit Mode, and the Download Worksheet button. The table refreshes every
- * few seconds, so files dropped into the Inbox show up once the folder
+ * few seconds, so files dropped into the Drop Zone show up once the folder
  * watcher has processed them.
  */
 
@@ -244,6 +244,20 @@ function updateSourceFilter(allDocuments) {
 }
 
 /**
+ * Show or hide the warning about files left in the old Inbox folder.
+ * It only informs: nothing is moved.
+ * @param {Object} settings - Includes old_inbox_has_files (boolean).
+ */
+function renderOldInboxWarning(settings) {
+    const warning = document.getElementById("catalog-warning");
+    warning.textContent = settings.old_inbox_has_files
+        ? "Your old Inbox folder still has files. "
+            + "Move them to Drop Zone to catalog them."
+        : "";
+    warning.classList.toggle("hidden", !settings.old_inbox_has_files);
+}
+
+/**
  * Show the project name from Settings in the header.
  * @param {Object} settings
  */
@@ -262,6 +276,7 @@ async function loadCatalog() {
     try {
         const settings = await getSettings();
         renderProjectHeader(settings);
+        renderOldInboxWarning(settings);
 
         if (!settings.target_directory) {
             showMessage("Go to Settings to choose the project folder "
@@ -279,7 +294,7 @@ async function loadCatalog() {
             `Manual Review (${reviewCount})`;
 
         if (allDocuments.length === 0) {
-            showMessage("Drop files into the Inbox folder inside "
+            showMessage("Drop files into the Drop Zone folder inside "
                 + settings.target_directory
                 + " and they will appear here once they are classified.");
             return;

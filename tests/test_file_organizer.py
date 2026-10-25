@@ -26,12 +26,12 @@ def make_file(folder, name, content="test"):
     return path
 
 
-def test_ensure_archive_structure_creates_inbox_and_five_folders(
+def test_ensure_archive_structure_creates_drop_zone_and_five_folders(
         organizer):
-    """Inbox and all five media-type folders exist after the call."""
+    """Drop Zone and all five media-type folders exist after the call."""
     organizer.ensure_archive_structure()
     folders = sorted(os.listdir(organizer.target_directory))
-    assert folders == ["Audio", "Documents", "Inbox", "Photos", "Press",
+    assert folders == ["Audio", "Documents", "Drop Zone", "Photos", "Press",
                        "Video"]
 
 
@@ -49,6 +49,38 @@ def test_count_existing_items_empty_folder(organizer):
     """A new, empty project folder has nothing to warn about."""
     organizer.ensure_archive_structure()
     assert organizer.count_existing_items() == 0
+
+
+def test_count_existing_items_counts_an_inbox_in_a_new_folder(organizer):
+    """In a folder Cataloga never used, Inbox is the user's own folder."""
+    os.makedirs(organizer.old_inbox_folder())
+    assert organizer.count_existing_items() == 1
+
+
+def test_migrate_old_inbox_renames_it_and_keeps_files(organizer):
+    """Inbox becomes Drop Zone and the files inside stay the same."""
+    make_file(organizer.old_inbox_folder(), "clip.pdf", "hello")
+    assert organizer.migrate_old_inbox() is True
+    assert not os.path.exists(organizer.old_inbox_folder())
+    path = os.path.join(organizer.drop_zone_folder(), "clip.pdf")
+    with open(path) as file:
+        assert file.read() == "hello"
+
+
+def test_migrate_old_inbox_with_both_folders_does_nothing(organizer):
+    """If Drop Zone already exists, Inbox is left alone."""
+    inbox_file = make_file(organizer.old_inbox_folder(), "a.pdf")
+    os.makedirs(organizer.drop_zone_folder())
+    assert organizer.migrate_old_inbox() is False
+    assert os.path.isfile(inbox_file)
+    assert os.listdir(organizer.drop_zone_folder()) == []
+
+
+def test_migrate_old_inbox_without_inbox_does_nothing(organizer):
+    """A project with no Inbox has nothing to migrate."""
+    organizer.ensure_archive_structure()
+    assert organizer.migrate_old_inbox() is False
+    assert os.path.isdir(organizer.drop_zone_folder())
 
 
 def test_ensure_archive_structure_keeps_existing_files(organizer):
@@ -97,7 +129,7 @@ def test_unknown_media_type_raises_value_error(organizer):
 
 def test_move_and_rename_file(organizer, tmp_path):
     """The file ends up in its folder with its serial name."""
-    original = make_file(str(tmp_path / "inbox"), "scan.pdf", "hello")
+    original = make_file(str(tmp_path / "drop_zone"), "scan.pdf", "hello")
     new_path = organizer.move_and_rename_file(original, "Press")
 
     assert new_path == os.path.join(organizer.target_directory, "Press",
@@ -110,8 +142,8 @@ def test_move_and_rename_file(organizer, tmp_path):
 
 def test_move_two_files_get_different_names(organizer, tmp_path):
     """Two files of the same type never share a serial name."""
-    first = make_file(str(tmp_path / "inbox"), "a.pdf")
-    second = make_file(str(tmp_path / "inbox"), "b.pdf")
+    first = make_file(str(tmp_path / "drop_zone"), "a.pdf")
+    second = make_file(str(tmp_path / "drop_zone"), "b.pdf")
     path_one = organizer.move_and_rename_file(first, "Documents")
     path_two = organizer.move_and_rename_file(second, "Documents")
     assert os.path.basename(path_one) == "D_001.pdf"

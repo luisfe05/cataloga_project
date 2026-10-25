@@ -5,9 +5,10 @@ after classification. Creates the five media-type subdirectories if they
 don't exist, generates the next serial filename for a given type, and
 moves the original file into the correct subdirectory.
 
-New files are dropped into the Inbox folder. Only Inbox is processed,
-so anything else the user already had in the project folder is never
-moved.
+New files are dropped into the Drop Zone folder. Only Drop Zone is
+processed, so anything else the user already had in the project folder
+is never moved. Projects made before Drop Zone existed used a folder
+called Inbox: migrate_old_inbox() renames it to Drop Zone.
 
 FileOrganizer only works with folders and files. It never touches the
 database: CatalogRepository owns all database reads and writes.
@@ -27,7 +28,10 @@ MEDIA_TYPE_PREFIXES = {
 }
 
 # Subfolder where the user drops new files to be cataloged.
-INBOX_FOLDER = "Inbox"
+DROP_ZONE_FOLDER = "Drop Zone"
+
+# Name of the same folder in projects made before Drop Zone existed.
+OLD_INBOX_FOLDER = "Inbox"
 
 
 class FileOrganizer:
@@ -58,29 +62,59 @@ class FileOrganizer:
             raise ValueError("Unknown media type: " + str(media_type))
         return os.path.join(self.target_directory, media_type)
 
-    def inbox_folder(self):
-        """Return the path of the Inbox folder.
+    def drop_zone_folder(self):
+        """Return the path of the Drop Zone folder.
+
+        Returns:
+            str: For example /archive/Drop Zone.
+        """
+        return os.path.join(self.target_directory, DROP_ZONE_FOLDER)
+
+    def old_inbox_folder(self):
+        """Return the path of the old Inbox folder.
 
         Returns:
             str: For example /archive/Inbox.
         """
-        return os.path.join(self.target_directory, INBOX_FOLDER)
+        return os.path.join(self.target_directory, OLD_INBOX_FOLDER)
+
+    def migrate_old_inbox(self):
+        """Rename the old Inbox folder to Drop Zone, one time only.
+
+        Only call this for the project folder already saved in Settings.
+        In that folder, Inbox was created by Cataloga, so renaming it is
+        safe. Renaming the folder keeps every file inside it, so nothing
+        is moved or renamed.
+
+        If Drop Zone already exists, nothing happens: Inbox is then
+        treated as one of the user's own folders.
+
+        Returns:
+            bool: True if Inbox was renamed, False if nothing changed.
+        """
+        if not os.path.isdir(self.old_inbox_folder()):
+            return False
+        if os.path.exists(self.drop_zone_folder()):
+            return False
+        os.rename(self.old_inbox_folder(), self.drop_zone_folder())
+        return True
 
     def ensure_archive_structure(self):
-        """Create the Inbox and the five media-type folders if missing.
+        """Create Drop Zone and the five media-type folders if missing.
 
-        Creates: Inbox/, Press/, Audio/, Video/, Photos/, Documents/ inside
-        target_directory. Folders that already exist are left alone.
+        Creates: Drop Zone/, Press/, Audio/, Video/, Photos/, Documents/
+        inside target_directory. Folders that already exist are left
+        alone.
         """
         # exist_ok=True means no error if the folder is already there.
-        os.makedirs(self.inbox_folder(), exist_ok=True)
+        os.makedirs(self.drop_zone_folder(), exist_ok=True)
         for media_type in self.media_type_prefixes:
             os.makedirs(self.folder_for(media_type), exist_ok=True)
 
     def count_existing_items(self):
         """Count the user's own files and folders in the project folder.
 
-        Cataloga's folders (Inbox and the five media types) and hidden
+        Cataloga's folders (Drop Zone and the five media types) and hidden
         files like .DS_Store are not counted. Settings uses this number to
         warn the user before using a folder that already has content.
 
@@ -89,7 +123,7 @@ class FileOrganizer:
         """
         if not os.path.isdir(self.target_directory):
             return 0
-        own_folders = set(self.media_type_prefixes) | {INBOX_FOLDER}
+        own_folders = set(self.media_type_prefixes) | {DROP_ZONE_FOLDER}
         count = 0
         for name in os.listdir(self.target_directory):
             if name.startswith(".") or name in own_folders:

@@ -103,7 +103,7 @@ function renderActivity(activity) {
 
     const message = document.getElementById("dashboard-message");
     message.textContent = activity.length
-        ? "" : "No activity yet. Drop files into the Inbox to start.";
+        ? "" : "No activity yet. Drop files into the Drop Zone to start.";
     message.classList.toggle("hidden", activity.length > 0);
 }
 
