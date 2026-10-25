@@ -16,8 +16,8 @@ EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
 # Valid values for the status column.
 STATUSES = ("Classified", "Manual Review")
 
-# Longest summary allowed, per the Stage 3 report.
-MAX_SUMMARY_LENGTH = 500
+# Longest summary allowed (scope change of Oct 25, was 500).
+MAX_SUMMARY_LENGTH = 100
 
 # How many entries the dashboard's recent activity list shows.
 RECENT_ACTIVITY_LIMIT = 10
@@ -230,7 +230,8 @@ class CatalogRepository:
             raise ValueError("status must be one of: " + ", ".join(STATUSES))
         summary = fields.get("summary")
         if summary is not None and len(summary) > MAX_SUMMARY_LENGTH:
-            raise ValueError("summary must be 500 characters or less")
+            raise ValueError("summary must be {} characters or less"
+                             .format(MAX_SUMMARY_LENGTH))
 
     def update_document(self, doc_id, fields):
         """Update editable fields on a document.
