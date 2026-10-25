@@ -201,7 +201,7 @@ class ClassificationPipeline:
             text (str): Extracted text content of the document.
 
         Returns:
-            str: Summary, capped at 500 characters. Empty string if the
+            str: Summary, capped at 100 characters. Empty string if the
                 AI fails.
         """
         return self.ai_client.send_summary_request(text)

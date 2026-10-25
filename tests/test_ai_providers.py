@@ -89,12 +89,27 @@ def test_summary_is_returned():
     assert client.send_summary_request("text") == "A letter from 1964."
 
 
-def test_summary_is_capped_at_500_characters():
+def test_summary_is_capped_at_100_characters():
     """A summary that is too long is cut at a word and ends with '...'."""
     client = FakeClient(["word " * 200])
     summary = client.send_summary_request("text")
-    assert len(summary) <= 500
+    assert len(summary) <= 100
     assert summary.endswith("...")
+    # The cut happens between words, so no word is split in half.
+    assert summary[:-3].split() == ["word"] * len(summary[:-3].split())
+
+
+def test_summary_of_exactly_100_characters_is_kept():
+    """A summary right at the limit is returned whole, with no '...'."""
+    answer = "a" * 100
+    client = FakeClient([answer])
+    assert client.send_summary_request("text") == answer
+
+
+def test_summary_prompt_asks_for_100_characters():
+    """The prompt tells the AI the same limit the app enforces."""
+    assert base.MAX_SUMMARY_LENGTH == 100
+    assert "under 100 characters" in base.SUMMARY_PROMPT
 
 
 def test_summary_with_facts_sends_them_first():

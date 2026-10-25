@@ -43,7 +43,7 @@ class Document:
                 to the DB.
             source (str, optional): Where the document came from.
             document_date (str, optional): The date on the document itself.
-            summary (str, optional): AI-generated summary, up to 500
+            summary (str, optional): AI-generated summary, up to 100
                 characters.
             status (str): 'Classified' or 'Manual Review'. Defaults to
                 'Classified'.
