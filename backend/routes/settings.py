@@ -2,8 +2,8 @@
 
 Endpoints:
     GET  /settings                      Return current app config.
-    PUT  /settings                      Update research_name and
-                                        target_directory.
+    PUT  /settings                      Update research_name,
+                                        target_directory, and language.
     PUT  /settings/ai-provider          Update provider and model,
                                         write API key to keyring.
     POST /settings/ai-provider/test     Test whether the provider
@@ -14,7 +14,7 @@ import os
 
 from flask import Blueprint, jsonify, request
 
-from backend.config.app_config import AppConfig
+from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
 from backend.pipeline.ai_providers.base import save_api_key
@@ -63,9 +63,29 @@ def get_settings():
     return jsonify(settings), 200
 
 
+def save_language_only(body):
+    """Save the language when it is the only field in the request.
+
+    Settings saves the language as soon as the user picks it, even
+    before a project folder exists.
+
+    Args:
+        body (dict): The parsed JSON body, with only 'language'.
+
+    Returns:
+        tuple: A Flask response and status code.
+    """
+    config = AppConfig(get_repo())
+    try:
+        config.update_language(body["language"])
+    except ValueError as error:
+        return error_response("invalid_language", str(error), 400)
+    return jsonify(config.get_settings()), 200
+
+
 @settings_bp.route("/settings", methods=["PUT"])
 def update_settings():
-    """Update research_name and target_directory.
+    """Update research_name, target_directory, and language.
 
     The folder must already exist (for example, an external drive must
     be connected). Drop Zone and the five media-type folders are created
@@ -78,20 +98,34 @@ def update_settings():
     agrees. Existing files are never moved either way: only Drop Zone
     is processed.
 
+    A body with only 'language' saves just the language.
+
     Request body (JSON): research_name, target_directory, and optional
-                         confirm_folder (bool).
+                         confirm_folder (bool) and language ('en' or
+                         'es').
 
     Returns:
         200: JSON of updated settings.
-        400: If a field is missing or the folder does not exist.
-        409: If a new folder has content and was not confirmed yet.
+        400: If a field is missing, the folder does not exist, or the
+             language is not supported.
+        409: If a new folder has content and was not confirmed yet. The
+             error includes 'count', the number of items found.
     """
     body = request.get_json(silent=True)
+    if isinstance(body, dict) and list(body) == ["language"]:
+        return save_language_only(body)
+
     values = read_text_fields(body, ("research_name", "target_directory"))
     if values is None:
         return error_response(
             "missing_field",
             "research_name and target_directory are required.", 400)
+    # Checked before any folder is created, so a bad request changes
+    # nothing.
+    if "language" in body and body["language"] not in LANGUAGES:
+        return error_response(
+            "invalid_language",
+            "language must be one of: " + ", ".join(LANGUAGES), 400)
 
     # expanduser turns "~/Documents" into "/Users/<name>/Documents".
     values["target_directory"] = os.path.expanduser(
@@ -111,13 +145,16 @@ def update_settings():
             "folder_not_empty",
             "This folder already has {} items. Cataloga will not move them: "
             "only files you drop into its Drop Zone folder are cataloged. "
-            "Click Save anyway to use this folder.".format(existing), 409)
+            "Click Save anyway to use this folder.".format(existing), 409,
+            extra={"count": existing})
 
     # The migration must run before ensure_archive_structure(), which
     # would otherwise create an empty Drop Zone next to the old Inbox.
     if not is_new_folder:
         organizer.migrate_old_inbox()
     organizer.ensure_archive_structure()
+    if "language" in body:
+        config.update_language(body["language"])
     config.update_settings(values["research_name"],
                            values["target_directory"])
     return jsonify(config.get_settings()), 200

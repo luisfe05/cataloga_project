@@ -90,9 +90,14 @@ CREATE TABLE IF NOT EXISTS app_config (
     id                      INTEGER PRIMARY KEY AUTOINCREMENT,
     research_name           TEXT    NOT NULL,
     target_directory        TEXT    NOT NULL,
-    app_lock_password_hash  TEXT
+    app_lock_password_hash  TEXT,
+    language                TEXT    NOT NULL DEFAULT 'en'
 );
 """
+
+# Added after the first release. Databases made before it get the
+# column from add_language_column().
+LANGUAGE_COLUMN = "language TEXT NOT NULL DEFAULT 'en'"
 
 CREATE_AI_PROVIDER_CONFIG = """
 CREATE TABLE IF NOT EXISTS ai_provider_config (
@@ -120,6 +125,23 @@ def get_connection(db_path=DB_PATH):
     return conn
 
 
+def add_language_column(cursor):
+    """Add the language column to app_config if the table lacks it.
+
+    CREATE TABLE IF NOT EXISTS does not change a table that already
+    exists, so an older database needs this extra step.
+
+    Args:
+        cursor (sqlite3.Cursor): Cursor on an open connection.
+    """
+    # PRAGMA table_info lists one row per column; row[1] is its name.
+    columns = [row[1] for row in
+               cursor.execute("PRAGMA table_info(app_config)")]
+    if "language" not in columns:
+        cursor.execute("ALTER TABLE app_config ADD COLUMN " +
+                       LANGUAGE_COLUMN)
+
+
 def init_db(db_path=DB_PATH):
     """Create all tables if they don't already exist.
 
@@ -133,5 +155,6 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_ACTIVITY_LOG)
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
+    add_language_column(cursor)
     conn.commit()
     conn.close()

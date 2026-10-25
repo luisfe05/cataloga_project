@@ -16,6 +16,7 @@ This is a Holberton School Portfolio Project.
 | API key storage | OS keyring |
 | Packaging | PyInstaller |
 | Tests | pytest |
+| Interface languages | English (default) and Spanish (Latin America), chosen in Settings |
 
 ## How files are added
 

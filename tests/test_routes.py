@@ -165,7 +165,7 @@ def test_get_settings_before_setup(flask_client):
     response = flask_client.get("/settings")
     assert response.status_code == 200
     assert response.get_json() == {
-        "research_name": "", "target_directory": "",
+        "research_name": "", "target_directory": "", "language": "en",
         "active_provider": None, "active_model": None,
         "old_inbox_has_files": False,
     }
@@ -351,6 +351,59 @@ def test_put_settings_new_folder_never_renames_its_inbox(
     flask_client.put("/settings", json=body)
     assert (folder / "Inbox" / "mail.eml").is_file()
     assert (folder / "Drop Zone").is_dir()
+
+
+def test_put_settings_language_only(flask_client):
+    """A body with only the language saves it before any project."""
+    response = flask_client.put("/settings", json={"language": "es"})
+    assert response.status_code == 200
+    settings = flask_client.get("/settings").get_json()
+    assert settings["language"] == "es"
+    assert settings["target_directory"] == ""
+
+
+def test_put_settings_language_only_rejects_unknown(flask_client):
+    """Only 'en' and 'es' are accepted."""
+    response = flask_client.put("/settings", json={"language": "fr"})
+    assert_error(response, 400, "invalid_language")
+    assert flask_client.get("/settings").get_json()["language"] == "en"
+
+
+def test_put_settings_with_language_saves_everything(
+        flask_client, tmp_path):
+    """Language can be sent together with the project fields."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    response = flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder),
+        "language": "es"})
+    assert response.status_code == 200
+    assert response.get_json()["language"] == "es"
+    assert response.get_json()["research_name"] == "A"
+
+
+def test_put_settings_bad_language_changes_nothing(flask_client, tmp_path):
+    """A bad language is rejected before any folder is created."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    response = flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder),
+        "language": "fr"})
+    assert_error(response, 400, "invalid_language")
+    assert not (folder / "Drop Zone").exists()
+    assert flask_client.get("/settings").get_json()["research_name"] == ""
+
+
+def test_folder_not_empty_error_includes_count(flask_client, tmp_path):
+    """The frontend gets the number of items as its own field."""
+    folder = tmp_path / "Full"
+    folder.mkdir()
+    (folder / "a.pdf").write_text("x")
+    (folder / "b.pdf").write_text("x")
+    response = flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder)})
+    assert_error(response, 409, "folder_not_empty")
+    assert response.get_json()["error"]["count"] == 2
 
 
 def setup_project_with_text_doc(flask_client, repo, tmp_path, fake_keyring):
