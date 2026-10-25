@@ -87,6 +87,13 @@ def test_scan_does_nothing_before_settings(project):
     assert (drop_zone / "a.txt").exists()
 
 
+def test_scan_does_nothing_when_only_the_language_was_saved(project):
+    """A settings row with an empty folder must not be scanned."""
+    project["repo"].save_language("es")
+    project["repo"].set_active_provider("gemini", "gemini-2.5-flash")
+    assert scan_once(project["db_path"]) == []
+
+
 def test_scan_processes_drop_zone_files_once(project):
     """Drop Zone files are cataloged and moved; a second scan finds none."""
     configure(project)

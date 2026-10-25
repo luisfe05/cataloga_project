@@ -9,16 +9,17 @@
 // Order of the bars, as in the wireframe.
 const BREAKDOWN_ORDER = ["Documents", "Audio", "Video", "Press", "Photos"];
 
-// How each activity_log action reads in the Recent Activity list.
-const ACTION_TEXT = {
-    "Classified": "Classified",
-    "Manual Review": "Flagged for manual review,",
-    "Edited": "Edited",
+// Text key for each activity_log action in the Recent Activity list.
+const ACTION_KEYS = {
+    "Classified": "dash.action_classified",
+    "Manual Review": "dash.action_review",
+    "Edited": "dash.action_edited",
 };
 
 /**
  * Describe how long ago a timestamp was, like "2 min ago" or
- * "yesterday".
+ * "yesterday". Each case has its own text key, because the word order
+ * changes by language ("hace 2 min" in Spanish).
  * @param {string} timestamp - ISO text such as 2026-10-21T16:55:00.
  * @returns {string}
  */
@@ -29,18 +30,18 @@ function timeAgo(timestamp) {
     const days = Math.floor(hours / 24);
 
     if (minutes < 1) {
-        return "just now";
+        return t("time.just_now");
     }
     if (minutes < 60) {
-        return `${minutes} min ago`;
+        return t("time.minutes", { n: minutes });
     }
     if (hours < 24) {
-        return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
+        return hours === 1 ? t("time.hour") : t("time.hours", { n: hours });
     }
     if (days === 1) {
-        return "yesterday";
+        return t("time.yesterday");
     }
-    return `${days} days ago`;
+    return t("time.days", { n: days });
 }
 
 /**
@@ -64,7 +65,7 @@ function renderBreakdown(breakdown) {
         const header = document.createElement("div");
         header.className = "breakdown-header";
         const label = document.createElement("span");
-        label.textContent = type;
+        label.textContent = valueLabel(type);
         const value = document.createElement("strong");
         value.textContent = `${percent}%`;
         header.append(label, value);
@@ -95,15 +96,15 @@ function renderActivity(activity) {
         name.textContent = entry.filename;
         const when = document.createElement("span");
         when.className = "activity-when";
-        const action = ACTION_TEXT[entry.action] || entry.action;
+        const action = entry.action in ACTION_KEYS
+            ? t(ACTION_KEYS[entry.action]) : entry.action;
         when.textContent = `${action} ${timeAgo(entry.timestamp)}`;
         item.append(name, when);
         list.appendChild(item);
     });
 
     const message = document.getElementById("dashboard-message");
-    message.textContent = activity.length
-        ? "" : "No activity yet. Drop files into the Drop Zone to start.";
+    message.textContent = activity.length ? "" : t("dash.empty");
     message.classList.toggle("hidden", activity.length > 0);
 }
 
@@ -123,8 +124,8 @@ async function loadDashboard() {
         renderActivity(stats.recent_activity);
     } catch (error) {
         const message = document.getElementById("dashboard-message");
-        message.textContent = "Could not load the dashboard: "
-            + (error.message || "the app's backend is not responding.");
+        message.textContent = t("dash.load_failed",
+            { message: errorText(error) });
         message.classList.remove("hidden");
     }
 }

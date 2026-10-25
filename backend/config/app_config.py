@@ -1,13 +1,17 @@
 """AppConfig.
 
 Reads and writes the app settings: the research name, the archive folder,
-and the active AI provider. Non-secret settings only. The API key is never
-stored here; it lives in the OS keyring and is accessed through
-AIProviderClient.
+the interface language, and the active AI provider. Non-secret settings
+only. The API key is never stored here; it lives in the OS keyring and is
+accessed through AIProviderClient.
 
 All database access goes through CatalogRepository, the app's SQLite
 layer, so AppConfig never runs SQL itself.
 """
+
+# Interface languages the app offers. English is the default.
+LANGUAGES = ("en", "es")
+DEFAULT_LANGUAGE = "en"
 
 
 class AppConfig:
@@ -28,6 +32,7 @@ class AppConfig:
             dict: {
                 'research_name': str,
                 'target_directory': str,
+                'language': 'en' or 'es',
                 'active_provider': str or None,
                 'active_model': str or None
             }
@@ -38,6 +43,7 @@ class AppConfig:
         return {
             "research_name": config.get("research_name", ""),
             "target_directory": config.get("target_directory", ""),
+            "language": config.get("language", DEFAULT_LANGUAGE),
             "active_provider": provider.get("provider_name"),
             "active_model": provider.get("model"),
         }
@@ -50,6 +56,20 @@ class AppConfig:
             target_directory (str): Path to the archive folder.
         """
         self.db.save_app_config(research_name, target_directory)
+
+    def update_language(self, language):
+        """Save the interface language.
+
+        Args:
+            language (str): One of LANGUAGES.
+
+        Raises:
+            ValueError: If the language is not in LANGUAGES.
+        """
+        if language not in LANGUAGES:
+            raise ValueError("language must be one of: " +
+                             ", ".join(LANGUAGES))
+        self.db.save_language(language)
 
     def set_active_provider(self, provider_name, model):
         """Mark a provider as active and store its model name.
