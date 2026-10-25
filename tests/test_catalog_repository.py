@@ -127,10 +127,17 @@ def test_update_document_rejects_invalid_media_type(repo):
 
 
 def test_update_document_rejects_long_summary(repo):
-    """A summary over 500 characters raises ValueError."""
+    """A summary over 100 characters raises ValueError."""
     repo.add_document(make_doc())
-    with pytest.raises(ValueError):
-        repo.update_document(1, {"summary": "x" * 501})
+    with pytest.raises(ValueError, match="100 characters or less"):
+        repo.update_document(1, {"summary": "x" * 101})
+
+
+def test_update_document_accepts_100_character_summary(repo):
+    """A summary right at the limit is saved."""
+    repo.add_document(make_doc())
+    updated = repo.update_document(1, {"summary": "x" * 100})
+    assert updated.summary == "x" * 100
 
 
 def test_update_document_missing_id_raises_key_error(repo):

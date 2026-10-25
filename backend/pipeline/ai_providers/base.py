@@ -21,8 +21,8 @@ from backend.models.document import MEDIA_TYPES
 # keyring service name used across all providers.
 KEYRING_SERVICE = "cataloga"
 
-# Longest summary allowed, per the Stage 3 report.
-MAX_SUMMARY_LENGTH = 500
+# Longest summary allowed (scope change of Oct 25, was 500).
+MAX_SUMMARY_LENGTH = 100
 
 # Only the start of a long document is sent, to stay inside free API
 # limits. The first pages are usually enough to classify and summarize.
@@ -47,8 +47,8 @@ SUMMARY_PROMPT = """You are helping a researcher catalog an archive.
 Write a factual summary of the document in your own words: what it is,
 who or what it is about, and any key dates, places, or results.
 Write the summary in the same language as the document.
-Keep it under 500 characters. Do not invent information that is not in
-the text.
+Write one short sentence, under 100 characters. Do not invent
+information that is not in the text.
 
 Respond with ONLY the summary text, with no labels or quotation marks."""
 
@@ -161,7 +161,7 @@ class AIProviderClient:
                 of guessing.
 
         Returns:
-            str: Summary, up to 500 characters. Empty string on failure.
+            str: Summary, up to 100 characters. Empty string on failure.
         """
         if facts:
             lines = ["Facts confirmed by the researcher (use them):"]
