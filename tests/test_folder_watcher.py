@@ -11,9 +11,11 @@ import pytest
 from backend import folder_watcher
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.folder_watcher import find_new_files, scan_once
+from backend.folder_watcher import (OLD_INBOX_WARNING, find_new_files,
+                                    old_inbox_has_files, scan_once)
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline.file_organizer import FileOrganizer
 
 
 class FakeAI(AIProviderClient):
@@ -78,19 +80,19 @@ def test_find_new_files_missing_folder():
 
 def test_scan_does_nothing_before_settings(project):
     """Without a project folder and provider, nothing is processed."""
-    inbox = project["folder"] / "Inbox"
-    inbox.mkdir()
-    (inbox / "a.txt").write_text("Some text")
+    drop_zone = project["folder"] / "Drop Zone"
+    drop_zone.mkdir()
+    (drop_zone / "a.txt").write_text("Some text")
     assert scan_once(project["db_path"]) == []
-    assert (inbox / "a.txt").exists()
+    assert (drop_zone / "a.txt").exists()
 
 
-def test_scan_processes_inbox_files_once(project):
-    """Inbox files are cataloged and moved; a second scan finds nothing."""
+def test_scan_processes_drop_zone_files_once(project):
+    """Drop Zone files are cataloged and moved; a second scan finds none."""
     configure(project)
-    inbox = project["folder"] / "Inbox"
-    inbox.mkdir()
-    (inbox / "clip.txt").write_text("Newspaper text")
+    drop_zone = project["folder"] / "Drop Zone"
+    drop_zone.mkdir()
+    (drop_zone / "clip.txt").write_text("Newspaper text")
 
     first = scan_once(project["db_path"])
     second = scan_once(project["db_path"])
@@ -98,10 +100,10 @@ def test_scan_processes_inbox_files_once(project):
     assert [doc.filename for doc in first] == ["PR_001.txt"]
     assert second == []
     assert (project["folder"] / "Press" / "PR_001.txt").is_file()
-    assert not (inbox / "clip.txt").exists()
+    assert not (drop_zone / "clip.txt").exists()
 
 
-def test_scan_never_moves_files_outside_inbox(project):
+def test_scan_never_moves_files_outside_drop_zone(project):
     """Files the user already had in the project folder stay untouched."""
     configure(project)
     existing = project["folder"] / "my_poster.pdf"
@@ -109,3 +111,75 @@ def test_scan_never_moves_files_outside_inbox(project):
 
     assert scan_once(project["db_path"]) == []
     assert existing.is_file()
+
+
+# --- Old Inbox folder from earlier versions ---
+
+@pytest.fixture(autouse=True)
+def forget_warnings():
+    """Start every test with no project folder warned about yet."""
+    folder_watcher.warned_folders.clear()
+
+
+def make_old_inbox_with_file(project):
+    """Create Drop Zone and an old Inbox that still has one file."""
+    (project["folder"] / "Drop Zone").mkdir()
+    inbox = project["folder"] / "Inbox"
+    inbox.mkdir()
+    (inbox / "left.txt").write_text("Left behind")
+    return inbox
+
+
+def test_scan_renames_old_inbox_and_processes_its_files(project):
+    """An old project's Inbox becomes Drop Zone and its files are read."""
+    configure(project)
+    inbox = project["folder"] / "Inbox"
+    inbox.mkdir()
+    (inbox / "clip.txt").write_text("Newspaper text")
+
+    documents = scan_once(project["db_path"])
+
+    assert not inbox.exists()
+    assert (project["folder"] / "Drop Zone").is_dir()
+    assert [doc.filename for doc in documents] == ["PR_001.txt"]
+
+
+def test_old_inbox_has_files_with_both_folders(project):
+    """Inbox with a file next to Drop Zone is reported."""
+    make_old_inbox_with_file(project)
+    organizer = FileOrganizer(str(project["folder"]))
+    assert old_inbox_has_files(organizer) is True
+
+
+def test_old_inbox_has_files_ignores_hidden_files(project):
+    """An Inbox with only .DS_Store does not count as having files."""
+    (project["folder"] / "Drop Zone").mkdir()
+    inbox = project["folder"] / "Inbox"
+    inbox.mkdir()
+    (inbox / ".DS_Store").write_text("x")
+    organizer = FileOrganizer(str(project["folder"]))
+    assert old_inbox_has_files(organizer) is False
+
+
+def test_old_inbox_has_files_needs_drop_zone(project):
+    """Without Drop Zone, Inbox is not reported (it will be migrated)."""
+    inbox = project["folder"] / "Inbox"
+    inbox.mkdir()
+    (inbox / "a.txt").write_text("x")
+    organizer = FileOrganizer(str(project["folder"]))
+    assert old_inbox_has_files(organizer) is False
+
+
+def test_scan_warns_once_and_never_moves_old_inbox_files(project, caplog):
+    """The warning is logged once, and the Inbox file stays where it is."""
+    configure(project)
+    inbox = make_old_inbox_with_file(project)
+
+    scan_once(project["db_path"])
+    scan_once(project["db_path"])
+
+    warnings = [record for record in caplog.records
+                if OLD_INBOX_WARNING in record.getMessage()]
+    assert len(warnings) == 1
+    assert warnings[0].levelname == "WARNING"
+    assert (inbox / "left.txt").is_file()

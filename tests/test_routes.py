@@ -167,6 +167,7 @@ def test_get_settings_before_setup(flask_client):
     assert response.get_json() == {
         "research_name": "", "target_directory": "",
         "active_provider": None, "active_model": None,
+        "old_inbox_has_files": False,
     }
 
 
@@ -179,7 +180,7 @@ def test_put_settings_creates_archive_folders(flask_client, tmp_path):
     assert response.status_code == 200
     assert response.get_json()["research_name"] == "El Delfin"
     assert (archive / "Press").is_dir()
-    assert (archive / "Inbox").is_dir()
+    assert (archive / "Drop Zone").is_dir()
     assert flask_client.get("/settings").get_json()["target_directory"] \
         == str(archive)
 
@@ -276,13 +277,13 @@ def test_put_settings_warns_before_using_a_folder_with_files(
 
     first = flask_client.put("/settings", json=body)
     assert_error(first, 409, "folder_not_empty")
-    assert not (folder / "Inbox").exists()
+    assert not (folder / "Drop Zone").exists()
     assert flask_client.get("/settings").get_json()["target_directory"] == ""
 
     body["confirm_folder"] = True
     second = flask_client.put("/settings", json=body)
     assert second.status_code == 200
-    assert (folder / "Inbox").is_dir()
+    assert (folder / "Drop Zone").is_dir()
     assert (folder / "poster.png").is_file()
 
 
@@ -299,6 +300,57 @@ def test_put_settings_same_folder_does_not_warn_again(
         "research_name": "B", "target_directory": str(folder)})
     assert response.status_code == 200
     assert response.get_json()["research_name"] == "B"
+
+
+def test_get_settings_reports_old_inbox_files(flask_client, tmp_path):
+    """GET /settings tells Catalog when the old Inbox still has files."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder)})
+    assert flask_client.get("/settings").get_json()[
+        "old_inbox_has_files"] is False
+
+    (folder / "Inbox").mkdir()
+    (folder / "Inbox" / "left.pdf").write_text("x")
+    assert flask_client.get("/settings").get_json()[
+        "old_inbox_has_files"] is True
+    assert (folder / "Inbox" / "left.pdf").is_file()
+
+
+def test_put_settings_same_folder_migrates_old_inbox(flask_client, tmp_path):
+    """Saving the same folder again renames an old Inbox to Drop Zone."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    body = {"research_name": "A", "target_directory": str(folder)}
+    flask_client.put("/settings", json=body)
+    # Simulate a project made with the old version.
+    (folder / "Drop Zone").rename(folder / "Inbox")
+    (folder / "Inbox" / "clip.pdf").write_text("x")
+
+    response = flask_client.put("/settings", json=body)
+
+    assert response.status_code == 200
+    assert not (folder / "Inbox").exists()
+    assert (folder / "Drop Zone" / "clip.pdf").is_file()
+
+
+def test_put_settings_new_folder_never_renames_its_inbox(
+        flask_client, tmp_path):
+    """A user's own Inbox in a new folder is never renamed or moved."""
+    folder = tmp_path / "Other"
+    folder.mkdir()
+    (folder / "Inbox").mkdir()
+    (folder / "Inbox" / "mail.eml").write_text("x")
+    body = {"research_name": "A", "target_directory": str(folder)}
+
+    first = flask_client.put("/settings", json=body)
+    assert_error(first, 409, "folder_not_empty")
+
+    body["confirm_folder"] = True
+    flask_client.put("/settings", json=body)
+    assert (folder / "Inbox" / "mail.eml").is_file()
+    assert (folder / "Drop Zone").is_dir()
 
 
 def setup_project_with_text_doc(flask_client, repo, tmp_path, fake_keyring):
