@@ -18,6 +18,10 @@
  *
  * The Language dropdown works on its own: a new choice is applied and
  * saved right away (PUT /settings with only the language).
+ *
+ * The File names section is saved with the Save button. Its template is
+ * checked here while the user types, with the same rules as
+ * backend/pipeline/naming.py, and the backend checks it again.
  */
 
 // Providers and models offered in the form. The key is the name the
@@ -45,6 +49,26 @@ const AI_PROVIDERS = {
         label: "OpenAI",
         models: ["gpt-5.4-nano", "gpt-5.4-mini"],
     },
+};
+
+// The three naming methods, as the templates the backend saves.
+const NAMING_METHODS = {
+    m1: "{date}_{topic}",
+    m2: "{source}_{date}_{topic}",
+    m3: "{number}_{topic}",
+};
+
+// Parts a template can use, and characters a file name cannot have.
+const NAMING_TOKENS = ["date", "source", "topic", "number", "original"];
+const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
+
+// Example values for the live preview (from the approved examples).
+const PREVIEW_PARTS = {
+    date: "2026-07-15",
+    source: "el-nuevo-dia",
+    topic: "oceanman-malta",
+    number: "0001",
+    original: "scan-0042",
 };
 
 // True after the user has seen the folder warning and may confirm it.
@@ -75,6 +99,104 @@ function updateKeyPlaceholder() {
 function resetFolderWarning() {
     folderWarningShown = false;
     updateSaveButton();
+}
+
+/**
+ * Check a naming template. Same rules as validate_template() in
+ * backend/pipeline/naming.py.
+ * @param {string} template
+ * @returns {Object|null} null if valid, or {reason, token}.
+ */
+function validateTemplate(template) {
+    if (!template.trim()) {
+        return { reason: "empty", token: "" };
+    }
+    // Every {word} in the template.
+    const found = [...template.matchAll(/\{([^{}]*)\}/g)]
+        .map((match) => match[1]);
+    const unknown = found.find((name) => !NAMING_TOKENS.includes(name));
+    if (unknown !== undefined) {
+        return { reason: "unknown", token: `{${unknown}}` };
+    }
+    if (found.length === 0) {
+        return { reason: "no_token", token: "" };
+    }
+    // The braces are removed first, since they are allowed.
+    const text = template.replace(/\{[^{}]*\}/g, "");
+    if ([...text].some((char) => FORBIDDEN_CHARACTERS.includes(char))) {
+        return { reason: "chars", token: "" };
+    }
+    return null;
+}
+
+/**
+ * Fill a template with the example values, like render_template() in
+ * backend/pipeline/naming.py.
+ * @param {string} template
+ * @returns {string} For example "2026-07-15_oceanman-malta.pdf".
+ */
+function previewFilename(template) {
+    let name = template;
+    NAMING_TOKENS.forEach((token) => {
+        name = name.split(`{${token}}`).join(PREVIEW_PARTS[token]);
+    });
+    name = name.replace(/_{2,}/g, "_").replace(/-{2,}/g, "-")
+        .replace(/^[_\-. ]+|[_\-. ]+$/g, "");
+    return (name || PREVIEW_PARTS.number) + ".pdf";
+}
+
+/**
+ * Return the template for the method picked in the File names section.
+ * @returns {string}
+ */
+function chosenTemplate() {
+    const picked = document.querySelector(
+        'input[name="naming-method"]:checked');
+    const method = picked ? picked.value : "m1";
+    if (method === "custom") {
+        return document.getElementById("naming-template").value;
+    }
+    return NAMING_METHODS[method];
+}
+
+/**
+ * Show the template box for Custom, check the template, and update the
+ * preview. Called on every change and key press in the section.
+ * @returns {boolean} True if the template is valid.
+ */
+function updateNamingPreview() {
+    const picked = document.querySelector(
+        'input[name="naming-method"]:checked');
+    const isCustom = Boolean(picked) && picked.value === "custom";
+    document.getElementById("naming-custom")
+        .classList.toggle("hidden", !isCustom);
+
+    const template = chosenTemplate();
+    const problem = validateTemplate(template);
+    document.getElementById("naming-error").textContent = problem
+        ? t(`naming.err_${problem.reason}`, { token: problem.token }) : "";
+    document.getElementById("naming-preview").textContent = problem
+        ? "" : previewFilename(template);
+    return !problem;
+}
+
+/**
+ * Select the method that matches a saved template. A template that is
+ * not one of the three methods is shown as Custom.
+ * @param {string} template
+ */
+function showSavedTemplate(template) {
+    let method = "custom";
+    Object.keys(NAMING_METHODS).forEach((key) => {
+        if (NAMING_METHODS[key] === template) {
+            method = key;
+        }
+    });
+    document.querySelector(
+        `input[name="naming-method"][value="${method}"]`).checked = true;
+    document.getElementById("naming-template").value =
+        method === "custom" ? template : "";
+    updateNamingPreview();
 }
 
 /**
@@ -139,6 +261,7 @@ async function loadSettings() {
         fillModels(settings.active_model);
         document.getElementById("language-select").value =
             settings.language;
+        showSavedTemplate(settings.naming_template);
 
         document.getElementById("api-key").value = "";
         hasSavedKey = Boolean(settings.active_provider);
@@ -159,6 +282,13 @@ async function saveSettings(event) {
     event.preventDefault();
 
     const saveButton = document.getElementById("save-button");
+    // A wrong template is shown under the File names section, and
+    // nothing is sent.
+    if (!updateNamingPreview()) {
+        showSettingsMessage(
+            document.getElementById("naming-error").textContent, "error");
+        return;
+    }
     const providerData = {
         provider_name: document.getElementById("ai-provider").value,
         model: document.getElementById("ai-model").value,
@@ -173,6 +303,7 @@ async function saveSettings(event) {
             target_directory:
                 document.getElementById("target-directory").value,
             confirm_folder: folderWarningShown,
+            naming_template: chosenTemplate(),
         });
         resetFolderWarning();
         await testAIProvider(providerData);
@@ -186,7 +317,11 @@ async function saveSettings(event) {
             folderWarningShown = true;
             updateSaveButton();
         }
-        showSettingsMessage(errorText(error), "error");
+        // The backend checks the template too and says why it failed.
+        const message = error.code === "invalid_template"
+            ? t(`naming.err_${error.reason}`, { token: error.token })
+            : errorText(error);
+        showSettingsMessage(message, "error");
     } finally {
         saveButton.disabled = false;
     }
@@ -214,6 +349,7 @@ async function changeLanguage() {
     setLanguage(language);
     updateSaveButton();
     updateKeyPlaceholder();
+    updateNamingPreview();
     showSettingsMessage("", "");
     loadCatalog();
     if (!document.getElementById("view-dashboard")
@@ -247,6 +383,11 @@ document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
+// The preview follows every method change and every key press.
+document.getElementById("naming-options")
+    .addEventListener("change", updateNamingPreview);
+document.getElementById("naming-template")
+    .addEventListener("input", updateNamingPreview);
 
 // fillProviders() and loadSettings() are first called by startApp() in
 // app.js, after the saved language is known.

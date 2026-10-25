@@ -166,6 +166,7 @@ def test_get_settings_before_setup(flask_client):
     assert response.status_code == 200
     assert response.get_json() == {
         "research_name": "", "target_directory": "", "language": "en",
+        "naming_template": "{date}_{topic}",
         "active_provider": None, "active_model": None,
         "old_inbox_has_files": False,
     }
@@ -404,6 +405,41 @@ def test_folder_not_empty_error_includes_count(flask_client, tmp_path):
         "research_name": "A", "target_directory": str(folder)})
     assert_error(response, 409, "folder_not_empty")
     assert response.get_json()["error"]["count"] == 2
+
+
+def test_put_settings_saves_naming_template(flask_client, tmp_path):
+    """The template is saved with the rest of the form."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    response = flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder),
+        "naming_template": "{source}_{date}_{topic}"})
+    assert response.status_code == 200
+    assert flask_client.get("/settings").get_json()["naming_template"] \
+        == "{source}_{date}_{topic}"
+
+
+@pytest.mark.parametrize("template, reason, token", [
+    ("", "empty", ""),
+    ("my-files", "no_token", ""),
+    ("{date}_{titulo}", "unknown", "{titulo}"),
+    ("{date}/{topic}", "chars", ""),
+])
+def test_put_settings_rejects_bad_template(flask_client, tmp_path,
+                                           template, reason, token):
+    """A bad template is rejected before anything is saved."""
+    folder = tmp_path / "Research"
+    folder.mkdir()
+    response = flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(folder),
+        "naming_template": template})
+    assert_error(response, 400, "invalid_template")
+    error = response.get_json()["error"]
+    assert error["reason"] == reason
+    assert error["token"] == token
+    assert not (folder / "Drop Zone").exists()
+    assert flask_client.get("/settings").get_json()["naming_template"] \
+        == "{date}_{topic}"
 
 
 def setup_project_with_text_doc(flask_client, repo, tmp_path, fake_keyring):

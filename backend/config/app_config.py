@@ -1,13 +1,15 @@
 """AppConfig.
 
 Reads and writes the app settings: the research name, the archive folder,
-the interface language, and the active AI provider. Non-secret settings
-only. The API key is never stored here; it lives in the OS keyring and is
-accessed through AIProviderClient.
+the interface language, the file naming template, and the active AI
+provider. Non-secret settings only. The API key is never stored here; it
+lives in the OS keyring and is accessed through AIProviderClient.
 
 All database access goes through CatalogRepository, the app's SQLite
 layer, so AppConfig never runs SQL itself.
 """
+
+from backend.pipeline import naming
 
 # Interface languages the app offers. English is the default.
 LANGUAGES = ("en", "es")
@@ -33,6 +35,7 @@ class AppConfig:
                 'research_name': str,
                 'target_directory': str,
                 'language': 'en' or 'es',
+                'naming_template': str, e.g. '{date}_{topic}',
                 'active_provider': str or None,
                 'active_model': str or None
             }
@@ -44,6 +47,8 @@ class AppConfig:
             "research_name": config.get("research_name", ""),
             "target_directory": config.get("target_directory", ""),
             "language": config.get("language", DEFAULT_LANGUAGE),
+            "naming_template": config.get("naming_template",
+                                          naming.DEFAULT_TEMPLATE),
             "active_provider": provider.get("provider_name"),
             "active_model": provider.get("model"),
         }
@@ -70,6 +75,21 @@ class AppConfig:
             raise ValueError("language must be one of: " +
                              ", ".join(LANGUAGES))
         self.db.save_language(language)
+
+    def update_naming_template(self, template):
+        """Save the file naming template. Only new files use it.
+
+        Args:
+            template (str): One of naming.METHOD_TEMPLATES or a custom one.
+
+        Raises:
+            ValueError: If naming.validate_template() finds a problem.
+        """
+        problem = naming.validate_template(template)
+        if problem:
+            raise ValueError("invalid naming template: " +
+                             problem["reason"])
+        self.db.save_naming_template(template)
 
     def set_active_provider(self, provider_name, model):
         """Mark a provider as active and store its model name.
