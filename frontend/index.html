@@ -12,9 +12,12 @@
     <nav id="nav-bar">
         <span class="app-title">Cataloga</span>
         <div class="nav-links">
-            <a href="#" class="nav-link active" data-view="catalog">Catalog</a>
-            <a href="#" class="nav-link" data-view="dashboard">Dashboard</a>
-            <a href="#" class="nav-link" data-view="settings">Settings</a>
+            <a href="#" class="nav-link active" data-view="catalog"
+               data-i18n="nav.catalog">Catalog</a>
+            <a href="#" class="nav-link" data-view="dashboard"
+               data-i18n="nav.dashboard">Dashboard</a>
+            <a href="#" class="nav-link" data-view="settings"
+               data-i18n="nav.settings">Settings</a>
         </div>
     </nav>
 
@@ -26,36 +29,41 @@
             <section class="project-header">
                 <div class="project-badge" id="project-badge"></div>
                 <div>
-                    <p class="project-label">Project</p>
+                    <p class="project-label" data-i18n="header.project">Project</p>
                     <p class="project-name" id="project-name"></p>
                 </div>
             </section>
 
             <!-- Tabs: all files or only the ones that need manual review -->
             <div class="tabs">
-                <button class="tab active" data-status="">All Files</button>
+                <button class="tab active" data-status=""
+                        data-i18n="catalog.tab_all">All Files</button>
                 <button class="tab" data-status="Manual Review"
                         id="tab-review">Manual Review (0)</button>
             </div>
 
             <!-- Search and filters -->
             <div class="toolbar">
-                <input type="search" id="search-input" placeholder="Search">
+                <input type="search" id="search-input" placeholder="Search"
+                       data-i18n-placeholder="catalog.search">
                 <select id="filter-media-type">
-                    <option value="">Media Type: All</option>
-                    <option value="Press">Press</option>
-                    <option value="Documents">Documents</option>
-                    <option value="Photos">Photos</option>
-                    <option value="Audio">Audio</option>
-                    <option value="Video">Video</option>
+                    <option value=""
+                            data-i18n="catalog.filter_type_all">Media Type: All</option>
+                    <option value="Press" data-i18n="value.Press">Press</option>
+                    <option value="Documents"
+                            data-i18n="value.Documents">Documents</option>
+                    <option value="Photos" data-i18n="value.Photos">Photos</option>
+                    <option value="Audio" data-i18n="value.Audio">Audio</option>
+                    <option value="Video" data-i18n="value.Video">Video</option>
                 </select>
                 <select id="filter-source">
                     <option value="">Source: All</option>
                 </select>
                 <button type="button" class="pill-button"
-                        id="download-button">Download Worksheet</button>
+                        id="download-button"
+                        data-i18n="catalog.download">Download Worksheet</button>
                 <label class="switch-label">
-                    Edit Mode
+                    <span data-i18n="catalog.edit_mode">Edit Mode</span>
                     <input type="checkbox" id="edit-mode">
                     <span class="switch"></span>
                 </label>
@@ -72,13 +80,13 @@
             <table class="catalog-table" id="catalog-table">
                 <thead>
                     <tr>
-                        <th>Original Filename</th>
-                        <th>Filename</th>
-                        <th>Media Type</th>
-                        <th>Source</th>
-                        <th>Date</th>
-                        <th>Summary</th>
-                        <th>Status</th>
+                        <th data-i18n="catalog.col_original">Original Filename</th>
+                        <th data-i18n="catalog.col_filename">Filename</th>
+                        <th data-i18n="catalog.col_type">Media Type</th>
+                        <th data-i18n="catalog.col_source">Source</th>
+                        <th data-i18n="catalog.col_date">Date</th>
+                        <th data-i18n="catalog.col_summary">Summary</th>
+                        <th data-i18n="catalog.col_status">Status</th>
                     </tr>
                 </thead>
                 <tbody id="catalog-body"></tbody>
@@ -92,22 +100,22 @@
                 <div class="stat-cards">
                     <div class="stat-card">
                         <p class="stat-number" id="stat-classified">0</p>
-                        <p class="stat-label">Documents Classified</p>
+                        <p class="stat-label" data-i18n="dash.classified">Documents Classified</p>
                     </div>
                     <div class="stat-card">
                         <p class="stat-number" id="stat-review">0</p>
-                        <p class="stat-label">Needs Manual Review</p>
+                        <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
                     </div>
                     <div class="stat-card">
                         <p class="stat-number" id="stat-sources">0</p>
-                        <p class="stat-label">Sources Tracked</p>
+                        <p class="stat-label" data-i18n="dash.sources">Sources Tracked</p>
                     </div>
                 </div>
 
-                <h2>Media Type Breakdown</h2>
+                <h2 data-i18n="dash.breakdown">Media Type Breakdown</h2>
                 <div class="breakdown" id="media-breakdown"></div>
 
-                <h2>Recent Activity</h2>
+                <h2 data-i18n="dash.activity">Recent Activity</h2>
                 <ul class="activity-list" id="activity-list"></ul>
                 <p class="empty-message hidden" id="dashboard-message"></p>
             </div>
@@ -115,33 +123,50 @@
         <div id="view-settings" class="view hidden">
             <form class="settings-form" id="settings-form">
 
-                <h2>Research Settings</h2>
-                <p class="hint">
+                <!-- Saved as soon as it changes, not with the Save button -->
+                <h2 data-i18n="lang.title">Language</h2>
+                <p class="hint" data-i18n="lang.hint">
+                    Changes the app's buttons, labels and messages. File names
+                    and summaries are not translated.
+                </p>
+                <select id="language-select" aria-label="Language">
+                    <option value="en" data-i18n="lang.en">English</option>
+                    <option value="es" data-i18n="lang.es">Español
+                        (Latinoamérica)</option>
+                </select>
+
+                <h2 data-i18n="settings.research_title">Research Settings</h2>
+                <p class="hint" data-i18n="settings.research_hint">
                     Configure your research project and where files are stored.
                     Cataloga creates a Drop Zone folder inside it: drop new
                     files there to have them cataloged.
                 </p>
 
-                <label for="research-name">Research Name</label>
+                <label for="research-name"
+                       data-i18n="settings.research_name">Research Name</label>
                 <input type="text" id="research-name" required>
 
-                <label for="target-directory">Target Data Folder</label>
+                <label for="target-directory"
+                       data-i18n="settings.folder">Target Data Folder</label>
                 <div class="folder-row">
                     <input type="text" id="target-directory" required>
                     <button type="button" class="secondary-button"
-                            id="browse-button">Browse</button>
+                            id="browse-button"
+                            data-i18n="settings.browse">Browse</button>
                 </div>
 
-                <h2>AI Provider Plug in</h2>
-                <p class="hint">Plug in your own AI API key.</p>
+                <h2 data-i18n="settings.ai_title">AI Provider Plug in</h2>
+                <p class="hint" data-i18n="settings.ai_hint">Plug in your own AI API
+                    key.</p>
 
-                <label for="ai-provider">AI Provider</label>
+                <label for="ai-provider"
+                       data-i18n="settings.ai_provider">AI Provider</label>
                 <select id="ai-provider"></select>
 
-                <label for="api-key">API Key</label>
+                <label for="api-key" data-i18n="settings.api_key">API Key</label>
                 <input type="password" id="api-key" autocomplete="off">
 
-                <label for="ai-model">Model</label>
+                <label for="ai-model" data-i18n="settings.model">Model</label>
                 <select id="ai-model"></select>
 
                 <button type="submit" class="primary-button"
@@ -151,7 +176,11 @@
         </div>
     </main>
 
-    <!-- Scripts loaded in dependency order -->
+    <!-- Scripts loaded in dependency order. The language files and
+         i18n.js come first because every other script uses t(). -->
+    <script src="js/lang/en.js"></script>
+    <script src="js/lang/es.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
     <script src="js/catalog.js"></script>

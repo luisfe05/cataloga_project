@@ -20,7 +20,8 @@ const BASE_URL = "http://127.0.0.1:5050";
 async function handleResponse(response) {
     const data = await response.json();
     if (!response.ok) {
-        return Promise.reject(data.error || { message: "Unknown error" });
+        return Promise.reject(data.error
+            || { code: "generic", message: "Unknown error" });
     }
     return data;
 }

@@ -126,7 +126,9 @@ def scan_once(db_path):
     """
     repo = CatalogRepository(db_path)
     config = repo.get_app_config()
-    if not config:
+    # The row can exist with an empty folder when only the language was
+    # saved. An empty path would point at the app's own working folder.
+    if not config or not config["target_directory"]:
         return []
 
     # Only the folder saved in Settings is migrated: there, Inbox was

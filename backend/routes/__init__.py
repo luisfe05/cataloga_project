@@ -8,18 +8,24 @@ from flask import current_app, jsonify
 from backend.db.catalog_repository import CatalogRepository
 
 
-def error_response(code, message, status):
+def error_response(code, message, status, extra=None):
     """Build an error response in the shape every endpoint uses.
 
     Args:
-        code (str): Short machine-readable name, e.g. 'not_found'.
-        message (str): Explanation for the user.
+        code (str): Short machine-readable name, e.g. 'not_found'. The
+            frontend uses it to show the error in the user's language.
+        message (str): Explanation in English (for logs and tests).
         status (int): HTTP status code, e.g. 404.
+        extra (dict, optional): More fields for the error, such as
+            {'count': 3}, so the frontend can build its own sentence.
 
     Returns:
         tuple: (JSON response, status), ready to return from a route.
     """
-    return jsonify({"error": {"code": code, "message": message}}), status
+    error = {"code": code, "message": message}
+    if extra:
+        error.update(extra)
+    return jsonify({"error": error}), status
 
 
 def get_repo():

@@ -4,6 +4,8 @@ Every test gets its own empty database in a temporary folder, so tests
 never touch database/catalog.db and never affect each other.
 """
 
+import sqlite3
+
 import pytest
 
 from backend.db.catalog_repository import CatalogRepository
@@ -174,3 +176,51 @@ def test_has_file_path(repo):
     doc = repo.add_document(make_doc())
     assert repo.has_file_path(doc.file_path) is True
     assert repo.has_file_path("/somewhere/else.pdf") is False
+
+
+# --- Interface language in app_config ---
+
+def test_language_defaults_to_english(repo):
+    """A saved project without a language choice uses English."""
+    repo.save_app_config("Research", "/archive")
+    assert repo.get_app_config()["language"] == "en"
+
+
+def test_save_language_before_any_project(repo):
+    """Picking a language first creates the row with empty fields."""
+    repo.save_language("es")
+    config = repo.get_app_config()
+    assert config["language"] == "es"
+    assert config["research_name"] == ""
+    assert config["target_directory"] == ""
+
+
+def test_save_language_keeps_project_settings(repo):
+    """Changing the language does not touch the project fields."""
+    repo.save_app_config("Research", "/archive")
+    repo.save_language("es")
+    config = repo.get_app_config()
+    assert config["research_name"] == "Research"
+    assert config["target_directory"] == "/archive"
+    assert config["language"] == "es"
+
+
+def test_init_db_adds_language_to_an_old_database(tmp_path):
+    """A database made before the language column gets it on start."""
+    db_path = str(tmp_path / "old.db")
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE app_config (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "research_name TEXT NOT NULL, target_directory TEXT NOT NULL, "
+        "app_lock_password_hash TEXT)")
+    conn.execute("INSERT INTO app_config (research_name, target_directory) "
+                 "VALUES ('Old', '/old')")
+    conn.commit()
+    conn.close()
+
+    init_db(db_path)
+    init_db(db_path)  # A second start must not fail or add it twice.
+
+    config = CatalogRepository(db_path).get_app_config()
+    assert config["research_name"] == "Old"
+    assert config["language"] == "en"
