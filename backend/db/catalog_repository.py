@@ -340,13 +340,15 @@ class CatalogRepository:
 
         Returns:
             dict or None: {'research_name', 'target_directory',
-                'app_lock_password_hash'}, or None before first setup.
+                'app_lock_password_hash', 'language'}, or None before
+                first setup.
         """
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
-                "app_lock_password_hash FROM app_config ORDER BY id LIMIT 1"
+                "app_lock_password_hash, language FROM app_config "
+                "ORDER BY id LIMIT 1"
             ).fetchone()
         finally:
             conn.close()
@@ -380,6 +382,36 @@ class CatalogRepository:
                     "UPDATE app_config SET research_name = ?, "
                     "target_directory = ? WHERE id = ?",
                     (research_name, target_directory, row["id"]),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def save_language(self, language):
+        """Save the interface language ('en' or 'es').
+
+        The user can pick a language before choosing a project, so the
+        app_config row is created here if it does not exist yet. Its
+        research_name and target_directory then stay empty strings.
+
+        Args:
+            language (str): Language code, already checked by the caller.
+        """
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT id FROM app_config ORDER BY id LIMIT 1"
+            ).fetchone()
+            if row is None:
+                conn.execute(
+                    "INSERT INTO app_config (research_name, "
+                    "target_directory, language) VALUES ('', '', ?)",
+                    (language,),
+                )
+            else:
+                conn.execute(
+                    "UPDATE app_config SET language = ? WHERE id = ?",
+                    (language, row["id"]),
                 )
             conn.commit()
         finally:

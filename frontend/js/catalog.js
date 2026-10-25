@@ -22,6 +22,9 @@ let editMode = false;
 const EDITABLE_TEXT_FIELDS = ["source", "document_date", "summary"];
 const STATUSES = ["Classified", "Manual Review"];
 
+// Longest summary the backend accepts (MAX_SUMMARY_LENGTH in Python).
+const MAX_SUMMARY_LENGTH = 100;
+
 /**
  * Collect the current tab, search text, and filters for GET /documents.
  * Empty values are left out so the backend ignores them.
@@ -82,16 +85,22 @@ function showToolbarMessage(text, isError) {
 async function saveField(id, field, value) {
     const fields = {};
     fields[field] = value.trim() === "" ? null : value.trim();
+    // Check the summary length here too, so the user gets a clear
+    // message instead of a generic error from the backend.
+    if (field === "summary" && fields.summary
+            && fields.summary.length > MAX_SUMMARY_LENGTH) {
+        showToolbarMessage(t("catalog.summary_limit"), true);
+        return null;
+    }
     const updatesSummary = field === "source" || field === "document_date";
     showToolbarMessage(updatesSummary
-        ? "Saving and updating the summary with your edit..."
-        : "Saving...", false);
+        ? t("catalog.saving_summary") : t("catalog.saving"), false);
     try {
         const updated = await updateDocument(id, fields);
-        showToolbarMessage("Saved.", false);
+        showToolbarMessage(t("catalog.saved"), false);
         return updated;
     } catch (error) {
-        showToolbarMessage(error.message || "Could not save.", true);
+        showToolbarMessage(errorText(error), true);
         return null;
     }
 }
@@ -135,8 +144,7 @@ function makeEditableCell(doc, field) {
             const summaryCell = cell.parentElement
                 .querySelector('[data-field="summary"]');
             summaryCell.textContent = updated.summary || "";
-            showToolbarMessage("Saved. The summary was updated using "
-                + "your edit.", false);
+            showToolbarMessage(t("catalog.saved_summary"), false);
         }
         Object.assign(doc, updated);
     });
@@ -152,15 +160,16 @@ function makeStatusCell(doc) {
     const statusClass =
         doc.status === "Manual Review" ? "nowrap status-review" : "nowrap";
     if (!editMode) {
-        return makeCell(doc.status, statusClass);
+        return makeCell(valueLabel(doc.status), statusClass);
     }
     const cell = makeCell("", "nowrap");
     const select = document.createElement("select");
     select.className = "status-select";
     STATUSES.forEach((status) => {
         const option = document.createElement("option");
+        // The value stays in English: it is what the database stores.
         option.value = status;
-        option.textContent = status;
+        option.textContent = valueLabel(status);
         select.appendChild(option);
     });
     select.value = doc.status;
@@ -188,7 +197,7 @@ function renderTable(documents) {
         // The two filename columns are locked, even in Edit Mode.
         row.appendChild(makeCell(doc.original_filename));
         row.appendChild(makeCell(doc.filename));
-        row.appendChild(makeCell(doc.media_type));
+        row.appendChild(makeCell(valueLabel(doc.media_type)));
 
         if (editMode) {
             EDITABLE_TEXT_FIELDS.forEach((field) => {
@@ -201,7 +210,8 @@ function renderTable(documents) {
                 row.appendChild(makeCell(doc.summary, "summary"));
             } else {
                 // Same placeholder as the wireframe for missing summaries.
-                row.appendChild(makeCell("Manual Summary", "placeholder"));
+                row.appendChild(makeCell(t("catalog.summary_placeholder"),
+                    "placeholder"));
             }
         }
         row.appendChild(makeStatusCell(doc));
@@ -233,7 +243,11 @@ function updateSourceFilter(allDocuments) {
         allDocuments.map((doc) => doc.source).filter(Boolean)
     )].sort();
 
-    select.innerHTML = '<option value="">Source: All</option>';
+    select.innerHTML = "";
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = t("catalog.filter_source_all");
+    select.appendChild(allOption);
     sources.forEach((source) => {
         const option = document.createElement("option");
         option.value = source;
@@ -251,9 +265,7 @@ function updateSourceFilter(allDocuments) {
 function renderOldInboxWarning(settings) {
     const warning = document.getElementById("catalog-warning");
     warning.textContent = settings.old_inbox_has_files
-        ? "Your old Inbox folder still has files. "
-            + "Move them to Drop Zone to catalog them."
-        : "";
+        ? t("catalog.old_inbox_warning") : "";
     warning.classList.toggle("hidden", !settings.old_inbox_has_files);
 }
 
@@ -262,7 +274,7 @@ function renderOldInboxWarning(settings) {
  * @param {Object} settings
  */
 function renderProjectHeader(settings) {
-    const name = settings.research_name || "No project yet";
+    const name = settings.research_name || t("header.no_project");
     document.getElementById("project-name").textContent = name;
     // The circle shows the first letter of the project name.
     document.getElementById("project-badge").textContent =
@@ -279,8 +291,7 @@ async function loadCatalog() {
         renderOldInboxWarning(settings);
 
         if (!settings.target_directory) {
-            showMessage("Go to Settings to choose the project folder "
-                + "and the AI provider.");
+            showMessage(t("catalog.no_folder"));
             return;
         }
 
@@ -291,21 +302,20 @@ async function loadCatalog() {
         const reviewCount = allDocuments
             .filter((doc) => doc.status === "Manual Review").length;
         document.getElementById("tab-review").textContent =
-            `Manual Review (${reviewCount})`;
+            t("catalog.tab_review", { n: reviewCount });
 
         if (allDocuments.length === 0) {
-            showMessage("Drop files into the Drop Zone folder inside "
-                + settings.target_directory
-                + " and they will appear here once they are classified.");
+            showMessage(t("catalog.empty",
+                { path: settings.target_directory }));
             return;
         }
 
         const documents = await getDocuments(readFilters());
-        showMessage(documents.length ? "" : "No files match your search.");
+        showMessage(documents.length ? "" : t("catalog.no_match"));
         renderTable(documents);
     } catch (error) {
-        showMessage("Could not load the catalog: "
-            + (error.message || "the app's backend is not responding."));
+        showMessage(t("catalog.load_failed",
+            { message: errorText(error) }));
     }
 }
 
@@ -336,10 +346,7 @@ document.getElementById("filter-source")
 // Edit Mode: redraw the table with editable cells, or back to plain text.
 document.getElementById("edit-mode").addEventListener("change", (event) => {
     editMode = event.target.checked;
-    showToolbarMessage(editMode
-        ? "Edit Mode is on. Click a cell to edit it. Automatic refresh "
-            + "is paused."
-        : "", false);
+    showToolbarMessage(editMode ? t("catalog.edit_mode_on") : "", false);
     loadCatalog();
 });
 
@@ -349,14 +356,17 @@ document.getElementById("download-button")
         try {
             const path = await exportDocuments(readFilters());
             if (path) {
-                showToolbarMessage("Worksheet saved to " + path, false);
+                showToolbarMessage(t("catalog.export_saved", { path: path }),
+                    false);
             }
         } catch (error) {
-            showToolbarMessage("Could not save the worksheet.", true);
+            showToolbarMessage(t("catalog.export_failed"), true);
         }
     });
 
-loadCatalog();
+// The first loadCatalog() call is made by startApp() in app.js, after
+// the saved language is known.
+
 // Refresh on a timer, except in Edit Mode, where a refresh would redraw
 // the table and erase what the user is typing.
 setInterval(() => {

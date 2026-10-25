@@ -15,6 +15,9 @@
  * If the chosen folder already has the user's own files, the backend
  * answers step 1 with a "folder_not_empty" warning. The button then
  * changes to "Save anyway", and the next click confirms the folder.
+ *
+ * The Language dropdown works on its own: a new choice is applied and
+ * saved right away (PUT /settings with only the language).
  */
 
 // Providers and models offered in the form. The key is the name the
@@ -47,12 +50,31 @@ const AI_PROVIDERS = {
 // True after the user has seen the folder warning and may confirm it.
 let folderWarningShown = false;
 
+// True when an API key is already saved, to pick the key field's hint.
+let hasSavedKey = false;
+
+/**
+ * Show "Save" or "Save anyway" on the button, in the current language.
+ */
+function updateSaveButton() {
+    document.getElementById("save-button").textContent = folderWarningShown
+        ? t("settings.save_anyway") : t("settings.save");
+}
+
+/**
+ * Show the API key field's hint, in the current language.
+ */
+function updateKeyPlaceholder() {
+    document.getElementById("api-key").placeholder = hasSavedKey
+        ? t("settings.api_key_saved") : t("settings.api_key_placeholder");
+}
+
 /**
  * Put the Save button back to normal and forget any folder warning.
  */
 function resetFolderWarning() {
     folderWarningShown = false;
-    document.getElementById("save-button").textContent = "Save";
+    updateSaveButton();
 }
 
 /**
@@ -115,15 +137,16 @@ async function loadSettings() {
                 settings.active_provider;
         }
         fillModels(settings.active_model);
+        document.getElementById("language-select").value =
+            settings.language;
 
-        const keyInput = document.getElementById("api-key");
-        keyInput.value = "";
-        keyInput.placeholder = settings.active_provider
-            ? "Saved. Type a new key only to replace it."
-            : "Paste your API key";
+        document.getElementById("api-key").value = "";
+        hasSavedKey = Boolean(settings.active_provider);
+        updateKeyPlaceholder();
+        updateSaveButton();
     } catch (error) {
-        showSettingsMessage("Could not load settings: " + error.message,
-            "error");
+        showSettingsMessage(t("settings.load_failed",
+            { message: errorText(error) }), "error");
     }
 }
 
@@ -143,7 +166,7 @@ async function saveSettings(event) {
     };
 
     saveButton.disabled = true;
-    showSettingsMessage("Saving and testing the AI connection...", "");
+    showSettingsMessage(t("settings.saving"), "");
     try {
         await updateSettings({
             research_name: document.getElementById("research-name").value,
@@ -154,18 +177,16 @@ async function saveSettings(event) {
         resetFolderWarning();
         await testAIProvider(providerData);
         await updateAIProvider(providerData);
-        showSettingsMessage("Settings saved. The AI connection works.",
-            "success");
+        showSettingsMessage(t("settings.saved"), "success");
         await loadSettings();
         // Refresh the catalog so the project name and folder update.
         loadCatalog();
     } catch (error) {
         if (error.code === "folder_not_empty") {
             folderWarningShown = true;
-            saveButton.textContent = "Save anyway";
+            updateSaveButton();
         }
-        showSettingsMessage(error.message || "Could not save settings.",
-            "error");
+        showSettingsMessage(errorText(error), "error");
     } finally {
         saveButton.disabled = false;
     }
@@ -180,6 +201,29 @@ async function browseFolder() {
     if (folder) {
         document.getElementById("target-directory").value = folder;
         resetFolderWarning();
+    }
+}
+
+/**
+ * Apply and save the language picked in the dropdown.
+ * Fixed text changes right away; the views are reloaded so the text
+ * built by JavaScript (tables, messages) changes too.
+ */
+async function changeLanguage() {
+    const language = document.getElementById("language-select").value;
+    setLanguage(language);
+    updateSaveButton();
+    updateKeyPlaceholder();
+    showSettingsMessage("", "");
+    loadCatalog();
+    if (!document.getElementById("view-dashboard")
+            .classList.contains("hidden")) {
+        loadDashboard();
+    }
+    try {
+        await updateSettings({ language: language });
+    } catch (error) {
+        showSettingsMessage(errorText(error), "error");
     }
 }
 
@@ -201,6 +245,8 @@ document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
+document.getElementById("language-select")
+    .addEventListener("change", changeLanguage);
 
-fillProviders();
-loadSettings();
+// fillProviders() and loadSettings() are first called by startApp() in
+// app.js, after the saved language is known.
