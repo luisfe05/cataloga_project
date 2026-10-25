@@ -5,7 +5,7 @@ import anthropic
 from backend.pipeline.ai_providers.base import AIProviderClient
 
 # Longest answer to ask for. Cataloga's answers are short (a label, a
-# summary under 500 characters, or a small JSON object).
+# summary under 100 characters, or a small JSON object).
 MAX_ANSWER_TOKENS = 1024
 
 
