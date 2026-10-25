@@ -104,9 +104,10 @@ def test_scan_processes_drop_zone_files_once(project):
     first = scan_once(project["db_path"])
     second = scan_once(project["db_path"])
 
-    assert [doc.filename for doc in first] == ["PR_001.txt"]
+    # FakeAI gives no topic, so the original name is used.
+    assert [doc.filename for doc in first] == ["1980_clip.txt"]
     assert second == []
-    assert (project["folder"] / "Press" / "PR_001.txt").is_file()
+    assert (project["folder"] / "Press" / "1980_clip.txt").is_file()
     assert not (drop_zone / "clip.txt").exists()
 
 
@@ -148,7 +149,7 @@ def test_scan_renames_old_inbox_and_processes_its_files(project):
 
     assert not inbox.exists()
     assert (project["folder"] / "Drop Zone").is_dir()
-    assert [doc.filename for doc in documents] == ["PR_001.txt"]
+    assert [doc.filename for doc in documents] == ["1980_clip.txt"]
 
 
 def test_old_inbox_has_files_with_both_folders(project):
