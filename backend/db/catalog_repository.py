@@ -19,6 +19,13 @@ STATUSES = ("Classified", "Manual Review")
 # Longest summary allowed (scope change of Oct 25, was 500).
 MAX_SUMMARY_LENGTH = 100
 
+# app_config columns that can be saved one at a time.
+SINGLE_CONFIG_COLUMNS = ("language", "naming_template")
+
+# Naming template used before the user picks one (method 1). Same as
+# naming.DEFAULT_TEMPLATE and the column default in schema.py.
+DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
+
 # How many entries the dashboard's recent activity list shows.
 RECENT_ACTIVITY_LIMIT = 10
 
@@ -340,14 +347,15 @@ class CatalogRepository:
 
         Returns:
             dict or None: {'research_name', 'target_directory',
-                'app_lock_password_hash', 'language'}, or None before
-                first setup.
+                'app_lock_password_hash', 'language', 'naming_template'},
+                or None before first setup.
         """
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
-                "app_lock_password_hash, language FROM app_config "
+                "app_lock_password_hash, language, naming_template "
+                "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
         finally:
@@ -387,16 +395,24 @@ class CatalogRepository:
         finally:
             conn.close()
 
-    def save_language(self, language):
-        """Save the interface language ('en' or 'es').
+    def save_config_value(self, column, value):
+        """Save one setting in the app_config row.
 
-        The user can pick a language before choosing a project, so the
-        app_config row is created here if it does not exist yet. Its
-        research_name and target_directory then stay empty strings.
+        Some settings (like the language) can be picked before the user
+        chooses a project, so the row is created here if it does not
+        exist yet. Its research_name and target_directory then stay
+        empty strings.
 
         Args:
-            language (str): Language code, already checked by the caller.
+            column (str): One of SINGLE_CONFIG_COLUMNS. The name is put
+                into the SQL text, so only these fixed names are allowed.
+            value (str): The new value, already checked by the caller.
+
+        Raises:
+            ValueError: If column is not in SINGLE_CONFIG_COLUMNS.
         """
+        if column not in SINGLE_CONFIG_COLUMNS:
+            raise ValueError(column + " is not a single setting")
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -405,17 +421,62 @@ class CatalogRepository:
             if row is None:
                 conn.execute(
                     "INSERT INTO app_config (research_name, "
-                    "target_directory, language) VALUES ('', '', ?)",
-                    (language,),
+                    "target_directory, " + column + ") VALUES ('', '', ?)",
+                    (value,),
                 )
             else:
                 conn.execute(
-                    "UPDATE app_config SET language = ? WHERE id = ?",
-                    (language, row["id"]),
+                    "UPDATE app_config SET " + column + " = ? WHERE id = ?",
+                    (value, row["id"]),
                 )
             conn.commit()
         finally:
             conn.close()
+
+    def save_language(self, language):
+        """Save the interface language ('en' or 'es').
+
+        Args:
+            language (str): Language code, already checked by the caller.
+        """
+        self.save_config_value("language", language)
+
+    def save_naming_template(self, template):
+        """Save the file naming template, e.g. '{date}_{topic}'.
+
+        Args:
+            template (str): A template already checked with
+                naming.validate_template().
+        """
+        self.save_config_value("naming_template", template)
+
+    def get_naming_template(self):
+        """Return the saved naming template, or the default one.
+
+        Returns:
+            str: For example '{date}_{topic}'.
+        """
+        config = self.get_app_config()
+        if config and config["naming_template"]:
+            return config["naming_template"]
+        return DEFAULT_NAMING_TEMPLATE
+
+    def next_number(self):
+        """Return the number for the next file added to the catalog.
+
+        It is the highest document id plus one, so it is unique in this
+        catalog and never repeats, even if a row is deleted.
+
+        Returns:
+            int: 1 for an empty catalog.
+        """
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT MAX(id) AS highest FROM documents").fetchone()
+        finally:
+            conn.close()
+        return (row["highest"] or 0) + 1
 
     def get_active_provider(self):
         """Return the active AI provider and model, or None if unset.

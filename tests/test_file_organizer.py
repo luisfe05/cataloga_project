@@ -91,66 +91,66 @@ def test_ensure_archive_structure_keeps_existing_files(organizer):
     assert os.path.isfile(path)
 
 
-def test_first_serial_filename(organizer):
-    """An empty folder starts at 001."""
-    name = organizer.generate_serial_filename("Documents", ".pdf")
-    assert name == "D_001.pdf"
+def test_unique_filename_free_name_is_kept(organizer):
+    """A name that is not taken comes back unchanged."""
+    folder = organizer.folder_for("Press")
+    assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
+        "2026-07-15_malta.pdf"
 
 
-def test_serial_uses_highest_number(organizer):
-    """The next number follows the highest one, even with a gap."""
-    folder = organizer.folder_for("Documents")
-    make_file(folder, "D_001.pdf")
-    make_file(folder, "D_003.txt")
-    name = organizer.generate_serial_filename("Documents", ".pdf")
-    assert name == "D_004.pdf"
-
-
-def test_serial_ignores_other_files(organizer):
-    """Files that don't follow the serial pattern are not counted."""
-    folder = organizer.folder_for("Photos")
-    make_file(folder, "notes.txt")
-    make_file(folder, "PR_009.pdf")
-    name = organizer.generate_serial_filename("Photos", ".jpg")
-    assert name == "P_001.jpg"
-
-
-def test_serial_extension_is_lowercase(organizer):
-    """'.PDF' is saved as '.pdf'."""
-    name = organizer.generate_serial_filename("Press", ".PDF")
-    assert name == "PR_001.pdf"
+def test_unique_filename_adds_2_then_3(organizer):
+    """Taken names get -2, then -3, before the extension."""
+    folder = organizer.folder_for("Press")
+    make_file(folder, "2026-07-15_malta.pdf")
+    assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
+        "2026-07-15_malta-2.pdf"
+    make_file(folder, "2026-07-15_malta-2.pdf")
+    assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
+        "2026-07-15_malta-3.pdf"
 
 
 def test_unknown_media_type_raises_value_error(organizer):
     """Only the five valid media types are accepted."""
     with pytest.raises(ValueError):
-        organizer.generate_serial_filename("NewsPaper", ".pdf")
+        organizer.folder_for("NewsPaper")
 
 
 def test_move_and_rename_file(organizer, tmp_path):
-    """The file ends up in its folder with its serial name."""
+    """The file ends up in its folder with its new name."""
     original = make_file(str(tmp_path / "drop_zone"), "scan.pdf", "hello")
-    new_path = organizer.move_and_rename_file(original, "Press")
+    new_path = organizer.move_and_rename_file(
+        original, "Press", "2026-07-15_malta.pdf")
 
     assert new_path == os.path.join(organizer.target_directory, "Press",
-                                    "PR_001.pdf")
+                                    "2026-07-15_malta.pdf")
     assert os.path.isfile(new_path)
     assert not os.path.exists(original)
     with open(new_path) as file:
         assert file.read() == "hello"
 
 
-def test_move_two_files_get_different_names(organizer, tmp_path):
-    """Two files of the same type never share a serial name."""
-    first = make_file(str(tmp_path / "drop_zone"), "a.pdf")
-    second = make_file(str(tmp_path / "drop_zone"), "b.pdf")
-    path_one = organizer.move_and_rename_file(first, "Documents")
-    path_two = organizer.move_and_rename_file(second, "Documents")
-    assert os.path.basename(path_one) == "D_001.pdf"
-    assert os.path.basename(path_two) == "D_002.pdf"
+def test_move_two_files_with_the_same_name(organizer, tmp_path):
+    """Two files that get the same name never overwrite each other."""
+    first = make_file(str(tmp_path / "drop_zone"), "a.pdf", "first")
+    second = make_file(str(tmp_path / "drop_zone"), "b.pdf", "second")
+    path_one = organizer.move_and_rename_file(first, "Documents", "x.pdf")
+    path_two = organizer.move_and_rename_file(second, "Documents", "x.pdf")
+    assert os.path.basename(path_one) == "x.pdf"
+    assert os.path.basename(path_two) == "x-2.pdf"
+    with open(path_one) as file:
+        assert file.read() == "first"
+
+
+def test_existing_cataloged_files_keep_their_names(organizer, tmp_path):
+    """Old serial names (PR_001) are never renamed by a new file."""
+    old = make_file(organizer.folder_for("Press"), "PR_001.pdf", "old")
+    new = make_file(str(tmp_path / "drop_zone"), "c.pdf")
+    organizer.move_and_rename_file(new, "Press", "2026-07-15_malta.pdf")
+    assert os.path.isfile(old)
 
 
 def test_move_missing_file_raises(organizer, tmp_path):
     """Moving a file that does not exist raises FileNotFoundError."""
     with pytest.raises(FileNotFoundError):
-        organizer.move_and_rename_file(str(tmp_path / "nope.pdf"), "Press")
+        organizer.move_and_rename_file(str(tmp_path / "nope.pdf"), "Press",
+                                       "x.pdf")

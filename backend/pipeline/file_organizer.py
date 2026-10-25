@@ -1,9 +1,10 @@
 """FileOrganizer.
 
-Handles the archive's folder structure and the serial renaming of files
-after classification. Creates the five media-type subdirectories if they
-don't exist, generates the next serial filename for a given type, and
-moves the original file into the correct subdirectory.
+Handles the archive's folder structure and moves each cataloged file
+into its media-type folder under its new name. Creates the five
+media-type subdirectories if they don't exist. The new name itself is
+built in naming.py; FileOrganizer only makes sure it is not taken,
+adding -2, -3, and so on when it is.
 
 New files are dropped into the Drop Zone folder. Only Drop Zone is
 processed, so anything else the user already had in the project folder
@@ -15,17 +16,10 @@ database: CatalogRepository owns all database reads and writes.
 """
 
 import os
-import re
 import shutil
 
-# Maps each media type to its serial filename prefix.
-MEDIA_TYPE_PREFIXES = {
-    "Press": "PR",
-    "Audio": "A",
-    "Video": "V",
-    "Photos": "P",
-    "Documents": "D",
-}
+# The five media-type folders.
+MEDIA_TYPES = ("Press", "Audio", "Video", "Photos", "Documents")
 
 # Subfolder where the user drops new files to be cataloged.
 DROP_ZONE_FOLDER = "Drop Zone"
@@ -44,7 +38,6 @@ class FileOrganizer:
             target_directory (str): Absolute path to the root archive folder.
         """
         self.target_directory = target_directory
-        self.media_type_prefixes = MEDIA_TYPE_PREFIXES
 
     def folder_for(self, media_type):
         """Return the path of the subfolder for a media type.
@@ -58,7 +51,7 @@ class FileOrganizer:
         Raises:
             ValueError: If media_type is not one of the five valid types.
         """
-        if media_type not in self.media_type_prefixes:
+        if media_type not in MEDIA_TYPES:
             raise ValueError("Unknown media type: " + str(media_type))
         return os.path.join(self.target_directory, media_type)
 
@@ -108,7 +101,7 @@ class FileOrganizer:
         """
         # exist_ok=True means no error if the folder is already there.
         os.makedirs(self.drop_zone_folder(), exist_ok=True)
-        for media_type in self.media_type_prefixes:
+        for media_type in MEDIA_TYPES:
             os.makedirs(self.folder_for(media_type), exist_ok=True)
 
     def count_existing_items(self):
@@ -123,7 +116,7 @@ class FileOrganizer:
         """
         if not os.path.isdir(self.target_directory):
             return 0
-        own_folders = set(self.media_type_prefixes) | {DROP_ZONE_FOLDER}
+        own_folders = set(MEDIA_TYPES) | {DROP_ZONE_FOLDER}
         count = 0
         for name in os.listdir(self.target_directory):
             if name.startswith(".") or name in own_folders:
@@ -131,47 +124,37 @@ class FileOrganizer:
             count += 1
         return count
 
-    def generate_serial_filename(self, media_type, extension):
-        """Build the next available serial filename for a media type.
+    def unique_filename(self, folder, filename):
+        """Return a name that is not taken yet in a folder.
 
-        Looks at the files already in the media type's folder, finds the
-        highest serial number in use, and returns the next one. Using the
-        highest number (not a count of files) means a deleted file never
-        causes a repeated name.
-
-        Example: Documents/ has D_001.pdf and D_003.txt -> 'D_004.pdf'
+        Example: if 2026-07-15_malta.pdf exists, the result is
+        2026-07-15_malta-2.pdf, then -3, and so on.
 
         Args:
-            media_type (str): One of the five valid media types.
-            extension (str): File extension including the dot
-                (e.g. '.pdf'). Saved in lowercase.
+            folder (str): The folder the file will go into.
+            filename (str): The name the file should get.
 
         Returns:
-            str: The new filename (e.g. 'D_004.pdf').
+            str: filename itself, or filename with -2, -3... added
+                before the extension.
         """
-        folder = self.folder_for(media_type)
-        prefix = self.media_type_prefixes[media_type]
+        base, extension = os.path.splitext(filename)
+        candidate = filename
+        number = 2
+        while os.path.exists(os.path.join(folder, candidate)):
+            candidate = "{}-{}{}".format(base, number, extension)
+            number += 1
+        return candidate
 
-        # Matches names like D_001.pdf and captures the number part.
-        pattern = re.compile("^" + prefix + r"_(\d+)\.")
-
-        highest = 0
-        if os.path.isdir(folder):
-            for name in os.listdir(folder):
-                match = pattern.match(name)
-                if match:
-                    highest = max(highest, int(match.group(1)))
-
-        # :03d pads the number with zeros to 3 digits: 4 -> 004.
-        return "{}_{:03d}{}".format(prefix, highest + 1, extension.lower())
-
-    def move_and_rename_file(self, original_path, media_type):
-        """Move a file into its media-type folder with its serial name.
+    def move_and_rename_file(self, original_path, media_type, new_filename):
+        """Move a file into its media-type folder with its new name.
 
         Args:
             original_path (str): Absolute path to the file before
                 classification.
             media_type (str): Determines which subdirectory to move it into.
+            new_filename (str): The name built by naming.make_filename().
+                If it is taken, -2, -3... is added.
 
         Returns:
             str: The absolute path to the file in its new location. The new
@@ -187,10 +170,8 @@ class FileOrganizer:
         folder = self.folder_for(media_type)
         os.makedirs(folder, exist_ok=True)
 
-        # splitext splits 'scan.PDF' into ('scan', '.PDF').
-        extension = os.path.splitext(original_path)[1]
-        new_filename = self.generate_serial_filename(media_type, extension)
-        new_path = os.path.join(folder, new_filename)
+        new_path = os.path.join(folder,
+                                self.unique_filename(folder, new_filename))
 
         # shutil.move also works when the archive is on an external drive,
         # where a plain rename between drives would fail.

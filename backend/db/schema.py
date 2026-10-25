@@ -91,13 +91,18 @@ CREATE TABLE IF NOT EXISTS app_config (
     research_name           TEXT    NOT NULL,
     target_directory        TEXT    NOT NULL,
     app_lock_password_hash  TEXT,
-    language                TEXT    NOT NULL DEFAULT 'en'
+    language                TEXT    NOT NULL DEFAULT 'en',
+    naming_template         TEXT    NOT NULL DEFAULT '{date}_{topic}'
 );
 """
 
-# Added after the first release. Databases made before it get the
-# column from add_language_column().
-LANGUAGE_COLUMN = "language TEXT NOT NULL DEFAULT 'en'"
+# app_config columns added after the first release. Databases made
+# before them get them from add_missing_columns().
+ADDED_APP_CONFIG_COLUMNS = {
+    "language": "language TEXT NOT NULL DEFAULT 'en'",
+    "naming_template":
+        "naming_template TEXT NOT NULL DEFAULT '{date}_{topic}'",
+}
 
 CREATE_AI_PROVIDER_CONFIG = """
 CREATE TABLE IF NOT EXISTS ai_provider_config (
@@ -125,8 +130,8 @@ def get_connection(db_path=DB_PATH):
     return conn
 
 
-def add_language_column(cursor):
-    """Add the language column to app_config if the table lacks it.
+def add_missing_columns(cursor):
+    """Add any app_config column that an older database lacks.
 
     CREATE TABLE IF NOT EXISTS does not change a table that already
     exists, so an older database needs this extra step.
@@ -137,9 +142,10 @@ def add_language_column(cursor):
     # PRAGMA table_info lists one row per column; row[1] is its name.
     columns = [row[1] for row in
                cursor.execute("PRAGMA table_info(app_config)")]
-    if "language" not in columns:
-        cursor.execute("ALTER TABLE app_config ADD COLUMN " +
-                       LANGUAGE_COLUMN)
+    for name, definition in ADDED_APP_CONFIG_COLUMNS.items():
+        if name not in columns:
+            cursor.execute("ALTER TABLE app_config ADD COLUMN " +
+                           definition)
 
 
 def init_db(db_path=DB_PATH):
@@ -155,6 +161,6 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_ACTIVITY_LOG)
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
-    add_language_column(cursor)
+    add_missing_columns(cursor)
     conn.commit()
     conn.close()

@@ -34,7 +34,8 @@ class Document:
         Args:
             original_filename (str): The file's name before
                 classification. Locked.
-            filename (str): The generated serial name (e.g. D_001.pdf). Locked.
+            filename (str): The new name from the naming method (e.g.
+                2026-07-15_oceanman-malta.pdf). Locked.
             media_type (str): One of MEDIA_TYPES.
             file_path (str): Absolute path to the file after it was moved.
             date_added (str): ISO timestamp when the file was added to

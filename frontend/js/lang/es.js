@@ -110,6 +110,34 @@ const LANG_ES = {
     "lang.en": "English",
     "lang.es": "Español (Latinoamérica)",
 
+    // Settings: file names
+    "naming.title": "Nombres de archivo",
+    "naming.hint": "Elige cómo Cataloga nombra los archivos nuevos. Los "
+        + "archivos que ya están en el catálogo conservan su nombre.",
+    "naming.m1": "Fecha y tema",
+    "naming.m1_example": "2026-07-15_oceanman-malta.pdf",
+    "naming.m2": "Fuente, fecha y tema",
+    "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
+    "naming.m3": "Número y tema",
+    "naming.m3_example": "0001_oceanman-malta.pdf",
+    "naming.custom": "Personalizado",
+    "naming.template": "Plantilla",
+    "naming.template_help":
+        "Usa {date}, {source}, {topic}, {number} y {original}.",
+    "naming.preview": "Vista previa",
+    "naming.media_rule": "Las fotos, el audio y el video usan la fecha del "
+        + "archivo y un número, por ejemplo 2026-07-15_0001.jpg.",
+    "naming.duplicate_rule":
+        "Si el nombre ya existe, Cataloga agrega -2, -3 y así.",
+    "naming.changed_note": "Solo los archivos nuevos usarán este método.",
+    "naming.err_empty": "Escribe una plantilla o elige uno de los 3 métodos.",
+    "naming.err_no_token": "Agrega al menos uno de estos: {date}, {source}, "
+        + "{topic}, {number} o {original}.",
+    "naming.err_unknown": "{token} no es una parte válida. Usa {date}, "
+        + "{source}, {topic}, {number} o {original}.",
+    "naming.err_chars": "Los nombres de archivo no pueden usar estos "
+        + "caracteres: / \\ : * ? \" < > |",
+
     // Labels for values stored in the database. The stored value itself
     // never changes; only what the user sees.
     "value.Press": "Prensa",

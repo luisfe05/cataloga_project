@@ -224,6 +224,54 @@ body {
     margin-bottom: 20px;
 }
 
+/* File names section in Settings */
+.naming-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.settings-form .naming-option {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-weight: 400;
+    margin-bottom: 0;
+}
+
+.settings-form .naming-option input {
+    margin: 0;
+    padding: 0;
+}
+
+.naming-option code,
+.naming-preview code {
+    font-size: 0.8rem;
+    color: #6b6b75;
+}
+
+.naming-custom {
+    display: flex;
+    flex-direction: column;
+}
+
+.naming-custom .hint {
+    margin: -12px 0 16px;
+}
+
+.naming-preview {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.naming-rules {
+    color: #6b6b75;
+    font-size: 0.8rem;
+    margin: 8px 0 24px;
+    padding-left: 18px;
+}
+
 .folder-row {
     display: flex;
     gap: 8px;

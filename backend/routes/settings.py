@@ -3,7 +3,8 @@
 Endpoints:
     GET  /settings                      Return current app config.
     PUT  /settings                      Update research_name,
-                                        target_directory, and language.
+                                        target_directory, language, and
+                                        naming_template.
     PUT  /settings/ai-provider          Update provider and model,
                                         write API key to keyring.
     POST /settings/ai-provider/test     Test whether the provider
@@ -18,6 +19,7 @@ from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
 from backend.pipeline.ai_providers.base import save_api_key
+from backend.pipeline import naming
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import error_response, get_repo
 
@@ -85,7 +87,7 @@ def save_language_only(body):
 
 @settings_bp.route("/settings", methods=["PUT"])
 def update_settings():
-    """Update research_name, target_directory, and language.
+    """Update research_name, target_directory, language, and template.
 
     The folder must already exist (for example, an external drive must
     be connected). Drop Zone and the five media-type folders are created
@@ -101,13 +103,15 @@ def update_settings():
     A body with only 'language' saves just the language.
 
     Request body (JSON): research_name, target_directory, and optional
-                         confirm_folder (bool) and language ('en' or
-                         'es').
+                         confirm_folder (bool), language ('en' or
+                         'es'), and naming_template (str).
 
     Returns:
         200: JSON of updated settings.
-        400: If a field is missing, the folder does not exist, or the
-             language is not supported.
+        400: If a field is missing, the folder does not exist, the
+             language is not supported, or the naming template is not
+             valid. An 'invalid_template' error includes 'reason'
+             ('empty', 'no_token', 'unknown', 'chars') and 'token'.
         409: If a new folder has content and was not confirmed yet. The
              error includes 'count', the number of items found.
     """
@@ -126,6 +130,13 @@ def update_settings():
         return error_response(
             "invalid_language",
             "language must be one of: " + ", ".join(LANGUAGES), 400)
+    if "naming_template" in body:
+        problem = naming.validate_template(body["naming_template"])
+        if problem:
+            return error_response(
+                "invalid_template",
+                "The naming template is not valid: " + problem["reason"],
+                400, extra=problem)
 
     # expanduser turns "~/Documents" into "/Users/<name>/Documents".
     values["target_directory"] = os.path.expanduser(
@@ -155,6 +166,8 @@ def update_settings():
     organizer.ensure_archive_structure()
     if "language" in body:
         config.update_language(body["language"])
+    if "naming_template" in body:
+        config.update_naming_template(body["naming_template"])
     config.update_settings(values["research_name"],
                            values["target_directory"])
     return jsonify(config.get_settings()), 200
