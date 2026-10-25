@@ -224,3 +224,56 @@ def test_init_db_adds_language_to_an_old_database(tmp_path):
     config = CatalogRepository(db_path).get_app_config()
     assert config["research_name"] == "Old"
     assert config["language"] == "en"
+
+
+# --- File naming template and numbers ---
+
+def test_naming_template_defaults_to_method_1(repo):
+    """Before the user picks one, method 1 is used."""
+    assert repo.get_naming_template() == "{date}_{topic}"
+    repo.save_app_config("Research", "/archive")
+    assert repo.get_naming_template() == "{date}_{topic}"
+
+
+def test_save_naming_template_keeps_other_settings(repo):
+    """Saving the template does not touch the project or language."""
+    repo.save_app_config("Research", "/archive")
+    repo.save_language("es")
+    repo.save_naming_template("{number}_{topic}")
+    config = repo.get_app_config()
+    assert config["naming_template"] == "{number}_{topic}"
+    assert config["language"] == "es"
+    assert config["target_directory"] == "/archive"
+
+
+def test_save_config_value_rejects_other_columns(repo):
+    """Only the fixed setting names can be written one at a time."""
+    with pytest.raises(ValueError):
+        repo.save_config_value("target_directory", "/x")
+
+
+def test_next_number_follows_the_highest_id(repo):
+    """The next file number is one more than the last document id."""
+    assert repo.next_number() == 1
+    repo.add_document(make_doc("a.pdf"))
+    repo.add_document(make_doc("b.pdf"))
+    assert repo.next_number() == 3
+
+
+def test_init_db_adds_naming_template_to_an_old_database(tmp_path):
+    """An old database gets the naming column with method 1."""
+    db_path = str(tmp_path / "old.db")
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        "CREATE TABLE app_config (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "research_name TEXT NOT NULL, target_directory TEXT NOT NULL, "
+        "app_lock_password_hash TEXT)")
+    conn.execute("INSERT INTO app_config (research_name, target_directory) "
+                 "VALUES ('Old', '/old')")
+    conn.commit()
+    conn.close()
+
+    init_db(db_path)
+
+    assert CatalogRepository(db_path).get_naming_template() == \
+        "{date}_{topic}"

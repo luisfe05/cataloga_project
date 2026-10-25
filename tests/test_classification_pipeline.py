@@ -6,6 +6,7 @@ never hit a real API.
 """
 
 import os
+import time
 
 import pytest
 from pypdf import PdfWriter
@@ -19,7 +20,11 @@ from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, parse_json_answer)
 from backend.pipeline.file_organizer import FileOrganizer
 
-GOOD_METADATA = '{"source": "El Nuevo Dia", "document_date": "1964-10-12"}'
+GOOD_METADATA = ('{"source": "El Nuevo Día", "document_date": "1964-10-12",'
+                 ' "topic": "Malta Olímpica"}')
+
+# 2026-07-15 at noon, local time, used as a file's modified date.
+JULY_15 = time.mktime((2026, 7, 15, 12, 0, 0, 0, 0, -1))
 
 
 class FakeAI(AIProviderClient):
@@ -97,10 +102,10 @@ def test_readable_file_is_fully_classified(setup):
 
     assert doc.id == 1
     assert doc.original_filename == "clipping.txt"
-    assert doc.filename == "PR_001.txt"
+    assert doc.filename == "1964-10-12_malta-olimpica.txt"
     assert doc.media_type == "Press"
     assert doc.summary == "A news story."
-    assert doc.source == "El Nuevo Dia"
+    assert doc.source == "El Nuevo Día"
     assert doc.document_date == "1964-10-12"
     assert doc.status == "Classified"
     assert os.path.isfile(doc.file_path)
@@ -128,7 +133,7 @@ def test_invalid_classification_uses_fallback_folder(setup):
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.media_type == "Documents"
-    assert doc.filename == "D_001.txt"
+    assert doc.filename == "1964-10-12_malta-olimpica.txt"
 
 
 def test_photo_is_sorted_without_ai(setup):
@@ -137,11 +142,12 @@ def test_photo_is_sorted_without_ai(setup):
     path = str(setup["drop_zone"] / "team.JPG")
     with open(path, "wb") as file:
         file.write(b"fake image bytes")
+    os.utime(path, (JULY_15, JULY_15))
 
     doc = pipeline.classify_document(path)
 
     assert doc.media_type == "Photos"
-    assert doc.filename == "P_001.jpg"
+    assert doc.filename == "2026-07-15_0001.jpg"
     assert doc.status == "Manual Review"
     assert ai.calls == 0
 
@@ -149,10 +155,11 @@ def test_photo_is_sorted_without_ai(setup):
 def test_scanned_pdf_is_flagged_for_manual_summary(setup):
     """A PDF with no text is moved and flagged, not skipped."""
     pipeline, ai = setup["build"]()
-    doc = pipeline.classify_document(
-        make_blank_pdf(setup["drop_zone"], "scan.pdf"))
+    path = make_blank_pdf(setup["drop_zone"], "scan.pdf")
+    os.utime(path, (JULY_15, JULY_15))
+    doc = pipeline.classify_document(path)
     assert doc.media_type == "Documents"
-    assert doc.filename == "D_001.pdf"
+    assert doc.filename == "2026-07-15_0001.pdf"
     assert doc.summary is None
     assert doc.status == "Manual Review"
     assert ai.calls == 0
@@ -176,8 +183,10 @@ def test_process_batch_handles_every_file(setup):
     paths = [make_text_file(setup["drop_zone"], name)
              for name in ("a.txt", "b.txt", "c.txt")]
     documents = pipeline.process_batch(paths)
+    # Same date and topic, so the names get -2 and -3.
     assert [doc.filename for doc in documents] == [
-        "PR_001.txt", "PR_002.txt", "PR_003.txt"]
+        "1964-10-12_malta-olimpica.txt", "1964-10-12_malta-olimpica-2.txt",
+        "1964-10-12_malta-olimpica-3.txt"]
     assert len(setup["repo"].get_all_documents()) == 3
 
 
@@ -203,6 +212,62 @@ def test_process_batch_continues_after_a_missing_file(setup):
     missing = str(setup["drop_zone"] / "deleted.txt")
     documents = pipeline.process_batch([missing, good])
     assert [doc.original_filename for doc in documents] == ["good.txt"]
+
+
+# --- File names ---
+
+def test_each_method_names_the_file(setup):
+    """Methods 2 and 3 use the source and the catalog number."""
+    pipeline, ai = setup["build"]()
+    setup["repo"].save_naming_template("{source}_{date}_{topic}")
+    first = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
+    setup["repo"].save_naming_template("{number}_{topic}")
+    second = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "b.txt"))
+    assert first.filename == "el-nuevo-dia_1964-10-12_malta-olimpica.txt"
+    assert second.filename == "0002_malta-olimpica.txt"
+
+
+def test_missing_date_source_and_topic(setup):
+    """No date gives 'undated', no source is left out, no topic uses
+    the original name."""
+    replies = {"classify": "Documents", "summary": "A letter.",
+               "metadata": '{"source": null, "document_date": null, '
+                           '"topic": null}'}
+    pipeline, ai = setup["build"](replies)
+    setup["repo"].save_naming_template("{source}_{date}_{topic}")
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "Carta de Ramón.txt"))
+    assert doc.filename == "undated_carta-de-ramon.txt"
+
+
+def test_custom_template_with_original(setup):
+    """A custom template can use the original name as a slug."""
+    pipeline, ai = setup["build"]()
+    setup["repo"].save_naming_template("{date}-{original}")
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "Scan Letter.TXT"))
+    assert doc.filename == "1964-10-12-scan-letter.txt"
+
+
+def test_photo_ignores_the_custom_template(setup):
+    """Files without text always use the file date and number."""
+    pipeline, ai = setup["build"]()
+    setup["repo"].save_naming_template("{source}_{topic}")
+    path = str(setup["drop_zone"] / "team.png")
+    with open(path, "wb") as file:
+        file.write(b"fake image bytes")
+    os.utime(path, (JULY_15, JULY_15))
+    assert pipeline.classify_document(path).filename == "2026-07-15_0001.png"
+
+
+def test_topic_comes_in_the_metadata_request(setup):
+    """Naming adds no AI request: still 3 calls per readable file."""
+    pipeline, ai = setup["build"]()
+    pipeline.classify_document(make_text_file(setup["drop_zone"], "a.txt"))
+    assert ai.calls == 3
+    assert '"topic"' in classification_pipeline.METADATA_PROMPT
 
 
 @pytest.mark.parametrize("answer, expected", [

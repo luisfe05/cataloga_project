@@ -2,15 +2,20 @@
 
 Orchestrates the full classification flow for a single file or a batch:
 1. Extract the text from the file (PDF and plain text files only).
-2. Ask the AI provider for the media type, a summary, the source, and
-   the document date.
+2. Ask the AI provider for the media type, a summary, and (in one
+   request) the source, the document date, and a short topic.
 3. Validate completeness: flag as Manual Review if any field is missing.
-4. Generate a serial filename and move the file to the right subdirectory.
+4. Build the new name from the project's naming template (naming.py) and
+   move the file to the right subdirectory.
 5. Hand the finished Document object to CatalogRepository for storage.
 
 Photos, audio, and video are sorted into their folder by file extension.
 Their content is never sent to the AI (that is out of scope for the MVP),
-so they always end up in Manual Review for a manual summary.
+so they always end up in Manual Review for a manual summary. Files
+without text are named with the file date and a number.
+
+The template and the number come from this pipeline's own
+CatalogRepository, so each catalog keeps its own naming method.
 """
 
 import json
@@ -20,6 +25,7 @@ from datetime import datetime
 from pypdf import PdfReader
 
 from backend.models.document import Document
+from backend.pipeline import naming
 
 # File types sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
@@ -58,11 +64,16 @@ From the document text, find:
 - document_date: the date written on the document itself, as YYYY-MM-DD.
   If only the year and month are known use YYYY-MM, if only the year is
   known use YYYY.
+- topic: the main subject of the document in 2 to 4 words, in the
+  document's language. It is used in the file name.
 
 Use null for anything the text does not say. Do not guess.
 
 Respond with ONLY a JSON object in this exact format:
-{"source": "...", "document_date": "..."}"""
+{"source": "...", "document_date": "...", "topic": "..."}"""
+
+# Fields read from the AI's metadata answer.
+METADATA_FIELDS = ("source", "document_date", "topic")
 
 
 def now_timestamp():
@@ -160,7 +171,8 @@ class ClassificationPipeline:
 
         media_type = None
         summary = None
-        metadata = {"source": None, "document_date": None}
+        metadata = {"source": None, "document_date": None, "topic": None}
+        has_text = False
 
         if extension in EXTENSION_MEDIA_TYPES:
             # Photos, audio, video: the extension decides the folder.
@@ -168,6 +180,7 @@ class ClassificationPipeline:
         elif extension in READABLE_EXTENSIONS:
             text = extract_text(file_path)
             if text:
+                has_text = True
                 media_type = self.ai_client.send_classification_request(text)
                 summary = self.generate_summary(text)
                 metadata = self.extract_metadata(text)
@@ -177,8 +190,9 @@ class ClassificationPipeline:
         if media_type is None:
             media_type = FALLBACK_MEDIA_TYPE
 
-        new_path = self.file_organizer.move_and_rename_file(file_path,
-                                                            media_type)
+        new_filename = self.build_filename(file_path, has_text, metadata)
+        new_path = self.file_organizer.move_and_rename_file(
+            file_path, media_type, new_filename)
 
         document = Document(
             original_filename=original_filename,
@@ -193,6 +207,39 @@ class ClassificationPipeline:
         )
         self.validate_completeness(document)
         return self.db.add_document(document)
+
+    def build_filename(self, file_path, has_text, metadata):
+        """Build the new file name with the project's naming method.
+
+        Files with text use the template saved in this catalog. Files
+        without text (photos, audio, video, scans) always use the file
+        date and a number, whatever the method.
+
+        Args:
+            file_path (str): The file, still in the Drop Zone.
+            has_text (bool): True if text was read from the file.
+            metadata (dict): source, document_date, and topic from the AI.
+
+        Returns:
+            str: The new name, e.g. '2026-07-15_oceanman-malta.pdf'. The
+                FileOrganizer adds -2, -3... if it is taken.
+        """
+        original_filename = os.path.basename(file_path)
+        extension = os.path.splitext(file_path)[1]
+        number = self.db.next_number()
+        if has_text:
+            template = self.db.get_naming_template()
+            parts = naming.build_parts(
+                original_filename, number,
+                document_date=metadata["document_date"],
+                source=metadata["source"],
+                topic=metadata["topic"])
+        else:
+            template = naming.NO_TEXT_TEMPLATE
+            parts = naming.build_parts(
+                original_filename, number,
+                document_date=naming.file_date(file_path))
+        return naming.make_filename(template, parts, extension)
 
     def generate_summary(self, text):
         """Request a content summary from the AI provider.
@@ -231,19 +278,22 @@ class ClassificationPipeline:
         return self.db.update_document(document.id, {"summary": summary})
 
     def extract_metadata(self, text):
-        """Ask the AI to pull source and document date from the text.
+        """Ask the AI to pull source, document date, and topic from the text.
+
+        The topic comes in the same request as the source and date, so
+        naming files does not add another call to the AI.
 
         Args:
             text (str): Extracted text content of the document.
 
         Returns:
-            dict: {'source': str or None, 'document_date': str or None}
+            dict: {'source', 'document_date', 'topic'}, each a str or None.
         """
         answer = self.ai_client.ask(METADATA_PROMPT, text)
         result = parse_json_answer(answer)
 
         metadata = {}
-        for field in ("source", "document_date"):
+        for field in METADATA_FIELDS:
             value = result.get(field)
             # Keep only real text. null, '', and 'null' all become None.
             if isinstance(value, str) and value.strip() and \

@@ -1,6 +1,6 @@
 # Cataloga
 
-Cataloga is a desktop app that uses AI to classify and catalog research material. It sorts each file into a media-type folder, gives it a serial filename, writes a short summary of its content, and logs everything in a searchable worksheet.
+Cataloga is a desktop app that uses AI to classify and catalog research material. It sorts each file into a media-type folder, gives it a readable filename, writes a short summary of its content, and logs everything in a searchable worksheet.
 
 This is a Holberton School Portfolio Project.
 
@@ -27,6 +27,26 @@ This is a Holberton School Portfolio Project.
 | 3 | Every few seconds, Cataloga classifies each file in Drop Zone, moves it to its media-type folder, and adds it to the catalog. |
 
 Projects made with an older version have an Inbox folder instead. Cataloga renames it to Drop Zone the first time it checks the project folder. If both folders exist and Inbox still has files, the Catalog screen shows a warning. Cataloga does not move those files.
+
+## File names
+
+In Settings, choose how Cataloga names new files. Files already in the catalog keep their names.
+
+| Method | Example |
+|---|---|
+| Date and topic (default) | `2026-07-15_oceanman-malta.pdf` |
+| Source, date and topic | `el-nuevo-dia_2026-07-15_oceanman-malta.pdf` |
+| Number and topic | `0001_oceanman-malta.pdf` |
+| Custom | A template with `{date}`, `{source}`, `{topic}`, `{number}` and `{original}` |
+
+| Rule | What happens |
+|---|---|
+| Topic | The AI gives a short topic in the same request as the source and date |
+| No date | `undated` is used |
+| No source | That part is left out |
+| No topic | The original file name is used |
+| Photos, audio, video, and files without text | File date and number, for example `2026-07-15_0001.jpg` |
+| Name already taken | `-2`, `-3` and so on are added |
 
 ## Project structure
 

@@ -106,6 +106,34 @@ const LANG_EN = {
     "lang.en": "English",
     "lang.es": "Español (Latinoamérica)",
 
+    // Settings: file names
+    "naming.title": "File names",
+    "naming.hint": "Choose how Cataloga names new files. Files already in "
+        + "the catalog keep their names.",
+    "naming.m1": "Date and topic",
+    "naming.m1_example": "2026-07-15_oceanman-malta.pdf",
+    "naming.m2": "Source, date and topic",
+    "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
+    "naming.m3": "Number and topic",
+    "naming.m3_example": "0001_oceanman-malta.pdf",
+    "naming.custom": "Custom",
+    "naming.template": "Template",
+    "naming.template_help":
+        "Use {date}, {source}, {topic}, {number} and {original}.",
+    "naming.preview": "Preview",
+    "naming.media_rule": "Photos, audio and video use the file date and a "
+        + "number, for example 2026-07-15_0001.jpg.",
+    "naming.duplicate_rule":
+        "If a name already exists, Cataloga adds -2, -3 and so on.",
+    "naming.changed_note": "Only new files will use this method.",
+    "naming.err_empty": "Write a template, or choose one of the 3 methods.",
+    "naming.err_no_token": "Add at least one of {date}, {source}, {topic}, "
+        + "{number} or {original}.",
+    "naming.err_unknown": "{token} is not a valid part. Use {date}, "
+        + "{source}, {topic}, {number} or {original}.",
+    "naming.err_chars":
+        "File names cannot use these characters: / \\ : * ? \" < > |",
+
     // Labels for values stored in the database. The stored value itself
     // never changes; only what the user sees.
     "value.Press": "Press",

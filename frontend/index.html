@@ -155,6 +155,55 @@
                             data-i18n="settings.browse">Browse</button>
                 </div>
 
+                <!-- File names: one of 3 methods or a custom template.
+                     Saved with the Save button. -->
+                <h2 data-i18n="naming.title">File names</h2>
+                <p class="hint" data-i18n="naming.hint">
+                    Choose how Cataloga names new files. Files already in the
+                    catalog keep their names.
+                </p>
+                <div class="naming-options" id="naming-options">
+                    <label class="naming-option">
+                        <input type="radio" name="naming-method" value="m1">
+                        <span data-i18n="naming.m1">Date and topic</span>
+                        <code data-i18n="naming.m1_example"></code>
+                    </label>
+                    <label class="naming-option">
+                        <input type="radio" name="naming-method" value="m2">
+                        <span data-i18n="naming.m2">Source, date and topic</span>
+                        <code data-i18n="naming.m2_example"></code>
+                    </label>
+                    <label class="naming-option">
+                        <input type="radio" name="naming-method" value="m3">
+                        <span data-i18n="naming.m3">Number and topic</span>
+                        <code data-i18n="naming.m3_example"></code>
+                    </label>
+                    <label class="naming-option">
+                        <input type="radio" name="naming-method"
+                               value="custom">
+                        <span data-i18n="naming.custom">Custom</span>
+                    </label>
+                </div>
+
+                <div class="naming-custom hidden" id="naming-custom">
+                    <label for="naming-template"
+                           data-i18n="naming.template">Template</label>
+                    <input type="text" id="naming-template"
+                           autocomplete="off" spellcheck="false">
+                    <p class="hint" data-i18n="naming.template_help"></p>
+                </div>
+
+                <p class="naming-preview">
+                    <span data-i18n="naming.preview">Preview</span>:
+                    <code id="naming-preview"></code>
+                </p>
+                <p class="form-message error" id="naming-error"></p>
+                <ul class="naming-rules">
+                    <li data-i18n="naming.media_rule"></li>
+                    <li data-i18n="naming.duplicate_rule"></li>
+                    <li data-i18n="naming.changed_note"></li>
+                </ul>
+
                 <h2 data-i18n="settings.ai_title">AI Provider Plug in</h2>
                 <p class="hint" data-i18n="settings.ai_hint">Plug in your own AI API
                     key.</p>
