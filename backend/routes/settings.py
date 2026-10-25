@@ -15,6 +15,7 @@ import os
 from flask import Blueprint, jsonify, request
 
 from backend.config.app_config import AppConfig
+from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
 from backend.pipeline.ai_providers.base import save_api_key
 from backend.pipeline.file_organizer import FileOrganizer
@@ -50,9 +51,16 @@ def get_settings():
 
     Returns:
         200: JSON with research_name, target_directory, active provider,
-             model. API key is never returned.
+             model, and old_inbox_has_files (True when an old Inbox
+             folder still has files next to Drop Zone). API key is never
+             returned.
     """
-    return jsonify(AppConfig(get_repo()).get_settings()), 200
+    settings = AppConfig(get_repo()).get_settings()
+    settings["old_inbox_has_files"] = False
+    if settings["target_directory"]:
+        organizer = FileOrganizer(settings["target_directory"])
+        settings["old_inbox_has_files"] = old_inbox_has_files(organizer)
+    return jsonify(settings), 200
 
 
 @settings_bp.route("/settings", methods=["PUT"])
@@ -60,14 +68,15 @@ def update_settings():
     """Update research_name and target_directory.
 
     The folder must already exist (for example, an external drive must
-    be connected). The Inbox and the five media-type folders are created
-    inside it.
+    be connected). Drop Zone and the five media-type folders are created
+    inside it. When the same folder is saved again, an old Inbox folder
+    is first renamed to Drop Zone.
 
     If the user picks a new folder that already has their own files, the
     first request is answered with 409 and a warning. The frontend sends
     the same request again with confirm_folder set to true once the user
-    agrees. Existing files are never moved either way: only Inbox is
-    processed.
+    agrees. Existing files are never moved either way: only Drop Zone
+    is processed.
 
     Request body (JSON): research_name, target_directory, and optional
                          confirm_folder (bool).
@@ -101,9 +110,13 @@ def update_settings():
         return error_response(
             "folder_not_empty",
             "This folder already has {} items. Cataloga will not move them: "
-            "only files you drop into its Inbox folder are cataloged. "
+            "only files you drop into its Drop Zone folder are cataloged. "
             "Click Save anyway to use this folder.".format(existing), 409)
 
+    # The migration must run before ensure_archive_structure(), which
+    # would otherwise create an empty Drop Zone next to the old Inbox.
+    if not is_new_folder:
+        organizer.migrate_old_inbox()
     organizer.ensure_archive_structure()
     config.update_settings(values["research_name"],
                            values["target_directory"])

@@ -17,6 +17,16 @@ This is a Holberton School Portfolio Project.
 | Packaging | PyInstaller |
 | Tests | pytest |
 
+## How files are added
+
+| Step | What happens |
+|---|---|
+| 1 | In Settings, choose a project folder. Cataloga creates a Drop Zone folder and the five media-type folders inside it. |
+| 2 | Drop new files into Drop Zone. Files that were already in the project folder are never moved. |
+| 3 | Every few seconds, Cataloga classifies each file in Drop Zone, moves it to its media-type folder, and adds it to the catalog. |
+
+Projects made with an older version have an Inbox folder instead. Cataloga renames it to Drop Zone the first time it checks the project folder. If both folders exist and Inbox still has files, the Catalog screen shows a warning. Cataloga does not move those files.
+
 ## Project structure
 
 | Folder / File | Description |
