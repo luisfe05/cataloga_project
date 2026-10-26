@@ -123,6 +123,13 @@ async function loadDashboard() {
         renderBreakdown(stats.media_type_breakdown);
         renderActivity(stats.recent_activity);
     } catch (error) {
+        // Clear the numbers of the project shown before, so they are
+        // never mixed up with this one.
+        ["stat-classified", "stat-review", "stat-sources"].forEach((id) => {
+            document.getElementById(id).textContent = "0";
+        });
+        document.getElementById("media-breakdown").innerHTML = "";
+        document.getElementById("activity-list").innerHTML = "";
         const message = document.getElementById("dashboard-message");
         message.textContent = t("dash.load_failed",
             { message: errorText(error) });

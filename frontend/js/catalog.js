@@ -270,28 +270,22 @@ function renderOldInboxWarning(settings) {
 }
 
 /**
- * Show the project name from Settings in the header.
- * @param {Object} settings
- */
-function renderProjectHeader(settings) {
-    const name = settings.research_name || t("header.no_project");
-    document.getElementById("project-name").textContent = name;
-    // The circle shows the first letter of the project name.
-    document.getElementById("project-badge").textContent =
-        name.charAt(0).toUpperCase();
-}
-
-/**
  * Load everything the catalog needs and draw it.
  */
 async function loadCatalog() {
     try {
         const settings = await getSettings();
-        renderProjectHeader(settings);
         renderOldInboxWarning(settings);
 
-        if (!settings.target_directory) {
-            showMessage(t("catalog.no_folder"));
+        // Only the active project is shown. With no project, or when its
+        // folder is missing, say so instead of showing an empty table.
+        if (settings.project_status !== "ok") {
+            document.getElementById("tab-review").textContent =
+                t("catalog.tab_review", { n: 0 });
+            showMessage(settings.project_status === "none"
+                ? t("catalog.no_project")
+                : t("error.project_unavailable",
+                    { path: settings.target_directory }));
             return;
         }
 
@@ -305,8 +299,10 @@ async function loadCatalog() {
             t("catalog.tab_review", { n: reviewCount });
 
         if (allDocuments.length === 0) {
-            showMessage(t("catalog.empty",
-                { path: settings.target_directory }));
+            // Without an AI provider, nothing can be classified yet.
+            showMessage(settings.active_provider
+                ? t("catalog.empty", { path: settings.target_directory })
+                : t("catalog.no_folder"));
             return;
         }
 
