@@ -70,11 +70,24 @@ body {
     color: #5a5f6b;
 }
 
-.project-label,
-.project-name {
+.project-label {
+    display: block;
     color: #2b2350;
     font-size: 0.9rem;
     font-weight: 600;
+    margin-bottom: 4px;
+}
+
+/* Project switcher in the header */
+.project-select {
+    border: 1px solid #c9c9cf;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #2b2350;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    min-width: 220px;
 }
 
 /* Tabs */
@@ -270,6 +283,24 @@ body {
     font-size: 0.8rem;
     margin: 8px 0 24px;
     padding-left: 18px;
+}
+
+.settings-form .folder-locked {
+    margin: -12px 0 20px;
+}
+
+.settings-form input[readonly] {
+    background: #f4f4f6;
+    color: #6b6b75;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.form-buttons .secondary-button {
+    margin-bottom: 0;
 }
 
 .folder-row {

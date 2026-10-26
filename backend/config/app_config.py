@@ -1,9 +1,10 @@
 """AppConfig.
 
-Reads and writes the app settings: the research name, the archive folder,
-the interface language, the file naming template, and the active AI
-provider. Non-secret settings only. The API key is never stored here; it
-lives in the OS keyring and is accessed through AIProviderClient.
+Reads and writes the settings saved in one project's catalog: the
+research name, the project folder, the file naming template, and the
+active AI provider. Non-secret settings only. The API key is never
+stored here; it lives in the OS keyring and is accessed through
+AIProviderClient.
 
 All database access goes through CatalogRepository, the app's SQLite
 layer, so AppConfig never runs SQL itself.
@@ -11,9 +12,10 @@ layer, so AppConfig never runs SQL itself.
 
 from backend.pipeline import naming
 
-# Interface languages the app offers. English is the default.
+# Interface languages the app offers. English is the default. The
+# choice is the same for every project, so it is saved in the project
+# list (see projects.py), not in a project's catalog.
 LANGUAGES = ("en", "es")
-DEFAULT_LANGUAGE = "en"
 
 
 class AppConfig:
@@ -34,7 +36,6 @@ class AppConfig:
             dict: {
                 'research_name': str,
                 'target_directory': str,
-                'language': 'en' or 'es',
                 'naming_template': str, e.g. '{date}_{topic}',
                 'active_provider': str or None,
                 'active_model': str or None
@@ -46,7 +47,6 @@ class AppConfig:
         return {
             "research_name": config.get("research_name", ""),
             "target_directory": config.get("target_directory", ""),
-            "language": config.get("language", DEFAULT_LANGUAGE),
             "naming_template": config.get("naming_template",
                                           naming.DEFAULT_TEMPLATE),
             "active_provider": provider.get("provider_name"),
@@ -61,20 +61,6 @@ class AppConfig:
             target_directory (str): Path to the archive folder.
         """
         self.db.save_app_config(research_name, target_directory)
-
-    def update_language(self, language):
-        """Save the interface language.
-
-        Args:
-            language (str): One of LANGUAGES.
-
-        Raises:
-            ValueError: If the language is not in LANGUAGES.
-        """
-        if language not in LANGUAGES:
-            raise ValueError("language must be one of: " +
-                             ", ".join(LANGUAGES))
-        self.db.save_language(language)
 
     def update_naming_template(self, template):
         """Save the file naming template. Only new files use it.

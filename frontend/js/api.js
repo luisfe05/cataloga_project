@@ -102,8 +102,9 @@ async function getSettings() {
     return handleResponse(response);
 }
 
-/** PUT /settings
- * @param {Object} data - { research_name, target_directory }
+/** PUT /settings - the active project's name and naming template, and
+ * the app language. A body with only { language } saves just that.
+ * @param {Object} data - { research_name, naming_template, language }
  * @returns {Promise<Object>}
  */
 async function updateSettings(data) {
@@ -137,6 +138,44 @@ async function testAIProvider(data) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+}
+
+// --- Projects ---
+
+/** GET /projects - every project and the active one.
+ * @returns {Promise<{active_folder: string, projects: Array}>}
+ */
+async function getProjects() {
+    const response = await fetch(`${BASE_URL}/projects`);
+    return handleResponse(response);
+}
+
+/** POST /projects - create a project (or open a folder that already
+ * has a Cataloga catalog) and make it active.
+ * @param {Object} data - { name, folder, naming_template, confirm_folder }
+ * @returns {Promise<{name: string, folder: string,
+ *     opened_existing: boolean}>}
+ */
+async function createProject(data) {
+    const response = await fetch(`${BASE_URL}/projects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+}
+
+/** PUT /projects/active - switch to another project.
+ * @param {string} folder
+ * @returns {Promise<Object>} The project list, like getProjects().
+ */
+async function setActiveProject(folder) {
+    const response = await fetch(`${BASE_URL}/projects/active`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
     });
     return handleResponse(response);
 }

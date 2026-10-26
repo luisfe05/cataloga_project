@@ -1,16 +1,20 @@
 /**
  * settings.js
  *
- * Settings view (Screen 2).
- * Lets the user set the research name, the project folder, and the AI
- * provider, model, and API key.
+ * Settings view (Screen 2). It has two modes:
+ * - "edit": the active project. The name, file names, and AI provider
+ *   can change; the folder cannot, because the catalog is inside it.
+ * - "new": a new project, with its name, folder, file names, and AI
+ *   provider. Used for the first project and from the header's
+ *   "New project" option.
  *
- * When Save is clicked:
- * 1. The research name and folder are saved (PUT /settings).
+ * When Save (or Create project) is clicked:
+ * 1. The project is saved (PUT /settings) or created (POST /projects).
  * 2. The AI connection is tested (POST /settings/ai-provider/test).
  * 3. Only if the test passes, the provider is saved
  *    (PUT /settings/ai-provider), which writes the key to the keyring.
- * This way a wrong API key is never saved.
+ * This way a wrong API key is never saved. The key is kept per
+ * provider, so a new project can use it without typing it again.
  *
  * If the chosen folder already has the user's own files, the backend
  * answers step 1 with a "folder_not_empty" warning. The button then
@@ -74,6 +78,16 @@ const PREVIEW_PARTS = {
 // True after the user has seen the folder warning and may confirm it.
 let folderWarningShown = false;
 
+// "edit" for the active project, "new" while creating a project.
+let projectMode = "edit";
+
+// False before the first project exists (then there is nothing to go
+// back to, so Cancel is hidden).
+let hasProjects = false;
+
+// True once pywebview's folder picker can be used.
+let pywebviewReady = Boolean(window.pywebview && window.pywebview.api);
+
 // True when an API key is already saved, to pick the key field's hint.
 let hasSavedKey = false;
 
@@ -81,8 +95,53 @@ let hasSavedKey = false;
  * Show "Save" or "Save anyway" on the button, in the current language.
  */
 function updateSaveButton() {
-    document.getElementById("save-button").textContent = folderWarningShown
-        ? t("settings.save_anyway") : t("settings.save");
+    let text = t("settings.save");
+    if (folderWarningShown) {
+        text = t("settings.save_anyway");
+    } else if (projectMode === "new") {
+        text = t("project.create");
+    }
+    document.getElementById("save-button").textContent = text;
+}
+
+/**
+ * Show Browse only in the desktop window and only for a new project.
+ */
+function updateBrowseButton() {
+    document.getElementById("browse-button").classList.toggle(
+        "hidden", !(pywebviewReady && projectMode === "new"));
+}
+
+/**
+ * Switch the form between the active project and a new project.
+ * @param {string} mode - "edit" or "new".
+ */
+function setProjectMode(mode) {
+    projectMode = mode;
+    const isNew = mode === "new";
+    document.getElementById("project-form-title").textContent =
+        t(isNew ? "project.new_title" : "project.edit_title");
+    // readOnly keeps the folder visible but not editable.
+    document.getElementById("target-directory").readOnly = !isNew;
+    document.getElementById("folder-locked")
+        .classList.toggle("hidden", isNew);
+    document.getElementById("cancel-new-project")
+        .classList.toggle("hidden", !(isNew && hasProjects));
+    updateBrowseButton();
+    resetFolderWarning();
+}
+
+/**
+ * Empty the form for a new project. The AI provider and model stay as
+ * they are, so the new project starts with the same ones.
+ */
+function startNewProject() {
+    setProjectMode("new");
+    document.getElementById("research-name").value = "";
+    document.getElementById("target-directory").value = "";
+    document.getElementById("api-key").value = "";
+    showSavedTemplate(NAMING_METHODS.m1);
+    showSettingsMessage("", "");
 }
 
 /**
@@ -249,6 +308,7 @@ function fillProviders() {
 async function loadSettings() {
     try {
         const settings = await getSettings();
+        hasProjects = settings.project_status !== "none";
         document.getElementById("research-name").value =
             settings.research_name;
         document.getElementById("target-directory").value =
@@ -266,7 +326,17 @@ async function loadSettings() {
         document.getElementById("api-key").value = "";
         hasSavedKey = Boolean(settings.active_provider);
         updateKeyPlaceholder();
-        updateSaveButton();
+
+        // With no project yet, the form starts as "New project".
+        if (hasProjects) {
+            setProjectMode("edit");
+        } else {
+            startNewProject();
+        }
+        if (settings.project_status === "unavailable") {
+            showSettingsMessage(t("error.project_unavailable",
+                { path: settings.target_directory }), "error");
+        }
     } catch (error) {
         showSettingsMessage(t("settings.load_failed",
             { message: errorText(error) }), "error");
@@ -295,24 +365,42 @@ async function saveSettings(event) {
         api_key: document.getElementById("api-key").value.trim(),
     };
 
+    const isNew = projectMode === "new";
+    // True once a new project exists, even if the AI test fails later.
+    let projectCreated = false;
+    let doneMessage = t("settings.saved");
+
     saveButton.disabled = true;
-    showSettingsMessage(t("settings.saving"), "");
+    showSettingsMessage(t(isNew ? "project.creating" : "settings.saving"),
+        "");
     try {
-        await updateSettings({
-            research_name: document.getElementById("research-name").value,
-            target_directory:
-                document.getElementById("target-directory").value,
-            confirm_folder: folderWarningShown,
-            naming_template: chosenTemplate(),
-        });
+        if (isNew) {
+            const created = await createProject({
+                name: document.getElementById("research-name").value,
+                folder: document.getElementById("target-directory").value,
+                naming_template: chosenTemplate(),
+                confirm_folder: folderWarningShown,
+            });
+            projectCreated = true;
+            doneMessage = t(created.opened_existing
+                ? "project.opened_existing" : "project.created");
+        } else {
+            await updateSettings({
+                research_name:
+                    document.getElementById("research-name").value,
+                naming_template: chosenTemplate(),
+            });
+        }
         resetFolderWarning();
         await testAIProvider(providerData);
         await updateAIProvider(providerData);
-        showSettingsMessage(t("settings.saved"), "success");
-        await loadSettings();
-        // Refresh the catalog so the project name and folder update.
-        loadCatalog();
+        await refreshAfterProjectChange();
+        showSettingsMessage(doneMessage, "success");
     } catch (error) {
+        if (projectCreated) {
+            // The project exists now: show it, then explain the error.
+            await refreshAfterProjectChange();
+        }
         if (error.code === "folder_not_empty") {
             folderWarningShown = true;
             updateSaveButton();
@@ -350,7 +438,10 @@ async function changeLanguage() {
     updateSaveButton();
     updateKeyPlaceholder();
     updateNamingPreview();
+    document.getElementById("project-form-title").textContent = t(
+        projectMode === "new" ? "project.new_title" : "project.edit_title");
     showSettingsMessage("", "");
+    loadProjectHeader();
     loadCatalog();
     if (!document.getElementById("view-dashboard")
             .classList.contains("hidden")) {
@@ -365,15 +456,19 @@ async function changeLanguage() {
 
 // pywebview announces itself with this event once its API is ready.
 window.addEventListener("pywebviewready", () => {
-    document.getElementById("browse-button").classList.remove("hidden");
+    pywebviewReady = true;
+    updateBrowseButton();
 });
 
-// Hide Browse until pywebview is ready, unless it already is.
-if (!(window.pywebview && window.pywebview.api)) {
-    document.getElementById("browse-button").classList.add("hidden");
-}
+updateBrowseButton();
 document.getElementById("browse-button")
     .addEventListener("click", browseFolder);
+// Cancel goes back to the active project's settings.
+document.getElementById("cancel-new-project")
+    .addEventListener("click", () => {
+        showSettingsMessage("", "");
+        loadSettings();
+    });
 document.getElementById("ai-provider")
     .addEventListener("change", () => fillModels(""));
 // A different folder needs its own warning, so start over when it changes.

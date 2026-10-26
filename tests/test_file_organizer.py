@@ -45,6 +45,13 @@ def test_count_existing_items_ignores_cataloga_folders(organizer):
     assert organizer.count_existing_items() == 2
 
 
+def test_count_existing_items_ignores_the_catalog_folder(organizer):
+    """The project's own .cataloga folder is never the user's content."""
+    organizer.ensure_archive_structure()
+    os.makedirs(os.path.join(organizer.target_directory, ".cataloga"))
+    assert organizer.count_existing_items() == 0
+
+
 def test_count_existing_items_empty_folder(organizer):
     """A new, empty project folder has nothing to warn about."""
     organizer.ensure_archive_structure()
