@@ -27,6 +27,10 @@ DROP_ZONE_FOLDER = "Drop Zone"
 # Name of the same folder in projects made before Drop Zone existed.
 OLD_INBOX_FOLDER = "Inbox"
 
+# Hidden folder where each project keeps its own catalog (catalog.db).
+# It is never processed and never counted as the user's content.
+CATALOG_FOLDER = ".cataloga"
+
 
 class FileOrganizer:
     """Manages the archive folder structure and file renaming."""
@@ -107,16 +111,17 @@ class FileOrganizer:
     def count_existing_items(self):
         """Count the user's own files and folders in the project folder.
 
-        Cataloga's folders (Drop Zone and the five media types) and hidden
-        files like .DS_Store are not counted. Settings uses this number to
-        warn the user before using a folder that already has content.
+        Cataloga's folders (Drop Zone, .cataloga, and the five media types)
+        and hidden files like .DS_Store are not counted. Creating a project
+        uses this number to warn the user before using a folder that
+        already has content.
 
         Returns:
             int: How many of the user's items are in the folder.
         """
         if not os.path.isdir(self.target_directory):
             return 0
-        own_folders = set(MEDIA_TYPES) | {DROP_ZONE_FOLDER}
+        own_folders = set(MEDIA_TYPES) | {DROP_ZONE_FOLDER, CATALOG_FOLDER}
         count = 0
         for name in os.listdir(self.target_directory):
             if name.startswith(".") or name in own_folders:

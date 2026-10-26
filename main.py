@@ -125,7 +125,7 @@ def main():
         target=start_flask, args=(app,), daemon=True
     )
     flask_thread.start()
-    start_watcher(app.config["DB_PATH"])
+    start_watcher(app.config["PROJECTS_PATH"])
     wait_for_server(PORT)
     # The startup lines from Flask are hidden too, so print our own.
     print("Cataloga is running on http://127.0.0.1:{}. "

@@ -25,12 +25,14 @@
     <main>
         <div id="view-catalog" class="view">
 
-            <!-- Project header -->
+            <!-- Project header: switch projects or start a new one -->
             <section class="project-header">
                 <div class="project-badge" id="project-badge"></div>
                 <div>
-                    <p class="project-label" data-i18n="header.project">Project</p>
-                    <p class="project-name" id="project-name"></p>
+                    <label class="project-label" for="project-select"
+                           data-i18n="header.project">Project</label>
+                    <select class="project-select" id="project-select">
+                    </select>
                 </div>
             </section>
 
@@ -135,7 +137,9 @@
                         (Latinoamérica)</option>
                 </select>
 
-                <h2 data-i18n="settings.research_title">Research Settings</h2>
+                <!-- "Project settings" or "New project", set by
+                     settings.js -->
+                <h2 id="project-form-title">Project settings</h2>
                 <p class="hint" data-i18n="settings.research_hint">
                     Configure your research project and where files are stored.
                     Cataloga creates a Drop Zone folder inside it: drop new
@@ -154,6 +158,9 @@
                             id="browse-button"
                             data-i18n="settings.browse">Browse</button>
                 </div>
+                <!-- Shown for an existing project, whose folder is fixed -->
+                <p class="hint folder-locked hidden" id="folder-locked"
+                   data-i18n="project.folder_locked"></p>
 
                 <!-- File names: one of 3 methods or a custom template.
                      Saved with the Save button. -->
@@ -218,8 +225,14 @@
                 <label for="ai-model" data-i18n="settings.model">Model</label>
                 <select id="ai-model"></select>
 
-                <button type="submit" class="primary-button"
-                        id="save-button">Save</button>
+                <div class="form-buttons">
+                    <button type="submit" class="primary-button"
+                            id="save-button">Save</button>
+                    <!-- Only while creating a project -->
+                    <button type="button" class="secondary-button hidden"
+                            id="cancel-new-project"
+                            data-i18n="project.cancel">Cancel</button>
+                </div>
                 <p class="form-message" id="settings-message"></p>
             </form>
         </div>

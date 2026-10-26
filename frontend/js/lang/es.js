@@ -42,8 +42,7 @@ const LANG_ES = {
     "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Tu carpeta Inbox vieja todavía tiene "
         + "archivos. Muévelos a la Drop Zone para catalogarlos.",
-    "catalog.no_folder": "Ve a Configuración para elegir la carpeta del "
-        + "proyecto y el proveedor de IA.",
+    "catalog.no_folder": "Ve a Configuración para elegir el proveedor de IA.",
     "catalog.empty": "Pon archivos en la carpeta Drop Zone dentro de "
         + "{path}. Aparecerán aquí cuando se clasifiquen.",
     "catalog.no_match": "Ningún archivo coincide con tu búsqueda.",
@@ -138,6 +137,22 @@ const LANG_ES = {
     "naming.err_chars": "Los nombres de archivo no pueden usar estos "
         + "caracteres: / \\ : * ? \" < > |",
 
+    // Projects (multi-project)
+    "header.new_project": "Proyecto nuevo…",
+    "header.unavailable": "{name} (no disponible)",
+    "project.edit_title": "Configuración del proyecto",
+    "project.new_title": "Proyecto nuevo",
+    "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
+        + "porque el catálogo se guarda dentro de ella.",
+    "project.create": "Crear proyecto",
+    "project.creating":
+        "Creando el proyecto y probando la conexión con la IA...",
+    "project.created": "Proyecto creado. La conexión con la IA funciona.",
+    "project.opened_existing": "Esta carpeta ya tenía un catálogo de "
+        + "Cataloga, así que se agregó a tus proyectos.",
+    "project.cancel": "Cancelar",
+    "catalog.no_project": "Crea un proyecto en Configuración para empezar.",
+
     // Labels for values stored in the database. The stored value itself
     // never changes; only what the user sees.
     "value.Press": "Prensa",
@@ -165,5 +180,11 @@ const LANG_ES = {
     "error.unsupported_format": "Solo se puede exportar en CSV.",
     "error.connection_failed": "No se pudo conectar con el proveedor de IA. "
         + "Revisa la clave de API y el modelo.",
+    "error.no_project":
+        "No hay ningún proyecto abierto. Crea uno en Configuración.",
+    "error.project_unavailable": "La carpeta del proyecto {path} no está "
+        + "disponible. Conecta el disco o elige otro proyecto.",
+    "error.project_exists":
+        "Esa carpeta ya es un proyecto. Elígela en la lista de proyectos.",
     "error.generic": "Algo salió mal. Inténtalo de nuevo.",
 };

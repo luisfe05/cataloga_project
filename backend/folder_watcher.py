@@ -2,10 +2,11 @@
 
 Step 1 of the Stage 3 sequence diagram: "Detect new file in target
 directory". The user drops files into the Drop Zone folder inside the
-project folder (the target_directory chosen in Settings). Every few
-seconds the watcher looks for files in Drop Zone and sends them through
-the ClassificationPipeline, which moves each one into its media-type
-folder.
+active project's folder. Every few seconds the watcher reads which
+project is active (so a switch takes effect on the next check), looks
+for files in that project's Drop Zone, and sends them through the
+ClassificationPipeline with that project's own catalog. Other projects
+and the hidden .cataloga folder are never touched.
 
 Only Drop Zone is watched, so files the user already had in the project
 folder are never moved. Because processed files leave Drop Zone, the
@@ -22,6 +23,7 @@ import os
 import threading
 import time
 
+from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.pipeline.ai_providers import create_client
 from backend.pipeline.classification_pipeline import ClassificationPipeline
@@ -111,29 +113,30 @@ def log_old_inbox_warning(organizer):
         warned_folders.add(folder)
 
 
-def scan_once(db_path):
-    """Check the project folder one time and process any new files.
+def scan_once(projects_path):
+    """Check the active project's Drop Zone one time.
 
-    Nothing is processed until Settings has a project folder and an
-    active AI provider. As soon as there is a project folder, an old
-    Inbox is renamed to Drop Zone (see FileOrganizer.migrate_old_inbox).
+    Nothing is processed until there is an active project whose folder
+    is available and which has an AI provider. As soon as there is a
+    project, an old Inbox is renamed to Drop Zone (see
+    FileOrganizer.migrate_old_inbox).
 
     Args:
-        db_path (str): Path to the SQLite database file.
+        projects_path (str): Path to the project list (projects.json).
 
     Returns:
         list[Document]: The documents processed in this check.
     """
-    repo = CatalogRepository(db_path)
-    config = repo.get_app_config()
-    # The row can exist with an empty folder when only the language was
-    # saved. An empty path would point at the app's own working folder.
-    if not config or not config["target_directory"]:
+    folder = projects.active_folder(projects_path)
+    # No project, or its folder (or catalog) is missing, for example an
+    # external drive that is not connected.
+    if not folder or not os.path.isfile(projects.catalog_path(folder)):
         return []
+    repo = CatalogRepository(projects.catalog_path(folder))
 
-    # Only the folder saved in Settings is migrated: there, Inbox was
-    # made by Cataloga, not by the user.
-    organizer = FileOrganizer(config["target_directory"])
+    # Only a project's own folder is migrated: there, Inbox was made by
+    # Cataloga, not by the user.
+    organizer = FileOrganizer(folder)
     organizer.migrate_old_inbox()
     log_old_inbox_warning(organizer)
 
@@ -153,7 +156,7 @@ def scan_once(db_path):
     return pipeline.process_batch(files)
 
 
-def watch_forever(db_path):
+def watch_forever(projects_path):
     """Run scan_once() every CHECK_INTERVAL seconds, forever.
 
     An error in one check (for example, the external drive was
@@ -161,28 +164,28 @@ def watch_forever(db_path):
     on the next check.
 
     Args:
-        db_path (str): Path to the SQLite database file.
+        projects_path (str): Path to the project list (projects.json).
     """
     while True:
         try:
-            scan_once(db_path)
+            scan_once(projects_path)
         except Exception:
             pass
         time.sleep(CHECK_INTERVAL)
 
 
-def start_watcher(db_path):
+def start_watcher(projects_path):
     """Start the watcher in a background thread.
 
     daemon=True means the thread stops when the app window is closed.
 
     Args:
-        db_path (str): Path to the SQLite database file.
+        projects_path (str): Path to the project list (projects.json).
 
     Returns:
         threading.Thread: The running thread.
     """
-    thread = threading.Thread(target=watch_forever, args=(db_path,),
+    thread = threading.Thread(target=watch_forever, args=(projects_path,),
                               daemon=True)
     thread.start()
     return thread

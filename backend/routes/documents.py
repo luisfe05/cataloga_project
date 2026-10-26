@@ -6,6 +6,10 @@ Endpoints:
     PATCH /documents/<id>           Update editable fields on a document.
     GET  /documents/export          Download the catalog as a file
                                     (default: csv).
+
+Every route works on the active project's catalog. With no project, or
+when its folder is not available, they answer 409 with the code
+'no_project' or 'project_unavailable'.
 """
 
 import csv
@@ -16,7 +20,7 @@ from flask import Blueprint, Response, jsonify, request
 from backend.pipeline.ai_providers import create_client
 from backend.pipeline.classification_pipeline import ClassificationPipeline
 from backend.pipeline.file_organizer import FileOrganizer
-from backend.routes import error_response, get_repo
+from backend.routes import error_response, get_active_repo
 
 documents_bp = Blueprint("documents", __name__)
 
@@ -100,8 +104,12 @@ def list_documents():
 
     Returns:
         200: JSON array of document objects.
+        409: If there is no usable project.
     """
-    documents = get_repo().get_all_documents(read_filters())
+    repo, error = get_active_repo()
+    if error:
+        return error
+    documents = repo.get_all_documents(read_filters())
     return jsonify([doc.to_dict() for doc in documents]), 200
 
 
@@ -116,13 +124,17 @@ def export_documents():
     Returns:
         200: The worksheet file as a download.
         400: If an unsupported format is requested.
+        409: If there is no usable project.
     """
     file_format = request.args.get("format", "csv").lower()
     if file_format != "csv":
         return error_response("unsupported_format",
                               "Only csv export is supported.", 400)
 
-    documents = get_repo().get_all_documents(read_filters())
+    repo, error = get_active_repo()
+    if error:
+        return error
+    documents = repo.get_all_documents(read_filters())
 
     # Write the CSV into memory, then send it as the response body.
     output = io.StringIO()
@@ -151,8 +163,12 @@ def get_document(doc_id):
     Returns:
         200: JSON object for the document.
         404: If the id does not exist.
+        409: If there is no usable project.
     """
-    doc = get_repo().get_document(doc_id)
+    repo, error = get_active_repo()
+    if error:
+        return error
+    doc = repo.get_document(doc_id)
     if doc is None:
         return error_response("not_found",
                               "Document {} does not exist.".format(doc_id),
@@ -179,13 +195,16 @@ def update_document(doc_id):
         400: If the body is not a JSON object, or has a locked or
              invalid field.
         404: If the id does not exist.
+        409: If there is no usable project.
     """
     # silent=True returns None instead of raising on a bad body.
     fields = request.get_json(silent=True)
     if not isinstance(fields, dict):
         return error_response("invalid_body",
                               "The request body must be a JSON object.", 400)
-    repo = get_repo()
+    repo, error = get_active_repo()
+    if error:
+        return error
     try:
         doc = repo.update_document(doc_id, fields)
     except ValueError as error:
