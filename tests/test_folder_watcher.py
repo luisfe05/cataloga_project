@@ -5,10 +5,12 @@ location. The AI client is replaced with a fake so no API is called.
 """
 
 import os
+import shutil
 
 import pytest
 
 from backend import folder_watcher
+from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.folder_watcher import (OLD_INBOX_WARNING, find_new_files,
@@ -42,21 +44,31 @@ def fake_ai(monkeypatch):
                         lambda name, model: FakeAI())
 
 
+def make_catalog(folder):
+    """Create a project's catalog in folder/.cataloga and return it."""
+    db_path = projects.catalog_path(str(folder))
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    init_db(db_path)
+    repo = CatalogRepository(db_path)
+    repo.save_app_config("Test", str(folder))
+    repo.set_active_provider("gemini", "gemini-2.5-flash")
+    return repo
+
+
 @pytest.fixture
 def project(tmp_path):
-    """A database and an empty project folder."""
-    db_path = str(tmp_path / "test.db")
-    init_db(db_path)
+    """An empty project folder and a project list without projects."""
     folder = tmp_path / "project"
     folder.mkdir()
-    return {"db_path": db_path, "folder": folder,
-            "repo": CatalogRepository(db_path)}
+    return {"projects_path": str(tmp_path / "app" / "projects.json"),
+            "folder": folder}
 
 
 def configure(project):
-    """Save the project folder and an active provider in settings."""
-    project["repo"].save_app_config("Test", str(project["folder"]))
-    project["repo"].set_active_provider("gemini", "gemini-2.5-flash")
+    """Make the folder a project with an AI provider, and activate it."""
+    project["repo"] = make_catalog(project["folder"])
+    projects.add_project(project["projects_path"], "Test",
+                         str(project["folder"]))
 
 
 def test_find_new_files_skips_folders_hidden_and_temporary_files(project):
@@ -83,15 +95,45 @@ def test_scan_does_nothing_before_settings(project):
     drop_zone = project["folder"] / "Drop Zone"
     drop_zone.mkdir()
     (drop_zone / "a.txt").write_text("Some text")
-    assert scan_once(project["db_path"]) == []
+    assert scan_once(project["projects_path"]) == []
     assert (drop_zone / "a.txt").exists()
 
 
-def test_scan_does_nothing_when_only_the_language_was_saved(project):
-    """A settings row with an empty folder must not be scanned."""
-    project["repo"].save_language("es")
-    project["repo"].set_active_provider("gemini", "gemini-2.5-flash")
-    assert scan_once(project["db_path"]) == []
+def test_scan_only_reads_the_active_project(project, tmp_path):
+    """Files in another project's Drop Zone wait until it is active."""
+    configure(project)
+    other = tmp_path / "other"
+    (other / "Drop Zone").mkdir(parents=True)
+    make_catalog(other)
+    projects.add_project(project["projects_path"], "Other", str(other))
+    (project["folder"] / "Drop Zone").mkdir()
+    (project["folder"] / "Drop Zone" / "a.txt").write_text("Text")
+    (other / "Drop Zone" / "b.txt").write_text("Text")
+
+    # "Other" is active now (it was added last).
+    assert [doc.original_filename for doc in
+            scan_once(project["projects_path"])] == ["b.txt"]
+    assert (project["folder"] / "Drop Zone" / "a.txt").is_file()
+
+    projects.set_active_project(project["projects_path"],
+                                str(project["folder"]))
+    assert [doc.original_filename for doc in
+            scan_once(project["projects_path"])] == ["a.txt"]
+
+
+def test_scan_never_touches_the_catalog_folder(project):
+    """The hidden .cataloga folder is never processed or moved."""
+    configure(project)
+    catalog = project["folder"] / ".cataloga" / "catalog.db"
+    assert scan_once(project["projects_path"]) == []
+    assert catalog.is_file()
+
+
+def test_scan_skips_a_missing_project_folder(project):
+    """A disconnected drive is skipped, not an error."""
+    configure(project)
+    shutil.rmtree(project["folder"])
+    assert scan_once(project["projects_path"]) == []
 
 
 def test_scan_processes_drop_zone_files_once(project):
@@ -101,8 +143,8 @@ def test_scan_processes_drop_zone_files_once(project):
     drop_zone.mkdir()
     (drop_zone / "clip.txt").write_text("Newspaper text")
 
-    first = scan_once(project["db_path"])
-    second = scan_once(project["db_path"])
+    first = scan_once(project["projects_path"])
+    second = scan_once(project["projects_path"])
 
     # FakeAI gives no topic, so the original name is used.
     assert [doc.filename for doc in first] == ["1980_clip.txt"]
@@ -117,7 +159,7 @@ def test_scan_never_moves_files_outside_drop_zone(project):
     existing = project["folder"] / "my_poster.pdf"
     existing.write_text("The user's own work")
 
-    assert scan_once(project["db_path"]) == []
+    assert scan_once(project["projects_path"]) == []
     assert existing.is_file()
 
 
@@ -145,7 +187,7 @@ def test_scan_renames_old_inbox_and_processes_its_files(project):
     inbox.mkdir()
     (inbox / "clip.txt").write_text("Newspaper text")
 
-    documents = scan_once(project["db_path"])
+    documents = scan_once(project["projects_path"])
 
     assert not inbox.exists()
     assert (project["folder"] / "Drop Zone").is_dir()
@@ -183,8 +225,8 @@ def test_scan_warns_once_and_never_moves_old_inbox_files(project, caplog):
     configure(project)
     inbox = make_old_inbox_with_file(project)
 
-    scan_once(project["db_path"])
-    scan_once(project["db_path"])
+    scan_once(project["projects_path"])
+    scan_once(project["projects_path"])
 
     warnings = [record for record in caplog.records
                 if OLD_INBOX_WARNING in record.getMessage()]

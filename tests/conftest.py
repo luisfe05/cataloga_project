@@ -1,30 +1,80 @@
 """pytest fixtures shared across all test modules.
 
 Provides:
-- a Flask app and test client backed by a temporary SQLite database, so
-  tests never touch the real database/catalog.db
+- a Flask app whose project list and project catalog live in a
+  temporary folder, so tests never touch the real projects.json, the
+  old database/catalog.db, or a real project
+- an app with no projects at all, for first-run tests
 """
+
+import os
 
 import pytest
 
 from backend.app import create_app
+from backend.config import projects
+from backend.db.catalog_repository import CatalogRepository
+from backend.db.schema import init_db
+from backend.pipeline.file_organizer import FileOrganizer
+
+
+def make_project(projects_path, folder, name="Research"):
+    """Create a project folder with its catalog and add it to the list.
+
+    Args:
+        projects_path (str): Path to the test projects.json.
+        folder (pathlib.Path): The project folder (created if missing).
+        name (str): The project's name.
+
+    Returns:
+        CatalogRepository: The new project's catalog.
+    """
+    folder.mkdir(parents=True, exist_ok=True)
+    db_path = projects.catalog_path(str(folder))
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    init_db(db_path)
+    repo = CatalogRepository(db_path)
+    repo.save_app_config(name, str(folder))
+    FileOrganizer(str(folder)).ensure_archive_structure()
+    projects.add_project(projects_path, name, str(folder))
+    return repo
 
 
 @pytest.fixture
-def app(tmp_path):
-    """Return a Flask app that uses a temporary database.
+def projects_path(tmp_path):
+    """Path of a project list in a temporary app data folder."""
+    return str(tmp_path / "app_data" / "projects.json")
+
+
+@pytest.fixture
+def app(tmp_path, projects_path):
+    """Return a Flask app with one active project, "Research".
 
     tmp_path is a built-in pytest fixture: a fresh folder for each test
-    that pytest deletes on its own, so every test starts with an empty
-    database.
+    that pytest deletes on its own. The project folder is
+    tmp_path/Research and is saved in app.config["PROJECT_FOLDER"].
     """
-    app = create_app(db_path=str(tmp_path / "test.db"))
+    folder = tmp_path / "Research"
+    make_project(projects_path, folder)
+    app = create_app(projects_path=projects_path,
+                     old_db_path=str(tmp_path / "no_old.db"))
     app.config["TESTING"] = True
+    app.config["PROJECT_FOLDER"] = str(folder)
     return app
 
 
 @pytest.fixture
 def flask_client(app):
     """Return a Flask test client for the app fixture."""
+    with app.test_client() as client:
+        yield client
+
+
+@pytest.fixture
+def empty_client(tmp_path, projects_path):
+    """Return a test client for an app with no projects yet."""
+    app = create_app(projects_path=projects_path,
+                     old_db_path=str(tmp_path / "no_old.db"))
+    app.config["TESTING"] = True
     with app.test_client() as client:
         yield client

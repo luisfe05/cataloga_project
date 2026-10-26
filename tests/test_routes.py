@@ -5,8 +5,12 @@ Tests confirm correct HTTP status codes and response shapes,
 not business logic (that belongs in the unit test files).
 """
 
+import os
+import shutil
+
 import pytest
 
+from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.models.document import Document
 from backend.pipeline.ai_providers import base
@@ -16,7 +20,8 @@ from backend.pipeline.ai_providers.gemini import GeminiClient
 @pytest.fixture
 def repo(app):
     """Return a CatalogRepository on the same database as the app."""
-    return CatalogRepository(app.config["DB_PATH"])
+    return CatalogRepository(
+        projects.catalog_path(app.config["PROJECT_FOLDER"]))
 
 
 @pytest.fixture
@@ -160,43 +165,153 @@ def test_dashboard_stats(flask_client, repo):
 
 # --- /settings ---
 
-def test_get_settings_before_setup(flask_client):
-    """Before setup, settings are empty strings and no provider."""
+def test_get_settings_of_the_active_project(flask_client, app):
+    """Settings come from the active project's catalog."""
     response = flask_client.get("/settings")
     assert response.status_code == 200
     assert response.get_json() == {
-        "research_name": "", "target_directory": "", "language": "en",
-        "naming_template": "{date}_{topic}",
+        "research_name": "Research",
+        "target_directory": app.config["PROJECT_FOLDER"],
+        "language": "en", "naming_template": "{date}_{topic}",
         "active_provider": None, "active_model": None,
-        "old_inbox_has_files": False,
+        "old_inbox_has_files": False, "project_status": "ok",
     }
 
 
-def test_put_settings_creates_archive_folders(flask_client, tmp_path):
-    """Saving settings stores them and creates the five folders."""
-    archive = tmp_path / "my_archive"
-    archive.mkdir()
+def test_get_settings_with_no_project(empty_client):
+    """Before the first project, the project fields are empty."""
+    settings = empty_client.get("/settings").get_json()
+    assert settings["project_status"] == "none"
+    assert settings["research_name"] == ""
+    assert settings["target_directory"] == ""
+    assert settings["language"] == "en"
+
+
+def test_put_settings_renames_the_project(flask_client, app):
+    """The name changes in the catalog and in the project list."""
     response = flask_client.put("/settings", json={
-        "research_name": "El Delfin", "target_directory": str(archive)})
+        "research_name": "El Delfin"})
     assert response.status_code == 200
     assert response.get_json()["research_name"] == "El Delfin"
-    assert (archive / "Press").is_dir()
-    assert (archive / "Drop Zone").is_dir()
+    names = [p["name"] for p in
+             flask_client.get("/projects").get_json()["projects"]]
+    assert names == ["El Delfin"]
+
+
+def test_put_settings_never_changes_the_folder(flask_client, app, tmp_path):
+    """A target_directory in the body is ignored: the folder is fixed."""
+    other = tmp_path / "Other"
+    other.mkdir()
+    flask_client.put("/settings", json={
+        "research_name": "A", "target_directory": str(other)})
     assert flask_client.get("/settings").get_json()["target_directory"] \
-        == str(archive)
+        == app.config["PROJECT_FOLDER"]
 
 
-def test_put_settings_missing_field(flask_client):
-    """Both fields are required."""
-    response = flask_client.put("/settings", json={"research_name": "X"})
+def test_put_settings_missing_name(flask_client):
+    """The project name is required."""
+    response = flask_client.put("/settings", json={"naming_template": "x"})
     assert_error(response, 400, "missing_field")
 
 
-def test_put_settings_folder_must_exist(flask_client, tmp_path):
-    """A folder that does not exist (e.g. unplugged drive) gives 400."""
+def test_put_settings_with_no_project(empty_client):
+    """Project settings need a project."""
+    response = empty_client.put("/settings", json={"research_name": "A"})
+    assert_error(response, 409, "no_project")
+
+
+def test_language_is_global(empty_client, tmp_path):
+    """The language can be saved before any project, and stays the same
+    after a project is created."""
+    response = empty_client.put("/settings", json={"language": "es"})
+    assert response.status_code == 200
+    folder = tmp_path / "New"
+    folder.mkdir()
+    empty_client.post("/projects", json={"name": "New",
+                                         "folder": str(folder)})
+    assert empty_client.get("/settings").get_json()["language"] == "es"
+
+
+def test_put_settings_language_only_rejects_unknown(flask_client):
+    """Only 'en' and 'es' are accepted."""
+    response = flask_client.put("/settings", json={"language": "fr"})
+    assert_error(response, 400, "invalid_language")
+    assert flask_client.get("/settings").get_json()["language"] == "en"
+
+
+def test_put_settings_saves_name_template_and_language(flask_client):
+    """All three can be saved together."""
     response = flask_client.put("/settings", json={
-        "research_name": "X", "target_directory": str(tmp_path / "nope")})
-    assert_error(response, 400, "invalid_directory")
+        "research_name": "A", "naming_template": "{source}_{date}_{topic}",
+        "language": "es"})
+    assert response.status_code == 200
+    settings = response.get_json()
+    assert settings["naming_template"] == "{source}_{date}_{topic}"
+    assert settings["language"] == "es"
+    assert settings["research_name"] == "A"
+
+
+@pytest.mark.parametrize("template, reason, token", [
+    ("", "empty", ""),
+    ("my-files", "no_token", ""),
+    ("{date}_{titulo}", "unknown", "{titulo}"),
+    ("{date}/{topic}", "chars", ""),
+])
+def test_put_settings_rejects_bad_template(flask_client, template, reason,
+                                           token):
+    """A bad template is rejected before anything is saved."""
+    response = flask_client.put("/settings", json={
+        "research_name": "Changed", "naming_template": template})
+    assert_error(response, 400, "invalid_template")
+    error = response.get_json()["error"]
+    assert error["reason"] == reason
+    assert error["token"] == token
+    settings = flask_client.get("/settings").get_json()
+    assert settings["naming_template"] == "{date}_{topic}"
+    assert settings["research_name"] == "Research"
+
+
+def test_get_settings_reports_old_inbox_files(flask_client, app):
+    """GET /settings tells Catalog when the old Inbox still has files."""
+    folder = app.config["PROJECT_FOLDER"]
+    assert flask_client.get("/settings").get_json()[
+        "old_inbox_has_files"] is False
+    os.makedirs(os.path.join(folder, "Inbox"))
+    with open(os.path.join(folder, "Inbox", "left.pdf"), "w") as file:
+        file.write("x")
+    assert flask_client.get("/settings").get_json()[
+        "old_inbox_has_files"] is True
+
+
+def test_put_settings_migrates_old_inbox(flask_client, app):
+    """Saving the project renames an old Inbox to Drop Zone."""
+    folder = app.config["PROJECT_FOLDER"]
+    # Simulate a project made with the old version.
+    os.rename(os.path.join(folder, "Drop Zone"),
+              os.path.join(folder, "Inbox"))
+    with open(os.path.join(folder, "Inbox", "clip.pdf"), "w") as file:
+        file.write("x")
+    response = flask_client.put("/settings", json={"research_name": "A"})
+    assert response.status_code == 200
+    assert not os.path.exists(os.path.join(folder, "Inbox"))
+    assert os.path.isfile(os.path.join(folder, "Drop Zone", "clip.pdf"))
+
+
+def test_documents_need_a_project(empty_client):
+    """With no project, the document and dashboard routes say so."""
+    assert_error(empty_client.get("/documents"), 409, "no_project")
+    assert_error(empty_client.get("/dashboard/stats"), 409, "no_project")
+
+
+def test_missing_project_folder_is_unavailable(flask_client, app):
+    """A disconnected drive gives project_unavailable with the path."""
+    shutil.rmtree(app.config["PROJECT_FOLDER"])
+    response = flask_client.get("/documents")
+    assert_error(response, 409, "project_unavailable")
+    assert response.get_json()["error"]["path"] == \
+        app.config["PROJECT_FOLDER"]
+    assert flask_client.get("/settings").get_json()["project_status"] == \
+        "unavailable"
 
 
 # --- /settings/ai-provider ---
@@ -214,6 +329,14 @@ def test_put_ai_provider_saves_key_in_keyring(flask_client, fake_keyring):
     assert settings["active_provider"] == "gemini"
     assert settings["active_model"] == "gemini-2.5-flash"
     assert "secret-key" not in str(settings)
+
+
+def test_put_ai_provider_needs_a_project(empty_client, fake_keyring):
+    """The provider is saved per project, so it needs one."""
+    response = empty_client.put("/settings/ai-provider", json={
+        "provider_name": "gemini", "model": "gemini-2.5-flash",
+        "api_key": "k"})
+    assert_error(response, 409, "no_project")
 
 
 def test_put_ai_provider_unsupported(flask_client, fake_keyring):
@@ -256,198 +379,9 @@ def test_test_ai_provider_without_key(flask_client, fake_keyring):
     assert_error(response, 400, "connection_failed")
 
 
-def test_put_settings_expands_home_folder(flask_client, tmp_path,
-                                          monkeypatch):
-    """A path that starts with ~ is turned into the full home path."""
-    monkeypatch.setenv("HOME", str(tmp_path))
-    (tmp_path / "Research").mkdir()
-    response = flask_client.put("/settings", json={
-        "research_name": "X", "target_directory": "~/Research"})
-    assert response.status_code == 200
-    assert response.get_json()["target_directory"] == \
-        str(tmp_path / "Research")
-
-
-def test_put_settings_warns_before_using_a_folder_with_files(
-        flask_client, tmp_path):
-    """A new folder with the user's files needs confirmation first."""
-    folder = tmp_path / "PEDRO_NAVAJA"
-    folder.mkdir()
-    (folder / "poster.png").write_text("x")
-    body = {"research_name": "X", "target_directory": str(folder)}
-
-    first = flask_client.put("/settings", json=body)
-    assert_error(first, 409, "folder_not_empty")
-    assert not (folder / "Drop Zone").exists()
-    assert flask_client.get("/settings").get_json()["target_directory"] == ""
-
-    body["confirm_folder"] = True
-    second = flask_client.put("/settings", json=body)
-    assert second.status_code == 200
-    assert (folder / "Drop Zone").is_dir()
-    assert (folder / "poster.png").is_file()
-
-
-def test_put_settings_same_folder_does_not_warn_again(
-        flask_client, tmp_path):
-    """Saving again with the same folder (e.g. a new name) just works."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    (folder / "notes.txt").write_text("x")
-    flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder),
-        "confirm_folder": True})
-    response = flask_client.put("/settings", json={
-        "research_name": "B", "target_directory": str(folder)})
-    assert response.status_code == 200
-    assert response.get_json()["research_name"] == "B"
-
-
-def test_get_settings_reports_old_inbox_files(flask_client, tmp_path):
-    """GET /settings tells Catalog when the old Inbox still has files."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder)})
-    assert flask_client.get("/settings").get_json()[
-        "old_inbox_has_files"] is False
-
-    (folder / "Inbox").mkdir()
-    (folder / "Inbox" / "left.pdf").write_text("x")
-    assert flask_client.get("/settings").get_json()[
-        "old_inbox_has_files"] is True
-    assert (folder / "Inbox" / "left.pdf").is_file()
-
-
-def test_put_settings_same_folder_migrates_old_inbox(flask_client, tmp_path):
-    """Saving the same folder again renames an old Inbox to Drop Zone."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    body = {"research_name": "A", "target_directory": str(folder)}
-    flask_client.put("/settings", json=body)
-    # Simulate a project made with the old version.
-    (folder / "Drop Zone").rename(folder / "Inbox")
-    (folder / "Inbox" / "clip.pdf").write_text("x")
-
-    response = flask_client.put("/settings", json=body)
-
-    assert response.status_code == 200
-    assert not (folder / "Inbox").exists()
-    assert (folder / "Drop Zone" / "clip.pdf").is_file()
-
-
-def test_put_settings_new_folder_never_renames_its_inbox(
-        flask_client, tmp_path):
-    """A user's own Inbox in a new folder is never renamed or moved."""
-    folder = tmp_path / "Other"
-    folder.mkdir()
-    (folder / "Inbox").mkdir()
-    (folder / "Inbox" / "mail.eml").write_text("x")
-    body = {"research_name": "A", "target_directory": str(folder)}
-
-    first = flask_client.put("/settings", json=body)
-    assert_error(first, 409, "folder_not_empty")
-
-    body["confirm_folder"] = True
-    flask_client.put("/settings", json=body)
-    assert (folder / "Inbox" / "mail.eml").is_file()
-    assert (folder / "Drop Zone").is_dir()
-
-
-def test_put_settings_language_only(flask_client):
-    """A body with only the language saves it before any project."""
-    response = flask_client.put("/settings", json={"language": "es"})
-    assert response.status_code == 200
-    settings = flask_client.get("/settings").get_json()
-    assert settings["language"] == "es"
-    assert settings["target_directory"] == ""
-
-
-def test_put_settings_language_only_rejects_unknown(flask_client):
-    """Only 'en' and 'es' are accepted."""
-    response = flask_client.put("/settings", json={"language": "fr"})
-    assert_error(response, 400, "invalid_language")
-    assert flask_client.get("/settings").get_json()["language"] == "en"
-
-
-def test_put_settings_with_language_saves_everything(
-        flask_client, tmp_path):
-    """Language can be sent together with the project fields."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    response = flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder),
-        "language": "es"})
-    assert response.status_code == 200
-    assert response.get_json()["language"] == "es"
-    assert response.get_json()["research_name"] == "A"
-
-
-def test_put_settings_bad_language_changes_nothing(flask_client, tmp_path):
-    """A bad language is rejected before any folder is created."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    response = flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder),
-        "language": "fr"})
-    assert_error(response, 400, "invalid_language")
-    assert not (folder / "Drop Zone").exists()
-    assert flask_client.get("/settings").get_json()["research_name"] == ""
-
-
-def test_folder_not_empty_error_includes_count(flask_client, tmp_path):
-    """The frontend gets the number of items as its own field."""
-    folder = tmp_path / "Full"
-    folder.mkdir()
-    (folder / "a.pdf").write_text("x")
-    (folder / "b.pdf").write_text("x")
-    response = flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder)})
-    assert_error(response, 409, "folder_not_empty")
-    assert response.get_json()["error"]["count"] == 2
-
-
-def test_put_settings_saves_naming_template(flask_client, tmp_path):
-    """The template is saved with the rest of the form."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    response = flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder),
-        "naming_template": "{source}_{date}_{topic}"})
-    assert response.status_code == 200
-    assert flask_client.get("/settings").get_json()["naming_template"] \
-        == "{source}_{date}_{topic}"
-
-
-@pytest.mark.parametrize("template, reason, token", [
-    ("", "empty", ""),
-    ("my-files", "no_token", ""),
-    ("{date}_{titulo}", "unknown", "{titulo}"),
-    ("{date}/{topic}", "chars", ""),
-])
-def test_put_settings_rejects_bad_template(flask_client, tmp_path,
-                                           template, reason, token):
-    """A bad template is rejected before anything is saved."""
-    folder = tmp_path / "Research"
-    folder.mkdir()
-    response = flask_client.put("/settings", json={
-        "research_name": "A", "target_directory": str(folder),
-        "naming_template": template})
-    assert_error(response, 400, "invalid_template")
-    error = response.get_json()["error"]
-    assert error["reason"] == reason
-    assert error["token"] == token
-    assert not (folder / "Drop Zone").exists()
-    assert flask_client.get("/settings").get_json()["naming_template"] \
-        == "{date}_{topic}"
-
-
 def setup_project_with_text_doc(flask_client, repo, tmp_path, fake_keyring):
-    """Configure a project and add one document that has a text file."""
-    folder = tmp_path / "project"
-    folder.mkdir()
-    flask_client.put("/settings", json={
-        "research_name": "X", "target_directory": str(folder)})
+    """Set the AI provider and add one document that has a text file."""
+    folder = tmp_path / "Research"
     flask_client.put("/settings/ai-provider", json={
         "provider_name": "gemini", "model": "gemini-2.5-flash",
         "api_key": "test-key"})

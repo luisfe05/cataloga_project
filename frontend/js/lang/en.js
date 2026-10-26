@@ -42,8 +42,7 @@ const LANG_EN = {
     "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Your old Inbox folder still has files. "
         + "Move them to Drop Zone to catalog them.",
-    "catalog.no_folder":
-        "Go to Settings to choose the project folder and the AI provider.",
+    "catalog.no_folder": "Go to Settings to choose the AI provider.",
     "catalog.empty": "Drop files into the Drop Zone folder inside {path} "
         + "and they will appear here once they are classified.",
     "catalog.no_match": "No files match your search.",
@@ -134,6 +133,22 @@ const LANG_EN = {
     "naming.err_chars":
         "File names cannot use these characters: / \\ : * ? \" < > |",
 
+    // Projects (multi-project)
+    "header.new_project": "New project…",
+    "header.unavailable": "{name} (not available)",
+    "project.edit_title": "Project settings",
+    "project.new_title": "New project",
+    "project.folder_locked": "The project folder can't change, because the "
+        + "catalog is saved inside it.",
+    "project.create": "Create project",
+    "project.creating":
+        "Creating the project and testing the AI connection...",
+    "project.created": "Project created. The AI connection works.",
+    "project.opened_existing": "This folder already had a Cataloga "
+        + "catalog, so it was added to your projects.",
+    "project.cancel": "Cancel",
+    "catalog.no_project": "Create a project in Settings to start.",
+
     // Labels for values stored in the database. The stored value itself
     // never changes; only what the user sees.
     "value.Press": "Press",
@@ -162,5 +177,10 @@ const LANG_EN = {
     "error.unsupported_format": "Only CSV export is supported.",
     "error.connection_failed": "Could not connect to the AI provider. "
         + "Check the API key and the model.",
+    "error.no_project": "There is no open project. Create one in Settings.",
+    "error.project_unavailable": "The project folder {path} is not "
+        + "available. Connect the drive or choose another project.",
+    "error.project_exists":
+        "That folder is already a project. Choose it from the project list.",
     "error.generic": "Something went wrong. Try again.",
 };

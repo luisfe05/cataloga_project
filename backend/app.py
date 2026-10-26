@@ -1,23 +1,33 @@
 """Flask application factory.
 
 Creates and configures the Flask app, registers all route blueprints,
-and initializes the database on first run.
+and gets the project list ready: the old single database is turned
+into the first project if needed, and the active project's catalog is
+brought up to date.
 """
+
+import os
 
 from flask import Flask
 from flask_cors import CORS
-from backend.routes.documents import documents_bp
+
+from backend.config import projects
+from backend.db.schema import DB_PATH, init_db
 from backend.routes.dashboard import dashboard_bp
+from backend.routes.documents import documents_bp
+from backend.routes.projects import projects_bp
 from backend.routes.settings import settings_bp
-from backend.db.schema import init_db, DB_PATH
 
 
-def create_app(db_path=DB_PATH):
+def create_app(projects_path=projects.PROJECTS_PATH, old_db_path=DB_PATH):
     """Create and configure the Flask application.
 
     Args:
-        db_path (str): Path to the database file. Defaults to
-                       database/catalog.db. Tests pass a temporary file.
+        projects_path (str): Path to projects.json. Tests pass a
+            temporary file.
+        old_db_path (str): Path to the single database used before
+            projects existed. It is only read, to create the first
+            project. Tests pass a temporary file.
 
     Returns:
         Flask: The configured app instance.
@@ -28,15 +38,19 @@ def create_app(db_path=DB_PATH):
     # Flask routes on localhost without being blocked by CORS.
     CORS(app)
 
-    # Register the three route blueprints.
     app.register_blueprint(documents_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(projects_bp)
 
-    # Save the database path so routes can find it later.
-    app.config["DB_PATH"] = db_path
+    # Save the project list's path so routes can find it later.
+    app.config["PROJECTS_PATH"] = projects_path
 
-    # Create database tables if they don't exist yet.
-    init_db(db_path)
+    projects.migrate_old_database(projects_path, old_db_path)
+
+    # Add any column a catalog made by an older version is missing.
+    folder = projects.active_folder(projects_path)
+    if folder and os.path.isfile(projects.catalog_path(folder)):
+        init_db(projects.catalog_path(folder))
 
     return app

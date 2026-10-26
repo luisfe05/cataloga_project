@@ -18,13 +18,25 @@ This is a Holberton School Portfolio Project.
 | Tests | pytest |
 | Interface languages | English (default) and Spanish (Latin America), chosen in Settings |
 
+## Projects
+
+Cataloga can hold several research projects. Each one has its own folder and its own catalog, saved inside that folder in `.cataloga/catalog.db`. Choose the project from the dropdown at the top of the Catalog screen, or pick "New project" there.
+
+| Item | Where it is saved |
+|---|---|
+| A project's catalog, name, file names method, and AI provider | `<project folder>/.cataloga/catalog.db` |
+| The list of projects, the active project, and the language | `projects.json` in the app's data folder |
+| API keys | OS keyring, shared by every project |
+
+The first time this version opens, the catalog of an older version becomes the first project. Nothing is lost, and the old database file is left as a backup.
+
 ## How files are added
 
 | Step | What happens |
 |---|---|
-| 1 | In Settings, choose a project folder. Cataloga creates a Drop Zone folder and the five media-type folders inside it. |
+| 1 | Create a project with a name and a folder. Cataloga creates a Drop Zone folder and the five media-type folders inside it. |
 | 2 | Drop new files into Drop Zone. Files that were already in the project folder are never moved. |
-| 3 | Every few seconds, Cataloga classifies each file in Drop Zone, moves it to its media-type folder, and adds it to the catalog. |
+| 3 | Every few seconds, Cataloga classifies each file in the active project's Drop Zone, moves it to its media-type folder, and adds it to that project's catalog. |
 
 Projects made with an older version have an Inbox folder instead. Cataloga renames it to Drop Zone the first time it checks the project folder. If both folders exist and Inbox still has files, the Catalog screen shows a warning. Cataloga does not move those files.
 
@@ -56,11 +68,11 @@ In Settings, choose how Cataloga names new files. Files already in the catalog k
 | backend/models/ | Document class, one worksheet row |
 | backend/db/ | Database schema and CatalogRepository (all database reads and writes) |
 | backend/pipeline/ | ClassificationPipeline, FileOrganizer, and the AI provider clients |
-| backend/config/ | AppConfig, the app settings |
-| backend/routes/ | API endpoints for documents, dashboard, and settings |
+| backend/config/ | AppConfig (a project's settings) and the project list |
+| backend/routes/ | API endpoints for documents, dashboard, settings, and projects |
 | frontend/ | HTML, CSS, and JavaScript for the app screens |
 | tests/ | pytest test suite |
-| database/ | Local SQLite database (not tracked by git) |
+| database/ | When running from the code: projects.json and the old single database (not tracked by git) |
 
 ## Status
 

@@ -65,7 +65,9 @@ function errorText(error) {
     if (!(key in LANG_EN)) {
         return t("error.generic");
     }
-    return t(key, { n: error.count });
+    // count and path are sent by the backend for some errors, like
+    // folder_not_empty and project_unavailable.
+    return t(key, { n: error.count, path: error.path });
 }
 
 /**
