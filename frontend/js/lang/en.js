@@ -138,6 +138,25 @@ const LANG_EN = {
     "naming.err_chars":
         "File names cannot use these characters: / \\ : * ? \" < > |",
 
+    // Account and login
+    "auth.setup_title": "Create your account",
+    "auth.setup_hint": "This account protects Cataloga on this computer. "
+        + "It does not encrypt your files. Keep the password somewhere "
+        + "safe: there is no way to recover it.",
+    "auth.login_title": "Log in",
+    "auth.username": "Username",
+    "auth.password": "Password",
+    "auth.confirm_password": "Confirm password",
+    "auth.create_account": "Create account",
+    "auth.log_in": "Log in",
+    "auth.log_out": "Log out",
+    "auth.password_mismatch": "The passwords do not match.",
+    "account.title": "Account",
+    "account.change_password": "Change password",
+    "account.current_password": "Current password",
+    "account.new_password": "New password",
+    "account.password_changed": "Password changed. You are still logged in.",
+
     // Projects (multi-project)
     "header.new_project": "New project…",
     "header.unavailable": "{name} (not available)",
@@ -199,5 +218,16 @@ const LANG_EN = {
         + "available. Connect the drive or choose another project.",
     "error.project_exists":
         "That folder is already a project. Choose it from the project list.",
+    "error.unauthorized": "Log in to use Cataloga.",
+    "error.wrong_login": "The username or password is wrong.",
+    "error.wrong_password": "The current password is wrong.",
+    "error.too_many_attempts": "Too many wrong passwords. Try again in "
+        + "{seconds} seconds.",
+    "error.password_too_short":
+        "The password must have at least 8 characters.",
+    "error.password_too_long": "The password is too long. Use 72 "
+        + "characters or fewer (fewer with accents or symbols).",
+    "error.account_exists": "The account already exists. Log in instead.",
+    "error.no_account": "Create the account first.",
     "error.generic": "Something went wrong. Try again.",
 };

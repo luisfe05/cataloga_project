@@ -18,6 +18,37 @@ This is a Holberton School Portfolio Project.
 | Tests | pytest |
 | Interface languages | English (default) and Spanish (Latin America), chosen in Settings |
 
+## Account and login
+
+Cataloga has one local account for the whole app, not one per project. The first time the app opens, it asks you to create the account. After that, it asks you to log in.
+
+| Item | How it works |
+|---|---|
+| Password rules | At least 8 characters, and at most 72 bytes (bcrypt's limit) |
+| Where the account is saved | `account.json`, next to `projects.json`. Never inside a project folder |
+| What is saved | The username and a bcrypt hash of the password. The password itself is never saved |
+| Session | After login, the app gets a session token that only lives in memory. Closing the app or clicking Log out ends the session |
+| Wrong passwords | After 5 in a row, Cataloga waits 30 seconds before it lets you try again |
+| Change the password | Settings, then Account. The session stays open after the change |
+| What it protects | The app. It does not encrypt your files or catalogs |
+
+### Forgot your password
+
+There is no way to recover the password. To start over with a new account:
+
+| Step | What to do |
+|---|---|
+| 1 | Close Cataloga |
+| 2 | Delete the account file (see the table below) |
+| 3 | Open Cataloga and create a new account |
+
+| How you run Cataloga | Command to delete the account file |
+|---|---|
+| The packaged app | `rm ~/Library/Application\ Support/Cataloga/account.json` |
+| From the code | `rm database/account.json` (from the `cataloga` folder) |
+
+This only deletes the account. Your projects, their folders, their files, and their catalogs stay as they are, and they show up again after you create the new account.
+
 ## Projects
 
 Cataloga can hold several research projects. Each one has its own folder and its own catalog, saved inside that folder in `.cataloga/catalog.db`. Choose the project from the dropdown at the top of the Catalog screen, or pick "New project" there.

@@ -119,20 +119,39 @@ document.getElementById("project-select")
     .addEventListener("change", chooseProject);
 
 /**
- * Load the saved language, then draw the screens.
- * If the backend does not answer, the app starts in English and each
- * screen shows its own "could not load" message.
+ * Load the saved language, then show the account screen: create the
+ * account the first time, log in after that (see auth.js).
+ * GET /auth/status works without logging in. If the backend does not
+ * answer, the app starts in English and the login screen says so.
  */
 async function startApp() {
-    let language = "en";
+    let status = null;
     try {
-        const settings = await getSettings();
-        language = settings.language;
+        status = await getAuthStatus();
     } catch (error) {
-        // Keep English; loadCatalog() below shows the error.
+        // Keep English; the login screen shows the error below.
     }
-    setLanguage(language);
+    setLanguage(status ? status.language : "en");
     fillProviders();
+    if (status && !status.account_exists) {
+        showSetupScreen();
+        return;
+    }
+    showLoginScreen();
+    if (!status) {
+        showAuthMessage("login-message", t("catalog.backend_down"));
+    }
+}
+
+/**
+ * Show the app after a successful login or account setup, and draw
+ * every screen with the active project's data.
+ */
+function enterApp() {
+    document.getElementById("auth-screen").classList.add("hidden");
+    document.getElementById("nav-bar").classList.remove("hidden");
+    document.getElementById("app-main").classList.remove("hidden");
+    showView("catalog");
     loadProjectHeader();
     loadSettings();
     loadCatalog();
