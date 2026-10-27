@@ -20,9 +20,9 @@ from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.pipeline import naming
+from backend.pipeline.ai_providers import DEFAULT_MODEL, DEFAULT_PROVIDER
 from backend.pipeline.file_organizer import FileOrganizer
-from backend.routes import (error_response, get_active_repo,
-                            project_status, projects_path)
+from backend.routes import error_response, project_status, projects_path
 
 projects_bp = Blueprint("projects", __name__)
 
@@ -53,24 +53,6 @@ def list_projects():
         200: JSON from project_list_response().
     """
     return jsonify(project_list_response()), 200
-
-
-def copy_active_provider(new_repo):
-    """Give a new project the AI provider and model of the active one.
-
-    The API key is in the OS keyring, one per provider, so the new
-    project can use it right away without typing it again.
-
-    Args:
-        new_repo (CatalogRepository): The new project's catalog.
-    """
-    repo, error = get_active_repo()
-    if error:
-        return
-    provider = repo.get_active_provider()
-    if provider:
-        new_repo.set_active_provider(provider["provider_name"],
-                                     provider["model"])
 
 
 @projects_bp.route("/projects", methods=["POST"])
@@ -150,8 +132,9 @@ def create_project():
     new_repo = CatalogRepository(db_path)
     new_repo.save_app_config(name, folder)
     new_repo.save_naming_template(template)
-    # Copied before the new project becomes the active one.
-    copy_active_provider(new_repo)
+    # Every new project starts with Ollama Cloud, so it works without
+    # typing a key. The user can change it in Advanced settings.
+    new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)
     projects.add_project(projects_path(), name, folder)
     return jsonify({"name": name, "folder": folder,
                     "opened_existing": False}), 201

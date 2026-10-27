@@ -79,7 +79,12 @@ const LANG_ES = {
     "settings.folder": "Carpeta del proyecto",
     "settings.browse": "Buscar carpeta",
     "settings.ai_title": "Proveedor de IA",
-    "settings.ai_hint": "Conecta tu propia clave de API de IA.",
+    "settings.ai_using": "Cataloga usa {provider} ({model}).",
+    "settings.ai_needs_key": "{provider} necesita una clave de API. "
+        + "Agrégala en Configuración avanzada.",
+    "settings.advanced": "Configuración avanzada",
+    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tu clave "
+        + "de API se guarda en el Llavero de macOS.",
     "settings.ai_provider": "Proveedor de IA",
     "settings.api_key": "Clave de API",
     "settings.api_key_placeholder": "Pega tu clave de API",
@@ -178,6 +183,9 @@ const LANG_ES = {
         + "modos para usar esta carpeta.",
     "error.unsupported_provider": "Ese proveedor de IA no es compatible.",
     "error.unsupported_format": "Solo se puede exportar en CSV.",
+    "error.keyring_failed": "No se pudo guardar la clave de API en el "
+        + "Llavero de macOS. Abre Acceso a Llaveros, revisa que el llavero "
+        + "de inicio de sesión esté desbloqueado y vuelve a intentarlo.",
     "error.connection_failed": "No se pudo conectar con el proveedor de IA. "
         + "Revisa la clave de API y el modelo.",
     "error.no_project":
