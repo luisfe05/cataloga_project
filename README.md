@@ -28,6 +28,8 @@ Cataloga can hold several research projects. Each one has its own folder and its
 | The list of projects, the active project, and the language | `projects.json` in the app's data folder |
 | API keys | OS keyring, shared by every project |
 
+To take a project out of the list, open Settings and click Remove project. This only changes the list. The project folder, its files, and its `.cataloga` catalog are never deleted. To add the project back, choose New project and pick the same folder: Cataloga opens its catalog with all its data.
+
 The first time this version opens, the catalog of an older version becomes the first project. Nothing is lost, and the old database file is left as a backup.
 
 ## AI providers and API keys

@@ -368,6 +368,48 @@ body {
     color: #2e7d32;
 }
 
+/* Remove project: kept apart from Save so it is not clicked by mistake */
+.remove-project {
+    border-top: 1px solid #e3e3e6;
+    margin-top: 32px;
+    padding-top: 20px;
+}
+
+.remove-project .secondary-button {
+    color: #b3261e;
+    margin-bottom: 0;
+}
+
+/* Confirmation dialog in the app window */
+.confirm-dialog {
+    border: none;
+    border-radius: 10px;
+    max-width: 400px;
+    padding: 28px;
+    color: #3a3a44;
+}
+
+/* The page behind the open dialog is dimmed. */
+.confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.confirm-dialog h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 0;
+}
+
+.confirm-dialog p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin-bottom: 20px;
+}
+
+.danger-button {
+    background: #b3261e;
+}
+
 /* Download button and Edit Mode switch in the catalog toolbar */
 .pill-button {
     border: 1px solid #c9c9cf;

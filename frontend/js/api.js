@@ -179,3 +179,17 @@ async function setActiveProject(folder) {
     });
     return handleResponse(response);
 }
+
+/** DELETE /projects - take a project out of the list. Its folder and
+ * catalog are never deleted.
+ * @param {string} folder
+ * @returns {Promise<Object>} The project list, like getProjects().
+ */
+async function removeProject(folder) {
+    const response = await fetch(`${BASE_URL}/projects`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
+    });
+    return handleResponse(response);
+}

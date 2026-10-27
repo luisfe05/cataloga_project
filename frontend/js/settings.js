@@ -25,6 +25,10 @@
  * answers step 1 with a "folder_not_empty" warning. The button then
  * changes to "Save anyway", and the next click confirms the folder.
  *
+ * Remove project (only for the active project) asks first in a dialog
+ * inside the app, then calls DELETE /projects. It only takes the
+ * project out of the list: the folder and its catalog stay.
+ *
  * The Language dropdown works on its own: a new choice is applied and
  * saved right away (PUT /settings with only the language).
  *
@@ -97,6 +101,9 @@ let hasProjects = false;
 // True once pywebview's folder picker can be used.
 let pywebviewReady = Boolean(window.pywebview && window.pywebview.api);
 
+// Saved name of the active project, for the Remove project dialog.
+let savedProjectName = "";
+
 // Names of the providers that have an API key ready, from GET /settings.
 let providersWithKey = [];
 
@@ -136,6 +143,8 @@ function setProjectMode(mode) {
         .classList.toggle("hidden", isNew);
     document.getElementById("cancel-new-project")
         .classList.toggle("hidden", !(isNew && hasProjects));
+    document.getElementById("remove-project-section")
+        .classList.toggle("hidden", isNew);
     updateBrowseButton();
     resetFolderWarning();
 }
@@ -356,6 +365,7 @@ async function loadSettings() {
         hasProjects = settings.project_status !== "none";
         document.getElementById("research-name").value =
             settings.research_name;
+        savedProjectName = settings.research_name;
         document.getElementById("target-directory").value =
             settings.target_directory;
 
@@ -459,6 +469,41 @@ async function saveSettings(event) {
 }
 
 /**
+ * Ask in the app's own dialog before removing the active project.
+ */
+function openRemoveDialog() {
+    document.getElementById("remove-project-title").textContent =
+        t("project.remove_title", { name: savedProjectName });
+    document.getElementById("remove-project-error").textContent = "";
+    document.getElementById("remove-project-confirm").disabled = false;
+    document.getElementById("remove-project-dialog").showModal();
+}
+
+/**
+ * Take the active project out of the list (DELETE /projects). The
+ * backend makes the most recently opened project active. With none
+ * left, loadSettings() shows the New project form.
+ */
+async function confirmRemoveProject() {
+    const dialog = document.getElementById("remove-project-dialog");
+    const confirmButton = document.getElementById("remove-project-confirm");
+    confirmButton.disabled = true;
+    try {
+        await removeProject(
+            document.getElementById("target-directory").value);
+    } catch (error) {
+        // Keep the dialog open and say what went wrong.
+        document.getElementById("remove-project-error").textContent =
+            errorText(error);
+        confirmButton.disabled = false;
+        return;
+    }
+    dialog.close();
+    await refreshAfterProjectChange();
+    showSettingsMessage(t("project.removed"), "success");
+}
+
+/**
  * Open the system folder picker. It only exists inside the desktop
  * window (pywebview), so in a normal browser the button is hidden.
  */
@@ -512,6 +557,14 @@ document.getElementById("cancel-new-project")
     .addEventListener("click", () => {
         showSettingsMessage("", "");
         loadSettings();
+    });
+document.getElementById("remove-project-button")
+    .addEventListener("click", openRemoveDialog);
+document.getElementById("remove-project-confirm")
+    .addEventListener("click", confirmRemoveProject);
+document.getElementById("remove-project-cancel")
+    .addEventListener("click", () => {
+        document.getElementById("remove-project-dialog").close();
     });
 document.getElementById("ai-provider")
     .addEventListener("change", () => {
