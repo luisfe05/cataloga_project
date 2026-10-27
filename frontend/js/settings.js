@@ -366,6 +366,8 @@ async function loadSettings() {
         document.getElementById("research-name").value =
             settings.research_name;
         savedProjectName = settings.research_name;
+        document.getElementById("account-username").value =
+            settings.username;
         document.getElementById("target-directory").value =
             settings.target_directory;
 

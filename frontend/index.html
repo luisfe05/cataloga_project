@@ -8,8 +8,48 @@
 </head>
 <body>
 
-    <!-- Navigation bar -->
-    <nav id="nav-bar">
+    <!-- Account screen: create the account (first time) or log in.
+         Until the user logs in, the nav bar and the views stay hidden.
+         auth.js decides which form to show. -->
+    <section class="auth-screen hidden" id="auth-screen">
+        <h1 class="auth-title">Cataloga</h1>
+
+        <form class="settings-form auth-form hidden" id="setup-form">
+            <h2 data-i18n="auth.setup_title">Create your account</h2>
+            <p class="hint" data-i18n="auth.setup_hint"></p>
+            <label for="setup-username"
+                   data-i18n="auth.username">Username</label>
+            <input type="text" id="setup-username" autocomplete="username">
+            <label for="setup-password"
+                   data-i18n="auth.password">Password</label>
+            <input type="password" id="setup-password"
+                   autocomplete="new-password">
+            <label for="setup-confirm"
+                   data-i18n="auth.confirm_password">Confirm password</label>
+            <input type="password" id="setup-confirm"
+                   autocomplete="new-password">
+            <button type="submit" class="primary-button"
+                    data-i18n="auth.create_account">Create account</button>
+            <p class="form-message error" id="setup-message"></p>
+        </form>
+
+        <form class="settings-form auth-form hidden" id="login-form">
+            <h2 data-i18n="auth.login_title">Log in</h2>
+            <label for="login-username"
+                   data-i18n="auth.username">Username</label>
+            <input type="text" id="login-username" autocomplete="username">
+            <label for="login-password"
+                   data-i18n="auth.password">Password</label>
+            <input type="password" id="login-password"
+                   autocomplete="current-password">
+            <button type="submit" class="primary-button"
+                    data-i18n="auth.log_in">Log in</button>
+            <p class="form-message error" id="login-message"></p>
+        </form>
+    </section>
+
+    <!-- Navigation bar (hidden until the user logs in) -->
+    <nav id="nav-bar" class="hidden">
         <span class="app-title">Cataloga</span>
         <div class="nav-links">
             <a href="#" class="nav-link active" data-view="catalog"
@@ -18,11 +58,14 @@
                data-i18n="nav.dashboard">Dashboard</a>
             <a href="#" class="nav-link" data-view="settings"
                data-i18n="nav.settings">Settings</a>
+            <button type="button" class="logout-button" id="logout-button"
+                    data-i18n="auth.log_out">Log out</button>
         </div>
     </nav>
 
-    <!-- View containers: only one is visible at a time -->
-    <main>
+    <!-- View containers: only one is visible at a time. Hidden until
+         the user logs in. -->
+    <main id="app-main" class="hidden">
         <div id="view-catalog" class="view">
 
             <!-- Project header: switch projects or start a new one -->
@@ -257,6 +300,36 @@
                             data-i18n="project.remove">Remove project</button>
                 </div>
             </form>
+
+            <!-- Account: one for the whole app, not per project. Its
+                 own form, so the project's Save button never sends it. -->
+            <form class="settings-form" id="password-form">
+                <h2 data-i18n="account.title">Account</h2>
+                <label for="account-username"
+                       data-i18n="auth.username">Username</label>
+                <input type="text" id="account-username" readonly>
+
+                <h2 data-i18n="account.change_password">Change password</h2>
+                <label for="current-password"
+                       data-i18n="account.current_password">Current
+                    password</label>
+                <input type="password" id="current-password"
+                       autocomplete="current-password">
+                <label for="new-password"
+                       data-i18n="account.new_password">New password</label>
+                <input type="password" id="new-password"
+                       autocomplete="new-password">
+                <label for="confirm-new-password"
+                       data-i18n="auth.confirm_password">Confirm
+                    password</label>
+                <input type="password" id="confirm-new-password"
+                       autocomplete="new-password">
+                <button type="submit" class="primary-button"
+                        id="change-password-button"
+                        data-i18n="account.change_password">Change
+                    password</button>
+                <p class="form-message" id="password-message"></p>
+            </form>
         </div>
     </main>
 
@@ -283,6 +356,7 @@
     <script src="js/lang/es.js"></script>
     <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
     <script src="js/catalog.js"></script>
     <script src="js/dashboard.js"></script>

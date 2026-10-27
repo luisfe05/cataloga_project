@@ -365,8 +365,9 @@ document.getElementById("download-button")
 
 // Refresh on a timer, except in Edit Mode, where a refresh would redraw
 // the table and erase what the user is typing.
+// Nothing is asked while logged out.
 setInterval(() => {
-    if (!editMode) {
+    if (!editMode && sessionToken) {
         loadCatalog();
     }
 }, REFRESH_SECONDS * 1000);

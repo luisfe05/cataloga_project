@@ -65,9 +65,12 @@ function errorText(error) {
     if (!(key in LANG_EN)) {
         return t("error.generic");
     }
-    // count and path are sent by the backend for some errors, like
-    // folder_not_empty and project_unavailable.
-    return t(key, { n: error.count, path: error.path });
+    // count, path, and retry_after are sent by the backend for some
+    // errors, like folder_not_empty, project_unavailable, and
+    // too_many_attempts.
+    return t(key, {
+        n: error.count, path: error.path, seconds: error.retry_after,
+    });
 }
 
 /**
