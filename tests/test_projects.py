@@ -1,6 +1,6 @@
 """Tests for multi-project support.
 
-Covers the project list (backend/config/projects.py), the three
+Covers the project list (backend/config/projects.py), the four
 project routes, and turning the old single database into the first
 project. Everything runs in temporary folders.
 """
@@ -229,6 +229,122 @@ def test_switch_to_unknown_folder(flask_client, tmp_path):
 def test_switch_needs_a_folder(flask_client):
     """The folder is required."""
     assert_error(flask_client.put("/projects/active", json={}), 400,
+                 "missing_field")
+
+
+# --- DELETE /projects ---
+
+def set_last_opened(projects_path, times):
+    """Write a last_opened time for each folder in the project list.
+
+    Projects made in the same second get the same time, so tests set
+    clear times by hand.
+    """
+    data = projects.load_projects(projects_path)
+    for project in data["projects"]:
+        project["last_opened"] = times[project["folder"]]
+    projects.save_projects(projects_path, data)
+
+
+def test_remove_an_inactive_project(flask_client, app, projects_path,
+                                    tmp_path):
+    """Removing another project keeps the active one."""
+    other = tmp_path / "Other"
+    make_project(projects_path, other, name="Other")
+    projects.set_active_project(projects_path, app.config["PROJECT_FOLDER"])
+
+    response = flask_client.delete("/projects", json={"folder": str(other)})
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["active_folder"] == app.config["PROJECT_FOLDER"]
+    assert [p["name"] for p in body["projects"]] == ["Research"]
+
+
+def test_remove_the_active_project(flask_client, app, projects_path,
+                                   tmp_path):
+    """The most recently opened of the others becomes active."""
+    older = tmp_path / "Older"
+    newer = tmp_path / "Newer"
+    active = tmp_path / "Active"
+    make_project(projects_path, older, name="Older")
+    make_project(projects_path, newer, name="Newer")
+    make_project(projects_path, active, name="Active")
+    set_last_opened(projects_path, {
+        app.config["PROJECT_FOLDER"]: "2026-10-01T09:00:00",
+        str(older): "2026-10-10T09:00:00",
+        str(newer): "2026-10-20T09:00:00",
+        str(active): "2026-10-27T09:00:00",
+    })
+
+    response = flask_client.delete("/projects", json={"folder": str(active)})
+
+    assert response.status_code == 200
+    assert response.get_json()["active_folder"] == str(newer)
+    assert flask_client.get("/settings").get_json()[
+        "research_name"] == "Newer"
+
+
+def test_remove_the_last_project(flask_client, app, projects_path):
+    """With no project left, the app is back to the New project state,
+    and the list file stays (so the old database is not converted
+    again)."""
+    response = flask_client.delete(
+        "/projects", json={"folder": app.config["PROJECT_FOLDER"]})
+
+    assert response.status_code == 200
+    assert response.get_json() == {"active_folder": "", "projects": []}
+    assert flask_client.get("/settings").get_json()[
+        "project_status"] == "none"
+    assert os.path.isfile(projects_path)
+
+
+def test_remove_never_deletes_files(flask_client, app):
+    """The folder, Drop Zone, .cataloga, and the user's files stay."""
+    folder = app.config["PROJECT_FOLDER"]
+    user_file = os.path.join(folder, "my notes.txt")
+    with open(user_file, "w") as file:
+        file.write("keep me")
+
+    flask_client.delete("/projects", json={"folder": folder})
+
+    assert os.path.isdir(folder)
+    assert os.path.isdir(os.path.join(folder, "Drop Zone"))
+    assert os.path.isfile(projects.catalog_path(folder))
+    with open(user_file) as file:
+        assert file.read() == "keep me"
+
+
+def test_add_a_removed_folder_again(flask_client, app):
+    """Adding the same folder again opens its catalog with its data."""
+    folder = app.config["PROJECT_FOLDER"]
+    CatalogRepository(projects.catalog_path(folder)).add_document(Document(
+        original_filename="a.pdf", filename="a.pdf",
+        media_type="Press", file_path=folder + "/Drop Zone/Press/a.pdf",
+        date_added="2026-10-27T10:00:00"))
+    flask_client.delete("/projects", json={"folder": folder})
+
+    response = flask_client.post("/projects", json={"name": "Typed name",
+                                                    "folder": folder})
+
+    assert response.status_code == 201
+    assert response.get_json()["opened_existing"] is True
+    # The saved name wins over the one typed in the form.
+    assert response.get_json()["name"] == "Research"
+    documents = flask_client.get("/documents").get_json()
+    assert [d["filename"] for d in documents] == ["a.pdf"]
+
+
+def test_remove_unknown_folder(flask_client, tmp_path):
+    """Only folders in the list can be removed."""
+    response = flask_client.delete("/projects",
+                                   json={"folder": str(tmp_path / "x")})
+    assert_error(response, 404, "not_found")
+
+
+def test_remove_needs_a_folder(flask_client):
+    """The folder is required."""
+    assert_error(flask_client.delete("/projects", json={}), 400,
                  "missing_field")
 
 

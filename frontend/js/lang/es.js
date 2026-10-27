@@ -156,6 +156,15 @@ const LANG_ES = {
     "project.opened_existing": "Esta carpeta ya tenía un catálogo de "
         + "Cataloga, así que se agregó a tus proyectos.",
     "project.cancel": "Cancelar",
+    "project.remove": "Quitar proyecto",
+    "project.remove_title": "¿Quitar \"{name}\" de Cataloga?",
+    "project.remove_text": "Esto solo saca el proyecto de tu lista. Su "
+        + "carpeta, sus archivos y su catálogo se quedan donde están. "
+        + "Puedes volver a agregar la misma carpeta con Proyecto nuevo y "
+        + "todo va a estar ahí.",
+    "project.remove_confirm": "Quitar",
+    "project.removed": "Proyecto quitado de la lista. Su carpeta y sus "
+        + "archivos no cambiaron.",
     "catalog.no_project": "Crea un proyecto en Configuración para empezar.",
 
     // Labels for values stored in the database. The stored value itself

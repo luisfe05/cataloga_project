@@ -186,6 +186,37 @@ def set_active_project(path, folder):
     save_projects(path, data)
 
 
+def remove_project(path, folder):
+    """Take a project out of the list. Nothing is deleted from disk.
+
+    The project's folder, its files, and its .cataloga catalog stay
+    where they are, so the folder can be added again later with all its
+    data. If the removed project was the active one, the most recently
+    opened of the others becomes active. With no projects left, there
+    is no active project ('').
+
+    Args:
+        path (str): Path to projects.json.
+        folder (str): A normalized folder path.
+
+    Raises:
+        KeyError: If the folder is not in the list.
+    """
+    data = load_projects(path)
+    project = find_project(data, folder)
+    if project is None:
+        raise KeyError(folder)
+    data["projects"].remove(project)
+    if data["active_folder"] == folder:
+        data["active_folder"] = ""
+        if data["projects"]:
+            # ISO timestamps sort in time order, so max() is the newest.
+            newest = max(data["projects"],
+                         key=lambda item: item["last_opened"])
+            data["active_folder"] = newest["folder"]
+    save_projects(path, data)
+
+
 def rename_project(path, folder, name):
     """Change the name shown for a project in the list.
 
