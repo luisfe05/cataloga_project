@@ -220,6 +220,22 @@ body {
     margin: 12px 0 20px;
 }
 
+/* Advanced settings: closed by default, same column layout inside. */
+.advanced-settings {
+    margin-bottom: 20px;
+}
+
+.advanced-settings summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #3a3a44;
+}
+
+.advanced-fields {
+    display: flex;
+    flex-direction: column;
+}
+
 .settings-form label {
     font-size: 0.8rem;
     font-weight: 600;

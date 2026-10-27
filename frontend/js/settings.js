@@ -16,6 +16,11 @@
  * This way a wrong API key is never saved. The key is kept per
  * provider, so a new project can use it without typing it again.
  *
+ * Every new project starts with Ollama Cloud. The provider fields are
+ * inside "Advanced settings", which is closed unless the chosen
+ * provider still needs a key or the project uses another provider.
+ * The backend only says which providers have a key, never the key.
+ *
  * If the chosen folder already has the user's own files, the backend
  * answers step 1 with a "folder_not_empty" warning. The button then
  * changes to "Save anyway", and the next click confirms the folder.
@@ -32,6 +37,10 @@
 // backend uses. The first model of each provider is the default, chosen
 // for a free tier or the lowest cost.
 const AI_PROVIDERS = {
+    ollama: {
+        label: "Ollama Cloud",
+        models: ["gemma4:31b", "nemotron-3-nano:30b"],
+    },
     gemini: {
         label: "Google Gemini",
         models: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
@@ -88,8 +97,8 @@ let hasProjects = false;
 // True once pywebview's folder picker can be used.
 let pywebviewReady = Boolean(window.pywebview && window.pywebview.api);
 
-// True when an API key is already saved, to pick the key field's hint.
-let hasSavedKey = false;
+// Names of the providers that have an API key ready, from GET /settings.
+let providersWithKey = [];
 
 /**
  * Show "Save" or "Save anyway" on the button, in the current language.
@@ -132,8 +141,8 @@ function setProjectMode(mode) {
 }
 
 /**
- * Empty the form for a new project. The AI provider and model stay as
- * they are, so the new project starts with the same ones.
+ * Empty the form for a new project. The AI provider goes back to
+ * Ollama Cloud, like the backend does for every new project.
  */
 function startNewProject() {
     setProjectMode("new");
@@ -141,15 +150,51 @@ function startNewProject() {
     document.getElementById("target-directory").value = "";
     document.getElementById("api-key").value = "";
     showSavedTemplate(NAMING_METHODS.m1);
+    showProvider("ollama", "");
     showSettingsMessage("", "");
+}
+
+/**
+ * True when the provider chosen in the form has an API key ready.
+ * @returns {boolean}
+ */
+function chosenProviderHasKey() {
+    const provider = document.getElementById("ai-provider").value;
+    return providersWithKey.includes(provider);
 }
 
 /**
  * Show the API key field's hint, in the current language.
  */
 function updateKeyPlaceholder() {
-    document.getElementById("api-key").placeholder = hasSavedKey
+    document.getElementById("api-key").placeholder = chosenProviderHasKey()
         ? t("settings.api_key_saved") : t("settings.api_key_placeholder");
+}
+
+/**
+ * Say which provider and model are in use, or that a key is missing.
+ */
+function updateAIStatus() {
+    const provider = document.getElementById("ai-provider").value;
+    const model = document.getElementById("ai-model").value;
+    const vars = { provider: AI_PROVIDERS[provider].label, model: model };
+    document.getElementById("ai-status").textContent = chosenProviderHasKey()
+        ? t("settings.ai_using", vars) : t("settings.ai_needs_key", vars);
+}
+
+/**
+ * Put a provider and model in the form and decide if Advanced settings
+ * starts open: only when the provider needs a key or is not Ollama.
+ * @param {string} provider - A key of AI_PROVIDERS.
+ * @param {string} model - Model to select, if it is in the list.
+ */
+function showProvider(provider, model) {
+    document.getElementById("ai-provider").value = provider;
+    fillModels(model);
+    document.getElementById("ai-advanced").open =
+        provider !== "ollama" || !chosenProviderHasKey();
+    updateKeyPlaceholder();
+    updateAIStatus();
 }
 
 /**
@@ -314,18 +359,16 @@ async function loadSettings() {
         document.getElementById("target-directory").value =
             settings.target_directory;
 
-        if (settings.active_provider in AI_PROVIDERS) {
-            document.getElementById("ai-provider").value =
-                settings.active_provider;
-        }
-        fillModels(settings.active_model);
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
 
         document.getElementById("api-key").value = "";
-        hasSavedKey = Boolean(settings.active_provider);
-        updateKeyPlaceholder();
+        providersWithKey = settings.providers_with_key;
+        // A project with no provider saved yet gets Ollama Cloud.
+        const provider = settings.active_provider in AI_PROVIDERS
+            ? settings.active_provider : "ollama";
+        showProvider(provider, settings.active_model);
 
         // With no project yet, the form starts as "New project".
         if (hasProjects) {
@@ -437,6 +480,7 @@ async function changeLanguage() {
     setLanguage(language);
     updateSaveButton();
     updateKeyPlaceholder();
+    updateAIStatus();
     updateNamingPreview();
     document.getElementById("project-form-title").textContent = t(
         projectMode === "new" ? "project.new_title" : "project.edit_title");
@@ -470,7 +514,13 @@ document.getElementById("cancel-new-project")
         loadSettings();
     });
 document.getElementById("ai-provider")
-    .addEventListener("change", () => fillModels(""));
+    .addEventListener("change", () => {
+        fillModels("");
+        updateKeyPlaceholder();
+        updateAIStatus();
+    });
+document.getElementById("ai-model")
+    .addEventListener("change", updateAIStatus);
 // A different folder needs its own warning, so start over when it changes.
 document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);

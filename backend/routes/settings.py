@@ -13,6 +13,7 @@ Endpoints:
 """
 
 from flask import Blueprint, jsonify, request
+from keyring.errors import KeyringError
 
 from backend.config import projects
 from backend.config.app_config import LANGUAGES, AppConfig
@@ -56,9 +57,10 @@ def get_settings():
         200: JSON with research_name, target_directory (the project
              folder), language (the same for every project),
              naming_template, active_provider, active_model,
-             old_inbox_has_files, and project_status ('none',
-             'unavailable', or 'ok'). With no usable project, the
-             project fields are empty. The API key is never returned.
+             old_inbox_has_files, project_status ('none',
+             'unavailable', or 'ok'), and providers_with_key. With no
+             usable project, the project fields are empty. API keys
+             are never returned, only which providers have one.
     """
     data = projects.load_projects(projects_path())
     folder = data["active_folder"]
@@ -79,7 +81,25 @@ def get_settings():
     settings["project_status"] = status
     settings["old_inbox_has_files"] = (
         status == "ok" and old_inbox_has_files(FileOrganizer(folder)))
+    settings["providers_with_key"] = providers_with_key()
     return jsonify(settings), 200
+
+
+def providers_with_key():
+    """Return the names of the providers that have an API key ready.
+
+    Only the names are sent to the screen, never the keys. Each client
+    looks for its own key (the keyring, and for Ollama Cloud also the
+    development key), so this uses the same rules as the real requests.
+
+    Returns:
+        list[str]: e.g. ['ollama', 'groq'].
+    """
+    names = []
+    for name, client_class in PROVIDERS.items():
+        if client_class().api_key:
+            names.append(name)
+    return names
 
 
 @settings_bp.route("/settings", methods=["PUT"])
@@ -163,7 +183,8 @@ def update_ai_provider():
 
     Returns:
         200: The active provider and model (no key echoed back).
-        400: If a field is missing or the provider is not supported.
+        400: If a field is missing, the provider is not supported, or
+             the keyring could not save the key ('keyring_failed').
         409: If there is no usable project.
     """
     body = request.get_json(silent=True)
@@ -181,7 +202,16 @@ def update_ai_provider():
 
     api_key = body.get("api_key")
     if isinstance(api_key, str) and api_key.strip():
-        save_api_key(values["provider_name"], api_key.strip())
+        try:
+            save_api_key(values["provider_name"], api_key.strip())
+        except KeyringError:
+            # For example macOS error -25244, when the Keychain refuses
+            # to let the app write. Nothing is saved, not even the
+            # provider, so the project keeps working as before.
+            return error_response(
+                "keyring_failed",
+                "The API key could not be saved in the system keychain.",
+                400)
 
     AppConfig(repo).set_active_provider(values["provider_name"],
                                         values["model"])
