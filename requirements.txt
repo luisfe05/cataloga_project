@@ -6,6 +6,7 @@ anthropic
 groq
 openai
 keyring
+bcrypt
 openpyxl
 pypdf
 pytest
