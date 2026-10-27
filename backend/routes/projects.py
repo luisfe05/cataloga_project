@@ -7,9 +7,12 @@ Endpoints:
                               already has a Cataloga catalog) and make
                               it active.
     PUT  /projects/active     Switch to another project in the list.
+    DELETE /projects          Take a project out of the list. Its folder
+                              and catalog are never deleted.
 
 Added in the scope change of Oct 25 (multi-project). Each project keeps
-its own catalog in <folder>/.cataloga/catalog.db.
+its own catalog in <folder>/.cataloga/catalog.db. DELETE /projects was
+added on Oct 27.
 """
 
 import os
@@ -138,6 +141,37 @@ def create_project():
     projects.add_project(projects_path(), name, folder)
     return jsonify({"name": name, "folder": folder,
                     "opened_existing": False}), 201
+
+
+@projects_bp.route("/projects", methods=["DELETE"])
+def remove_project():
+    """Take a project out of the project list.
+
+    Only projects.json changes. The folder, its files, and .cataloga are
+    never deleted, so adding the same folder again (POST /projects)
+    opens the project with all its data. This works even if the folder
+    is not available, for example on a disconnected drive.
+
+    Request body (JSON): folder.
+
+    Returns:
+        200: JSON from project_list_response(), with the new active
+             project ('' if no project is left).
+        400: If folder is missing.
+        404: If the folder is not in the project list.
+    """
+    body = request.get_json(silent=True)
+    folder = body.get("folder") if isinstance(body, dict) else None
+    if not isinstance(folder, str) or not folder.strip():
+        return error_response("missing_field", "folder is required.", 400)
+    folder = projects.normalize_folder(folder)
+    try:
+        projects.remove_project(projects_path(), folder)
+    except KeyError:
+        return error_response("not_found",
+                              "This folder is not in the project list.",
+                              404)
+    return jsonify(project_list_response()), 200
 
 
 @projects_bp.route("/projects/active", methods=["PUT"])
