@@ -8,11 +8,13 @@ replaced with a fake that returns prepared answers.
 import pytest
 
 from backend.pipeline.ai_providers import (
-    base, claude, create_client, gemini, groq_provider, openai_provider, xai)
+    base, claude, create_client, gemini, groq_provider, ollama_cloud,
+    openai_provider, xai)
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.ai_providers.claude import ClaudeClient
 from backend.pipeline.ai_providers.gemini import GeminiClient
 from backend.pipeline.ai_providers.groq_provider import GroqClient
+from backend.pipeline.ai_providers.ollama_cloud import OllamaCloudClient
 from backend.pipeline.ai_providers.openai_provider import OpenAIClient
 from backend.pipeline.ai_providers.xai import XAIClient
 
@@ -234,6 +236,8 @@ def make_fake_chat_sdk(answer, created_with):
     (groq_provider, "Groq", GroqClient, "llama-3.1-8b-instant", None),
     (openai_provider, "OpenAI", OpenAIClient, "gpt-5.4-nano", None),
     (xai, "OpenAI", XAIClient, "grok-4.7", "https://api.x.ai/v1"),
+    (ollama_cloud, "OpenAI", OllamaCloudClient, "gemma4:31b",
+     "https://ollama.com/v1"),
 ])
 def test_chat_providers_send_prompt(monkeypatch, module, sdk_name,
                                     client_class, model, base_url):
@@ -284,9 +288,9 @@ def test_claude_send_prompt(monkeypatch):
     assert recorded["messages"] == [{"role": "user", "content": "A letter"}]
 
 
-@pytest.mark.parametrize("name", ["gemini", "groq", "claude", "xai",
-                                  "openai"])
-def test_create_client_supports_all_five_providers(name):
+@pytest.mark.parametrize("name", ["ollama", "gemini", "groq", "claude",
+                                  "xai", "openai"])
+def test_create_client_supports_all_six_providers(name):
     """Every provider in the scope can be built by its settings name."""
     client = create_client(name, "some-model")
     assert client.provider_name == name
@@ -294,6 +298,56 @@ def test_create_client_supports_all_five_providers(name):
 
 
 def test_create_client_rejects_unknown_provider():
-    """A name that is not one of the five gives ValueError."""
+    """A name that is not one of the six gives ValueError."""
     with pytest.raises(ValueError):
         create_client("skynet", "x")
+
+
+# --- Ollama Cloud: where the key comes from ---
+
+def test_ollama_key_from_keyring_wins(monkeypatch):
+    """A key saved in the keyring is used before the development key."""
+    monkeypatch.setenv("OLLAMA_API_KEY", "dev-key")
+    assert OllamaCloudClient().api_key == "test-key"
+
+
+def test_ollama_uses_environment_key_without_keyring(monkeypatch):
+    """With no key in the keyring, OLLAMA_API_KEY is used."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: None)
+    monkeypatch.setenv("OLLAMA_API_KEY", "dev-key")
+    assert OllamaCloudClient().api_key == "dev-key"
+
+
+def test_ollama_uses_env_file_without_keyring(monkeypatch, tmp_path):
+    """With no keyring key and no variable, the .env file is read."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: None)
+    env_file = tmp_path / ".env"
+    env_file.write_text('# dev settings\nOTHER=1\nOLLAMA_API_KEY="file-key"\n')
+    monkeypatch.setattr(ollama_cloud, "ENV_PATH", str(env_file))
+    assert OllamaCloudClient().api_key == "file-key"
+
+
+def test_ollama_without_any_key(monkeypatch):
+    """No keyring key, no variable, no .env: the key is None."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: None)
+    assert OllamaCloudClient().api_key is None
+
+
+def test_packaged_app_never_reads_development_key(monkeypatch):
+    """Inside the packaged app (sys.frozen), only the keyring counts."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: None)
+    monkeypatch.setenv("OLLAMA_API_KEY", "dev-key")
+    monkeypatch.setattr(ollama_cloud.sys, "frozen", True, raising=False)
+    assert OllamaCloudClient().api_key is None
+
+
+def test_other_providers_never_read_the_ollama_key(monkeypatch):
+    """The development key is only for Ollama Cloud."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: None)
+    monkeypatch.setenv("OLLAMA_API_KEY", "dev-key")
+    assert GroqClient().api_key is None
