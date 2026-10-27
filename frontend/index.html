@@ -249,9 +249,33 @@
                             data-i18n="project.cancel">Cancel</button>
                 </div>
                 <p class="form-message" id="settings-message"></p>
+
+                <!-- Only for the active project. Opens the dialog below. -->
+                <div class="remove-project hidden" id="remove-project-section">
+                    <button type="button" class="secondary-button"
+                            id="remove-project-button"
+                            data-i18n="project.remove">Remove project</button>
+                </div>
             </form>
         </div>
     </main>
+
+    <!-- Confirmation for Remove project. A <dialog> shown with
+         showModal() stays inside the app window and blocks the page
+         behind it until it is closed. -->
+    <dialog class="confirm-dialog" id="remove-project-dialog">
+        <h2 id="remove-project-title"></h2>
+        <p data-i18n="project.remove_text"></p>
+        <div class="form-buttons">
+            <button type="button" class="primary-button danger-button"
+                    id="remove-project-confirm"
+                    data-i18n="project.remove_confirm">Remove</button>
+            <button type="button" class="secondary-button"
+                    id="remove-project-cancel"
+                    data-i18n="project.cancel">Cancel</button>
+        </div>
+        <p class="form-message error" id="remove-project-error"></p>
+    </dialog>
 
     <!-- Scripts loaded in dependency order. The language files and
          i18n.js come first because every other script uses t(). -->

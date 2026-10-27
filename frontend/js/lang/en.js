@@ -152,6 +152,15 @@ const LANG_EN = {
     "project.opened_existing": "This folder already had a Cataloga "
         + "catalog, so it was added to your projects.",
     "project.cancel": "Cancel",
+    "project.remove": "Remove project",
+    "project.remove_title": "Remove \"{name}\" from Cataloga?",
+    "project.remove_text": "This only takes the project out of your list. "
+        + "Its folder, its files, and its catalog stay where they are. "
+        + "You can add the same folder again later with New project, and "
+        + "everything will be there.",
+    "project.remove_confirm": "Remove",
+    "project.removed": "Project removed from the list. Its folder and "
+        + "files were not changed.",
     "catalog.no_project": "Create a project in Settings to start.",
 
     // Labels for values stored in the database. The stored value itself
