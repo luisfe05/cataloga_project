@@ -142,6 +142,26 @@ const LANG_ES = {
     "naming.err_chars": "Los nombres de archivo no pueden usar estos "
         + "caracteres: / \\ : * ? \" < > |",
 
+    // Account and login
+    "auth.setup_title": "Crea tu cuenta",
+    "auth.setup_hint": "Esta cuenta protege Cataloga en esta computadora. "
+        + "No cifra tus archivos. Guarda la contraseña en un lugar "
+        + "seguro: no hay forma de recuperarla.",
+    "auth.login_title": "Iniciar sesión",
+    "auth.username": "Usuario",
+    "auth.password": "Contraseña",
+    "auth.confirm_password": "Confirmar contraseña",
+    "auth.create_account": "Crear cuenta",
+    "auth.log_in": "Iniciar sesión",
+    "auth.log_out": "Cerrar sesión",
+    "auth.password_mismatch": "Las contraseñas no coinciden.",
+    "account.title": "Cuenta",
+    "account.change_password": "Cambiar contraseña",
+    "account.current_password": "Contraseña actual",
+    "account.new_password": "Contraseña nueva",
+    "account.password_changed":
+        "Contraseña cambiada. Tu sesión sigue abierta.",
+
     // Projects (multi-project)
     "header.new_project": "Proyecto nuevo…",
     "header.unavailable": "{name} (no disponible)",
@@ -203,5 +223,16 @@ const LANG_ES = {
         + "disponible. Conecta el disco o elige otro proyecto.",
     "error.project_exists":
         "Esa carpeta ya es un proyecto. Elígela en la lista de proyectos.",
+    "error.unauthorized": "Inicia sesión para usar Cataloga.",
+    "error.wrong_login": "El usuario o la contraseña no son correctos.",
+    "error.wrong_password": "La contraseña actual no es correcta.",
+    "error.too_many_attempts": "Demasiadas contraseñas incorrectas. "
+        + "Vuelve a intentarlo en {seconds} segundos.",
+    "error.password_too_short":
+        "La contraseña debe tener al menos 8 caracteres.",
+    "error.password_too_long": "La contraseña es demasiado larga. Usa 72 "
+        + "caracteres o menos (menos si tiene acentos o símbolos).",
+    "error.account_exists": "La cuenta ya existe. Inicia sesión.",
+    "error.no_account": "Primero crea la cuenta.",
     "error.generic": "Algo salió mal. Inténtalo de nuevo.",
 };

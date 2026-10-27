@@ -176,7 +176,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "language": "en", "naming_template": "{date}_{topic}",
         "active_provider": None, "active_model": None,
         "old_inbox_has_files": False, "project_status": "ok",
-        "providers_with_key": [],
+        "providers_with_key": [], "username": "",
     }
 
 

@@ -15,7 +15,7 @@ from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
-from tests.conftest import make_project
+from tests.conftest import logged_in_client, make_project
 
 
 def assert_error(response, status, code):
@@ -382,7 +382,7 @@ def test_old_database_becomes_the_first_project(tmp_path):
     projects_path = str(tmp_path / "app_data" / "projects.json")
 
     app = create_app(projects_path=projects_path, old_db_path=old_db)
-    client = app.test_client()
+    client = logged_in_client(app)
 
     documents = client.get("/documents").get_json()
     assert [doc["filename"] for doc in documents] == ["PR_001.pdf"]

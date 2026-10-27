@@ -12,10 +12,10 @@ Endpoints:
                                         config connects.
 """
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from keyring.errors import KeyringError
 
-from backend.config import projects
+from backend.config import account, projects
 from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
@@ -58,7 +58,8 @@ def get_settings():
              folder), language (the same for every project),
              naming_template, active_provider, active_model,
              old_inbox_has_files, project_status ('none',
-             'unavailable', or 'ok'), and providers_with_key. With no
+             'unavailable', or 'ok'), providers_with_key, and the
+             account's username. With no
              usable project, the project fields are empty. API keys
              are never returned, only which providers have one.
     """
@@ -82,6 +83,9 @@ def get_settings():
     settings["old_inbox_has_files"] = (
         status == "ok" and old_inbox_has_files(FileOrganizer(folder)))
     settings["providers_with_key"] = providers_with_key()
+    saved_account = account.load_account(current_app.config["ACCOUNT_PATH"])
+    settings["username"] = saved_account["username"] if saved_account \
+        else ""
     return jsonify(settings), 200
 
 

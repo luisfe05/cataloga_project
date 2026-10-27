@@ -50,7 +50,7 @@ class DesktopApi:
             return ""
         return result[0]
 
-    def save_worksheet(self, query):
+    def save_worksheet(self, query, token):
         """Ask where to save the worksheet, then save the CSV there.
 
         The desktop window can't download files like a browser, so Python
@@ -59,6 +59,8 @@ class DesktopApi:
         Args:
             query (str): The current filters as a URL query string,
                 for example 'status=Manual+Review'. Can be empty.
+            token (str): The session token. Flask asks for it on every
+                route, also when the request comes from Python.
 
         Returns:
             str: The path the file was saved to, or an empty string if
@@ -77,7 +79,9 @@ class DesktopApi:
         url = "http://127.0.0.1:{}/documents/export".format(PORT)
         if query:
             url += "?" + query
-        with urllib.request.urlopen(url) as response:
+        export_request = urllib.request.Request(
+            url, headers={"Authorization": "Bearer " + token})
+        with urllib.request.urlopen(export_request) as response:
             content = response.read()
         with open(path, "wb") as file:
             file.write(content)

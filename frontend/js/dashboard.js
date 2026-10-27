@@ -140,7 +140,7 @@ async function loadDashboard() {
 // Keep the numbers current while the dashboard is open.
 setInterval(() => {
     const view = document.getElementById("view-dashboard");
-    if (!view.classList.contains("hidden")) {
+    if (!view.classList.contains("hidden") && sessionToken) {
         loadDashboard();
     }
 }, REFRESH_SECONDS * 1000);
