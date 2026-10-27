@@ -5,6 +5,8 @@ Provides:
   temporary folder, so tests never touch the real projects.json, the
   old database/catalog.db, or a real project
 - an app with no projects at all, for first-run tests
+- for every test, an empty OS keyring and no Ollama development key,
+  so tests never read Luis's real keys
 """
 
 import os
@@ -15,6 +17,7 @@ from backend.app import create_app
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
+from backend.pipeline.ai_providers import base, ollama_cloud
 from backend.pipeline.file_organizer import FileOrganizer
 
 
@@ -38,6 +41,20 @@ def make_project(projects_path, folder, name="Research"):
     FileOrganizer(str(folder)).ensure_archive_structure()
     projects.add_project(projects_path, name, str(folder))
     return repo
+
+
+@pytest.fixture(autouse=True)
+def no_real_keys(monkeypatch, tmp_path):
+    """Hide the real keyring, OLLAMA_API_KEY, and cataloga/.env.
+
+    Test files can still replace keyring.get_password with their own
+    fake after this runs.
+    """
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: None)
+    monkeypatch.delenv(ollama_cloud.ENV_KEY_NAME, raising=False)
+    monkeypatch.setattr(ollama_cloud, "ENV_PATH",
+                        str(tmp_path / "missing.env"))
 
 
 @pytest.fixture

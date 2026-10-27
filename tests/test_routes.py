@@ -9,6 +9,7 @@ import os
 import shutil
 
 import pytest
+from keyring.errors import KeyringError
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
@@ -175,6 +176,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "language": "en", "naming_template": "{date}_{topic}",
         "active_provider": None, "active_model": None,
         "old_inbox_has_files": False, "project_status": "ok",
+        "providers_with_key": [],
     }
 
 
@@ -329,6 +331,39 @@ def test_put_ai_provider_saves_key_in_keyring(flask_client, fake_keyring):
     assert settings["active_provider"] == "gemini"
     assert settings["active_model"] == "gemini-2.5-flash"
     assert "secret-key" not in str(settings)
+
+
+def test_put_ai_provider_keyring_failure(flask_client, monkeypatch):
+    """If the keychain refuses the key (macOS error -25244), the answer
+    is a clear 400 error and the provider is not changed."""
+    def refuse(service, name, key):
+        raise KeyringError("Can't store password on keychain: (-25244)")
+    monkeypatch.setattr(base.keyring, "set_password", refuse)
+    response = flask_client.put("/settings/ai-provider", json={
+        "provider_name": "groq", "model": "llama-3.1-8b-instant",
+        "api_key": "secret-key"})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "keyring_failed"
+    assert flask_client.get("/settings").get_json()[
+        "active_provider"] is None
+
+
+def test_get_settings_lists_providers_with_key(flask_client, fake_keyring):
+    """Only provider names are sent, never the keys themselves."""
+    fake_keyring["groq"] = "secret-key"
+    response = flask_client.get("/settings")
+    assert response.get_json()["providers_with_key"] == ["groq"]
+    assert b"secret-key" not in response.data
+
+
+def test_get_settings_counts_ollama_development_key(flask_client,
+                                                    monkeypatch):
+    """Running from the code, the .env key makes Ollama Cloud ready, and
+    the key is not sent."""
+    monkeypatch.setenv("OLLAMA_API_KEY", "dev-key")
+    response = flask_client.get("/settings")
+    assert response.get_json()["providers_with_key"] == ["ollama"]
+    assert b"dev-key" not in response.data
 
 
 def test_put_ai_provider_needs_a_project(empty_client, fake_keyring):

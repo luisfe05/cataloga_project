@@ -77,8 +77,13 @@ const LANG_EN = {
     "settings.research_name": "Research Name",
     "settings.folder": "Target Data Folder",
     "settings.browse": "Browse",
-    "settings.ai_title": "AI Provider Plug in",
-    "settings.ai_hint": "Plug in your own AI API key.",
+    "settings.ai_title": "AI Provider",
+    "settings.ai_using": "Cataloga uses {provider} ({model}).",
+    "settings.ai_needs_key": "{provider} needs an API key. Add it in "
+        + "Advanced settings.",
+    "settings.advanced": "Advanced settings",
+    "settings.ai_hint": "Choose another AI provider or model. Your API "
+        + "key is saved in the macOS Keychain.",
     "settings.ai_provider": "AI Provider",
     "settings.api_key": "API Key",
     "settings.api_key_placeholder": "Paste your API key",
@@ -175,6 +180,9 @@ const LANG_EN = {
         + "folder.",
     "error.unsupported_provider": "That AI provider is not supported.",
     "error.unsupported_format": "Only CSV export is supported.",
+    "error.keyring_failed": "The API key could not be saved in the macOS "
+        + "Keychain. Open Keychain Access, make sure the login keychain "
+        + "is unlocked, and try again.",
     "error.connection_failed": "Could not connect to the AI provider. "
         + "Check the API key and the model.",
     "error.no_project": "There is no open project. Create one in Settings.",

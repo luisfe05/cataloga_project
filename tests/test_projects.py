@@ -88,10 +88,10 @@ def test_create_project(flask_client, app, tmp_path):
     assert settings["naming_template"] == "{number}_{topic}"
 
 
-def test_create_project_copies_the_ai_provider(flask_client, app,
-                                               tmp_path):
-    """A new project uses the same provider and model, so the key saved
-    in the keyring works without typing it again."""
+def test_create_project_starts_with_ollama_cloud(flask_client, app,
+                                                 tmp_path):
+    """A new project always starts with Ollama Cloud, even when the
+    active project uses another provider."""
     repo = CatalogRepository(
         projects.catalog_path(app.config["PROJECT_FOLDER"]))
     repo.set_active_provider("groq", "llama-3.1-8b-instant")
@@ -100,8 +100,8 @@ def test_create_project_copies_the_ai_provider(flask_client, app,
     flask_client.post("/projects", json={"name": "Second",
                                          "folder": str(folder)})
     settings = flask_client.get("/settings").get_json()
-    assert settings["active_provider"] == "groq"
-    assert settings["active_model"] == "llama-3.1-8b-instant"
+    assert settings["active_provider"] == "ollama"
+    assert settings["active_model"] == "gemma4:31b"
 
 
 def test_projects_keep_separate_catalogs(flask_client, app, tmp_path):

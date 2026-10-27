@@ -211,19 +211,34 @@
                     <li data-i18n="naming.changed_note"></li>
                 </ul>
 
-                <h2 data-i18n="settings.ai_title">AI Provider Plug in</h2>
-                <p class="hint" data-i18n="settings.ai_hint">Plug in your own AI API
-                    key.</p>
+                <h2 data-i18n="settings.ai_title">AI Provider</h2>
+                <!-- Filled by settings.js: which provider is in use -->
+                <p class="hint" id="ai-status"></p>
 
-                <label for="ai-provider"
-                       data-i18n="settings.ai_provider">AI Provider</label>
-                <select id="ai-provider"></select>
+                <!-- Closed by default. settings.js opens it when the
+                     chosen provider still needs an API key. -->
+                <details class="advanced-settings" id="ai-advanced">
+                    <summary data-i18n="settings.advanced">Advanced
+                        settings</summary>
+                    <div class="advanced-fields">
+                        <p class="hint" data-i18n="settings.ai_hint">Use
+                            another AI provider with your own API key.</p>
 
-                <label for="api-key" data-i18n="settings.api_key">API Key</label>
-                <input type="password" id="api-key" autocomplete="off">
+                        <label for="ai-provider"
+                               data-i18n="settings.ai_provider">AI
+                            Provider</label>
+                        <select id="ai-provider"></select>
 
-                <label for="ai-model" data-i18n="settings.model">Model</label>
-                <select id="ai-model"></select>
+                        <label for="api-key"
+                               data-i18n="settings.api_key">API Key</label>
+                        <input type="password" id="api-key"
+                               autocomplete="off">
+
+                        <label for="ai-model"
+                               data-i18n="settings.model">Model</label>
+                        <select id="ai-model"></select>
+                    </div>
+                </details>
 
                 <div class="form-buttons">
                     <button type="submit" class="primary-button"
