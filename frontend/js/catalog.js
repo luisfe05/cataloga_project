@@ -17,6 +17,9 @@ let currentStatus = "";
 // True while the Edit Mode switch is on.
 let editMode = false;
 
+// The row the user clicked last. The space bar previews its file.
+let selectedDocumentId = null;
+
 // Columns the user can edit in Edit Mode. The filenames are locked and
 // media_type is left out because changing it would not move the file.
 const EDITABLE_TEXT_FIELDS = ["source", "document_date", "summary"];
@@ -198,6 +201,39 @@ function makeStatusCell(doc) {
 }
 
 /**
+ * Build the Filename cell: the name opens the file, and the eye and
+ * folder icons preview it or show it in Finder (files.js). In Edit
+ * Mode the name is plain text, because it is locked; the icons stay.
+ * @param {Object} doc
+ * @returns {HTMLTableCellElement}
+ */
+function makeFilenameCell(doc) {
+    const cell = makeCell("", "filename-cell");
+    if (editMode) {
+        cell.appendChild(document.createTextNode(doc.filename));
+    } else {
+        cell.appendChild(makeFileLink(doc));
+    }
+    cell.appendChild(makeFileActions(doc.id));
+    return cell;
+}
+
+/**
+ * Mark one row as selected, so the space bar knows which file to
+ * preview. The id is kept, because the table is redrawn every few
+ * seconds.
+ * @param {number|null} id
+ */
+function selectRow(id) {
+    selectedDocumentId = id;
+    document.querySelectorAll("#catalog-body tr").forEach((row) => {
+        const isSelected = Number(row.dataset.id) === id;
+        row.classList.toggle("row-selected", isSelected);
+        row.setAttribute("aria-selected", String(isSelected));
+    });
+}
+
+/**
  * Fill the table body with one row per document.
  * @param {Array<Object>} documents
  */
@@ -208,9 +244,10 @@ function renderTable(documents) {
         const row = document.createElement("tr");
         // The chat finds a row by its id to highlight it.
         row.dataset.id = doc.id;
+        row.addEventListener("click", () => selectRow(doc.id));
         // The two filename columns are locked, even in Edit Mode.
         row.appendChild(makeCell(doc.original_filename));
-        row.appendChild(makeCell(doc.filename));
+        row.appendChild(makeFilenameCell(doc));
         const typeCell = makeCell(valueLabel(doc.media_type), "media-type");
         // The stored value ("Press", "Audio"...) picks the icon in the
         // CSS, so it works in English and Spanish.
@@ -235,6 +272,8 @@ function renderTable(documents) {
         row.appendChild(makeStatusCell(doc));
         body.appendChild(row);
     });
+    // Keep the selection after the table is redrawn.
+    selectRow(selectedDocumentId);
 }
 
 /**
@@ -464,3 +503,27 @@ setInterval(() => {
         loadCatalog();
     }
 }, REFRESH_SECONDS * 1000);
+
+/**
+ * Is the user typing or on a control that uses the space bar itself?
+ * Then the space bar must not open a preview.
+ * @param {Element} target
+ * @returns {boolean}
+ */
+function spaceBelongsToControl(target) {
+    const tags = ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"];
+    return tags.includes(target.tagName) || target.isContentEditable;
+}
+
+// Space bar: Quick Look preview of the selected row, like in Finder.
+document.addEventListener("keydown", (event) => {
+    const catalogOpen = !document.getElementById("view-catalog")
+        .classList.contains("hidden");
+    if (event.key !== " " || !catalogOpen || selectedDocumentId === null
+            || spaceBelongsToControl(event.target)) {
+        return;
+    }
+    // Without this the space bar would also scroll the page down.
+    event.preventDefault();
+    runFileAction(selectedDocumentId, "preview");
+});
