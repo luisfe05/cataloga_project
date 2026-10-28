@@ -61,8 +61,12 @@ function makeCell(text, className) {
     return cell;
 }
 
+// Timer that clears the toast. A new message restarts it, so the new
+// message is not cleared early by the timer of the old one.
+let toolbarMessageTimer = null;
+
 /**
- * Show a short message under the toolbar.
+ * Show a short message as a toast. It clears itself after 4 seconds.
  * @param {string} text - Empty string clears it.
  * @param {boolean} isError
  */
@@ -70,6 +74,10 @@ function showToolbarMessage(text, isError) {
     const message = document.getElementById("toolbar-message");
     message.textContent = text;
     message.classList.toggle("error", Boolean(isError));
+    clearTimeout(toolbarMessageTimer);
+    toolbarMessageTimer = setTimeout(() => {
+        message.textContent = "";
+    }, 4000);
 }
 
 /**
@@ -197,7 +205,11 @@ function renderTable(documents) {
         // The two filename columns are locked, even in Edit Mode.
         row.appendChild(makeCell(doc.original_filename));
         row.appendChild(makeCell(doc.filename));
-        row.appendChild(makeCell(valueLabel(doc.media_type)));
+        const typeCell = makeCell(valueLabel(doc.media_type), "media-type");
+        // The stored value ("Press", "Audio"...) picks the icon in the
+        // CSS, so it works in English and Spanish.
+        typeCell.dataset.type = doc.media_type;
+        row.appendChild(typeCell);
 
         if (editMode) {
             EDITABLE_TEXT_FIELDS.forEach((field) => {
