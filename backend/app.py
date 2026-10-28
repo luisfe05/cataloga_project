@@ -1,11 +1,4 @@
-"""Flask application factory.
-
-Creates and configures the Flask app, registers all route blueprints,
-asks for a session token on every route except the public login ones,
-and gets the project list ready: the old single database is turned
-into the first project if needed, and the active project's catalog is
-brought up to date.
-"""
+"""Flask application factory."""
 
 import os
 
@@ -24,28 +17,13 @@ from backend.routes.settings import settings_bp
 
 def create_app(projects_path=projects.PROJECTS_PATH, old_db_path=DB_PATH,
                account_path=None):
-    """Create and configure the Flask application.
-
-    Args:
-        projects_path (str): Path to projects.json. Tests pass a
-            temporary file.
-        old_db_path (str): Path to the single database used before
-            projects existed. It is only read, to create the first
-            project. Tests pass a temporary file.
-        account_path (str, optional): Path to account.json. By default
-            it is next to projects.json.
-
-    Returns:
-        Flask: The configured app instance.
-    """
+    """Create and configure the Flask application."""
     app = Flask(__name__)
 
-    # Allow the pywebview frontend (loaded from the filesystem) to call
-    # Flask routes on localhost without being blocked by CORS.
+    # CORS lets the pywebview page, loaded from a file, call localhost.
     CORS(app)
 
-    # Every request goes through require_login() first. Without a valid
-    # session token, only the public login routes answer.
+    # Without a valid session token, only the public login routes answer.
     app.before_request(require_login)
 
     app.register_blueprint(auth_bp)
@@ -55,9 +33,8 @@ def create_app(projects_path=projects.PROJECTS_PATH, old_db_path=DB_PATH,
     app.register_blueprint(projects_bp)
     app.register_blueprint(chat_bp)
 
-    # Save the project list's path so routes can find it later.
     app.config["PROJECTS_PATH"] = projects_path
-    # The account file, and the session, which only lives in memory.
+    # The session lives only in memory.
     app.config["ACCOUNT_PATH"] = (account_path or
                                   account.account_path_for(projects_path))
     app.config["SESSION_TOKEN"] = None
@@ -66,7 +43,7 @@ def create_app(projects_path=projects.PROJECTS_PATH, old_db_path=DB_PATH,
 
     projects.migrate_old_database(projects_path, old_db_path)
 
-    # Add any column a catalog made by an older version is missing.
+    # Add any column an older catalog is missing.
     folder = projects.active_folder(projects_path)
     if folder and os.path.isfile(projects.catalog_path(folder)):
         init_db(projects.catalog_path(folder))
