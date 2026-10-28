@@ -63,6 +63,47 @@ const LANG_EN = {
     "dash.load_failed": "Could not load the dashboard: {message}",
     "dash.of_total": "of {n} documents",
     "dash.no_documents": "No documents yet",
+
+    // Chat
+    "chat.open": "Ask Cataloga",
+    "chat.title": "Cataloga assistant",
+    "chat.close": "Close",
+    "chat.empty_title": "How can I help with this project?",
+    "chat.empty_hint": "I can find files, filter the catalog, summarize the "
+        + "project, and propose new names. I never rename a file without your "
+        + "OK.",
+    "chat.example_summary": "Summarize this project",
+    "chat.example_press": "Find press clippings",
+    "chat.example_review": "Show items in Manual Review",
+    "chat.example_rename": "Rename a file",
+    "chat.example_rename_prompt": "Rename the file ",
+    "chat.placeholder": "Ask about your files…",
+    "chat.send": "Send",
+    "chat.thinking": "Thinking…",
+    "chat.sources": "Sources",
+    "chat.filters_applied": "Catalog filters applied",
+    "chat.open_catalog": "Open Catalog",
+    "chat.rename_title": "Proposed new name",
+    "chat.confirm": "Confirm",
+    "chat.cancel": "Cancel",
+    "chat.renamed": "Renamed to {name}",
+    "chat.rename_cancelled": "Cancelled. Nothing changed.",
+    "chat.summary_total": "Documents",
+    "chat.summary_dates": "Dates",
+    "chat.summary_sources": "Top sources",
+    "chat.notice_invalid_reply": "Sorry, I could not understand that. Try "
+        + "asking in a different way.",
+    "chat.notice_ai_unavailable": "The AI provider did not answer. Check "
+        + "Settings > AI Provider and try again.",
+    "chat.notice_no_documents": "I could not find documents that match. Try "
+        + "other words.",
+    "chat.notice_no_filters": "I could not turn that into catalog filters. "
+        + "Try a type, a source, or a status.",
+    "chat.notice_rename_not_found": "I could not find that file in this "
+        + "project. Try its name or its date.",
+    "chat.notice_rename_invalid": "That name has no valid characters. Use "
+        + "letters and numbers.",
+    "chat.notice_rename_same": "The file already has that name.",
     "time.just_now": "just now",
     "time.minutes": "{n} min ago",
     "time.hour": "1 hour ago",
@@ -195,6 +236,7 @@ const LANG_EN = {
     "value.Classified": "Classified",
     "value.Manual Review": "Manual Review",
     "value.Edited": "Edited",
+    "value.Renamed": "Renamed",
 
     // Errors, one per backend error code
     "error.not_found":
@@ -233,4 +275,6 @@ const LANG_EN = {
     "error.account_exists": "The account already exists. Log in instead.",
     "error.no_account": "Create the account first.",
     "error.generic": "Something went wrong. Try again.",
+    "error.invalid_name": "The new name has no valid characters.",
+    "error.file_missing": "The file is missing or outside the project folder.",
 };

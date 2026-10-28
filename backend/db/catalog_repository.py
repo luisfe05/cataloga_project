@@ -75,7 +75,7 @@ class CatalogRepository:
         """
         self.db_path = db_path
 
-    def log_activity(self, conn, doc_id, action):
+    def log_activity(self, conn, doc_id, action, details=None):
         """Add one entry to activity_log, using an already open connection.
 
         The caller commits, so the document change and its log entry are
@@ -85,11 +85,12 @@ class CatalogRepository:
             conn (sqlite3.Connection): The open connection to use.
             doc_id (int): The document the action happened to.
             action (str): Short description, e.g. 'Classified' or 'Edited'.
+            details (str, optional): Extra text, e.g. 'old.pdf → new.pdf'.
         """
         conn.execute(
-            "INSERT INTO activity_log (document_id, action, timestamp) "
-            "VALUES (?, ?, ?)",
-            (doc_id, action, now_timestamp()),
+            "INSERT INTO activity_log (document_id, action, timestamp, "
+            "details) VALUES (?, ?, ?, ?)",
+            (doc_id, action, now_timestamp(), details),
         )
 
     def add_document(self, doc):
@@ -282,6 +283,96 @@ class CatalogRepository:
         finally:
             conn.close()
         return self.get_document(doc_id)
+
+    def rename_document(self, doc_id, new_filename, new_path):
+        """Save a new filename after a rename the user confirmed.
+
+        This is the only way filename changes after classification, and
+        only POST /documents/<id>/rename calls it. original_filename
+        never changes. The old and new names go to activity_log.
+
+        Args:
+            doc_id (int): The document's primary key.
+            new_filename (str): The file's new name.
+            new_path (str): The file's new absolute path.
+
+        Returns:
+            Document: The updated document.
+
+        Raises:
+            KeyError: If doc_id does not exist.
+        """
+        doc = self.get_document(doc_id)
+        if doc is None:
+            raise KeyError(doc_id)
+        details = "{} → {}".format(doc.filename, new_filename)
+
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute(
+                "UPDATE documents SET filename = ?, file_path = ? "
+                "WHERE id = ?",
+                (new_filename, new_path, doc_id),
+            )
+            self.log_activity(conn, doc_id, "Renamed", details)
+            conn.commit()
+        finally:
+            conn.close()
+        return self.get_document(doc_id)
+
+    def get_project_summary(self):
+        """Return the numbers the chat uses to describe the project.
+
+        Returns:
+            dict: {
+                'total': int,
+                'classified': int,
+                'manual_review': int,
+                'by_type': {media_type: count, ...},
+                'top_sources': [{'source': str, 'count': int}, ...],
+                'first_date': str or None,
+                'last_date': str or None,
+            }
+        """
+        conn = get_connection(self.db_path)
+        try:
+            status_rows = conn.execute(
+                "SELECT status, COUNT(*) AS total FROM documents "
+                "GROUP BY status"
+            ).fetchall()
+            type_rows = conn.execute(
+                "SELECT media_type, COUNT(*) AS total FROM documents "
+                "GROUP BY media_type"
+            ).fetchall()
+            source_rows = conn.execute(
+                "SELECT source, COUNT(*) AS total FROM documents "
+                "WHERE source IS NOT NULL AND source != '' "
+                "GROUP BY source ORDER BY total DESC, source LIMIT 5"
+            ).fetchall()
+            dates = conn.execute(
+                "SELECT MIN(document_date), MAX(document_date) "
+                "FROM documents WHERE document_date IS NOT NULL "
+                "AND document_date != ''"
+            ).fetchone()
+        finally:
+            conn.close()
+
+        by_status = {row["status"]: row["total"] for row in status_rows}
+        # Start every media type at 0, like the dashboard.
+        by_type = {media_type: 0 for media_type in MEDIA_TYPES}
+        for row in type_rows:
+            by_type[row["media_type"]] = row["total"]
+        return {
+            "total": sum(by_status.values()),
+            "classified": by_status.get("Classified", 0),
+            "manual_review": by_status.get("Manual Review", 0),
+            "by_type": by_type,
+            "top_sources": [{"source": row["source"],
+                             "count": row["total"]}
+                            for row in source_rows],
+            "first_date": dates[0],
+            "last_date": dates[1],
+        }
 
     def get_dashboard_stats(self):
         """Return aggregate data for the dashboard.

@@ -6,6 +6,8 @@ Endpoints:
     PATCH /documents/<id>           Update editable fields on a document.
     GET  /documents/export          Download the catalog as a file
                                     (default: csv).
+    POST /documents/<id>/rename     Rename one document, only after the
+                                    user confirmed it in the chat.
 
 Every route works on the active project's catalog. With no project, or
 when its folder is not available, they answer 409 with the code
@@ -14,13 +16,16 @@ when its folder is not available, they answer 409 with the code
 
 import csv
 import io
+import os
 
 from flask import Blueprint, Response, jsonify, request
 
 from backend.pipeline.ai_providers import create_client
 from backend.pipeline.classification_pipeline import ClassificationPipeline
+from backend.config import projects as project_list
 from backend.pipeline.file_organizer import FileOrganizer
-from backend.routes import error_response, get_active_repo
+from backend.pipeline.naming import clean_new_name
+from backend.routes import error_response, get_active_repo, projects_path
 
 documents_bp = Blueprint("documents", __name__)
 
@@ -219,4 +224,71 @@ def update_document(doc_id):
         except Exception:
             # The user's edit is already saved; keep the old summary.
             pass
+    return jsonify(doc.to_dict()), 200
+
+
+@documents_bp.route("/documents/<int:doc_id>/rename", methods=["POST"])
+def rename_document(doc_id):
+    """Rename one document after the user clicked Confirm in the chat.
+
+    This is the only way a cataloged file changes its name. The name is
+    cleaned with the naming rules and keeps the file's extension. The
+    file stays in its folder; if the name is taken, -2, -3... is added.
+    original_filename never changes. The change goes to activity_log.
+
+    Args:
+        doc_id (int): The document's primary key.
+
+    Request body (JSON):
+        new_name (str): The name the user confirmed.
+
+    Returns:
+        200: JSON of the updated document (unchanged if the clean name
+             is the same as the current one).
+        400: If the body is not a JSON object, new_name is missing, or
+             nothing is left after cleaning it ('invalid_name').
+        404: If the id does not exist.
+        409: If there is no usable project, or the file is missing or
+             outside the project folder ('file_missing').
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict):
+        return error_response("invalid_body",
+                              "The request body must be a JSON object.", 400)
+    if not isinstance(body.get("new_name"), str):
+        return error_response("missing_field", "new_name is required.", 400)
+
+    repo, error = get_active_repo()
+    if error:
+        return error
+    doc = repo.get_document(doc_id)
+    if doc is None:
+        return error_response("not_found",
+                              "Document {} does not exist.".format(doc_id),
+                              404)
+
+    extension = os.path.splitext(doc.filename)[1]
+    new_filename = clean_new_name(body["new_name"], extension)
+    if not new_filename:
+        return error_response("invalid_name",
+                              "The new name has no valid characters.", 400)
+    if new_filename == doc.filename:
+        return jsonify(doc.to_dict()), 200
+
+    folder = project_list.active_folder(projects_path())
+    try:
+        new_path = FileOrganizer(folder).rename_file(doc.file_path,
+                                                     new_filename)
+    except (ValueError, FileNotFoundError):
+        return error_response(
+            "file_missing",
+            "The file is missing or outside the project folder.", 409)
+
+    try:
+        doc = repo.rename_document(doc_id, os.path.basename(new_path),
+                                   new_path)
+    except Exception:
+        # Keep the disk and the catalog in step: put the old name back.
+        os.rename(new_path, doc.file_path)
+        raise
     return jsonify(doc.to_dict()), 200
