@@ -286,6 +286,25 @@ function renderOldInboxWarning(settings) {
 }
 
 /**
+ * Fill the progress bar in the header: Classified vs. Manual Review.
+ * @param {number} classified
+ * @param {number} review
+ */
+function renderProgress(classified, review) {
+    const total = classified + review;
+    // Avoid dividing by zero when the catalog is empty.
+    const percent = total ? Math.round((classified / total) * 100) : 0;
+    countUp(document.getElementById("progress-classified"), classified);
+    countUp(document.getElementById("progress-review"), review);
+    document.getElementById("progress-percent").textContent = total
+        ? t("catalog.progress_percent", { n: percent })
+        : t("dash.no_documents");
+    const fill = document.getElementById("progress-fill");
+    growBar(fill, "--share", fill.style.getPropertyValue("--share") || "0%",
+        `${percent}%`);
+}
+
+/**
  * Load everything the catalog needs and draw it.
  */
 async function loadCatalog() {
@@ -298,6 +317,7 @@ async function loadCatalog() {
         if (settings.project_status !== "ok") {
             document.getElementById("tab-review").textContent =
                 t("catalog.tab_review", { n: 0 });
+            renderProgress(0, 0);
             showMessage(settings.project_status === "none"
                 ? t("catalog.no_project")
                 : t("error.project_unavailable",
@@ -313,6 +333,9 @@ async function loadCatalog() {
             .filter((doc) => doc.status === "Manual Review").length;
         document.getElementById("tab-review").textContent =
             t("catalog.tab_review", { n: reviewCount });
+        const classifiedCount = allDocuments
+            .filter((doc) => doc.status === "Classified").length;
+        renderProgress(classifiedCount, reviewCount);
 
         if (allDocuments.length === 0) {
             // Without an AI provider, nothing can be classified yet.
