@@ -1,9 +1,4 @@
-"""Tests for the app's account, the login, and the session token.
-
-Covers backend/config/account.py and backend/routes/auth.py: creating
-the account, logging in, the 401 without a token, the wait after 5
-wrong passwords, logging out, and changing the password.
-"""
+"""Tests for the app's account, the login, and the session token."""
 
 import json
 
@@ -26,8 +21,7 @@ def assert_error(response, status, code):
 
 @pytest.fixture
 def auth_app(tmp_path, projects_path):
-    """An app with one project and no account yet. Its client is not
-    logged in."""
+    """An app with one project, no account, and a logged-out client."""
     make_project(projects_path, tmp_path / "Research")
     app = create_app(projects_path=projects_path,
                      old_db_path=str(tmp_path / "no_old.db"))
@@ -43,10 +37,7 @@ def client(auth_app):
 
 @pytest.fixture
 def clock(monkeypatch):
-    """A fake clock for the wait after 5 wrong passwords.
-
-    Returns a dict: change clock['now'] to move time forward.
-    """
+    """A fake clock for the wait after 5 wrong passwords."""
     fake = {"now": 1000.0}
     monkeypatch.setattr(auth, "now", lambda: fake["now"])
     return fake
@@ -86,8 +77,7 @@ def test_status_before_and_after_setup(client):
 
 
 def test_setup_saves_only_a_bcrypt_hash(client, auth_app):
-    """The account file has the username and a hash, never the
-    password. It sits next to projects.json."""
+    """The account file keeps the username and a hash, never the password."""
     token = create_account(client)
     assert token
     path = auth_app.config["ACCOUNT_PATH"]
@@ -206,8 +196,7 @@ def test_cors_preflight_needs_no_token(client):
 # --- The wait after 5 wrong passwords ---
 
 def test_five_wrong_passwords_start_a_wait(client, clock):
-    """The 5th wrong password starts the wait. During it, even the
-    right password is refused. After it, the login works again."""
+    """Five wrong passwords start a wait that blocks every login."""
     create_account(client)
     for attempt in range(4):
         assert_error(login(client, "wrong-password"), 401, "wrong_login")
@@ -255,8 +244,7 @@ def change(client, token, current, new):
 
 
 def test_change_password(client):
-    """The new password works, the old one does not, and the session
-    stays open."""
+    """The new password works, the old one does not, the session stays."""
     token = create_account(client)
     response = change(client, token, PASSWORD, "second-password")
     assert response.status_code == 200
@@ -285,8 +273,7 @@ def test_change_password_checks_the_rules(client, new, code):
 
 
 def test_change_password_counts_wrong_tries(client, clock):
-    """Wrong current passwords count toward the same wait as the
-    login, and the wait blocks the login too."""
+    """Wrong current passwords count toward the login wait."""
     token = create_account(client)
     for attempt in range(4):
         assert_error(change(client, token, "wrong-password", "new-password"),

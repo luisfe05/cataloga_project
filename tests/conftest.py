@@ -1,15 +1,4 @@
-"""pytest fixtures shared across all test modules.
-
-Provides:
-- a Flask app whose project list and project catalog live in a
-  temporary folder, so tests never touch the real projects.json, the
-  old database/catalog.db, or a real project
-- an app with no projects at all, for first-run tests
-- for every test, an empty OS keyring and no Ollama development key,
-  so tests never read Luis's real keys
-- clients that are already logged in, so tests of the other routes do
-  not need to create an account first (test_auth.py covers the login)
-"""
+"""pytest fixtures shared across all test modules."""
 
 import os
 
@@ -28,18 +17,7 @@ TEST_TOKEN = "test-token"
 
 
 def logged_in_client(app):
-    """Return a test client that sends a valid session token.
-
-    The token is put straight into the app's session, so no account and
-    no bcrypt are needed.
-
-    Args:
-        app (Flask): The app to test.
-
-    Returns:
-        FlaskClient: Sends 'Authorization: Bearer test-token' with
-            every request.
-    """
+    """Return a test client that sends a valid session token."""
     app.config["SESSION_TOKEN"] = TEST_TOKEN
     client = app.test_client()
     client.environ_base["HTTP_AUTHORIZATION"] = "Bearer " + TEST_TOKEN
@@ -47,16 +25,7 @@ def logged_in_client(app):
 
 
 def make_project(projects_path, folder, name="Research"):
-    """Create a project folder with its catalog and add it to the list.
-
-    Args:
-        projects_path (str): Path to the test projects.json.
-        folder (pathlib.Path): The project folder (created if missing).
-        name (str): The project's name.
-
-    Returns:
-        CatalogRepository: The new project's catalog.
-    """
+    """Create a project folder with its catalog and add it to the list."""
     folder.mkdir(parents=True, exist_ok=True)
     db_path = projects.catalog_path(str(folder))
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
@@ -70,11 +39,7 @@ def make_project(projects_path, folder, name="Research"):
 
 @pytest.fixture(autouse=True)
 def no_real_keys(monkeypatch, tmp_path):
-    """Hide the real keyring, OLLAMA_API_KEY, and cataloga/.env.
-
-    Test files can still replace keyring.get_password with their own
-    fake after this runs.
-    """
+    """Hide the real keyring, OLLAMA_API_KEY, and cataloga/.env."""
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: None)
     monkeypatch.delenv(ollama_cloud.ENV_KEY_NAME, raising=False)
@@ -96,12 +61,7 @@ def projects_path(tmp_path):
 
 @pytest.fixture
 def app(tmp_path, projects_path):
-    """Return a Flask app with one active project, "Research".
-
-    tmp_path is a built-in pytest fixture: a fresh folder for each test
-    that pytest deletes on its own. The project folder is
-    tmp_path/Research and is saved in app.config["PROJECT_FOLDER"].
-    """
+    """Return a Flask app with one active project, "Research"."""
     folder = tmp_path / "Research"
     make_project(projects_path, folder)
     app = create_app(projects_path=projects_path,

@@ -1,9 +1,4 @@
-"""Tests for ClassificationPipeline.
-
-The pipeline runs with a real CatalogRepository (temporary database) and
-a real FileOrganizer (temporary folder). Only the AI is fake, so tests
-never hit a real API.
-"""
+"""Tests for ClassificationPipeline."""
 
 import os
 import time
@@ -28,11 +23,7 @@ JULY_15 = time.mktime((2026, 7, 15, 12, 0, 0, 0, 0, -1))
 
 
 class FakeAI(AIProviderClient):
-    """Answers each kind of request with a prepared reply.
-
-    replies maps 'classify', 'summary', and 'metadata' to the text the
-    fake AI returns for that kind of request.
-    """
+    """Answers each kind of request with a prepared reply."""
 
     def __init__(self, replies):
         super().__init__(provider_name="fake", model="fake-model")
@@ -230,8 +221,7 @@ def test_each_method_names_the_file(setup):
 
 
 def test_missing_date_source_and_topic(setup):
-    """No date gives 'undated', no source is left out, no topic uses
-    the original name."""
+    """Missing date, source, or topic follow the naming rules."""
     replies = {"classify": "Documents", "summary": "A letter.",
                "metadata": '{"source": null, "document_date": null, '
                            '"topic": null}'}
