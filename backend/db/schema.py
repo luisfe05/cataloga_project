@@ -81,9 +81,16 @@ CREATE TABLE IF NOT EXISTS activity_log (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     document_id INTEGER NOT NULL REFERENCES documents(id),
     action      TEXT    NOT NULL,
-    timestamp   TEXT    NOT NULL
+    timestamp   TEXT    NOT NULL,
+    details     TEXT
 );
 """
+
+# activity_log columns added after the first release. details keeps
+# extra text, like 'old.pdf → new.pdf' for a rename from the chat.
+ADDED_ACTIVITY_LOG_COLUMNS = {
+    "details": "details TEXT",
+}
 
 CREATE_APP_CONFIG = """
 CREATE TABLE IF NOT EXISTS app_config (
@@ -131,7 +138,7 @@ def get_connection(db_path=DB_PATH):
 
 
 def add_missing_columns(cursor):
-    """Add any app_config column that an older database lacks.
+    """Add any app_config or activity_log column an older database lacks.
 
     CREATE TABLE IF NOT EXISTS does not change a table that already
     exists, so an older database needs this extra step.
@@ -139,13 +146,18 @@ def add_missing_columns(cursor):
     Args:
         cursor (sqlite3.Cursor): Cursor on an open connection.
     """
-    # PRAGMA table_info lists one row per column; row[1] is its name.
-    columns = [row[1] for row in
-               cursor.execute("PRAGMA table_info(app_config)")]
-    for name, definition in ADDED_APP_CONFIG_COLUMNS.items():
-        if name not in columns:
-            cursor.execute("ALTER TABLE app_config ADD COLUMN " +
-                           definition)
+    # Table names and column definitions are fixed in this file, never
+    # from the user, so building the SQL with + is safe here.
+    added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
+             ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS))
+    for table, new_columns in added:
+        # PRAGMA table_info lists one row per column; row[1] is its name.
+        columns = [row[1] for row in
+                   cursor.execute("PRAGMA table_info(" + table + ")")]
+        for name, definition in new_columns.items():
+            if name not in columns:
+                cursor.execute("ALTER TABLE " + table + " ADD COLUMN " +
+                               definition)
 
 
 def init_db(db_path=DB_PATH):
