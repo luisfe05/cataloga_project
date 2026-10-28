@@ -38,8 +38,9 @@ const LANG_ES = {
     "catalog.saved": "Guardado.",
     "catalog.saved_summary": "Guardado. El resumen se actualizó con tu cambio.",
     "catalog.save_failed": "No se pudo guardar.",
-    "catalog.edit_mode_on": "El modo edición está activo. Haz clic en una "
-        + "celda para editarla. La actualización automática está en pausa.",
+    "catalog.edit_banner": "Editando. Haz clic en una celda para cambiarla. "
+        + "Se guarda al salir de la celda o al presionar Enter. La "
+        + "actualización automática está en pausa.",
     "catalog.summary_limit": "El resumen puede tener hasta 100 caracteres.",
     "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Tu carpeta Inbox vieja todavía tiene "
