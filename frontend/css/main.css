@@ -1,6 +1,8 @@
 /* main.css - styles for Cataloga, following the brand rules
    (Design/BRAND.md): night sky colors, Violet as the only accent. */
 
+/* ======== Fonts and brand values ======== */
+
 /* Fonts are bundled in frontend/fonts so the app works offline.
    Geo only appears inside the logo SVG files, never as app text. */
 
@@ -75,6 +77,8 @@
     --chat-button-room: 88px;
 }
 
+/* ======== Base: reset, body, focus, icons, helpers ======== */
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -118,6 +122,31 @@ textarea {
     outline-offset: 2px;
 }
 
+/* Text only screen readers read, like the word under a × button. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* Every icon drawn with a mask: Lucide icons, media type icons in
+   the table, and the icons before messages. */
+.icon,
+td.media-type::before,
+.form-message.error::before,
+.form-message.success::before,
+.toolbar-message::before {
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+}
+
 /* Icons: Lucide SVG files used as a mask, so they take the text color.
    pywebview uses WebKit, which still needs the -webkit- version. */
 .icon {
@@ -126,12 +155,6 @@ textarea {
     width: 18px;
     height: 18px;
     background-color: currentColor;
-    mask-position: center;
-    mask-repeat: no-repeat;
-    mask-size: contain;
-    -webkit-mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
 }
 
 .icon-catalog {
@@ -169,47 +192,36 @@ textarea {
     -webkit-mask-image: url("../assets/icons/eye.svg");
 }
 
-/* Account screen: create the account or log in */
-.auth-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-32);
-    min-height: 100vh;
-    padding: var(--spacing-64) var(--spacing-16);
-    background: var(--frame-gradient);
+.icon-user {
+    mask-image: url("../assets/icons/circle-user.svg");
+    -webkit-mask-image: url("../assets/icons/circle-user.svg");
 }
 
-.auth-logo {
-    width: 160px;
+/* Short values that should stay on one line. */
+.nowrap {
+    white-space: nowrap;
 }
 
-/* The login and setup card: 400 px wide, with the button across the
-   whole card. */
-.auth-form {
-    width: 100%;
-    max-width: 400px;
-    padding: var(--spacing-32);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg-strong);
-    box-shadow: var(--shadow-glass);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+/* Missing values: Dusk italic. Solid Dusk keeps 4.5:1 on the glass. */
+.placeholder {
+    color: var(--color-dusk);
+    font-style: italic;
 }
 
-.auth-form h2 {
-    margin-bottom: var(--spacing-24);
+code {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    color: var(--color-midnight);
+    background: var(--color-paper);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
 }
 
-.auth-form h2 + .hint {
-    margin-top: calc(-1 * var(--spacing-16));
+code:empty {
+    display: none;
 }
 
-.auth-form .primary-button {
-    align-self: stretch;
-    margin-top: var(--spacing-8);
-}
+/* ======== Frame: top bar, sidebar, content area ======== */
 
 /* The frame. #nav-bar only groups the top bar, the sidebar, and the
    chat button; each of them is fixed on its own. */
@@ -252,6 +264,28 @@ textarea {
     margin-left: var(--spacing-24);
 }
 
+.search-box {
+    position: relative;
+    flex: 1;
+    color: var(--color-dusk);
+}
+
+.search-box .icon {
+    position: absolute;
+    top: 13px;
+    left: var(--spacing-16);
+}
+
+.search-box input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    padding: 0 var(--spacing-16) 0 44px;
+    font-size: 15px;
+}
+
 /* The search in the top bar: translucent white on the gradient. */
 .topbar .search-box {
     max-width: 560px;
@@ -289,11 +323,6 @@ textarea {
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
-}
-
-.icon-user {
-    mask-image: url("../assets/icons/circle-user.svg");
-    -webkit-mask-image: url("../assets/icons/circle-user.svg");
 }
 
 /* The links can shrink so the project list scrolls inside the
@@ -424,230 +453,44 @@ textarea {
     margin-bottom: var(--spacing-24);
 }
 
-/* Catalog: Download and Edit Mode, at the right end of the filters */
-.toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-12);
-    margin-left: auto;
-}
+/* ======== Components ======== */
+/* Forms, buttons, messages, tabs, dropdowns, the switch, file links,
+   and the glass surfaces, used on more than one screen. */
 
-.search-box {
-    position: relative;
-    flex: 1;
-    color: var(--color-dusk);
-}
-
-.search-box .icon {
-    position: absolute;
-    top: 13px;
-    left: var(--spacing-16);
-}
-
-.search-box input {
-    width: 100%;
-    height: 44px;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-full);
-    background: var(--color-white);
-    padding: 0 var(--spacing-16) 0 44px;
-    font-size: 15px;
-}
-
-/* Tabs and filters */
-.filter-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--spacing-12);
-    margin-bottom: var(--spacing-24);
-}
-
-.tabs {
-    display: flex;
-    gap: var(--spacing-4);
-    padding: var(--spacing-4);
-    border-radius: var(--radius-full);
-    background: var(--color-white);
-    border: 1px solid var(--color-line);
-}
-
-.tab {
-    border: none;
-    border-radius: var(--radius-full);
-    background: none;
-    color: var(--color-dusk);
-    padding: 6px var(--spacing-16);
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.tab:hover {
-    color: var(--color-midnight);
-}
-
-.tab.active {
-    background: var(--color-violet);
-    color: var(--color-paper);
-    font-weight: 600;
-}
-
-.filter-row select {
-    height: 40px;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-full);
-    background-color: var(--color-white);
-    padding: 0 var(--spacing-16);
-    font-size: 14px;
-    color: var(--color-midnight);
-}
-
-/* Empty and error messages */
-.empty-message {
-    padding: var(--spacing-48) var(--spacing-32);
-    color: var(--color-dusk);
-    text-align: center;
-}
-
-/* Warning about the old Inbox folder. It only informs. */
-.warning-message {
-    margin-bottom: var(--spacing-16);
-    padding: var(--spacing-12) var(--spacing-16);
-    border-left: 3px solid var(--color-dusk);
-    border-radius: var(--radius-sm);
-    background: var(--color-white);
-    color: var(--color-midnight);
-    font-size: 14px;
-}
-
-/* Catalog table: a white card with rounded corners */
-.catalog-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: var(--color-white);
-    border-radius: var(--radius-lg);
-    font-family: var(--font-label);
-    font-size: 15px;
-}
-
-.catalog-table th {
+/* Labels: Archivo Narrow SemiBold, 12 px, uppercase. */
+.catalog-table th,
+.settings-form label,
+.view-subtitle,
+.progress-title,
+.progress-label,
+.stat-label {
     font-family: var(--font-label);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--color-dusk);
-    text-align: left;
-    padding: var(--spacing-16) var(--spacing-12);
-    border-bottom: 1px solid var(--color-line);
-    white-space: nowrap;
 }
 
-/* Long file names make the table wider than the content area; then
-   only the table scrolls sideways. */
-.table-scroll {
-    overflow-x: auto;
-    border-radius: var(--radius-lg);
-}
-
-/* 12 px on the sides, so the seven columns fit in the content area of
-   the smallest window (1100 px). */
-.catalog-table td {
-    padding: 10px var(--spacing-12);
-    border-bottom: 1px solid var(--color-line);
-    vertical-align: middle;
-}
-
-.catalog-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.catalog-table tbody tr:hover td {
-    background: var(--color-paper);
-}
-
-/* Round the corner cells so the hover color does not stick out. */
-.catalog-table tbody tr:last-child td:first-child {
-    border-bottom-left-radius: var(--radius-lg);
-}
-
-.catalog-table tbody tr:last-child td:last-child {
-    border-bottom-right-radius: var(--radius-lg);
-}
-
-.catalog-table td.summary {
-    max-width: 380px;
-    color: var(--color-dusk);
-}
-
-/* Media type with its icon. data-type holds the stored value, so the
-   icon is the same in English and Spanish. */
-.catalog-table td.media-type {
-    white-space: nowrap;
+/* Section titles (H2): Archivo SemiBold 18 px in Midnight. */
+.settings-form h2,
+.confirm-dialog h2,
+.panel h2,
+.chat-header h2,
+.chat-empty-title {
+    font-size: 18px;
+    font-weight: 600;
     color: var(--color-midnight);
 }
 
-td.media-type::before {
-    content: "";
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    margin-right: var(--spacing-8);
-    vertical-align: -3px;
-    background-color: var(--color-violet);
-    mask-position: center;
-    mask-repeat: no-repeat;
-    mask-size: contain;
-    -webkit-mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
-}
-
-td.media-type[data-type="Press"]::before {
-    mask-image: url("../assets/icons/newspaper.svg");
-    -webkit-mask-image: url("../assets/icons/newspaper.svg");
-}
-
-td.media-type[data-type="Documents"]::before {
-    mask-image: url("../assets/icons/file-text.svg");
-    -webkit-mask-image: url("../assets/icons/file-text.svg");
-}
-
-td.media-type[data-type="Photos"]::before {
-    mask-image: url("../assets/icons/image.svg");
-    -webkit-mask-image: url("../assets/icons/image.svg");
-}
-
-td.media-type[data-type="Audio"]::before {
-    mask-image: url("../assets/icons/music.svg");
-    -webkit-mask-image: url("../assets/icons/music.svg");
-}
-
-td.media-type[data-type="Video"]::before {
-    mask-image: url("../assets/icons/video.svg");
-    -webkit-mask-image: url("../assets/icons/video.svg");
-}
-
-/* Short values that should stay on one line. */
-.nowrap {
+/* Text that ends in "…" when it does not fit on one line. */
+.project-title,
+.activity-name,
+.chat-card-name,
+.chat-source .file-link {
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-/* Missing values: Dusk italic. Solid Dusk keeps 4.5:1 on the glass. */
-.placeholder {
-    color: var(--color-dusk);
-    font-style: italic;
-}
-
-/* Manual Review: a pill badge with a Violet border. */
-.status-review span {
-    display: inline-block;
-    padding: 2px var(--spacing-12);
-    border: 1.5px solid var(--color-violet);
-    border-radius: var(--radius-full);
-    color: var(--color-violet);
-    font-weight: 600;
 }
 
 /* Forms: one column of labels and fields. */
@@ -657,67 +500,7 @@ td.media-type[data-type="Video"]::before {
 }
 
 .settings-form h2 {
-    font-size: 18px;
     line-height: 24px;
-    font-weight: 600;
-    color: var(--color-midnight);
-}
-
-/* Settings: one row per section. The title and what the section does
-   take the left third; the fields sit in a white panel on the right.
-   A line separates the rows. */
-.settings-section {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    gap: var(--spacing-48);
-    max-width: 1040px;
-    padding: var(--spacing-32) 0;
-    border-top: 1px solid var(--color-line);
-}
-
-#settings-form .settings-section:first-child {
-    padding-top: 0;
-    border-top: none;
-}
-
-.settings-form .settings-intro .hint {
-    margin-bottom: 0;
-}
-
-.settings-fields {
-    display: flex;
-    flex-direction: column;
-    padding: var(--spacing-24);
-    border-radius: var(--radius-lg);
-    background: var(--color-white);
-}
-
-/* No extra space under the last field of a panel. */
-.settings-fields > :last-child {
-    margin-bottom: 0;
-}
-
-/* A smaller title inside a panel, like Change password. */
-.settings-fields h3 {
-    margin: var(--spacing-8) 0 var(--spacing-16);
-    padding-top: var(--spacing-24);
-    border-top: 1px solid var(--color-line);
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--color-midnight);
-}
-
-/* Save and Cancel line up with the panels, under the right column. */
-.settings-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    gap: 0 var(--spacing-48);
-    max-width: 1040px;
-    padding-bottom: var(--spacing-32);
-}
-
-.settings-actions > * {
-    grid-column: 2;
 }
 
 .settings-form .hint {
@@ -730,37 +513,8 @@ td.media-type[data-type="Video"]::before {
     display: none;
 }
 
-/* Advanced settings: closed by default, same column layout inside. */
-.advanced-settings {
-    margin-bottom: var(--spacing-24);
-    padding: var(--spacing-12) var(--spacing-16);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-md);
-}
-
-.advanced-settings summary {
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--color-violet);
-}
-
-.advanced-settings[open] summary {
-    margin-bottom: var(--spacing-16);
-}
-
-.advanced-fields {
-    display: flex;
-    flex-direction: column;
-}
-
 /* Labels: Archivo Narrow SemiBold, uppercase. */
 .settings-form label {
-    font-family: var(--font-label);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-dusk);
     margin-bottom: var(--spacing-8);
 }
 
@@ -785,95 +539,6 @@ td.media-type[data-type="Video"]::before {
 .settings-form input[readonly] {
     background-color: var(--color-paper);
     color: var(--color-dusk);
-}
-
-/* File names section in Settings: each method is a selectable row. */
-.naming-options {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-8);
-    margin-bottom: var(--spacing-16);
-}
-
-.settings-form .naming-option {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--spacing-12);
-    padding: var(--spacing-12) var(--spacing-16);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-md);
-    font-family: var(--font-body);
-    font-size: 15px;
-    font-weight: 400;
-    letter-spacing: normal;
-    text-transform: none;
-    color: var(--color-deep-space);
-    margin-bottom: 0;
-    cursor: pointer;
-}
-
-.settings-form .naming-option:has(input:checked) {
-    border-color: var(--color-violet);
-    box-shadow: inset 0 0 0 1px var(--color-violet);
-}
-
-.settings-form .naming-option input {
-    height: auto;
-    margin: 0;
-    padding: 0;
-    accent-color: var(--color-violet);
-}
-
-code {
-    font-family: ui-monospace, Menlo, monospace;
-    font-size: 13px;
-    color: var(--color-midnight);
-    background: var(--color-paper);
-    border-radius: var(--radius-sm);
-    padding: 2px 6px;
-}
-
-code:empty {
-    display: none;
-}
-
-.naming-option code {
-    margin-left: auto;
-}
-
-.naming-custom {
-    display: flex;
-    flex-direction: column;
-}
-
-.naming-custom .hint {
-    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
-}
-
-.naming-preview {
-    font-size: 14px;
-    color: var(--color-dusk);
-}
-
-.naming-rules {
-    color: var(--color-dusk);
-    font-size: 13px;
-    margin: var(--spacing-16) 0 var(--spacing-24);
-    padding-left: 18px;
-}
-
-.settings-form .folder-locked {
-    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
-}
-
-.folder-row {
-    display: flex;
-    gap: var(--spacing-8);
-}
-
-.folder-row input {
-    flex: 1;
 }
 
 .form-buttons {
@@ -962,12 +627,6 @@ code:empty {
     height: 18px;
     margin-top: 2px;
     background-color: currentColor;
-    mask-position: center;
-    mask-repeat: no-repeat;
-    mask-size: contain;
-    -webkit-mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
 }
 
 .form-message.error::before,
@@ -1010,58 +669,98 @@ code:empty {
     color: var(--color-violet);
 }
 
-/* Remove project: the last section, apart from Save so it is not
-   clicked by mistake. */
-.remove-project .secondary-button {
-    align-self: flex-start;
-    color: var(--color-deep-space);
-    margin-bottom: 0;
-}
-
-/* Confirmation dialog in the app window */
-.confirm-dialog {
-    margin: auto;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    max-width: 420px;
-    padding: var(--spacing-32);
-    color: var(--color-deep-space);
-    background: var(--glass-bg-strong);
-    box-shadow: var(--shadow-lg);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
-}
-
-/* The page behind the open dialog is dimmed. */
-.confirm-dialog::backdrop {
-    background: rgba(8, 5, 28, 0.5);
-}
-
-.confirm-dialog h2 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--color-midnight);
-    margin-bottom: var(--spacing-8);
-}
-
-.confirm-dialog p {
-    font-size: 15px;
+/* Empty and error messages */
+.empty-message {
+    padding: var(--spacing-48) var(--spacing-32);
     color: var(--color-dusk);
-    margin-bottom: var(--spacing-24);
+    text-align: center;
 }
 
-.confirm-dialog .form-buttons {
-    justify-content: flex-end;
+/* Toast: bottom right, on any screen. Hidden while empty. */
+.toolbar-message {
+    display: flex;
+    gap: var(--spacing-8);
+    position: fixed;
+    /* Left of the chat button, so it never covers it. */
+    right: 96px;
+    bottom: var(--spacing-24);
+    z-index: 10;
+    max-width: 420px;
+    padding: var(--spacing-12) var(--spacing-16);
+    border-radius: var(--radius-md);
+    background: var(--color-deep-space);
+    color: var(--color-paper);
+    font-size: 14px;
+    box-shadow: var(--shadow-lg);
 }
 
-.confirm-dialog .form-message {
-    margin-bottom: 0;
+.toolbar-message:empty {
+    display: none;
 }
 
-/* A thinner focus ring, so it does not look doubled on the dark
-   Remove button. */
-.confirm-dialog button:focus-visible {
-    outline-width: 1.5px;
+.toolbar-message.error {
+    border-left: 4px solid var(--color-violet);
+    font-weight: 600;
+}
+
+.tabs {
+    display: flex;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-full);
+}
+
+.tab {
+    border: none;
+    border-radius: var(--radius-full);
+    background: none;
+    color: var(--color-dusk);
+    padding: 6px var(--spacing-16);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.tab:hover {
+    color: var(--color-midnight);
+}
+
+.tab.active {
+    background: var(--color-violet);
+    color: var(--color-paper);
+    font-weight: 600;
+}
+
+.filter-row select {
+    height: 40px;
+    border-radius: var(--radius-full);
+    padding: 0 var(--spacing-16);
+    font-size: 14px;
+    color: var(--color-midnight);
+}
+
+.status-select {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-white);
+    padding: var(--spacing-4) var(--spacing-8);
+    font-size: 14px;
+}
+
+/* Every dropdown draws its own Lucide chevron instead of the native
+   arrow, so it sits in the same place in every control. The SVG is
+   drawn in Dusk, because a background image cannot take the text
+   color the way the mask icons do. */
+.filter-row select,
+.settings-form select,
+.status-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 36px;
+    background-image: url("../assets/icons/chevron-down.svg");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    cursor: pointer;
 }
 
 /* Edit Mode switch in the catalog toolbar */
@@ -1071,9 +770,7 @@ code:empty {
     gap: var(--spacing-12);
     height: 40px;
     padding: 0 var(--spacing-12) 0 var(--spacing-16);
-    border: 1px solid var(--color-line);
     border-radius: var(--radius-full);
-    background: var(--color-white);
     font-size: 14px;
     font-weight: 600;
     color: var(--color-midnight);
@@ -1116,95 +813,156 @@ code:empty {
     left: 23px;
 }
 
-/* Toast: bottom right, on any screen. Hidden while empty. */
-.toolbar-message {
-    display: flex;
-    gap: var(--spacing-8);
-    position: fixed;
-    /* Left of the chat button, so it never covers it. */
-    right: 96px;
-    bottom: var(--spacing-24);
-    z-index: 10;
-    max-width: 420px;
-    padding: var(--spacing-12) var(--spacing-16);
-    border-radius: var(--radius-md);
-    background: var(--color-deep-space);
-    color: var(--color-paper);
-    font-size: 14px;
-    box-shadow: var(--shadow-lg);
-}
-
-.toolbar-message:empty {
-    display: none;
-}
-
-.toolbar-message.error {
-    border-left: 4px solid var(--color-violet);
-    font-weight: 600;
-}
-
-/* Edit Mode: a bar that stays above the table while it is on. It
-   stays at the top of the window when the table scrolls. */
-.edit-banner {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    margin-bottom: var(--spacing-16);
-    padding: var(--spacing-12) var(--spacing-16);
-    border-left: 3px solid var(--color-violet);
-    border-radius: var(--radius-sm);
-    background: var(--color-white);
+/* File links: the name opens the file; the eye and folder icons
+   preview it or show it in Finder. */
+.file-link {
+    padding: 0;
+    border: none;
+    background: none;
     color: var(--color-midnight);
-    font-size: 14px;
-    font-weight: 600;
-}
-
-/* Editable cells: a Paper background says they can be edited. Under
-   the mouse, a Violet line at the bottom; while typing, a Violet
-   frame. */
-td.editable {
-    background: var(--color-paper);
-    cursor: text;
-}
-
-.catalog-table tbody tr td.editable:hover {
-    box-shadow: inset 0 -2px 0 var(--color-violet);
-}
-
-td.editable:focus {
-    background: var(--color-white);
-    outline: 2px solid var(--color-violet);
-    outline-offset: -2px;
-}
-
-td.edit-error {
-    outline: 2px solid var(--color-deep-space);
-}
-
-.status-select {
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-sm);
-    background-color: var(--color-white);
-    padding: var(--spacing-4) var(--spacing-8);
-    font-size: 14px;
-}
-
-/* Every dropdown draws its own Lucide chevron instead of the native
-   arrow, so it sits in the same place in every control. The SVG is
-   drawn in Dusk, because a background image cannot take the text
-   color the way the mask icons do. */
-.filter-row select,
-.settings-form select,
-.status-select {
-    appearance: none;
-    -webkit-appearance: none;
-    padding-right: 36px;
-    background-image: url("../assets/icons/chevron-down.svg");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
 }
+
+.file-link:hover {
+    color: var(--color-violet);
+    text-decoration: underline;
+}
+
+.file-actions {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 2px;
+    margin-left: var(--spacing-4);
+    vertical-align: middle;
+}
+
+.file-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-dusk);
+    cursor: pointer;
+}
+
+.file-action .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.file-action:hover {
+    background: var(--color-paper);
+    color: var(--color-violet);
+}
+
+/* One rule for every glass surface: cards, panels, the table, and
+   controls that sit on the page. Their own rules never set a
+   background or border, except the colored left edge of the Edit
+   Mode bar and the Inbox warning, which come later and win. */
+.catalog-table,
+.tabs,
+.filter-row select,
+.pill-button,
+.switch-label,
+.stat-card,
+.panel,
+.settings-fields,
+.edit-banner,
+.warning-message {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+}
+
+/* Hover and focus changes fade in 150 ms instead of jumping. Only
+   color, border, shadow and opacity change, never the size. */
+.nav-link,
+.logout-button,
+.project-link,
+.chat-toggle,
+.tab,
+.primary-button,
+.secondary-button,
+.pill-button,
+.chat-example,
+.chat-card,
+.chat-close,
+.file-action,
+.file-link,
+td.editable {
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s,
+        box-shadow 0.15s, opacity 0.15s;
+}
+
+/* Numbers that count up, refresh, or sit in a column: every digit
+   takes the same width, so they do not shift. */
+.stat-number,
+.stat-sub,
+.progress-number,
+.progress-percent,
+.breakdown-count,
+.breakdown-header,
+.activity-when,
+.chat-stat-value,
+.tab,
+.catalog-table td.nowrap {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ======== Login ======== */
+
+/* Account screen: create the account or log in */
+.auth-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-32);
+    min-height: 100vh;
+    padding: var(--spacing-64) var(--spacing-16);
+    background: var(--frame-gradient);
+}
+
+.auth-logo {
+    width: 160px;
+}
+
+/* The login and setup card: 400 px wide, with the button across the
+   whole card. */
+.auth-form {
+    width: 100%;
+    max-width: 400px;
+    padding: var(--spacing-32);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg-strong);
+    box-shadow: var(--shadow-glass);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+}
+
+.auth-form h2 {
+    margin-bottom: var(--spacing-24);
+}
+
+.auth-form h2 + .hint {
+    margin-top: calc(-1 * var(--spacing-16));
+}
+
+.auth-form .primary-button {
+    align-self: stretch;
+    margin-top: var(--spacing-8);
+}
+
+/* ======== Catalog ======== */
 
 /* Catalog header: title on the left, progress on the right */
 .catalog-header {
@@ -1226,19 +984,7 @@ td.edit-error {
     min-width: 0;
 }
 
-.project-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .view-subtitle {
-    font-family: var(--font-label);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-dusk);
     margin-top: var(--spacing-4);
 }
 
@@ -1247,15 +993,6 @@ td.edit-error {
 }
 
 .progress-title,
-.progress-label {
-    font-family: var(--font-label);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-dusk);
-}
-
 .progress-title {
     margin-bottom: var(--spacing-8);
 }
@@ -1313,6 +1050,259 @@ td.edit-error {
     background: var(--color-deep-space);
 }
 
+/* Tabs and filters */
+.filter-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-12);
+    margin-bottom: var(--spacing-24);
+}
+
+/* Catalog: Download and Edit Mode, at the right end of the filters */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+    margin-left: auto;
+}
+
+/* Warning about the old Inbox folder. It only informs. */
+.warning-message {
+    margin-bottom: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16);
+    border-left: 3px solid var(--color-dusk);
+    border-radius: var(--radius-sm);
+    color: var(--color-midnight);
+    font-size: 14px;
+}
+
+/* Edit Mode: a bar that stays above the table while it is on. It
+   stays at the top of the window when the table scrolls. */
+.edit-banner {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin-bottom: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16);
+    border-left: 3px solid var(--color-violet);
+    border-radius: var(--radius-sm);
+    color: var(--color-midnight);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Long file names make the table wider than the content area; then
+   only the table scrolls sideways. */
+.table-scroll {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+}
+
+/* Catalog table: a glass card with rounded corners */
+.catalog-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: var(--radius-lg);
+    font-family: var(--font-label);
+    font-size: 15px;
+}
+
+.catalog-table th {
+    text-align: left;
+    padding: var(--spacing-16) var(--spacing-12);
+    border-bottom: 1px solid var(--color-line);
+    white-space: nowrap;
+}
+
+/* 12 px on the sides, so the seven columns fit in the content area of
+   the smallest window (1100 px). */
+.catalog-table td {
+    padding: 10px var(--spacing-12);
+    border-bottom: 1px solid var(--color-line);
+    vertical-align: middle;
+}
+
+.catalog-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.catalog-table tbody tr:hover td {
+    background: var(--color-paper);
+}
+
+/* Round the corner cells so the hover color does not stick out. */
+.catalog-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--radius-lg);
+}
+
+.catalog-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--radius-lg);
+}
+
+.catalog-table td.summary {
+    max-width: 380px;
+    color: var(--color-dusk);
+}
+
+/* Media type with its icon. data-type holds the stored value, so the
+   icon is the same in English and Spanish. */
+.catalog-table td.media-type {
+    white-space: nowrap;
+    color: var(--color-midnight);
+}
+
+td.media-type::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: var(--spacing-8);
+    vertical-align: -3px;
+    background-color: var(--color-violet);
+}
+
+td.media-type[data-type="Press"]::before {
+    mask-image: url("../assets/icons/newspaper.svg");
+    -webkit-mask-image: url("../assets/icons/newspaper.svg");
+}
+
+td.media-type[data-type="Documents"]::before {
+    mask-image: url("../assets/icons/file-text.svg");
+    -webkit-mask-image: url("../assets/icons/file-text.svg");
+}
+
+td.media-type[data-type="Photos"]::before {
+    mask-image: url("../assets/icons/image.svg");
+    -webkit-mask-image: url("../assets/icons/image.svg");
+}
+
+td.media-type[data-type="Audio"]::before {
+    mask-image: url("../assets/icons/music.svg");
+    -webkit-mask-image: url("../assets/icons/music.svg");
+}
+
+td.media-type[data-type="Video"]::before {
+    mask-image: url("../assets/icons/video.svg");
+    -webkit-mask-image: url("../assets/icons/video.svg");
+}
+
+.catalog-table td.filename-cell {
+    white-space: nowrap;
+}
+
+/* The selected row: the space bar previews its file. Paper background
+   and a Violet border around the whole row. */
+.catalog-table tbody tr {
+    cursor: default;
+}
+
+.catalog-table tbody tr.row-selected td {
+    background: var(--color-paper);
+    box-shadow: inset 0 1.5px 0 var(--color-violet),
+        inset 0 -1.5px 0 var(--color-violet);
+}
+
+.catalog-table tbody tr.row-selected td:first-child {
+    box-shadow: inset 1.5px 1.5px 0 var(--color-violet),
+        inset 0 -1.5px 0 var(--color-violet);
+}
+
+.catalog-table tbody tr.row-selected td:last-child {
+    box-shadow: inset -1.5px 1.5px 0 var(--color-violet),
+        inset 0 -1.5px 0 var(--color-violet);
+}
+
+/* Editable cells: a Paper background says they can be edited. Under
+   the mouse, a Violet line at the bottom; while typing, a Violet
+   frame. */
+td.editable {
+    background: var(--color-paper);
+    cursor: text;
+}
+
+.catalog-table tbody tr td.editable:hover {
+    box-shadow: inset 0 -2px 0 var(--color-violet);
+}
+
+td.editable:focus {
+    background: var(--color-white);
+    outline: 2px solid var(--color-violet);
+    outline-offset: -2px;
+}
+
+td.edit-error {
+    outline: 2px solid var(--color-deep-space);
+}
+
+/* Manual Review: a pill badge with a Violet border. */
+.status-review span {
+    display: inline-block;
+    padding: 2px var(--spacing-12);
+    border: 1.5px solid var(--color-violet);
+    border-radius: var(--radius-full);
+    color: var(--color-violet);
+    font-weight: 600;
+}
+
+/* Summaries: at most 2 lines, cut with "…". Read more opens them in
+   place (summary.js). line-clamp needs display: -webkit-box. */
+.summary-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+.summary-text.open {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+
+.read-more {
+    padding: 0;
+    margin-top: 2px;
+    border: none;
+    background: none;
+    color: var(--color-violet);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.read-more:hover {
+    text-decoration: underline;
+}
+
+.read-more[hidden] {
+    display: none;
+}
+
+/* A row the chat pointed to, highlighted for two seconds. */
+.catalog-table tbody tr.row-highlight td {
+    background: rgba(73, 59, 178, 0.12);
+    transition: background 0.4s;
+}
+
+/* The eye and folder icons in each row are dimmed, so 30 rows of them
+   do not weigh on the table. They show fully on the row under the
+   mouse, the selected row, and when they have the keyboard focus. */
+.catalog-table .file-action {
+    opacity: 0.35;
+}
+
+.catalog-table tbody tr:hover .file-action,
+.catalog-table tbody tr.row-selected .file-action,
+.catalog-table tbody tr:focus-within .file-action {
+    opacity: 1;
+}
+
+/* ======== Dashboard ======== */
+
 /* Dashboard: a grid of large cards. Wide cards take two columns. */
 .dash-grid {
     display: grid;
@@ -1328,7 +1318,6 @@ td.edit-error {
 .panel {
     padding: var(--spacing-24);
     border-radius: var(--radius-lg);
-    background: var(--color-white);
 }
 
 /* The number sits right under its label, so each card reads as one
@@ -1338,15 +1327,6 @@ td.edit-error {
     flex-direction: column;
     gap: var(--spacing-8);
     min-height: 168px;
-}
-
-.stat-label {
-    font-family: var(--font-label);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--color-dusk);
 }
 
 /* Big numbers in Archivo Light: 72 px, and 96 px for the two
@@ -1448,9 +1428,6 @@ td.edit-error {
 }
 
 .panel h2 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--color-midnight);
     margin-bottom: var(--spacing-24);
 }
 
@@ -1545,12 +1522,6 @@ td.edit-error {
     font-size: 14px;
 }
 
-.activity-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .activity-badge {
     padding: 2px var(--spacing-12);
     border: 1px solid var(--color-line);
@@ -1573,15 +1544,172 @@ td.edit-error {
     white-space: nowrap;
 }
 
-/* Text only screen readers read, like the word under a × button. */
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+/* ======== Settings ======== */
+
+/* Settings: one row per section. The title and what the section does
+   take the left third; the fields sit in a white panel on the right.
+   A line separates the rows. */
+.settings-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--spacing-48);
+    max-width: 1040px;
+    padding: var(--spacing-32) 0;
+    border-top: 1px solid var(--color-line);
 }
+
+#settings-form .settings-section:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.settings-form .settings-intro .hint {
+    margin-bottom: 0;
+}
+
+.settings-fields {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-24);
+    border-radius: var(--radius-lg);
+}
+
+/* No extra space under the last field of a panel. */
+.settings-fields > :last-child {
+    margin-bottom: 0;
+}
+
+/* A smaller title inside a panel, like Change password. */
+.settings-fields h3 {
+    margin: var(--spacing-8) 0 var(--spacing-16);
+    padding-top: var(--spacing-24);
+    border-top: 1px solid var(--color-line);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-midnight);
+}
+
+/* Save and Cancel line up with the panels, under the right column. */
+.settings-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 0 var(--spacing-48);
+    max-width: 1040px;
+    padding-bottom: var(--spacing-32);
+}
+
+.settings-actions > * {
+    grid-column: 2;
+}
+
+/* Advanced settings: closed by default, same column layout inside. */
+.advanced-settings {
+    margin-bottom: var(--spacing-24);
+    padding: var(--spacing-12) var(--spacing-16);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+}
+
+.advanced-settings summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-violet);
+}
+
+.advanced-settings[open] summary {
+    margin-bottom: var(--spacing-16);
+}
+
+.advanced-fields {
+    display: flex;
+    flex-direction: column;
+}
+
+/* File names section in Settings: each method is a selectable row. */
+.naming-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-16);
+}
+
+.settings-form .naming-option {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-12);
+    padding: var(--spacing-12) var(--spacing-16);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--color-deep-space);
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.settings-form .naming-option:has(input:checked) {
+    border-color: var(--color-violet);
+    box-shadow: inset 0 0 0 1px var(--color-violet);
+}
+
+.settings-form .naming-option input {
+    height: auto;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--color-violet);
+}
+
+.naming-option code {
+    margin-left: auto;
+}
+
+.naming-custom {
+    display: flex;
+    flex-direction: column;
+}
+
+.naming-custom .hint {
+    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
+}
+
+.naming-preview {
+    font-size: 14px;
+    color: var(--color-dusk);
+}
+
+.naming-rules {
+    color: var(--color-dusk);
+    font-size: 13px;
+    margin: var(--spacing-16) 0 var(--spacing-24);
+    padding-left: 18px;
+}
+
+.settings-form .folder-locked {
+    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
+}
+
+.folder-row {
+    display: flex;
+    gap: var(--spacing-8);
+}
+
+.folder-row input {
+    flex: 1;
+}
+
+/* Remove project: the last section, apart from Save so it is not
+   clicked by mistake. */
+.remove-project .secondary-button {
+    align-self: flex-start;
+    color: var(--color-deep-space);
+    margin-bottom: 0;
+}
+
+/* ======== Chat ======== */
 
 /* Chat button: a 56 px Violet circle fixed at the bottom right, with
    the Paper logomark. */
@@ -1665,10 +1793,7 @@ td.edit-error {
 
 .chat-header h2 {
     flex: 1;
-    font-size: 18px;
     line-height: 24px;
-    font-weight: 600;
-    color: var(--color-midnight);
 }
 
 .chat-close {
@@ -1737,12 +1862,6 @@ td.edit-error {
     border-radius: var(--radius-lg);
     background: var(--color-white);
     text-align: center;
-}
-
-.chat-empty-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--color-midnight);
 }
 
 .chat-empty-hint {
@@ -1865,11 +1984,6 @@ td.edit-error {
 .chat-card-name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 14px;
-    font-weight: 600;
 }
 
 .chat-card-meta {
@@ -1919,9 +2033,6 @@ td.edit-error {
 
 .chat-source .file-link {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .chat-source .file-action {
@@ -2070,200 +2181,52 @@ td.edit-error {
     border-color: transparent;
 }
 
-/* File links: the name opens the file; the eye and folder icons
-   preview it or show it in Finder. */
-.file-link {
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--color-midnight);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
+/* ======== Remove project dialog ======== */
 
-.file-link:hover {
-    color: var(--color-violet);
-    text-decoration: underline;
-}
-
-.file-actions {
-    display: inline-flex;
-    flex-shrink: 0;
-    gap: 2px;
-    margin-left: var(--spacing-4);
-    vertical-align: middle;
-}
-
-.file-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: none;
-    color: var(--color-dusk);
-    cursor: pointer;
-}
-
-.file-action .icon {
-    width: 16px;
-    height: 16px;
-}
-
-.file-action:hover {
-    background: var(--color-paper);
-    color: var(--color-violet);
-}
-
-.catalog-table td.filename-cell {
-    white-space: nowrap;
-}
-
-/* The selected row: the space bar previews its file. Paper background
-   and a Violet border around the whole row. */
-.catalog-table tbody tr {
-    cursor: default;
-}
-
-.catalog-table tbody tr.row-selected td {
-    background: var(--color-paper);
-    box-shadow: inset 0 1.5px 0 var(--color-violet),
-        inset 0 -1.5px 0 var(--color-violet);
-}
-
-.catalog-table tbody tr.row-selected td:first-child {
-    box-shadow: inset 1.5px 1.5px 0 var(--color-violet),
-        inset 0 -1.5px 0 var(--color-violet);
-}
-
-.catalog-table tbody tr.row-selected td:last-child {
-    box-shadow: inset -1.5px 1.5px 0 var(--color-violet),
-        inset 0 -1.5px 0 var(--color-violet);
-}
-
-/* Summaries: at most 2 lines, cut with "…". Read more opens them in
-   place (summary.js). line-clamp needs display: -webkit-box. */
-.summary-text {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-    overflow-wrap: anywhere;
-}
-
-.summary-text.open {
-    display: block;
-    -webkit-line-clamp: unset;
-    line-clamp: unset;
-}
-
-.read-more {
-    padding: 0;
-    margin-top: 2px;
-    border: none;
-    background: none;
-    color: var(--color-violet);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.read-more:hover {
-    text-decoration: underline;
-}
-
-.read-more[hidden] {
-    display: none;
-}
-
-/* A row the chat pointed to, highlighted for two seconds. */
-.catalog-table tbody tr.row-highlight td {
-    background: rgba(73, 59, 178, 0.12);
-    transition: background 0.4s;
-}
-
-/* The eye and folder icons in each row are dimmed, so 30 rows of them
-   do not weigh on the table. They show fully on the row under the
-   mouse, the selected row, and when they have the keyboard focus. */
-.catalog-table .file-action {
-    opacity: 0.35;
-}
-
-.catalog-table tbody tr:hover .file-action,
-.catalog-table tbody tr.row-selected .file-action,
-.catalog-table tbody tr:focus-within .file-action {
-    opacity: 1;
-}
-
-/* Hover and focus changes fade in 150 ms instead of jumping. Only
-   color, border, shadow and opacity change, never the size. */
-.nav-link,
-.logout-button,
-.project-link,
-.chat-toggle,
-.tab,
-.primary-button,
-.secondary-button,
-.pill-button,
-.chat-example,
-.chat-card,
-.chat-close,
-.file-action,
-.file-link,
-td.editable {
-    transition: color 0.15s, background-color 0.15s, border-color 0.15s,
-        box-shadow 0.15s, opacity 0.15s;
-}
-
-/* Numbers that count up, refresh, or sit in a column: every digit
-   takes the same width, so they do not shift. */
-.stat-number,
-.stat-sub,
-.progress-number,
-.progress-percent,
-.breakdown-count,
-.breakdown-header,
-.activity-when,
-.chat-stat-value,
-.tab,
-.catalog-table td.nowrap {
-    font-variant-numeric: tabular-nums;
-}
-
-/* One rule for every glass surface: cards, panels, the table, and
-   controls that sit on the page. It comes after their own rules, so
-   it replaces their white background and border. */
-.glass,
-.catalog-table,
-.tabs,
-.filter-row select,
-.pill-button,
-.switch-label,
-.stat-card,
-.panel,
-.settings-fields,
-.edit-banner,
-.warning-message {
-    background-color: var(--glass-bg);
+/* Confirmation dialog in the app window */
+.confirm-dialog {
+    margin: auto;
     border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
+    border-radius: var(--radius-lg);
+    max-width: 420px;
+    padding: var(--spacing-32);
+    color: var(--color-deep-space);
+    background: var(--glass-bg-strong);
+    box-shadow: var(--shadow-lg);
     -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
 }
 
-/* The colored left edge of these two stays on top of the glass border. */
-.edit-banner {
-    border-left: 3px solid var(--color-violet);
+/* The page behind the open dialog is dimmed. */
+.confirm-dialog::backdrop {
+    background: rgba(8, 5, 28, 0.5);
 }
 
-.warning-message {
-    border-left: 3px solid var(--color-dusk);
+.confirm-dialog h2 {
+    margin-bottom: var(--spacing-8);
 }
+
+.confirm-dialog p {
+    font-size: 15px;
+    color: var(--color-dusk);
+    margin-bottom: var(--spacing-24);
+}
+
+.confirm-dialog .form-buttons {
+    justify-content: flex-end;
+}
+
+.confirm-dialog .form-message {
+    margin-bottom: 0;
+}
+
+/* A thinner focus ring, so it does not look doubled on the dark
+   Remove button. */
+.confirm-dialog button:focus-visible {
+    outline-width: 1.5px;
+}
+
+/* ======== Media queries ======== */
 
 /* Less motion: no growing bars, no lift on hover. countUp() in
    motion.js also skips the counting. */
