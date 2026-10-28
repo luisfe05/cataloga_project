@@ -1,117 +1,102 @@
 # Cataloga
 
-Cataloga is a desktop app that uses AI to classify and catalog research material. It sorts each file into a media-type folder, gives it a readable filename, writes a short summary of its content, and logs everything in a searchable worksheet.
+Cataloga is a Mac desktop app that classifies, renames, and summarizes research files, and keeps them in a searchable catalog.
 
 This is a Holberton School Portfolio Project.
 
+## The problem it solves
+
+Research material piles up fast: scans, PDFs, photos, audio, and video, with names like `IMG_4521.jpg` or `scan0003.pdf`. A name like that says nothing about what is inside the file. Tools like Google Drive keep the files safe, but they do not describe them or put them in order. Finding the right document weeks later means opening files one by one.
+
+Cataloga reads each new file, decides what kind of material it is, gives it a name that makes sense, writes a short summary, and adds it to a catalog you can search, filter, and export.
+
+## Features
+
+| Feature | What it does |
+|---|---|
+| Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
+| Automatic classification | The AI sorts each file into one of five folders: Press, Documents, Photos, Audio, or Video |
+| 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
+| File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
+| Several projects | Each project has its own folder and its own catalog. Switch between them from the sidebar |
+| Login | One local account protects the app. The password is saved only as a bcrypt hash |
+| Chatbot | Ask Cataloga finds documents, filters the catalog, summarizes the project, and proposes new file names. A file is only renamed after you click Confirm |
+| Open, preview, and Finder | Click a file name to open it, the eye icon (or the space bar) to preview it with Quick Look, and the folder icon to show it in Finder |
+| English and Spanish | The interface is in English by default. Spanish (Latin America) can be chosen in Settings |
+| Dashboard | Counts of classified documents and documents that need review, a breakdown by media type, and the latest activity |
+| Editable worksheet | Edit Mode lets you fix the source, date, summary, and status. The worksheet can be downloaded as a CSV file |
+
 ## Tech stack
 
-| Layer | Technology |
+| Part | Technology |
 |---|---|
 | Desktop window | pywebview |
-| Frontend | HTML, CSS, JavaScript |
-| Backend | Flask (REST API on localhost) |
-| Database | SQLite |
-| AI providers | Ollama Cloud (default), Gemini, Groq, Claude, xAI, OpenAI |
-| API key storage | OS keyring |
+| Frontend | HTML, CSS, and plain JavaScript |
+| Backend | Flask REST API on `127.0.0.1:5050` |
+| Database | SQLite, one catalog per project |
+| AI | Ollama Cloud with `gemma4:31b` by default. Gemini, Groq, Claude, xAI, and OpenAI can be chosen in Settings |
+| API keys | The macOS Keychain, through keyring |
 | Packaging | PyInstaller |
 | Tests | pytest |
-| Interface languages | English (default) and Spanish (Latin America), chosen in Settings |
 
-## Account and login
+## How to run from source
 
-Cataloga has one local account for the whole app, not one per project. The first time the app opens, it asks you to create the account. After that, it asks you to log in.
+Run these commands from the `cataloga` folder.
 
-| Item | How it works |
+| Step | Command |
 |---|---|
-| Password rules | At least 8 characters, and at most 72 bytes (bcrypt's limit) |
-| Where the account is saved | `account.json`, next to `projects.json`. Never inside a project folder |
-| What is saved | The username and a bcrypt hash of the password. The password itself is never saved |
-| Session | After login, the app gets a session token that only lives in memory. Closing the app or clicking Log out ends the session |
-| Wrong passwords | After 5 in a row, Cataloga waits 30 seconds before it lets you try again |
-| Change the password | Settings, then Account. The session stays open after the change |
-| What it protects | The app. It does not encrypt your files or catalogs |
+| 1. Create a virtual environment | `python3 -m venv venv` |
+| 2. Turn it on | `source venv/bin/activate` |
+| 3. Install the packages | `pip install -r requirements.txt` |
+| 4. Start the app | `python main.py` |
 
-### Forgot your password
+The app opens in its own window. When it runs from source, it keeps its data (the project list and the account) in the `database/` folder.
 
-There is no way to recover the password. To start over with a new account:
-
-| Step | What to do |
-|---|---|
-| 1 | Close Cataloga |
-| 2 | Delete the account file (see the table below) |
-| 3 | Open Cataloga and create a new account |
-
-| How you run Cataloga | Command to delete the account file |
-|---|---|
-| The packaged app | `rm ~/Library/Application\ Support/Cataloga/account.json` |
-| From the code | `rm database/account.json` (from the `cataloga` folder) |
-
-This only deletes the account. Your projects, their folders, their files, and their catalogs stay as they are, and they show up again after you create the new account.
-
-## Projects
-
-Cataloga can hold several research projects. Each one has its own folder and its own catalog, saved inside that folder in `.cataloga/catalog.db`. Choose the project from the dropdown at the top of the Catalog screen, or pick "New project" there.
-
-| Item | Where it is saved |
-|---|---|
-| A project's catalog, name, file names method, and AI provider | `<project folder>/.cataloga/catalog.db` |
-| The list of projects, the active project, and the language | `projects.json` in the app's data folder |
-| API keys | OS keyring, shared by every project |
-
-To take a project out of the list, open Settings and click Remove project. This only changes the list. The project folder, its files, and its `.cataloga` catalog are never deleted. To add the project back, choose New project and pick the same folder: Cataloga opens its catalog with all its data.
-
-The first time this version opens, the catalog of an older version becomes the first project. Nothing is lost, and the old database file is left as a backup.
-
-## AI providers and API keys
-
-Every new project starts with Ollama Cloud and the `gemma4:31b` model. To use another provider or model, open Settings and then Advanced settings.
-
-| Item | How it works |
-|---|---|
-| Where keys are saved | The OS keyring (the macOS Keychain), under the service name `cataloga`, one key per provider |
-| Adding a key | Type it in Advanced settings and click Save. Cataloga tests the connection first and only saves a key that works |
-| Keys on screen | Never shown. Settings only says which providers have a key |
-| No key yet | Settings opens Advanced settings and asks for one |
-
-### Ollama key for development
-
-When running from the code (not the packaged app), Cataloga looks for the Ollama Cloud key in this order:
-
-| Order | Where |
-|---|---|
-| 1 | The OS keyring, like every other provider |
-| 2 | The `OLLAMA_API_KEY` environment variable |
-| 3 | A line `OLLAMA_API_KEY=...` in a `.env` file in the `cataloga` folder |
-
-The `.env` file is ignored by git and is not included in the packaged app. The packaged app only reads the keyring.
-
-To save a key in the keyring once, run this from the `cataloga` folder with the virtual environment active. It asks for the key without showing it or saving it in the Terminal history:
+To use Ollama Cloud, the app needs an API key. Save it once in the Keychain with the command below. It asks for the key without showing it.
 
 ```
 python -m keyring set cataloga ollama
 ```
 
-## How files are added
+When running from source, the key can also come from the `OLLAMA_API_KEY` environment variable or from a line `OLLAMA_API_KEY=...` in a `.env` file. The `.env` file is ignored by git and is never included in the Mac app.
 
-| Step | What happens |
+## How to build the Mac app
+
+With the virtual environment on, run this from the `cataloga` folder:
+
+```
+./build.sh
+```
+
+| Item | Where |
 |---|---|
-| 1 | Create a project with a name and a folder. Cataloga creates a Drop Zone folder and the five media-type folders inside it. |
-| 2 | Drop new files into Drop Zone. Files that were already in the project folder are never moved. |
-| 3 | Every few seconds, Cataloga classifies each file in the active project's Drop Zone, moves it to its media-type folder, and adds it to that project's catalog. |
+| The app | `dist/Cataloga.app` |
+| Its data (project list and account) | `~/Library/Application Support/Cataloga/` |
 
-Projects made with an older version have an Inbox folder instead. Cataloga renames it to Drop Zone the first time it checks the project folder. If both folders exist and Inbox still has files, the Catalog screen shows a warning. Cataloga does not move those files.
+## How to use
 
-## File names
+| Step | What to do |
+|---|---|
+| 1. Create your account | The first time Cataloga opens, choose a username and a password (at least 8 characters). After that, log in |
+| 2. Create a project | In Settings, type a name and pick a folder. Cataloga creates a Drop Zone folder and the five media-type folders inside it |
+| 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder |
+| 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a summary or a source. Turn on Edit Mode to fix a field |
+| 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
 
-In Settings, choose how Cataloga names new files. Files already in the catalog keep their names.
+If you forget your password, close Cataloga and delete `account.json` from the data folder (`~/Library/Application Support/Cataloga/` for the Mac app, `database/` when running from source). Then open Cataloga and create a new account. Your projects and their files are not touched.
+
+To take a project out of the list, open Settings and click Remove project. Its folder, files, and catalog are never deleted, so you can add the same folder again later.
+
+## File naming methods
+
+Choose the method in Settings. Files already in the catalog keep their names.
 
 | Method | Example |
 |---|---|
 | Date and topic (default) | `2026-07-15_oceanman-malta.pdf` |
 | Source, date and topic | `el-nuevo-dia_2026-07-15_oceanman-malta.pdf` |
 | Number and topic | `0001_oceanman-malta.pdf` |
-| Custom | A template with `{date}`, `{source}`, `{topic}`, `{number}` and `{original}` |
+| Custom | A template with `{date}`, `{source}`, `{topic}`, `{number}`, and `{original}` |
 
 | Rule | What happens |
 |---|---|
@@ -119,27 +104,70 @@ In Settings, choose how Cataloga names new files. Files already in the catalog k
 | No date | `undated` is used |
 | No source | That part is left out |
 | No topic | The original file name is used |
-| Photos, audio, video, and files without text | File date and number, for example `2026-07-15_0001.jpg` |
-| Name already taken | `-2`, `-3` and so on are added |
+| Photos, audio, video, and files without text | File date and a number, for example `2026-07-15_0001.jpg` |
+| Name already taken | `-2`, `-3`, and so on are added |
+| Rename from the chat | Uses the same cleaning rules, only after you click Confirm |
+
+## API endpoints
+
+The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the session token in the header `Authorization: Bearer <token>`. Without it, the answer is `401 unauthorized`. The routes for documents, dashboard, and the AI provider work on the active project.
+
+| Method | Path | Login | What it does |
+|---|---|---|---|
+| GET | `/auth/status` | No | Says whether the account exists, and the app language |
+| POST | `/auth/setup` | No | Creates the account (only once) and logs in |
+| POST | `/auth/login` | No | Logs in. After 5 wrong passwords in a row, waits 30 seconds |
+| POST | `/auth/logout` | Yes | Ends the session |
+| POST | `/auth/password` | Yes | Changes the password. The session stays open |
+| GET | `/documents` | Yes | Lists and searches the documents, with optional filters |
+| GET | `/documents/export` | Yes | Exports the worksheet as a CSV file |
+| GET | `/documents/<id>` | Yes | Gets one document |
+| PATCH | `/documents/<id>` | Yes | Edits the source, date, summary, media type, or status |
+| POST | `/documents/<id>/rename` | Yes | Renames one file, only after the user confirms in the chat |
+| POST | `/documents/<id>/open` | Yes | Opens the file with its default app |
+| POST | `/documents/<id>/reveal` | Yes | Shows the file in Finder, selected |
+| POST | `/documents/<id>/preview` | Yes | Opens a Quick Look preview of the file |
+| GET | `/dashboard/stats` | Yes | Gives the numbers for the dashboard |
+| GET | `/settings` | Yes | Gives the active project's settings and the language |
+| PUT | `/settings` | Yes | Saves the project name, the naming template, and the language |
+| PUT | `/settings/ai-provider` | Yes | Saves the AI provider, model, and API key |
+| POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
+| GET | `/projects` | Yes | Lists the projects and says which one is active |
+| POST | `/projects` | Yes | Creates a project, or opens a folder that already has a catalog |
+| PUT | `/projects/active` | Yes | Switches the active project |
+| DELETE | `/projects` | Yes | Takes a project out of the list. Never deletes its folder or files |
+| POST | `/chat` | Yes | Answers a chat message with one action from a fixed list. Never changes anything |
 
 ## Project structure
 
-| Folder / File | Description |
+| Folder or file | What it holds |
 |---|---|
-| main.py | Starts the Flask server and opens the desktop window |
-| backend/models/ | Document class, one worksheet row |
-| backend/db/ | Database schema and CatalogRepository (all database reads and writes) |
-| backend/pipeline/ | ClassificationPipeline, FileOrganizer, and the AI provider clients |
-| backend/config/ | AppConfig (a project's settings) and the project list |
-| backend/routes/ | API endpoints for documents, dashboard, settings, and projects |
-| frontend/ | HTML, CSS, and JavaScript for the app screens |
-| tests/ | pytest test suite |
-| database/ | When running from the code: projects.json and the old single database (not tracked by git) |
+| `main.py` | Starts the Flask server, the folder watcher, and the desktop window |
+| `build.sh` | Builds `Cataloga.app` with PyInstaller |
+| `assets/` | The app icon |
+| `backend/app.py` | Creates the Flask app and registers the routes |
+| `backend/folder_watcher.py` | Checks the active project's Drop Zone every few seconds |
+| `backend/config/` | The project list, the account, and the app settings |
+| `backend/db/` | The database schema and CatalogRepository, which does every database read and write |
+| `backend/models/` | The Document class, one row of the worksheet |
+| `backend/pipeline/` | ClassificationPipeline, FileOrganizer, file naming, the chat assistant, and the AI provider clients |
+| `backend/routes/` | The API endpoints |
+| `frontend/` | The app screens: `index.html`, `css/`, `js/` (with `js/lang/` for English and Spanish), fonts, and icons |
+| `tests/` | The pytest tests |
+| `qa/` | The answer key for the 100-file test batch |
+| `database/` | Data when running from source (not tracked by git) |
 
-## Status
+## Tests
 
-MVP in development.
+Run these from the `cataloga` folder with the virtual environment on. The AI calls are replaced with fakes, so the tests do not need an API key or internet.
+
+| Check | Command | Result |
+|---|---|---|
+| Tests | `python -m pytest` | 333 tests in 13 test files |
+| Code style | `pycodestyle --exclude=venv,build,dist .` | No errors |
+
+`pycodestyle` is not in `requirements.txt`. Install it with `pip install pycodestyle`.
 
 ## Author
 
-Luis Felipe Gonzalez Lopez, [github.com/luisfe05](https://github.com/luisfe05)
+Luis Felipe González López, GitHub [luisfe05](https://github.com/luisfe05), Holberton School Puerto Rico.
