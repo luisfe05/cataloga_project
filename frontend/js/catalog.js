@@ -239,6 +239,7 @@ function selectRow(id) {
  */
 function renderTable(documents) {
     const body = document.getElementById("catalog-body");
+    forgetSummaries(body);
     body.innerHTML = "";
     documents.forEach((doc) => {
         const row = document.createElement("tr");
@@ -262,7 +263,10 @@ function renderTable(documents) {
             row.appendChild(makeCell(doc.source));
             row.appendChild(makeCell(doc.document_date, "nowrap"));
             if (doc.summary) {
-                row.appendChild(makeCell(doc.summary, "summary"));
+                // At most 2 lines, with Read more (summary.js).
+                const summaryCell = makeCell("", "summary");
+                summaryCell.appendChild(makeSummary(doc.summary, doc.id));
+                row.appendChild(summaryCell);
             } else {
                 // Same placeholder as the wireframe for missing summaries.
                 row.appendChild(makeCell(t("catalog.summary_placeholder"),
