@@ -1,8 +1,4 @@
-"""Tests for the folder watcher.
-
-The watcher runs with a real database and real folders in a temporary
-location. The AI client is replaced with a fake so no API is called.
-"""
+"""Tests for the folder watcher."""
 
 import os
 import shutil

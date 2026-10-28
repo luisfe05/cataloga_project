@@ -1,9 +1,4 @@
-"""Tests for AIProviderClient and GeminiClient.
-
-No test ever calls a real AI API or reads the real OS keyring. The
-keyring is replaced with a fake that returns a test key, and the AI is
-replaced with a fake that returns prepared answers.
-"""
+"""Tests for AIProviderClient and GeminiClient."""
 
 import pytest
 
@@ -27,11 +22,7 @@ def fake_keyring(monkeypatch):
 
 
 class FakeClient(AIProviderClient):
-    """A provider that returns prepared answers instead of calling an API.
-
-    Each item in answers is either a string to return or an Exception to
-    raise, used in order, one per call.
-    """
+    """A provider that returns prepared answers instead of calling an API."""
 
     def __init__(self, answers):
         super().__init__(provider_name="fake", model="fake-model")
