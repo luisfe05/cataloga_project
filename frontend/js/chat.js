@@ -58,6 +58,7 @@ function toggleChat(open) {
 function clearChat() {
     chatHistory = [];
     const messages = document.getElementById("chat-messages");
+    forgetSummaries(messages);
     messages.querySelectorAll(".chat-message").forEach((item) => {
         item.remove();
     });
@@ -145,8 +146,9 @@ function documentCard(doc) {
         .filter(Boolean).join(" · ");
     card.appendChild(chatElement("span", "chat-card-meta", meta));
     if (doc.summary) {
-        card.appendChild(chatElement("span", "chat-card-summary",
-            doc.summary));
+        const summary = makeSummary(doc.summary, doc.id);
+        summary.classList.add("chat-card-summary");
+        card.appendChild(summary);
     }
     const show = chatElement("button", "chat-link",
         t("files.show_in_catalog"));

@@ -29,6 +29,8 @@ const LANG_EN = {
     "catalog.col_date": "Date",
     "catalog.col_summary": "Summary",
     "catalog.col_status": "Status",
+    "summary.read_more": "Read more",
+    "summary.show_less": "Show less",
     "catalog.summary_placeholder": "Manual Summary",
     "catalog.saving": "Saving...",
     "catalog.saving_summary":
