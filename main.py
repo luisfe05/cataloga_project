@@ -136,11 +136,14 @@ def main():
           "Close the window to quit.".format(PORT))
 
     # Open the frontend HTML file directly in a native desktop window.
+    # min_size stops the window from getting too narrow for the sidebar,
+    # the catalog toolbar, and the table.
     webview.create_window(
         "Cataloga",
         FRONTEND_PATH,
         width=1280,
         height=720,
+        min_size=(1100, 680),
         js_api=DesktopApi(),
     )
     webview.start()
