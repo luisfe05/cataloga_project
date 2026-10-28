@@ -8,9 +8,7 @@
 </head>
 <body>
 
-    <!-- Account screen: create the account (first time) or log in.
-         Until the user logs in, the nav bar and the views stay hidden.
-         auth.js decides which form to show. -->
+    <!-- Account screen: setup or login (auth.js). The app stays hidden until login. -->
     <section class="auth-screen hidden" id="auth-screen">
         <img class="auth-logo" src="assets/logo-vertical-paper.svg"
              alt="Cataloga">
@@ -49,17 +47,13 @@
         </form>
     </section>
 
-    <!-- The app frame (hidden until the user logs in): the top bar,
-         the sidebar, and the chat button. They are all inside
-         #nav-bar, so hiding it hides the whole frame. -->
+    <!-- App frame: hiding #nav-bar hides the top bar, sidebar, and chat button. -->
     <nav id="nav-bar" class="hidden">
-        <!-- Top bar: logo, catalog search, and the user -->
         <header class="topbar">
             <img class="app-logo" src="assets/logo-horizontal-paper.svg"
                  alt="Cataloga">
 
-            <!-- The catalog search. Typing here from another screen
-                 opens Catalog (catalog.js). -->
+            <!-- Typing here from another screen opens Catalog (catalog.js). -->
             <div class="search-box">
                 <label class="visually-hidden" for="search-input"
                        data-i18n="catalog.search">Search the catalog</label>
@@ -81,17 +75,14 @@
             </div>
         </header>
 
-        <!-- Sidebar. The text sits in its own span with data-i18n, so
-             translating it does not remove the icon next to it. -->
+        <!-- Sidebar. Text sits in its own span, so translating it keeps the icon. -->
         <div class="sidebar">
             <div class="nav-links">
                 <a href="#" class="nav-link active" data-view="catalog">
                     <span class="icon icon-catalog"></span>
                     <span data-i18n="nav.catalog">Catalog</span>
                 </a>
-                <!-- Projects under Catalog: one button each, plus New
-                     project. Filled by loadProjectHeader() in app.js.
-                     It scrolls when there are many projects. -->
+                <!-- Projects and New project, filled by loadProjectHeader() in app.js. -->
                 <ul class="project-list" id="project-list"></ul>
                 <a href="#" class="nav-link" data-view="dashboard">
                     <span class="icon icon-dashboard"></span>
@@ -104,9 +95,7 @@
             </div>
         </div>
 
-        <!-- Opens and closes the floating chat window. A round button
-             at the bottom right with the Paper logomark; its name is
-             only for screen readers. -->
+        <!-- Floating chat button. Its name is only for screen readers. -->
         <button type="button" class="chat-toggle" id="chat-toggle"
                 aria-expanded="false" aria-controls="chat-panel">
             <img class="chat-logomark" src="assets/logomark-paper.svg"
@@ -117,16 +106,12 @@
         </button>
     </nav>
 
-    <!-- View containers: only one is visible at a time. Hidden until
-         the user logs in. -->
+    <!-- Views: only one is visible at a time. -->
     <main id="app-main" class="hidden">
         <div id="view-catalog" class="view">
-            <!-- Title and progress: Classified vs. Manual Review,
-                 filled by catalog.js from the documents it loads -->
+            <!-- Title and progress, filled by catalog.js. -->
             <div class="catalog-header">
-                <!-- Active project's name, filled by
-                     loadProjectHeader() in app.js. No data-i18n on
-                     the h1, so a language change does not replace it. -->
+                <!-- Project name from app.js. No data-i18n, so a language change keeps it. -->
                 <div class="catalog-heading">
                     <h1 class="view-title project-title"
                         id="catalog-title"></h1>
@@ -152,17 +137,14 @@
                         </div>
                         <p class="progress-percent" id="progress-percent"></p>
                     </div>
-                    <!-- The numbers above say the same, so screen
-                         readers skip the bar -->
+                    <!-- The numbers above say the same, so screen readers skip the bar. -->
                     <div class="progress-track" aria-hidden="true">
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
                 </section>
             </div>
 
-            <!-- Tabs (all files or only the ones that need manual
-                 review), filters, Download and Edit Mode. The search
-                 is in the top bar. -->
+            <!-- Tabs, filters, Download, and Edit Mode. The search is in the top bar. -->
             <div class="filter-row">
                 <div class="tabs">
                     <button class="tab active" data-status=""
@@ -198,22 +180,16 @@
                 </div>
             </div>
 
-            <!-- Shown while Edit Mode is on. catalog.js shows and hides
-                 it with the switch. -->
+            <!-- Shown while Edit Mode is on (catalog.js). -->
             <p class="edit-banner hidden" id="edit-banner"
                data-i18n="catalog.edit_banner"></p>
 
-            <!-- Warning shown when the old Inbox folder still has files -->
             <p class="warning-message hidden" id="catalog-warning"></p>
 
-            <!-- Message shown when there is nothing to list -->
             <p class="empty-message hidden" id="catalog-message"></p>
 
-            <!-- The table scrolls sideways inside this box when long
-                 file names do not fit, instead of running past the
-                 content area. -->
+            <!-- Only the table scrolls sideways when long file names do not fit. -->
             <div class="table-scroll">
-                <!-- Catalog table, filled in by catalog.js -->
                 <table class="catalog-table" id="catalog-table">
                     <thead>
                         <tr>
@@ -235,9 +211,7 @@
             <div class="dashboard">
                 <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
 
-                <!-- What the numbers say, in one line, and the action
-                     that follows from it. Filled by dashboard.js;
-                     hidden while the project has no documents. -->
+                <!-- The finding and its action (dashboard.js). Hidden with no documents. -->
                 <div class="dash-finding hidden" id="dash-finding">
                     <p id="dash-finding-text"></p>
                     <button type="button" class="primary-button hidden"
@@ -246,8 +220,7 @@
                         Catalog</button>
                 </div>
 
-                <!-- Grid of cards. Wide cards take two of the four
-                     columns. Every number comes from /dashboard/stats. -->
+                <!-- Wide cards take two of four columns. Numbers come from /dashboard/stats. -->
                 <div class="dash-grid">
                     <section class="stat-card">
                         <p class="stat-label" data-i18n="dash.classified">Documents Classified</p>
@@ -256,8 +229,7 @@
                         <p class="stat-sub" id="stat-total"></p>
                     </section>
 
-                    <!-- Two blurred circles sized by their share of all
-                         documents: Classified and Manual Review -->
+                    <!-- Two blurred circles sized by their share of all documents. -->
                     <section class="stat-card review-card card-wide">
                         <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
                         <div class="review-orbs" aria-hidden="true">
@@ -297,8 +269,7 @@
         </div>
         <div id="view-settings" class="view hidden">
             <h1 class="view-title" data-i18n="nav.settings">Settings</h1>
-            <!-- Each section is one row: its title and what it does on
-                 the left, its fields on the right. -->
+            <!-- One row per section: title and text on the left, fields on the right. -->
             <form class="settings-form" id="settings-form">
 
                 <!-- Saved as soon as it changes, not with the Save button -->
@@ -321,8 +292,7 @@
 
                 <section class="settings-section">
                     <div class="settings-intro">
-                        <!-- "Project settings" or "New project", set by
-                             settings.js -->
+                        <!-- "Project settings" or "New project", set by settings.js -->
                         <h2 id="project-form-title">Project settings</h2>
                         <p class="hint" data-i18n="settings.research_hint">
                             Configure your research project and where files are stored.
@@ -349,8 +319,7 @@
                     </div>
                 </section>
 
-                <!-- File names: one of 3 methods or a custom template.
-                     Saved with the Save button. -->
+                <!-- File names: 3 methods or a custom template. Saved with Save. -->
                 <section class="settings-section">
                     <div class="settings-intro">
                         <h2 data-i18n="naming.title">File names</h2>
@@ -407,12 +376,10 @@
                 <section class="settings-section">
                     <div class="settings-intro">
                         <h2 data-i18n="settings.ai_title">AI Provider</h2>
-                        <!-- Filled by settings.js: which provider is in use -->
                         <p class="hint" id="ai-status"></p>
                     </div>
                     <div class="settings-fields">
-                        <!-- Closed by default. settings.js opens it when the
-                             chosen provider still needs an API key. -->
+                        <!-- Closed unless the provider still needs an API key (settings.js). -->
                         <details class="advanced-settings" id="ai-advanced">
                             <summary data-i18n="settings.advanced">Advanced
                                 settings</summary>
@@ -438,8 +405,7 @@
                     </div>
                 </section>
 
-                <!-- Save sits under the fields column, for every section
-                     above except Language -->
+                <!-- Save applies to every section above except Language. -->
                 <div class="settings-actions">
                     <div class="form-buttons">
                         <button type="submit" class="primary-button"
@@ -453,8 +419,7 @@
                 </div>
             </form>
 
-            <!-- Account: one for the whole app, not per project. Its
-                 own form, so the project's Save button never sends it. -->
+            <!-- Account: one for the whole app. Its own form, so Save never sends it. -->
             <form class="settings-form" id="password-form">
                 <section class="settings-section">
                     <div class="settings-intro">
@@ -491,8 +456,7 @@
                 </section>
             </form>
 
-            <!-- Only for the active project, and always last. The text
-                 says what Remove does before the dialog asks again. -->
+            <!-- Only for the active project, always last. The text explains what Remove does. -->
             <section class="settings-section remove-project hidden"
                      id="remove-project-section">
                 <div class="settings-intro">
@@ -507,15 +471,11 @@
             </section>
         </div>
 
-        <!-- Short messages from the catalog (saved, exported, errors).
-             Outside the views so it shows as a toast on any screen;
-             catalog.js clears it after a few seconds. -->
+        <!-- Toast, outside the views so it shows on any screen. catalog.js clears it. -->
         <p class="toolbar-message" id="toolbar-message"></p>
     </main>
 
-    <!-- Floating chat window above the chat button, filled by
-         chat.js. The conversation lives only in memory and is cleared
-         when the project changes. -->
+    <!-- Floating chat window (chat.js). The conversation lives only in memory. -->
     <aside class="chat-panel hidden" id="chat-panel"
            aria-labelledby="chat-title">
         <header class="chat-header">
@@ -523,8 +483,7 @@
                 <img src="assets/logomark-midnight.svg" alt="">
             </span>
             <h2 id="chat-title" data-i18n="chat.title">Cataloga assistant</h2>
-            <!-- The × is hidden from screen readers; they read the
-                 translated word instead -->
+            <!-- The × is hidden from screen readers; they read the translated word. -->
             <button type="button" class="chat-close" id="chat-close">
                 <span aria-hidden="true">×</span>
                 <span class="visually-hidden"
@@ -533,7 +492,6 @@
         </header>
 
         <div class="chat-messages" id="chat-messages" aria-live="polite">
-            <!-- Shown while the conversation is empty -->
             <div class="chat-empty" id="chat-empty">
                 <span class="chat-avatar chat-avatar-large">
                     <img src="assets/logomark-midnight.svg" alt="">
@@ -554,8 +512,7 @@
                             data-i18n="chat.example_review"
                             data-prompt="chat.example_review">Show items in
                         Manual Review</button>
-                    <!-- Rename needs a file and a name, so it only
-                         starts the sentence for the user to finish -->
+                    <!-- Rename needs a file and a name, so it only starts the sentence. -->
                     <button type="button" class="chat-example"
                             data-i18n="chat.example_rename"
                             data-prompt="chat.example_rename_prompt"
@@ -574,15 +531,11 @@
         </form>
     </aside>
 
-    <!-- Confirmation for Remove project. A <dialog> shown with
-         showModal() stays inside the app window and blocks the page
-         behind it until it is closed. -->
+    <!-- Remove project dialog. showModal() blocks the page until it closes. -->
     <dialog class="confirm-dialog" id="remove-project-dialog">
         <h2 id="remove-project-title"></h2>
         <p data-i18n="project.remove_text"></p>
-        <!-- Cancel has the focus when the dialog opens, so Enter does
-             not remove the project by mistake. Remove is last, on the
-             right, like in macOS dialogs. -->
+        <!-- Cancel gets the focus, so Enter cannot remove by mistake. Remove is last. -->
         <div class="form-buttons">
             <button type="button" class="secondary-button"
                     id="remove-project-cancel" autofocus
@@ -594,8 +547,7 @@
         <p class="form-message error" id="remove-project-error"></p>
     </dialog>
 
-    <!-- Scripts loaded in dependency order. The language files and
-         i18n.js come first because every other script uses t(). -->
+    <!-- Dependency order: lang files and i18n.js first, because every script uses t(). -->
     <script src="js/lang/en.js"></script>
     <script src="js/lang/es.js"></script>
     <script src="js/i18n.js"></script>

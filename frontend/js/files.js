@@ -1,19 +1,6 @@
-/**
- * files.js
- *
- * The three actions every file has, shared by Catalog and the chat:
- * open it with its default app (click on the name), preview it with
- * Quick Look (eye icon or the space bar), and show it in Finder
- * (folder icon). Only the document id goes to the backend; the backend
- * finds the path and checks it is inside the project.
- */
+/** files.js: open, preview, and reveal a file. Only the id goes to the backend. */
 
-/**
- * Ask the backend to open, reveal, or preview a file. A missing file
- * shows a toast instead of failing silently.
- * @param {number} id
- * @param {string} action - "open", "reveal", or "preview".
- */
+/** Ask the backend to open, reveal, or preview a file. A missing file shows a toast. */
 async function runFileAction(id, action) {
     try {
         await runDocumentFileAction(id, action);
@@ -24,13 +11,7 @@ async function runFileAction(id, action) {
     }
 }
 
-/**
- * Make a small icon button, like the eye or the folder.
- * @param {string} iconClass - For example "icon-eye".
- * @param {string} labelKey - Text key for aria-label and the tooltip.
- * @param {Function} onClick
- * @returns {HTMLButtonElement}
- */
+/** Make a small icon button, like the eye or the folder. */
 function makeIconButton(iconClass, labelKey, onClick) {
     const button = document.createElement("button");
     button.type = "button";
@@ -48,11 +29,7 @@ function makeIconButton(iconClass, labelKey, onClick) {
     return button;
 }
 
-/**
- * The file name as a button that opens the file.
- * @param {Object} doc - {id, filename}
- * @returns {HTMLButtonElement}
- */
+/** The file name as a button that opens the file. */
 function makeFileLink(doc) {
     const link = document.createElement("button");
     link.type = "button";
@@ -66,11 +43,7 @@ function makeFileLink(doc) {
     return link;
 }
 
-/**
- * The eye (preview) and folder (show in Finder) buttons.
- * @param {number} id
- * @returns {HTMLSpanElement}
- */
+/** The eye (preview) and folder (show in Finder) buttons. */
 function makeFileActions(id) {
     const actions = document.createElement("span");
     actions.className = "file-actions";

@@ -1,38 +1,15 @@
-/**
- * api.js
- *
- * Thin wrappers around fetch() for every Cataloga API endpoint.
- * All requests go to the Flask backend on 127.0.0.1:5050.
- * 127.0.0.1 is used instead of "localhost" because on a Mac
- * "localhost" can point to a different address (IPv6) than the one
- * Flask listens on.
- * Every function returns a Promise that resolves to parsed JSON,
- * or rejects with an error object shaped like {code, message}.
- *
- * Every request carries the session token from the login in the header
- * "Authorization: Bearer <token>". The token is only kept in this
- * variable (never in localStorage), so it is gone when the app closes.
- */
+/** api.js: fetch() for every endpoint. 127.0.0.1, because localhost can be IPv6 on a Mac. */
 
 const BASE_URL = "http://127.0.0.1:5050";
 
-// Session token from POST /auth/setup or /auth/login. "" = logged out.
+// Session token, only in memory (never localStorage). "" = logged out.
 let sessionToken = "";
 
-/**
- * Remember the session token, or forget it with "".
- * @param {string} token
- */
 function setSessionToken(token) {
     sessionToken = token;
 }
 
-/**
- * fetch() with the session token added to the headers.
- * @param {string} url
- * @param {Object} [options] - The same options fetch() takes.
- * @returns {Promise<Response>}
- */
+/** fetch() with the session token added to the headers. */
 function apiFetch(url, options = {}) {
     const headers = Object.assign({}, options.headers);
     if (sessionToken) {
@@ -41,13 +18,7 @@ function apiFetch(url, options = {}) {
     return fetch(url, Object.assign({}, options, { headers: headers }));
 }
 
-/**
- * Handle a fetch Response: parse JSON, reject on non-2xx status.
- * A missing or old session token sends the app back to the login
- * screen (showLoginScreen() is in auth.js).
- * @param {Response} response
- * @returns {Promise<any>}
- */
+/** Parse JSON and reject on non-2xx. A 401 goes back to the login screen. */
 async function handleResponse(response) {
     const data = await response.json();
     if (response.status === 401 && data.error
@@ -63,10 +34,7 @@ async function handleResponse(response) {
 
 // --- Documents ---
 
-/** GET /documents - list all documents with optional filters.
- * @param {Object} filters - { media_type, source, status, search } all optional.
- * @returns {Promise<Array>}
- */
+/** GET /documents - list all documents with optional filters. */
 async function getDocuments(filters = {}) {
     const params = new URLSearchParams(filters).toString();
     const url = params ? `${BASE_URL}/documents?${params}` : `${BASE_URL}/documents`;
@@ -74,20 +42,13 @@ async function getDocuments(filters = {}) {
     return handleResponse(response);
 }
 
-/** GET /documents/:id
- * @param {number} id
- * @returns {Promise<Object>}
- */
+/** GET /documents/:id */
 async function getDocument(id) {
     const response = await apiFetch(`${BASE_URL}/documents/${id}`);
     return handleResponse(response);
 }
 
-/** PATCH /documents/:id - update editable fields.
- * @param {number} id
- * @param {Object} fields - { source, document_date, summary, media_type, status }
- * @returns {Promise<Object>}
- */
+/** PATCH /documents/:id - update editable fields. */
 async function updateDocument(id, fields) {
     const response = await apiFetch(`${BASE_URL}/documents/${id}`, {
         method: "PATCH",
@@ -97,14 +58,7 @@ async function updateDocument(id, fields) {
     return handleResponse(response);
 }
 
-/** GET /documents/export - save the catalog as a CSV file.
- * Inside the desktop window, Python shows a "Save as" dialog and writes
- * the file (see save_worksheet in main.py). In a normal browser, the
- * browser downloads it instead.
- * @param {Object} filters - same as getDocuments.
- * @returns {Promise<string>} Where the file was saved ("" if cancelled
- *     or unknown).
- */
+/** GET /documents/export. In the window, Python shows Save as (main.py); a browser downloads. */
 async function exportDocuments(filters = {}) {
     const params = new URLSearchParams(filters).toString();
     if (window.pywebview && window.pywebview.api) {
@@ -113,8 +67,7 @@ async function exportDocuments(filters = {}) {
     const url = params
         ? `${BASE_URL}/documents/export?${params}`
         : `${BASE_URL}/documents/export`;
-    // A plain link cannot send the token, so the file is fetched first
-    // and then handed to the browser as a download.
+    // A plain link cannot send the token, so fetch the file first.
     const response = await apiFetch(url);
     if (!response.ok) {
         return handleResponse(response);
@@ -129,9 +82,7 @@ async function exportDocuments(filters = {}) {
 
 // --- Dashboard ---
 
-/** GET /dashboard/stats
- * @returns {Promise<Object>}
- */
+/** GET /dashboard/stats */
 async function getDashboardStats() {
     const response = await apiFetch(`${BASE_URL}/dashboard/stats`);
     return handleResponse(response);
@@ -139,19 +90,13 @@ async function getDashboardStats() {
 
 // --- Settings ---
 
-/** GET /settings
- * @returns {Promise<Object>}
- */
+/** GET /settings */
 async function getSettings() {
     const response = await apiFetch(`${BASE_URL}/settings`);
     return handleResponse(response);
 }
 
-/** PUT /settings - the active project's name and naming template, and
- * the app language. A body with only { language } saves just that.
- * @param {Object} data - { research_name, naming_template, language }
- * @returns {Promise<Object>}
- */
+/** PUT /settings: name, naming template, and language. { language } alone saves just that. */
 async function updateSettings(data) {
     const response = await apiFetch(`${BASE_URL}/settings`, {
         method: "PUT",
@@ -161,10 +106,7 @@ async function updateSettings(data) {
     return handleResponse(response);
 }
 
-/** PUT /settings/ai-provider
- * @param {Object} data - { provider_name, model, api_key }
- * @returns {Promise<Object>}
- */
+/** PUT /settings/ai-provider */
 async function updateAIProvider(data) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider`, {
         method: "PUT",
@@ -174,10 +116,7 @@ async function updateAIProvider(data) {
     return handleResponse(response);
 }
 
-/** POST /settings/ai-provider/test
- * @param {Object} data - { provider_name, model, api_key }
- * @returns {Promise<{connected: boolean}>}
- */
+/** POST /settings/ai-provider/test */
 async function testAIProvider(data) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/test`, {
         method: "POST",
@@ -189,20 +128,13 @@ async function testAIProvider(data) {
 
 // --- Projects ---
 
-/** GET /projects - every project and the active one.
- * @returns {Promise<{active_folder: string, projects: Array}>}
- */
+/** GET /projects - every project and the active one. */
 async function getProjects() {
     const response = await apiFetch(`${BASE_URL}/projects`);
     return handleResponse(response);
 }
 
-/** POST /projects - create a project (or open a folder that already
- * has a Cataloga catalog) and make it active.
- * @param {Object} data - { name, folder, naming_template, confirm_folder }
- * @returns {Promise<{name: string, folder: string,
- *     opened_existing: boolean}>}
- */
+/** POST /projects: create a project, or open a folder that has a catalog, and make it active. */
 async function createProject(data) {
     const response = await apiFetch(`${BASE_URL}/projects`, {
         method: "POST",
@@ -212,10 +144,7 @@ async function createProject(data) {
     return handleResponse(response);
 }
 
-/** PUT /projects/active - switch to another project.
- * @param {string} folder
- * @returns {Promise<Object>} The project list, like getProjects().
- */
+/** PUT /projects/active - switch to another project. */
 async function setActiveProject(folder) {
     const response = await apiFetch(`${BASE_URL}/projects/active`, {
         method: "PUT",
@@ -225,11 +154,7 @@ async function setActiveProject(folder) {
     return handleResponse(response);
 }
 
-/** DELETE /projects - take a project out of the list. Its folder and
- * catalog are never deleted.
- * @param {string} folder
- * @returns {Promise<Object>} The project list, like getProjects().
- */
+/** DELETE /projects: take a project off the list. Its folder is never deleted. */
 async function removeProject(folder) {
     const response = await apiFetch(`${BASE_URL}/projects`, {
         method: "DELETE",
@@ -241,20 +166,13 @@ async function removeProject(folder) {
 
 // --- Account and session ---
 
-/** GET /auth/status - does the account exist, and the saved language.
- * Works without a token.
- * @returns {Promise<Object>} { account_exists, language }
- */
+/** GET /auth/status: does the account exist, and the language. No token needed. */
 async function getAuthStatus() {
     const response = await apiFetch(`${BASE_URL}/auth/status`);
     return handleResponse(response);
 }
 
-/** POST /auth/setup - create the account, then remember the token.
- * @param {string} username
- * @param {string} password
- * @returns {Promise<Object>} { token, username }
- */
+/** POST /auth/setup - create the account, then remember the token. */
 async function setupAccount(username, password) {
     const response = await apiFetch(`${BASE_URL}/auth/setup`, {
         method: "POST",
@@ -266,11 +184,7 @@ async function setupAccount(username, password) {
     return data;
 }
 
-/** POST /auth/login - check the account, then remember the token.
- * @param {string} username
- * @param {string} password
- * @returns {Promise<Object>} { token, username }
- */
+/** POST /auth/login - check the account, then remember the token. */
 async function logIn(username, password) {
     const response = await apiFetch(`${BASE_URL}/auth/login`, {
         method: "POST",
@@ -282,9 +196,7 @@ async function logIn(username, password) {
     return data;
 }
 
-/** POST /auth/logout - end the session and forget the token.
- * @returns {Promise<Object>}
- */
+/** POST /auth/logout - end the session and forget the token. */
 async function logOut() {
     const response = await apiFetch(`${BASE_URL}/auth/logout`,
         { method: "POST" });
@@ -292,11 +204,7 @@ async function logOut() {
     return handleResponse(response);
 }
 
-/** POST /auth/password - change the password. The session stays open.
- * @param {string} currentPassword
- * @param {string} newPassword
- * @returns {Promise<Object>}
- */
+/** POST /auth/password - change the password. The session stays open. */
 async function changePassword(currentPassword, newPassword) {
     const response = await apiFetch(`${BASE_URL}/auth/password`, {
         method: "POST",
@@ -311,13 +219,7 @@ async function changePassword(currentPassword, newPassword) {
 
 // --- Chat ---
 
-/** POST /chat - send one message. The answer is one action from a
- * fixed list; the backend never changes anything here.
- * @param {string} message
- * @param {Array<Object>} history - Last messages: [{role, text}].
- * @returns {Promise<Object>} { action, reply, notice, sources,
- *     documents, filters, rename, project }
- */
+/** POST /chat: one message; the answer is one action from a fixed list and changes nothing. */
 async function sendChatMessage(message, history) {
     const response = await apiFetch(`${BASE_URL}/chat`, {
         method: "POST",
@@ -327,11 +229,7 @@ async function sendChatMessage(message, history) {
     return handleResponse(response);
 }
 
-/** POST /documents/:id/rename - rename after the user clicked Confirm.
- * @param {number} id
- * @param {string} newName
- * @returns {Promise<Object>} The updated document.
- */
+/** POST /documents/:id/rename - rename after the user clicked Confirm. */
 async function renameDocument(id, newName) {
     const response = await apiFetch(`${BASE_URL}/documents/${id}/rename`, {
         method: "POST",
@@ -343,11 +241,7 @@ async function renameDocument(id, newName) {
 
 // --- File links: only the id is sent, never a path ---
 
-/** POST /documents/:id/<action> - open, reveal, or preview a file.
- * @param {number} id
- * @param {string} action - "open", "reveal", or "preview".
- * @returns {Promise<Object>} { ok: true }
- */
+/** POST /documents/:id/<action> - open, reveal, or preview a file. */
 async function runDocumentFileAction(id, action) {
     const response = await apiFetch(
         `${BASE_URL}/documents/${id}/${action}`, { method: "POST" });
