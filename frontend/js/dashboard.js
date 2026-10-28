@@ -86,7 +86,10 @@ function renderBreakdown(breakdown) {
         const header = document.createElement("div");
         header.className = "breakdown-header";
         const label = document.createElement("span");
+        label.className = "breakdown-type";
         label.textContent = valueLabel(type);
+        // A long name ends in "…" in a narrow card; the title shows it.
+        label.title = label.textContent;
         const value = document.createElement("span");
         value.textContent = `${percent}%`;
         header.append(label, value);
