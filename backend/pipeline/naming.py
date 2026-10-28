@@ -22,8 +22,7 @@ NEW_PROJECT_TEMPLATE = METHOD_TEMPLATES[3]
 # Files without text always use this: 2026-07-15_0001.jpg
 NO_TEXT_TEMPLATE = "{date}_{number}"
 
-# topic_number goes first so "{topic}" never matches part of it.
-TOKENS = ("topic_number", "date", "source", "topic", "number", "original")
+TOKENS = ("date", "source", "topic", "number", "original", "topic_number")
 
 # Not allowed in file names on macOS or Windows.
 FORBIDDEN_CHARACTERS = '/\\:*?"<>|'
