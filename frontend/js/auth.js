@@ -1,39 +1,14 @@
-/**
- * auth.js
- *
- * The app's local account: one username and password for the whole
- * app (not per project).
- * - The first time, the account screen shows "Create your account".
- * - After that, it shows "Log in".
- * - Log out (in the nav bar) ends the session and shows "Log in" again.
- * - Settings has an Account section to change the password. The
- *   session stays open after the change.
- *
- * After 5 wrong passwords in a row, the backend refuses new tries for a
- * short time and says how many seconds are left.
- *
- * The session token is kept in api.js (sessionToken), only in memory.
- */
+/** auth.js: one local account for the whole app; the token lives only in memory. */
 
 // Shortest password allowed, the same rule as backend/config/account.py.
 const MIN_PASSWORD_LENGTH = 8;
 
-/**
- * Show a message under one of the account forms.
- * @param {string} id - The message element's id.
- * @param {string} text - The message, or "" to clear it.
- * @param {string} [kind] - "error" (default) or "success".
- */
 function showAuthMessage(id, text, kind = "error") {
     const message = document.getElementById(id);
     message.textContent = text;
     message.className = "form-message " + kind;
 }
 
-/**
- * Hide the app and show one of the two account forms.
- * @param {string} formId - "setup-form" or "login-form".
- */
 function showAuthForm(formId) {
     document.getElementById("nav-bar").classList.add("hidden");
     document.getElementById("app-main").classList.add("hidden");
@@ -48,19 +23,14 @@ function showAuthForm(formId) {
     });
 }
 
-/**
- * Show the "Create your account" form (first time only).
- */
+/** Show the "Create your account" form (first time only). */
 function showSetupScreen() {
     showAuthForm("setup-form");
     showAuthMessage("setup-message", "");
     document.getElementById("setup-username").focus();
 }
 
-/**
- * Show the "Log in" form. The password field is always emptied.
- * api.js also calls this when the backend answers 401 (no session).
- */
+/** Show the login form. api.js also calls this on a 401. */
 function showLoginScreen() {
     setSessionToken("");
     showAuthForm("login-form");
@@ -69,13 +39,7 @@ function showLoginScreen() {
     document.getElementById("login-username").focus();
 }
 
-/**
- * Return the message for a new password that breaks a rule, or "".
- * The backend checks the same rules again.
- * @param {string} password
- * @param {string} confirmation - The "Confirm password" field.
- * @returns {string}
- */
+/** Return the problem with a new password, or "". The backend checks it again. */
 function newPasswordProblem(password, confirmation) {
     if (password.length < MIN_PASSWORD_LENGTH) {
         return t("error.password_too_short");
@@ -86,12 +50,8 @@ function newPasswordProblem(password, confirmation) {
     return "";
 }
 
-/**
- * Create the account, then go into the app (already logged in).
- * @param {Event} event
- */
+/** Create the account, then go into the app (already logged in). */
 async function submitSetup(event) {
-    // Stop the form from reloading the page.
     event.preventDefault();
     const username = document.getElementById("setup-username").value.trim();
     const password = document.getElementById("setup-password").value;
@@ -117,10 +77,7 @@ async function submitSetup(event) {
     enterApp();
 }
 
-/**
- * Check the username and password, then go into the app.
- * @param {Event} event
- */
+/** Check the username and password, then go into the app. */
 async function submitLogin(event) {
     event.preventDefault();
     const username = document.getElementById("login-username").value.trim();
@@ -136,9 +93,6 @@ async function submitLogin(event) {
     enterApp();
 }
 
-/**
- * End the session and go back to the login screen.
- */
 async function submitLogout() {
     try {
         await logOut();
@@ -148,10 +102,7 @@ async function submitLogout() {
     showLoginScreen();
 }
 
-/**
- * Change the password from Settings > Account. The session stays open.
- * @param {Event} event
- */
+/** Change the password from Settings > Account. The session stays open. */
 async function submitPasswordChange(event) {
     event.preventDefault();
     const fields = ["current-password", "new-password",

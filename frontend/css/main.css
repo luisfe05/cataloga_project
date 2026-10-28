@@ -1,13 +1,10 @@
-/* main.css - styles for Cataloga, following the brand rules
-   (Design/BRAND.md): night sky colors, Violet as the only accent. */
+/* main.css: Cataloga styles. Colors, fonts, and Violet as the only accent follow BRAND.md. */
 
 /* ======== Fonts and brand values ======== */
 
-/* Fonts are bundled in frontend/fonts so the app works offline.
-   Geo only appears inside the logo SVG files, never as app text. */
+/* Fonts are bundled so the app works offline. Geo appears only inside the logo SVGs. */
 
-/* Variable fonts: one file covers every weight from 400 to 700.
-   Archivo also covers the widths, from Narrow to Expanded. */
+/* Variable fonts: one file covers every weight (and, for Archivo, every width). */
 @font-face {
     font-family: "Archivo";
     src: url("../fonts/Archivo-VariableFont_wdth,wght.ttf")
@@ -25,7 +22,7 @@
     font-style: normal;
 }
 
-/* Brand values. Every color, space and radius below comes from here. */
+/* Brand values. Every color, space, and radius comes from here. */
 :root {
     --color-deep-space: #08051c;
     --color-midnight: #221854;
@@ -58,9 +55,7 @@
     --font-body: "Archivo", sans-serif;
     --font-label: "Archivo Narrow", sans-serif;
 
-    /* Glass: translucent white with a blur behind it. 70% for cards,
-       85% where text sits on the dark login background or floats over
-       other content. */
+    /* Glass: 70% for cards, 85% on the dark login background or over other content. */
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-bg-strong: rgba(255, 255, 255, 0.85);
     --glass-border: rgba(255, 255, 255, 0.6);
@@ -85,8 +80,7 @@
     padding: 0;
 }
 
-/* Paper with three large, very soft spots of Violet and Dusk. They
-   stay in place while the page scrolls and never move. */
+/* Paper with three soft, fixed spots of Violet and Dusk. */
 body {
     font-family: var(--font-body);
     font-size: 15px;
@@ -111,7 +105,6 @@ textarea {
     color: inherit;
 }
 
-/* View switching */
 .hidden {
     display: none !important;
 }
@@ -132,8 +125,7 @@ textarea {
     white-space: nowrap;
 }
 
-/* Every icon drawn with a mask: Lucide icons, media type icons in
-   the table, and the icons before messages. */
+/* Every icon drawn with a mask: Lucide icons, table media types, message icons. */
 .icon,
 td.media-type::before,
 .form-message.error::before,
@@ -147,8 +139,7 @@ td.media-type::before,
     -webkit-mask-size: contain;
 }
 
-/* Icons: Lucide SVG files used as a mask, so they take the text color.
-   pywebview uses WebKit, which still needs the -webkit- version. */
+/* Lucide icons as a mask take the text color. pywebview (WebKit) needs -webkit-. */
 .icon {
     display: inline-block;
     flex-shrink: 0;
@@ -223,8 +214,7 @@ code:empty {
 
 /* ======== Frame: top bar, sidebar, content area ======== */
 
-/* The frame. #nav-bar only groups the top bar, the sidebar, and the
-   chat button; each of them is fixed on its own. */
+/* #nav-bar only groups the top bar, sidebar, and chat button; each is fixed on its own. */
 .topbar,
 .sidebar {
     position: fixed;
@@ -325,8 +315,7 @@ code:empty {
     white-space: nowrap;
 }
 
-/* The links can shrink so the project list scrolls inside the
-   sidebar, and Log out stays visible at the bottom. */
+/* The links shrink so only the project list scrolls. */
 .nav-links {
     display: flex;
     flex-direction: column;
@@ -367,8 +356,7 @@ code:empty {
     color: var(--color-paper);
 }
 
-/* The active project: white SemiBold text, no background, so it does
-   not compete with the open view above it. */
+/* The active project: white SemiBold, no background, so it does not compete with the view. */
 .project-link.active {
     color: var(--color-paper);
     font-weight: 600;
@@ -424,9 +412,7 @@ code:empty {
     font-size: 14px;
 }
 
-/* The content: a rounded area apart from the frame. The bottom
-   padding keeps the chat button off the last row, Save, and the
-   bottom of every screen. */
+/* Content area. The bottom padding keeps the chat button off the last row and Save. */
 #app-main {
     min-height: calc(100vh - var(--topbar-height)
         - var(--frame-gap) * 3);
@@ -454,8 +440,7 @@ code:empty {
 }
 
 /* ======== Components ======== */
-/* Forms, buttons, messages, tabs, dropdowns, the switch, file links,
-   and the glass surfaces, used on more than one screen. */
+/* Parts used on more than one screen. */
 
 /* Labels: Archivo Narrow SemiBold, 12 px, uppercase. */
 .catalog-table th,
@@ -513,7 +498,6 @@ code:empty {
     display: none;
 }
 
-/* Labels: Archivo Narrow SemiBold, uppercase. */
 .settings-form label {
     margin-bottom: var(--spacing-8);
 }
@@ -546,7 +530,6 @@ code:empty {
     gap: var(--spacing-8);
 }
 
-/* Buttons */
 .primary-button,
 .secondary-button,
 .pill-button {
@@ -669,7 +652,6 @@ code:empty {
     color: var(--color-violet);
 }
 
-/* Empty and error messages */
 .empty-message {
     padding: var(--spacing-48) var(--spacing-32);
     color: var(--color-dusk);
@@ -746,10 +728,7 @@ code:empty {
     font-size: 14px;
 }
 
-/* Every dropdown draws its own Lucide chevron instead of the native
-   arrow, so it sits in the same place in every control. The SVG is
-   drawn in Dusk, because a background image cannot take the text
-   color the way the mask icons do. */
+/* Own Lucide chevron in every dropdown, in Dusk: a background image cannot use currentColor. */
 .filter-row select,
 .settings-form select,
 .status-select {
@@ -763,7 +742,6 @@ code:empty {
     cursor: pointer;
 }
 
-/* Edit Mode switch in the catalog toolbar */
 .switch-label {
     display: flex;
     align-items: center;
@@ -813,8 +791,7 @@ code:empty {
     left: 23px;
 }
 
-/* File links: the name opens the file; the eye and folder icons
-   preview it or show it in Finder. */
+/* File links: the name opens the file; the icons preview it or show it in Finder. */
 .file-link {
     padding: 0;
     border: none;
@@ -862,10 +839,7 @@ code:empty {
     color: var(--color-violet);
 }
 
-/* One rule for every glass surface: cards, panels, the table, and
-   controls that sit on the page. Their own rules never set a
-   background or border, except the colored left edge of the Edit
-   Mode bar and the Inbox warning, which come later and win. */
+/* Every glass surface. Their own rules set no background or border, except colored left edges. */
 .catalog-table,
 .tabs,
 .filter-row select,
@@ -883,8 +857,7 @@ code:empty {
     backdrop-filter: var(--glass-blur);
 }
 
-/* Hover and focus changes fade in 150 ms instead of jumping. Only
-   color, border, shadow and opacity change, never the size. */
+/* Hover and focus fade in 150 ms. Only color, border, shadow, and opacity change. */
 .nav-link,
 .logout-button,
 .project-link,
@@ -903,8 +876,7 @@ td.editable {
         box-shadow 0.15s, opacity 0.15s;
 }
 
-/* Numbers that count up, refresh, or sit in a column: every digit
-   takes the same width, so they do not shift. */
+/* Tabular figures: digits keep the same width, so numbers do not shift. */
 .stat-number,
 .stat-sub,
 .progress-number,
@@ -920,7 +892,6 @@ td.editable {
 
 /* ======== Login ======== */
 
-/* Account screen: create the account or log in */
 .auth-screen {
     display: flex;
     flex-direction: column;
@@ -935,8 +906,7 @@ td.editable {
     width: 160px;
 }
 
-/* The login and setup card: 400 px wide, with the button across the
-   whole card. */
+/* Login card: 400 px wide, with the button across it. */
 .auth-form {
     width: 100%;
     max-width: 400px;
@@ -977,8 +947,7 @@ td.editable {
     margin-bottom: 0;
 }
 
-/* The project name and "Catalog" under it. min-width: 0 lets a long
-   name shrink and end in "…" instead of pushing the progress away. */
+/* min-width: 0 lets a long project name end in "…" instead of pushing the progress away. */
 .catalog-heading {
     flex: 1;
     min-width: 0;
@@ -1018,8 +987,7 @@ td.editable {
     font-size: 14px;
 }
 
-/* The empty part of the bar is striped; the filled part goes from
-   Violet to Paper and ends in a short Deep Space marker. */
+/* Striped empty part; the fill goes from Violet to Paper and ends in a Deep Space marker. */
 .progress-track {
     height: 14px;
     border-radius: var(--radius-full);
@@ -1050,7 +1018,6 @@ td.editable {
     background: var(--color-deep-space);
 }
 
-/* Tabs and filters */
 .filter-row {
     display: flex;
     align-items: center;
@@ -1077,8 +1044,7 @@ td.editable {
     font-size: 14px;
 }
 
-/* Edit Mode: a bar that stays above the table while it is on. It
-   stays at the top of the window when the table scrolls. */
+/* Edit Mode bar: stays at the top of the window while the table scrolls. */
 .edit-banner {
     position: sticky;
     top: 0;
@@ -1092,8 +1058,7 @@ td.editable {
     font-weight: 600;
 }
 
-/* Long file names make the table wider than the content area; then
-   only the table scrolls sideways. */
+/* Only the table scrolls sideways when long file names do not fit. */
 .table-scroll {
     overflow-x: auto;
     border-radius: var(--radius-lg);
@@ -1116,8 +1081,7 @@ td.editable {
     white-space: nowrap;
 }
 
-/* 12 px on the sides, so the seven columns fit in the content area of
-   the smallest window (1100 px). */
+/* 12 px sides, so the seven columns fit at the smallest window (1100 px). */
 .catalog-table td {
     padding: 10px var(--spacing-12);
     border-bottom: 1px solid var(--color-line);
@@ -1146,8 +1110,7 @@ td.editable {
     color: var(--color-dusk);
 }
 
-/* Media type with its icon. data-type holds the stored value, so the
-   icon is the same in English and Spanish. */
+/* data-type holds the stored value, so the icon is the same in both languages. */
 .catalog-table td.media-type {
     white-space: nowrap;
     color: var(--color-midnight);
@@ -1192,8 +1155,7 @@ td.media-type[data-type="Video"]::before {
     white-space: nowrap;
 }
 
-/* The selected row: the space bar previews its file. Paper background
-   and a Violet border around the whole row. */
+/* Selected row (the space bar previews it): Paper with a Violet border around the row. */
 .catalog-table tbody tr {
     cursor: default;
 }
@@ -1214,9 +1176,7 @@ td.media-type[data-type="Video"]::before {
         inset 0 -1.5px 0 var(--color-violet);
 }
 
-/* Editable cells: a Paper background says they can be edited. Under
-   the mouse, a Violet line at the bottom; while typing, a Violet
-   frame. */
+/* Editable cells: Paper. A Violet line on hover; a Violet frame while typing. */
 td.editable {
     background: var(--color-paper);
     cursor: text;
@@ -1246,8 +1206,7 @@ td.edit-error {
     font-weight: 600;
 }
 
-/* Summaries: at most 2 lines, cut with "…". Read more opens them in
-   place (summary.js). line-clamp needs display: -webkit-box. */
+/* Summaries: 2 lines, cut with "…". line-clamp needs display: -webkit-box. */
 .summary-text {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -1288,9 +1247,7 @@ td.edit-error {
     transition: background 0.4s;
 }
 
-/* The eye and folder icons in each row are dimmed, so 30 rows of them
-   do not weigh on the table. They show fully on the row under the
-   mouse, the selected row, and when they have the keyboard focus. */
+/* Row icons dimmed until hover, selection, or keyboard focus, so 30 rows stay light. */
 .catalog-table .file-action {
     opacity: 0.35;
 }
@@ -1320,8 +1277,7 @@ td.edit-error {
     border-radius: var(--radius-lg);
 }
 
-/* The number sits right under its label, so each card reads as one
-   compact block. */
+/* The number sits under its label, so each card reads as one block. */
 .stat-card {
     display: flex;
     flex-direction: column;
@@ -1329,8 +1285,7 @@ td.edit-error {
     min-height: 168px;
 }
 
-/* Big numbers in Archivo Light: 72 px, and 96 px for the two
-   main ones. */
+/* Big numbers in Archivo Light: 72 px, and 96 px for the two main ones. */
 .stat-number {
     font-family: var(--font-body);
     font-weight: 300;
@@ -1349,8 +1304,7 @@ td.edit-error {
     font-size: 15px;
 }
 
-/* Manual Review card: two blurred Violet circles in dotted rings.
-   JS sets --size from each share of all documents. */
+/* Manual Review card: two blurred circles. JS sets --size from each share. */
 .review-orbs {
     display: flex;
     gap: var(--spacing-16);
@@ -1398,8 +1352,7 @@ td.edit-error {
     color: var(--color-dusk);
 }
 
-/* Manual Review card, two columns wide: the circles on the left and
-   the number on the right, under the label. */
+/* Manual Review card: circles on the left, the number on the right. */
 .review-card {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -1431,16 +1384,13 @@ td.edit-error {
     margin-bottom: var(--spacing-24);
 }
 
-/* Media type breakdown: five striped bars with a line on top.
-   The tallest one is Violet. */
+/* Media type breakdown: five striped bars. The tallest is Violet. */
 .breakdown {
     display: grid;
-    /* minmax(0, 1fr) keeps the five columns the same width, even when
-       a label is longer. */
+    /* minmax(0, 1fr) keeps the five columns the same width, even with a longer label. */
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--spacing-16);
-    /* Top-aligned: every bar starts at the same height, even when one
-       type name takes two lines under it. */
+    /* Top-aligned, so every bar starts at the same height even if a name wraps. */
     align-items: start;
 }
 
@@ -1465,8 +1415,7 @@ td.edit-error {
     height: 160px;
 }
 
-/* The border is the line on top. It stays visible at 0%, so an empty
-   type still shows a thin bar. */
+/* The top border stays at 0%, so an empty type still shows a thin bar. */
 .bar-fill {
     width: 100%;
     height: var(--share, 0%);
@@ -1486,8 +1435,7 @@ td.edit-error {
     color: var(--color-violet);
 }
 
-/* Type and percent on two lines, so a long type name in Spanish
-   does not push its bar out of line with the others. */
+/* Type and percent on two lines, so a long Spanish name does not push its bar. */
 .breakdown-header {
     display: flex;
     flex-direction: column;
@@ -1495,8 +1443,7 @@ td.edit-error {
     color: var(--color-dusk);
 }
 
-/* A long type name ("Documentos") breaks with a hyphen instead of
-   running into the next bar. The hyphen follows the page language. */
+/* Long type names ("Documentos") break with a hyphen in the page language. */
 .breakdown-type {
     -webkit-hyphens: auto;
     hyphens: auto;
@@ -1546,9 +1493,7 @@ td.edit-error {
 
 /* ======== Settings ======== */
 
-/* Settings: one row per section. The title and what the section does
-   take the left third; the fields sit in a white panel on the right.
-   A line separates the rows. */
+/* Settings: one row per section, title on the left third, fields in a panel on the right. */
 .settings-section {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
@@ -1701,8 +1646,7 @@ td.edit-error {
     flex: 1;
 }
 
-/* Remove project: the last section, apart from Save so it is not
-   clicked by mistake. */
+/* Remove project: last, apart from Save so it is not clicked by mistake. */
 .remove-project .secondary-button {
     align-self: flex-start;
     color: var(--color-deep-space);
@@ -1711,8 +1655,7 @@ td.edit-error {
 
 /* ======== Chat ======== */
 
-/* Chat button: a 56 px Violet circle fixed at the bottom right, with
-   the Paper logomark. */
+/* Chat button: a 56 px Violet circle fixed at the bottom right, with the Paper logomark. */
 .chat-toggle {
     position: fixed;
     right: var(--spacing-24);
@@ -1735,18 +1678,14 @@ td.edit-error {
     background: var(--color-nebula);
 }
 
-/* The logomark is wider than tall: 28 px wide keeps it above the
-   16 px minimum of BRAND.md. */
+/* 28 px wide keeps the logomark above the 16 px minimum of BRAND.md. */
 .chat-logomark {
     width: 28px;
     height: auto;
     flex-shrink: 0;
 }
 
-/* Chat window: floats above its button, over the app. It is 560 px
-   tall, or less when the window is short: it never goes above the
-   top bar. 196 px = the button and its gap (96) plus the top bar and
-   its gaps (100). */
+/* Chat window: 560 px, or less so it never covers the top bar (196 = button 96 + top bar 100). */
 .chat-panel {
     position: fixed;
     right: var(--spacing-24);
@@ -1757,8 +1696,7 @@ td.edit-error {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Glass: white at 60% with a stronger blur, so the app shows
-       blurred behind it. Everything with text inside is solid. */
+    /* Glass at 60% with a stronger blur. Everything with text inside is solid. */
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     background: rgba(255, 255, 255, 0.6);
@@ -1769,8 +1707,7 @@ td.edit-error {
     animation: chat-open 180ms ease-out;
 }
 
-/* Opening: a short fade and scale. It runs each time the window goes
-   from hidden to shown. */
+/* Fade and scale each time the window opens. */
 @keyframes chat-open {
     from {
         opacity: 0;
@@ -1848,16 +1785,14 @@ td.edit-error {
     overflow-y: auto;
 }
 
-/* Empty panel: a short welcome and four examples, near the top of
-   the panel instead of in the middle. */
+/* Empty chat: a welcome and four examples, near the top. */
 .chat-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-12);
     margin: var(--spacing-8) 0 auto;
-    /* A solid card, so the Dusk hint keeps 4.5:1 whatever is behind
-       the glass. */
+    /* Solid card, so the Dusk hint keeps 4.5:1 whatever is behind the glass. */
     padding: var(--spacing-24) var(--spacing-16) var(--spacing-16);
     border-radius: var(--radius-lg);
     background: var(--color-white);
@@ -1893,7 +1828,6 @@ td.edit-error {
     background: var(--color-paper);
 }
 
-/* Messages */
 .chat-message {
     display: flex;
     gap: var(--spacing-8);
@@ -2045,8 +1979,7 @@ td.edit-error {
     height: 13px;
 }
 
-/* Sources and filters sit on solid white, like the cards, so their
-   small labels stay readable on the glass. */
+/* Solid white, so the small labels stay readable on the glass. */
 .chat-sources,
 .chat-filters,
 .chat-note {
@@ -2075,7 +2008,6 @@ td.edit-error {
     cursor: pointer;
 }
 
-/* Project summary numbers */
 .chat-stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2155,7 +2087,6 @@ td.edit-error {
     display: none;
 }
 
-/* Message box at the bottom */
 .chat-form {
     display: flex;
     align-items: center;
@@ -2183,7 +2114,6 @@ td.edit-error {
 
 /* ======== Remove project dialog ======== */
 
-/* Confirmation dialog in the app window */
 .confirm-dialog {
     margin: auto;
     border: 1px solid var(--glass-border);
@@ -2220,16 +2150,14 @@ td.edit-error {
     margin-bottom: 0;
 }
 
-/* A thinner focus ring, so it does not look doubled on the dark
-   Remove button. */
+/* Thinner focus ring, so it does not look doubled on the dark Remove button. */
 .confirm-dialog button:focus-visible {
     outline-width: 1.5px;
 }
 
 /* ======== Media queries ======== */
 
-/* Less motion: no growing bars, no lift on hover. countUp() in
-   motion.js also skips the counting. */
+/* Less motion: no growing bars or chat animation. countUp() skips counting too. */
 @media (prefers-reduced-motion: reduce) {
     .bar-fill,
     .progress-fill,
@@ -2257,8 +2185,7 @@ td.edit-error {
     }
 }
 
-/* Narrow windows: two columns on the dashboard, the catalog header
-   stacked, and the table scrolls. */
+/* Narrow windows: two dashboard columns and a stacked catalog header. */
 @media (max-width: 1000px) {
     .view {
         padding: var(--spacing-24);

@@ -1,30 +1,16 @@
-/**
- * dashboard.js
- *
- * Dashboard view (Screen 3).
- * Renders the stat cards, the Manual Review circles, the media type
- * breakdown bars, and the recent activity list, from
- * GET /dashboard/stats.
- */
+/** dashboard.js: stat cards, circles, breakdown bars, and activity from GET /dashboard/stats. */
 
 // Order of the bars, as in the wireframe.
 const BREAKDOWN_ORDER = ["Documents", "Audio", "Video", "Press", "Photos"];
 
-// Height of each bar the last time it was drawn, so a refresh grows
-// the bar from there instead of from zero.
+// Last height of each bar, so a refresh grows it from there, not from zero.
 const lastBarHeights = {};
 
 // Smallest and largest circle in the Manual Review card, in pixels.
 const ORB_MIN = 24;
 const ORB_MAX = 96;
 
-/**
- * Describe how long ago a timestamp was, like "2 min ago" or
- * "yesterday". Each case has its own text key, because the word order
- * changes by language ("hace 2 min" in Spanish).
- * @param {string} timestamp - ISO text such as 2026-10-21T16:55:00.
- * @returns {string}
- */
+/** Say how long ago a timestamp was. One text key per case: word order changes by language. */
 function timeAgo(timestamp) {
     const seconds = (Date.now() - new Date(timestamp).getTime()) / 1000;
     const minutes = Math.floor(seconds / 60);
@@ -46,11 +32,7 @@ function timeAgo(timestamp) {
     return t("time.days", { n: days });
 }
 
-/**
- * Draw one bar per media type: the count on top, the bar, then the
- * type and its share of all documents. The tallest bar is Violet.
- * @param {Object} breakdown - {media_type: count}
- */
+/** Draw one bar per media type, with its count and share. The tallest is Violet. */
 function renderBreakdown(breakdown) {
     const container = document.getElementById("media-breakdown");
     container.innerHTML = "";
@@ -63,10 +45,8 @@ function renderBreakdown(breakdown) {
 
     BREAKDOWN_ORDER.forEach((type, index) => {
         const count = counts[index];
-        // Avoid dividing by zero when the catalog is empty.
         const percent = total ? Math.round((count / total) * 100) : 0;
-        // Bars are measured against the largest one, so it fills the
-        // track. With no documents every bar stays at zero.
+        // Bars are measured against the largest one, so it fills the track.
         const height = largest ? Math.round((count / largest) * 100) : 0;
 
         const item = document.createElement("div");
@@ -102,12 +82,7 @@ function renderBreakdown(breakdown) {
     });
 }
 
-/**
- * Size the two circles in the Manual Review card by their share of all
- * documents, and write the total under Documents Classified.
- * @param {number} classified
- * @param {number} review
- */
+/** Size the two circles by their share, and write the total under Documents Classified. */
 function renderShares(classified, review) {
     const total = classified + review;
     document.getElementById("stat-total").textContent = total
@@ -124,13 +99,7 @@ function renderShares(classified, review) {
         .setProperty("--size", orbSize(review));
 }
 
-/**
- * Write the dashboard's main finding under the title: how many
- * documents need manual review, with a button that opens them in
- * Catalog. Hidden while the project has no documents.
- * @param {number} classified
- * @param {number} review
- */
+/** Write the finding under the title, with a button to the Manual Review tab. */
 function renderFinding(classified, review) {
     document.getElementById("dash-finding")
         .classList.toggle("hidden", classified + review === 0);
@@ -145,10 +114,6 @@ function renderFinding(classified, review) {
         .classList.toggle("hidden", review === 0);
 }
 
-/**
- * List the latest actions, newest first.
- * @param {Array<Object>} activity - [{filename, action, timestamp}]
- */
 function renderActivity(activity) {
     const list = document.getElementById("activity-list");
     list.innerHTML = "";
@@ -157,7 +122,7 @@ function renderActivity(activity) {
         const name = document.createElement("span");
         name.textContent = entry.filename;
         name.className = "activity-name";
-        // The action as a badge. Manual Review gets the Violet border.
+        // Manual Review gets the Violet border.
         const badge = document.createElement("span");
         badge.className = entry.action === "Manual Review"
             ? "activity-badge is-review" : "activity-badge";
@@ -174,9 +139,6 @@ function renderActivity(activity) {
     message.classList.toggle("hidden", activity.length > 0);
 }
 
-/**
- * Load the stats and draw the whole dashboard.
- */
 async function loadDashboard() {
     try {
         const stats = await getDashboardStats();
@@ -191,8 +153,7 @@ async function loadDashboard() {
         renderBreakdown(stats.media_type_breakdown);
         renderActivity(stats.recent_activity);
     } catch (error) {
-        // Clear the numbers of the project shown before, so they are
-        // never mixed up with this one.
+        // Clear the previous project's numbers so they never mix with this one.
         ["stat-classified", "stat-review", "stat-sources"].forEach((id) => {
             countUp(document.getElementById(id), 0);
         });
@@ -208,9 +169,7 @@ async function loadDashboard() {
     }
 }
 
-// Review in Catalog: open Catalog on the Manual Review tab, with the
-// search and the other filters cleared (applyCatalogFilters in
-// catalog.js).
+// Review in Catalog: the Manual Review tab, with the other filters cleared.
 document.getElementById("dash-review-button").addEventListener("click", () => {
     showView("catalog");
     applyCatalogFilters({ status: "Manual Review" });
