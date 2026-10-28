@@ -51,9 +51,37 @@ CREATE TABLE IF NOT EXISTS documents (
                       ),
     file_path         TEXT    NOT NULL,
     date_added        TEXT    NOT NULL,
-    date_classified   TEXT
+    date_classified   TEXT,
+    topic             TEXT,
+    keywords          TEXT,
+    sha256            TEXT,
+    duplicate_of      TEXT,
+    review_note       TEXT,
+    counterparty      TEXT,
+    confidentiality   TEXT,
+    owner             TEXT,
+    effective_start   TEXT,
+    effective_end     TEXT,
+    category          TEXT,
+    subcategory       TEXT
 );
 """
+
+# Added for the archiving guideline. keywords is a JSON list of text.
+ADDED_DOCUMENTS_COLUMNS = {
+    "topic": "topic TEXT",
+    "keywords": "keywords TEXT",
+    "sha256": "sha256 TEXT",
+    "duplicate_of": "duplicate_of TEXT",
+    "review_note": "review_note TEXT",
+    "counterparty": "counterparty TEXT",
+    "confidentiality": "confidentiality TEXT",
+    "owner": "owner TEXT",
+    "effective_start": "effective_start TEXT",
+    "effective_end": "effective_end TEXT",
+    "category": "category TEXT",
+    "subcategory": "subcategory TEXT",
+}
 
 CREATE_ACTIVITY_LOG = """
 CREATE TABLE IF NOT EXISTS activity_log (
@@ -77,7 +105,9 @@ CREATE TABLE IF NOT EXISTS app_config (
     target_directory        TEXT    NOT NULL,
     app_lock_password_hash  TEXT,
     language                TEXT    NOT NULL DEFAULT 'en',
-    naming_template         TEXT    NOT NULL DEFAULT '{date}_{topic}'
+    naming_template         TEXT    NOT NULL DEFAULT '{date}_{topic}',
+    industry                TEXT,
+    categories              TEXT
 );
 """
 
@@ -86,6 +116,9 @@ ADDED_APP_CONFIG_COLUMNS = {
     "language": "language TEXT NOT NULL DEFAULT 'en'",
     "naming_template":
         "naming_template TEXT NOT NULL DEFAULT '{date}_{topic}'",
+    # categories is a JSON list of {"name": ..., "subcategories": [...]}.
+    "industry": "industry TEXT",
+    "categories": "categories TEXT",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """
@@ -106,10 +139,11 @@ def get_connection(db_path=DB_PATH):
 
 
 def add_missing_columns(cursor):
-    """Add any app_config or activity_log column an older database lacks."""
+    """Add any column an older database lacks. Rows are kept."""
     # Safe: table and column names are fixed here, never from the user.
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
-             ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS))
+             ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS),
+             ("documents", ADDED_DOCUMENTS_COLUMNS))
     for table, new_columns in added:
         # row[1] is the column name.
         columns = [row[1] for row in
