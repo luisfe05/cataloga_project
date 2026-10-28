@@ -2,19 +2,21 @@
  * dashboard.js
  *
  * Dashboard view (Screen 3).
- * Renders the three stat cards, media type breakdown bars,
- * and recent activity list, from GET /dashboard/stats.
+ * Renders the stat cards, the Manual Review circles, the media type
+ * breakdown bars, and the recent activity list, from
+ * GET /dashboard/stats.
  */
 
 // Order of the bars, as in the wireframe.
 const BREAKDOWN_ORDER = ["Documents", "Audio", "Video", "Press", "Photos"];
 
-// Text key for each activity_log action in the Recent Activity list.
-const ACTION_KEYS = {
-    "Classified": "dash.action_classified",
-    "Manual Review": "dash.action_review",
-    "Edited": "dash.action_edited",
-};
+// Height of each bar the last time it was drawn, so a refresh grows
+// the bar from there instead of from zero.
+const lastBarHeights = {};
+
+// Smallest and largest circle in the Manual Review card, in pixels.
+const ORB_MIN = 24;
+const ORB_MAX = 96;
 
 /**
  * Describe how long ago a timestamp was, like "2 min ago" or
@@ -45,42 +47,78 @@ function timeAgo(timestamp) {
 }
 
 /**
- * Draw one bar per media type, with its share of all documents.
+ * Draw one bar per media type: the count on top, the bar, then the
+ * type and its share of all documents. The tallest bar is Violet.
  * @param {Object} breakdown - {media_type: count}
  */
 function renderBreakdown(breakdown) {
     const container = document.getElementById("media-breakdown");
     container.innerHTML = "";
-    const total = BREAKDOWN_ORDER
-        .reduce((sum, type) => sum + (breakdown[type] || 0), 0);
+    const counts = BREAKDOWN_ORDER.map((type) => breakdown[type] || 0);
+    const total = counts.reduce((sum, count) => sum + count, 0);
+    const largest = Math.max(...counts);
+    // Only one bar is marked, even when two have the same count.
+    const topType = largest > 0
+        ? BREAKDOWN_ORDER[counts.indexOf(largest)] : null;
 
-    BREAKDOWN_ORDER.forEach((type) => {
-        const count = breakdown[type] || 0;
+    BREAKDOWN_ORDER.forEach((type, index) => {
+        const count = counts[index];
         // Avoid dividing by zero when the catalog is empty.
         const percent = total ? Math.round((count / total) * 100) : 0;
+        // Bars are measured against the largest one, so it fills the
+        // track. With no documents every bar stays at zero.
+        const height = largest ? Math.round((count / largest) * 100) : 0;
 
         const item = document.createElement("div");
-        item.className = "breakdown-item";
+        item.className = type === topType
+            ? "breakdown-item is-top" : "breakdown-item";
 
-        const header = document.createElement("div");
-        header.className = "breakdown-header";
-        const label = document.createElement("span");
-        label.textContent = valueLabel(type);
-        const value = document.createElement("strong");
-        value.textContent = `${percent}%`;
-        header.append(label, value);
+        const number = document.createElement("strong");
+        number.className = "breakdown-count";
+        number.textContent = count;
 
         const track = document.createElement("div");
         track.className = "bar-track";
         const fill = document.createElement("div");
         fill.className = "bar-fill";
-        // The fill's width is the percentage, so the bar shows the share.
-        fill.style.width = `${percent}%`;
         track.appendChild(fill);
 
-        item.append(header, track);
+        const header = document.createElement("div");
+        header.className = "breakdown-header";
+        const label = document.createElement("span");
+        label.textContent = valueLabel(type);
+        const value = document.createElement("span");
+        value.textContent = `${percent}%`;
+        header.append(label, value);
+
+        item.append(number, track, header);
         container.appendChild(item);
+
+        growBar(fill, "--share", lastBarHeights[type] || "0%", `${height}%`);
+        lastBarHeights[type] = `${height}%`;
     });
+}
+
+/**
+ * Size the two circles in the Manual Review card by their share of all
+ * documents, and write the total under Documents Classified.
+ * @param {number} classified
+ * @param {number} review
+ */
+function renderShares(classified, review) {
+    const total = classified + review;
+    document.getElementById("stat-total").textContent = total
+        ? t("dash.of_total", { n: total }) : t("dash.no_documents");
+
+    // With no documents both circles keep the smallest size.
+    const orbSize = (count) => {
+        const share = total ? count / total : 0;
+        return `${Math.round(ORB_MIN + (ORB_MAX - ORB_MIN) * share)}px`;
+    };
+    document.getElementById("orb-classified").style
+        .setProperty("--size", orbSize(classified));
+    document.getElementById("orb-review").style
+        .setProperty("--size", orbSize(review));
 }
 
 /**
@@ -94,12 +132,16 @@ function renderActivity(activity) {
         const item = document.createElement("li");
         const name = document.createElement("span");
         name.textContent = entry.filename;
+        name.className = "activity-name";
+        // The action as a badge. Manual Review gets the Violet border.
+        const badge = document.createElement("span");
+        badge.className = entry.action === "Manual Review"
+            ? "activity-badge is-review" : "activity-badge";
+        badge.textContent = valueLabel(entry.action);
         const when = document.createElement("span");
         when.className = "activity-when";
-        const action = entry.action in ACTION_KEYS
-            ? t(ACTION_KEYS[entry.action]) : entry.action;
-        when.textContent = `${action} ${timeAgo(entry.timestamp)}`;
-        item.append(name, when);
+        when.textContent = timeAgo(entry.timestamp);
+        item.append(name, badge, when);
         list.appendChild(item);
     });
 
@@ -114,20 +156,23 @@ function renderActivity(activity) {
 async function loadDashboard() {
     try {
         const stats = await getDashboardStats();
-        document.getElementById("stat-classified").textContent =
-            stats.documents_classified;
-        document.getElementById("stat-review").textContent =
-            stats.needs_manual_review;
-        document.getElementById("stat-sources").textContent =
-            stats.sources_tracked;
+        countUp(document.getElementById("stat-classified"),
+            stats.documents_classified);
+        countUp(document.getElementById("stat-review"),
+            stats.needs_manual_review);
+        countUp(document.getElementById("stat-sources"),
+            stats.sources_tracked);
+        renderShares(stats.documents_classified, stats.needs_manual_review);
         renderBreakdown(stats.media_type_breakdown);
         renderActivity(stats.recent_activity);
     } catch (error) {
         // Clear the numbers of the project shown before, so they are
         // never mixed up with this one.
         ["stat-classified", "stat-review", "stat-sources"].forEach((id) => {
-            document.getElementById(id).textContent = "0";
+            countUp(document.getElementById(id), 0);
         });
+        renderShares(0, 0);
+        document.getElementById("stat-total").textContent = "";
         document.getElementById("media-breakdown").innerHTML = "";
         document.getElementById("activity-list").innerHTML = "";
         const message = document.getElementById("dashboard-message");

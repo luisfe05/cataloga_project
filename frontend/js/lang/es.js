@@ -46,6 +46,8 @@ const LANG_ES = {
     "catalog.empty": "Pon archivos en la carpeta Drop Zone dentro de "
         + "{path}. Aparecerán aquí cuando se clasifiquen.",
     "catalog.no_match": "Ningún archivo coincide con tu búsqueda.",
+    "catalog.progress": "Progreso del catálogo",
+    "catalog.progress_percent": "{n}% clasificado",
     "catalog.load_failed": "No se pudo cargar el catálogo: {message}",
     "catalog.backend_down": "el servidor de la app no responde.",
     "catalog.export_saved": "Hoja de cálculo guardada en {path}",
@@ -57,12 +59,11 @@ const LANG_ES = {
     "dash.sources": "Fuentes registradas",
     "dash.breakdown": "Desglose por tipo de medio",
     "dash.activity": "Actividad reciente",
-    "dash.action_classified": "Clasificado",
-    "dash.action_review": "Marcado para revisión manual,",
-    "dash.action_edited": "Editado",
     "dash.empty": "Todavía no hay actividad. Pon archivos en la Drop Zone "
         + "para empezar.",
     "dash.load_failed": "No se pudo cargar el panel: {message}",
+    "dash.of_total": "de {n} documentos",
+    "dash.no_documents": "Todavía no hay documentos",
     "time.just_now": "justo ahora",
     "time.minutes": "hace {n} min",
     "time.hour": "hace 1 hora",
@@ -165,6 +166,8 @@ const LANG_ES = {
     // Projects (multi-project)
     "header.new_project": "Proyecto nuevo…",
     "header.unavailable": "{name} (no disponible)",
+    "header.unavailable_hint": "No se encuentra la carpeta. Ábrelo y "
+        + "quítalo en Configuración.",
     "project.edit_title": "Configuración del proyecto",
     "project.new_title": "Proyecto nuevo",
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "

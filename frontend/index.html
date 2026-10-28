@@ -56,22 +56,15 @@
         <img class="app-logo" src="assets/logo-horizontal-paper.svg"
              alt="Cataloga">
 
-        <!-- Project header: switch projects or start a new one -->
-        <section class="project-header">
-            <div class="project-badge" id="project-badge"></div>
-            <div class="project-picker">
-                <label class="project-label" for="project-select"
-                       data-i18n="header.project">Project</label>
-                <select class="project-select" id="project-select">
-                </select>
-            </div>
-        </section>
-
         <div class="nav-links">
             <a href="#" class="nav-link active" data-view="catalog">
                 <span class="icon icon-catalog"></span>
                 <span data-i18n="nav.catalog">Catalog</span>
             </a>
+            <!-- Projects under Catalog: one button each, plus New
+                 project. Filled by loadProjectHeader() in app.js.
+                 It scrolls when there are many projects. -->
+            <ul class="project-list" id="project-list"></ul>
             <a href="#" class="nav-link" data-view="dashboard">
                 <span class="icon icon-dashboard"></span>
                 <span data-i18n="nav.dashboard">Dashboard</span>
@@ -91,7 +84,44 @@
          the user logs in. -->
     <main id="app-main" class="hidden">
         <div id="view-catalog" class="view">
-            <h1 class="view-title" data-i18n="nav.catalog">Catalog</h1>
+            <!-- Title and progress: Classified vs. Manual Review,
+                 filled by catalog.js from the documents it loads -->
+            <div class="catalog-header">
+                <!-- Active project's name, filled by
+                     loadProjectHeader() in app.js. No data-i18n on
+                     the h1, so a language change does not replace it. -->
+                <div class="catalog-heading">
+                    <h1 class="view-title project-title"
+                        id="catalog-title"></h1>
+                    <p class="view-subtitle"
+                       data-i18n="nav.catalog">Catalog</p>
+                </div>
+                <section class="catalog-progress">
+                    <p class="progress-title"
+                       data-i18n="catalog.progress">Catalog progress</p>
+                    <div class="progress-numbers">
+                        <div>
+                            <p class="progress-label"
+                               data-i18n="value.Classified">Classified</p>
+                            <p class="progress-number"
+                               id="progress-classified">0</p>
+                        </div>
+                        <div>
+                            <p class="progress-label"
+                               data-i18n="value.Manual Review">Manual
+                                Review</p>
+                            <p class="progress-number"
+                               id="progress-review">0</p>
+                        </div>
+                        <p class="progress-percent" id="progress-percent"></p>
+                    </div>
+                    <!-- The numbers above say the same, so screen
+                         readers skip the bar -->
+                    <div class="progress-track" aria-hidden="true">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </section>
+            </div>
 
             <!-- Search, Download and Edit Mode -->
             <div class="toolbar">
@@ -165,29 +195,47 @@
             <div class="dashboard">
                 <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
 
-                <!-- Three summary numbers -->
-                <div class="stat-cards">
-                    <div class="stat-card">
-                        <p class="stat-number" id="stat-classified">0</p>
+                <!-- Grid of cards. Wide cards take two of the four
+                     columns. Every number comes from /dashboard/stats. -->
+                <div class="dash-grid">
+                    <section class="stat-card card-wide">
                         <p class="stat-label" data-i18n="dash.classified">Documents Classified</p>
-                    </div>
-                    <div class="stat-card">
-                        <p class="stat-number" id="stat-review">0</p>
-                        <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
-                    </div>
-                    <div class="stat-card">
-                        <p class="stat-number" id="stat-sources">0</p>
-                        <p class="stat-label" data-i18n="dash.sources">Sources Tracked</p>
-                    </div>
-                </div>
+                        <p class="stat-number stat-hero"
+                           id="stat-classified">0</p>
+                        <p class="stat-sub" id="stat-total"></p>
+                    </section>
 
-                <!-- Two panels side by side -->
-                <div class="dash-columns">
-                    <section class="panel">
+                    <!-- Two blurred circles sized by their share of all
+                         documents: Classified and Manual Review -->
+                    <section class="stat-card review-card">
+                        <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
+                        <div class="review-orbs" aria-hidden="true">
+                            <div class="orb-slot">
+                                <span class="orb orb-classified"
+                                      id="orb-classified"></span>
+                                <span class="orb-label"
+                                      data-i18n="value.Classified">Classified</span>
+                            </div>
+                            <div class="orb-slot">
+                                <span class="orb orb-review"
+                                      id="orb-review"></span>
+                                <span class="orb-label"
+                                      data-i18n="value.Manual Review">Manual Review</span>
+                            </div>
+                        </div>
+                        <p class="stat-number stat-hero" id="stat-review">0</p>
+                    </section>
+
+                    <section class="stat-card">
+                        <p class="stat-label" data-i18n="dash.sources">Sources Tracked</p>
+                        <p class="stat-number" id="stat-sources">0</p>
+                    </section>
+
+                    <section class="panel card-wide">
                         <h2 data-i18n="dash.breakdown">Media Type Breakdown</h2>
                         <div class="breakdown" id="media-breakdown"></div>
                     </section>
-                    <section class="panel">
+                    <section class="panel card-wide">
                         <h2 data-i18n="dash.activity">Recent Activity</h2>
                         <ul class="activity-list" id="activity-list"></ul>
                         <p class="empty-message hidden"
@@ -394,6 +442,7 @@
     <script src="js/i18n.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/motion.js"></script>
     <script src="js/app.js"></script>
     <script src="js/catalog.js"></script>
     <script src="js/dashboard.js"></script>
