@@ -5,6 +5,12 @@ MEDIA_TYPES = ("Press", "Audio", "Video", "Photos", "Documents")
 
 LOCKED_FIELDS = ("original_filename", "filename")
 
+# Fields of the Digital Archiving Guideline, added after the first release.
+ARCHIVE_FIELDS = ("topic", "keywords", "sha256", "duplicate_of",
+                  "review_note", "counterparty", "confidentiality", "owner",
+                  "effective_start", "effective_end", "category",
+                  "subcategory")
+
 
 class Document:
     """One cataloged research file."""
@@ -22,8 +28,9 @@ class Document:
         summary=None,
         status="Classified",
         date_classified=None,
+        **archive_fields
     ):
-        """Build a Document."""
+        """Build a Document. archive_fields are the ARCHIVE_FIELDS."""
         self.id = doc_id
         self.original_filename = original_filename
         self.filename = filename
@@ -35,6 +42,13 @@ class Document:
         self.summary = summary
         self.status = status
         self.date_classified = date_classified
+        for name in archive_fields:
+            if name not in ARCHIVE_FIELDS:
+                raise TypeError("Unknown Document field: " + name)
+        for name in ARCHIVE_FIELDS:
+            setattr(self, name, archive_fields.get(name))
+        # keywords is always a list, never None.
+        self.keywords = self.keywords or []
 
     def to_dict(self):
         """Return all fields as a plain dictionary for JSON serialization."""
@@ -50,6 +64,7 @@ class Document:
             "file_path": self.file_path,
             "date_added": self.date_added,
             "date_classified": self.date_classified,
+            **{name: getattr(self, name) for name in ARCHIVE_FIELDS},
         }
 
     def mark_needs_review(self, missing_fields):
