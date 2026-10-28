@@ -43,7 +43,6 @@ function chatElement(tag, className, text) {
  */
 function toggleChat(open) {
     document.getElementById("chat-panel").classList.toggle("hidden", !open);
-    document.body.classList.toggle("chat-open", open);
     document.getElementById("chat-toggle")
         .setAttribute("aria-expanded", String(open));
     if (open) {
@@ -388,6 +387,19 @@ document.getElementById("chat-toggle").addEventListener("click", () => {
 
 document.getElementById("chat-close")
     .addEventListener("click", () => toggleChat(false));
+
+// Escape closes the chat window and gives the focus back to its button.
+// While the Remove project dialog is open, Escape only closes the dialog.
+document.addEventListener("keydown", (event) => {
+    const panel = document.getElementById("chat-panel");
+    const dialog = document.getElementById("remove-project-dialog");
+    if (event.key !== "Escape" || panel.classList.contains("hidden")
+            || dialog.open) {
+        return;
+    }
+    toggleChat(false);
+    document.getElementById("chat-toggle").focus();
+});
 
 document.getElementById("chat-form").addEventListener("submit", (event) => {
     event.preventDefault();

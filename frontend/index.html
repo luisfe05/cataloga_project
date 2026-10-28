@@ -49,45 +49,71 @@
         </form>
     </section>
 
-    <!-- Sidebar navigation (hidden until the user logs in).
-         The text sits in its own span with data-i18n, so translating
-         it does not remove the icon next to it. -->
+    <!-- The app frame (hidden until the user logs in): the top bar,
+         the sidebar, and the chat button. They are all inside
+         #nav-bar, so hiding it hides the whole frame. -->
     <nav id="nav-bar" class="hidden">
-        <img class="app-logo" src="assets/logo-horizontal-paper.svg"
-             alt="Cataloga">
+        <!-- Top bar: logo, catalog search, and the user -->
+        <header class="topbar">
+            <img class="app-logo" src="assets/logo-horizontal-paper.svg"
+                 alt="Cataloga">
 
-        <div class="nav-links">
-            <a href="#" class="nav-link active" data-view="catalog">
-                <span class="icon icon-catalog"></span>
-                <span data-i18n="nav.catalog">Catalog</span>
-            </a>
-            <!-- Projects under Catalog: one button each, plus New
-                 project. Filled by loadProjectHeader() in app.js.
-                 It scrolls when there are many projects. -->
-            <ul class="project-list" id="project-list"></ul>
-            <a href="#" class="nav-link" data-view="dashboard">
-                <span class="icon icon-dashboard"></span>
-                <span data-i18n="nav.dashboard">Dashboard</span>
-            </a>
-            <a href="#" class="nav-link" data-view="settings">
-                <span class="icon icon-settings"></span>
-                <span data-i18n="nav.settings">Settings</span>
-            </a>
+            <!-- The catalog search. Typing here from another screen
+                 opens Catalog (catalog.js). -->
+            <div class="search-box">
+                <label class="visually-hidden" for="search-input"
+                       data-i18n="catalog.search">Search the catalog</label>
+                <span class="icon icon-search"></span>
+                <input type="search" id="search-input"
+                       placeholder="Search the catalog"
+                       data-i18n-placeholder="catalog.search">
+            </div>
+
+            <div class="topbar-user">
+                <span class="icon icon-user"></span>
+                <!-- Filled by loadSettings() in settings.js -->
+                <span id="topbar-user"></span>
+                <button type="button" class="logout-button"
+                        id="logout-button">
+                    <span class="icon icon-logout"></span>
+                    <span data-i18n="auth.log_out">Log out</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar. The text sits in its own span with data-i18n, so
+             translating it does not remove the icon next to it. -->
+        <div class="sidebar">
+            <div class="nav-links">
+                <a href="#" class="nav-link active" data-view="catalog">
+                    <span class="icon icon-catalog"></span>
+                    <span data-i18n="nav.catalog">Catalog</span>
+                </a>
+                <!-- Projects under Catalog: one button each, plus New
+                     project. Filled by loadProjectHeader() in app.js.
+                     It scrolls when there are many projects. -->
+                <ul class="project-list" id="project-list"></ul>
+                <a href="#" class="nav-link" data-view="dashboard">
+                    <span class="icon icon-dashboard"></span>
+                    <span data-i18n="nav.dashboard">Dashboard</span>
+                </a>
+                <a href="#" class="nav-link" data-view="settings">
+                    <span class="icon icon-settings"></span>
+                    <span data-i18n="nav.settings">Settings</span>
+                </a>
+            </div>
         </div>
 
-        <!-- Opens the chat panel. Not a .nav-link, because app.js
-             gives every .nav-link a view to switch to. The logomark
-             is the SVG as is (Paper with the Violet tab). -->
+        <!-- Opens and closes the floating chat window. A round button
+             at the bottom right with the Paper logomark; its name is
+             only for screen readers. -->
         <button type="button" class="chat-toggle" id="chat-toggle"
                 aria-expanded="false" aria-controls="chat-panel">
             <img class="chat-logomark" src="assets/logomark-paper.svg"
                  alt="">
-            <span data-i18n="chat.open">Ask Cataloga</span>
-        </button>
-
-        <button type="button" class="logout-button" id="logout-button">
-            <span class="icon icon-logout"></span>
-            <span data-i18n="auth.log_out">Log out</span>
+            <span class="visually-hidden"
+                  data-i18n="chat.open_label">Open Cataloga
+                assistant</span>
         </button>
     </nav>
 
@@ -134,29 +160,9 @@
                 </section>
             </div>
 
-            <!-- Search, Download and Edit Mode -->
-            <div class="toolbar">
-                <div class="search-box">
-                    <span class="icon icon-search"></span>
-                    <input type="search" id="search-input"
-                           placeholder="Search"
-                           data-i18n-placeholder="catalog.search">
-                </div>
-                <button type="button" class="pill-button"
-                        id="download-button">
-                    <span class="icon icon-download"></span>
-                    <span data-i18n="catalog.download">Download
-                        Worksheet</span>
-                </button>
-                <label class="switch-label">
-                    <span data-i18n="catalog.edit_mode">Edit Mode</span>
-                    <input type="checkbox" id="edit-mode">
-                    <span class="switch"></span>
-                </label>
-            </div>
-
             <!-- Tabs (all files or only the ones that need manual
-                 review) and filters -->
+                 review), filters, Download and Edit Mode. The search
+                 is in the top bar. -->
             <div class="filter-row">
                 <div class="tabs">
                     <button class="tab active" data-status=""
@@ -177,6 +183,19 @@
                 <select id="filter-source">
                     <option value="">Source: All</option>
                 </select>
+                <div class="toolbar">
+                    <button type="button" class="pill-button"
+                            id="download-button">
+                        <span class="icon icon-download"></span>
+                        <span data-i18n="catalog.download">Download
+                            Worksheet</span>
+                    </button>
+                    <label class="switch-label">
+                        <span data-i18n="catalog.edit_mode">Edit Mode</span>
+                        <input type="checkbox" id="edit-mode">
+                        <span class="switch"></span>
+                    </label>
+                </div>
             </div>
 
             <!-- Shown while Edit Mode is on. catalog.js shows and hides
@@ -489,8 +508,9 @@
         <p class="toolbar-message" id="toolbar-message"></p>
     </main>
 
-    <!-- Chat panel on the right, filled by chat.js. The conversation
-         lives only in memory and is cleared when the project changes. -->
+    <!-- Floating chat window above the chat button, filled by
+         chat.js. The conversation lives only in memory and is cleared
+         when the project changes. -->
     <aside class="chat-panel hidden" id="chat-panel"
            aria-labelledby="chat-title">
         <header class="chat-header">
