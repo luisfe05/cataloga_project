@@ -8,6 +8,9 @@ Endpoints:
                                     (default: csv).
     POST /documents/<id>/rename     Rename one document, only after the
                                     user confirmed it in the chat.
+    POST /documents/<id>/open       Open the file with its default app.
+    POST /documents/<id>/reveal     Show the file in Finder, selected.
+    POST /documents/<id>/preview    Show a Quick Look preview.
 
 Every route works on the active project's catalog. With no project, or
 when its folder is not available, they answer 409 with the code
@@ -292,3 +295,82 @@ def rename_document(doc_id):
         os.rename(new_path, doc.file_path)
         raise
     return jsonify(doc.to_dict()), 200
+
+
+def run_file_action(doc_id, action):
+    """Check a document's file, then open, reveal, or preview it.
+
+    The frontend only sends the id. The path always comes from the
+    catalog, and it must be inside the active project's folder.
+
+    Args:
+        doc_id (int): The document's primary key.
+        action (str): 'open', 'reveal', or 'preview'.
+
+    Returns:
+        tuple: (JSON response, status). 200 {"ok": true}, 404 if the id
+            does not exist, 409 if there is no usable project, or
+            'file_missing' if the file is gone or outside the project.
+    """
+    repo, error = get_active_repo()
+    if error:
+        return error
+    doc = repo.get_document(doc_id)
+    if doc is None:
+        return error_response("not_found",
+                              "Document {} does not exist.".format(doc_id),
+                              404)
+    organizer = FileOrganizer(project_list.active_folder(projects_path()))
+    if not organizer.is_inside_project(doc.file_path) or \
+            not os.path.isfile(doc.file_path):
+        return error_response(
+            "file_missing",
+            "The file is missing or outside the project folder.", 409)
+
+    # Each action is a method of FileOrganizer with the same name.
+    actions = {
+        "open": organizer.open_file,
+        "reveal": organizer.reveal_file,
+        "preview": organizer.preview_file,
+    }
+    actions[action](doc.file_path)
+    return jsonify({"ok": True}), 200
+
+
+@documents_bp.route("/documents/<int:doc_id>/open", methods=["POST"])
+def open_document(doc_id):
+    """Open a document's file with its default app.
+
+    Args:
+        doc_id (int): The document's primary key.
+
+    Returns:
+        See run_file_action().
+    """
+    return run_file_action(doc_id, "open")
+
+
+@documents_bp.route("/documents/<int:doc_id>/reveal", methods=["POST"])
+def reveal_document(doc_id):
+    """Show a document's file in Finder, selected.
+
+    Args:
+        doc_id (int): The document's primary key.
+
+    Returns:
+        See run_file_action().
+    """
+    return run_file_action(doc_id, "reveal")
+
+
+@documents_bp.route("/documents/<int:doc_id>/preview", methods=["POST"])
+def preview_document(doc_id):
+    """Show a Quick Look preview of a document's file.
+
+    Args:
+        doc_id (int): The document's primary key.
+
+    Returns:
+        See run_file_action().
+    """
+    return run_file_action(doc_id, "preview")
