@@ -104,6 +104,14 @@ const LANG_EN = {
     "chat.notice_rename_invalid": "That name has no valid characters. Use "
         + "letters and numbers.",
     "chat.notice_rename_same": "The file already has that name.",
+
+    // File links: open, preview, show in Finder
+    "files.open": "Open file",
+    "files.preview": "Preview",
+    "files.reveal": "Show in Finder",
+    "files.show_in_catalog": "Show in Catalog",
+    "files.not_found": "File not found. It may have been moved or "
+        + "deleted.",
     "time.just_now": "just now",
     "time.minutes": "{n} min ago",
     "time.hour": "1 hour ago",

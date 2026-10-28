@@ -340,3 +340,16 @@ async function renameDocument(id, newName) {
     });
     return handleResponse(response);
 }
+
+// --- File links: only the id is sent, never a path ---
+
+/** POST /documents/:id/<action> - open, reveal, or preview a file.
+ * @param {number} id
+ * @param {string} action - "open", "reveal", or "preview".
+ * @returns {Promise<Object>} { ok: true }
+ */
+async function runDocumentFileAction(id, action) {
+    const response = await apiFetch(
+        `${BASE_URL}/documents/${id}/${action}`, { method: "POST" });
+    return handleResponse(response);
+}
