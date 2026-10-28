@@ -168,7 +168,11 @@ function makeStatusCell(doc) {
     const statusClass =
         doc.status === "Manual Review" ? "nowrap status-review" : "nowrap";
     if (!editMode) {
-        return makeCell(valueLabel(doc.status), statusClass);
+        const statusCell = makeCell("", statusClass);
+        // The text goes in a span so the CSS can draw it as a badge.
+        statusCell.appendChild(document.createElement("span"))
+            .textContent = valueLabel(doc.status);
+        return statusCell;
     }
     const cell = makeCell("", "nowrap");
     const select = document.createElement("select");
