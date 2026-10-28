@@ -1,13 +1,8 @@
 /* main.css - styles for Cataloga, following the brand rules
    (Design/BRAND.md): night sky colors, Violet as the only accent. */
 
-/* Fonts are bundled in frontend/fonts so the app works offline. */
-@font-face {
-    font-family: "Geo";
-    src: url("../fonts/Geo-Regular.ttf") format("truetype");
-    font-weight: 400;
-    font-style: normal;
-}
+/* Fonts are bundled in frontend/fonts so the app works offline.
+   Geo only appears inside the logo SVG files, never as app text. */
 
 /* Variable fonts: one file covers every weight from 400 to 700.
    Archivo also covers the widths, from Narrow to Expanded. */
@@ -60,7 +55,6 @@
 
     --font-body: "Archivo", sans-serif;
     --font-label: "Archivo Narrow", sans-serif;
-    --font-title: "Geo", sans-serif;
 
     --sidebar-width: 240px;
 }
@@ -295,10 +289,10 @@ select {
     padding: var(--spacing-32) var(--spacing-48);
 }
 
-/* Screen titles use Geo, never under 20 px. */
+/* Screen titles: Archivo SemiBold. */
 .view-title {
-    font-family: var(--font-title);
-    font-weight: 400;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     font-size: 40px;
     line-height: 44px;
     color: var(--color-midnight);
@@ -1136,7 +1130,7 @@ td.edit-error {
 }
 
 /* Big numbers in Archivo Light: 72 px, and 96 px for the two
-   main ones. Geo is kept for the logo and titles. */
+   main ones. */
 .stat-number {
     margin-top: auto;
     font-family: var(--font-body);
