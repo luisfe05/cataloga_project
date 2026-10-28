@@ -161,6 +161,8 @@ const LANG_EN = {
     // Projects (multi-project)
     "header.new_project": "New project…",
     "header.unavailable": "{name} (not available)",
+    "header.unavailable_hint": "Folder not found. Open it and remove it "
+        + "in Settings.",
     "project.edit_title": "Project settings",
     "project.new_title": "New project",
     "project.folder_locked": "The project folder can't change, because the "
