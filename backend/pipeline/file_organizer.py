@@ -182,3 +182,57 @@ class FileOrganizer:
         # where a plain rename between drives would fail.
         shutil.move(original_path, new_path)
         return new_path
+
+    def is_inside_project(self, path):
+        """Return True if a path is inside the project folder.
+
+        realpath() resolves '..' and links first, so a path cannot get out
+        of the folder by a trick like /archive/Press/../../other.
+
+        Args:
+            path (str): Any path.
+
+        Returns:
+            bool
+        """
+        folder = os.path.realpath(self.target_directory)
+        real_path = os.path.realpath(path)
+        return os.path.commonpath([folder, real_path]) == folder
+
+    def rename_file(self, file_path, new_filename):
+        """Give a cataloged file a new name, in the same folder.
+
+        Only used by a rename the user confirmed in the chat. The file
+        never moves to another folder. If the name is taken by another
+        file, -2, -3... is added.
+
+        Args:
+            file_path (str): Absolute path to the file now.
+            new_filename (str): The clean name from
+                naming.clean_new_name().
+
+        Returns:
+            str: The absolute path with the new name.
+
+        Raises:
+            ValueError: If the file is outside the project folder.
+            FileNotFoundError: If the file does not exist.
+        """
+        if not self.is_inside_project(file_path):
+            raise ValueError("The file is outside the project folder.")
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(file_path)
+
+        folder = os.path.dirname(file_path)
+        if new_filename == os.path.basename(file_path):
+            return file_path
+        new_path = os.path.join(folder, new_filename)
+        # samefile() is True when only the capital letters change, on a
+        # disk that ignores them (the macOS default). That is not a
+        # different file, so no -2 is needed.
+        if os.path.exists(new_path) and \
+                not os.path.samefile(new_path, file_path):
+            new_path = os.path.join(
+                folder, self.unique_filename(folder, new_filename))
+        os.rename(file_path, new_path)
+        return new_path
