@@ -38,8 +38,9 @@ const LANG_ES = {
     "catalog.saved": "Guardado.",
     "catalog.saved_summary": "Guardado. El resumen se actualizó con tu cambio.",
     "catalog.save_failed": "No se pudo guardar.",
-    "catalog.edit_mode_on": "El modo edición está activo. Haz clic en una "
-        + "celda para editarla. La actualización automática está en pausa.",
+    "catalog.edit_banner": "Editando. Haz clic en una celda para cambiarla. "
+        + "Se guarda al salir de la celda o al presionar Enter. La "
+        + "actualización automática está en pausa.",
     "catalog.summary_limit": "El resumen puede tener hasta 100 caracteres.",
     "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Tu carpeta Inbox vieja todavía tiene "
@@ -63,6 +64,10 @@ const LANG_ES = {
     "dash.activity": "Actividad reciente",
     "dash.empty": "Todavía no hay actividad. Pon archivos en la Drop Zone "
         + "para empezar.",
+    "dash.finding_review_one": "1 documento necesita revisión manual.",
+    "dash.finding_review": "{n} documentos necesitan revisión manual.",
+    "dash.finding_done": "Todos los documentos están clasificados.",
+    "dash.review_button": "Revisar en Catálogo",
     "dash.load_failed": "No se pudo cargar el panel: {message}",
     "dash.of_total": "de {n} documentos",
     "dash.no_documents": "Todavía no hay documentos",
@@ -208,6 +213,7 @@ const LANG_ES = {
     "auth.log_out": "Cerrar sesión",
     "auth.password_mismatch": "Las contraseñas no coinciden.",
     "account.title": "Cuenta",
+    "account.hint": "Una sola cuenta para toda la app y todos los proyectos.",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
     "account.new_password": "Contraseña nueva",
