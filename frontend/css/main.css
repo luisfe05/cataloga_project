@@ -226,12 +226,11 @@ textarea {
     color: var(--color-paper);
 }
 
-/* The active project, like the active view link. */
+/* The active project: white SemiBold text, no background, so it does
+   not compete with the open view above it. */
 .project-link.active {
-    background: var(--color-nebula);
     color: var(--color-paper);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--color-violet);
 }
 
 /* Folder missing: dimmed, but it can still be opened to remove it. */
@@ -268,12 +267,12 @@ textarea {
     color: var(--color-paper);
 }
 
-/* The open view: Nebula background and a Violet bar on the left. */
+/* The open view: Nebula background. The sidebar has no Violet, so
+   the accent stays on the content. */
 .nav-link.active {
     background: var(--color-nebula);
     color: var(--color-paper);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--color-violet);
 }
 
 /* Log out stays at the bottom of the sidebar. */
@@ -333,7 +332,6 @@ textarea {
     background: var(--color-white);
     padding: 0 var(--spacing-16) 0 44px;
     font-size: 15px;
-    box-shadow: var(--shadow-sm);
 }
 
 /* Tabs and filters */
@@ -409,7 +407,6 @@ textarea {
     border-spacing: 0;
     background: var(--color-white);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
     font-family: var(--font-label);
     font-size: 15px;
 }
@@ -428,7 +425,7 @@ textarea {
 }
 
 .catalog-table td {
-    padding: 14px var(--spacing-16);
+    padding: 10px var(--spacing-16);
     border-bottom: 1px solid var(--color-line);
     vertical-align: middle;
 }
@@ -769,7 +766,6 @@ code:empty {
 .pill-button {
     padding: 0 var(--spacing-16);
     font-size: 14px;
-    box-shadow: var(--shadow-sm);
 }
 
 /* Danger: Deep Space, not red. Violet stays the only accent. */
@@ -1108,15 +1104,6 @@ td.edit-error {
     padding: var(--spacing-24);
     border-radius: var(--radius-lg);
     background: var(--color-white);
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-}
-
-/* Hover lifts the card 2 px. */
-.stat-card:hover,
-.panel:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
 }
 
 .stat-card {
@@ -1359,7 +1346,6 @@ td.edit-error {
     background: var(--color-nebula);
     color: var(--color-paper);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--color-violet);
 }
 
 /* The logomark is wider than tall: 24 px wide keeps it above the
@@ -1598,7 +1584,6 @@ body.chat-open .catalog-table {
     border: 1px solid var(--color-line);
     border-radius: var(--radius-md);
     background: var(--color-white);
-    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .chat-card-top {
@@ -1610,7 +1595,6 @@ body.chat-open .catalog-table {
 
 .chat-card:hover {
     border-color: var(--color-violet);
-    box-shadow: var(--shadow-md);
 }
 
 .chat-card-name {
@@ -1932,6 +1916,54 @@ body.chat-open .catalog-table {
     transition: background 0.4s;
 }
 
+/* The eye and folder icons in each row are dimmed, so 30 rows of them
+   do not weigh on the table. They show fully on the row under the
+   mouse, the selected row, and when they have the keyboard focus. */
+.catalog-table .file-action {
+    opacity: 0.35;
+}
+
+.catalog-table tbody tr:hover .file-action,
+.catalog-table tbody tr.row-selected .file-action,
+.catalog-table tbody tr:focus-within .file-action {
+    opacity: 1;
+}
+
+/* Hover and focus changes fade in 150 ms instead of jumping. Only
+   color, border, shadow and opacity change, never the size. */
+.nav-link,
+.logout-button,
+.project-link,
+.chat-toggle,
+.tab,
+.primary-button,
+.secondary-button,
+.pill-button,
+.chat-example,
+.chat-card,
+.chat-close,
+.file-action,
+.file-link,
+td.editable {
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s,
+        box-shadow 0.15s, opacity 0.15s;
+}
+
+/* Numbers that count up, refresh, or sit in a column: every digit
+   takes the same width, so they do not shift. */
+.stat-number,
+.stat-sub,
+.progress-number,
+.progress-percent,
+.breakdown-count,
+.breakdown-header,
+.activity-when,
+.chat-stat-value,
+.tab,
+.catalog-table td.nowrap {
+    font-variant-numeric: tabular-nums;
+}
+
 /* Narrow windows: the chat covers the page instead of pushing it. */
 @media (max-width: 1100px) {
     body.chat-open #app-main {
@@ -1950,17 +1982,24 @@ body.chat-open .catalog-table {
 /* Less motion: no growing bars, no lift on hover. countUp() in
    motion.js also skips the counting. */
 @media (prefers-reduced-motion: reduce) {
-    .stat-card,
-    .panel,
     .bar-fill,
     .progress-fill,
-    .orb::after {
+    .orb::after,
+    .nav-link,
+    .logout-button,
+    .project-link,
+    .chat-toggle,
+    .tab,
+    .primary-button,
+    .secondary-button,
+    .pill-button,
+    .chat-example,
+    .chat-card,
+    .chat-close,
+    .file-action,
+    .file-link,
+    td.editable {
         transition: none;
-    }
-
-    .stat-card:hover,
-    .panel:hover {
-        transform: none;
     }
 
     .chat-thinking {
