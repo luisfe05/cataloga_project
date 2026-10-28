@@ -117,6 +117,8 @@ async function loadProjectHeader() {
  * Redraw everything after the active project changed.
  */
 async function refreshAfterProjectChange() {
+    // Answers about the old project must not mix with the new one.
+    clearChat();
     await loadProjectHeader();
     await loadSettings();
     loadCatalog();
@@ -191,6 +193,9 @@ function enterApp() {
     document.getElementById("auth-screen").classList.add("hidden");
     document.getElementById("nav-bar").classList.remove("hidden");
     document.getElementById("app-main").classList.remove("hidden");
+    // A new session starts with a closed, empty chat (chat.js).
+    clearChat();
+    toggleChat(false);
     showView("catalog");
     loadProjectHeader();
     loadSettings();

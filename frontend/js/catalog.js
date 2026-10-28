@@ -206,6 +206,8 @@ function renderTable(documents) {
     body.innerHTML = "";
     documents.forEach((doc) => {
         const row = document.createElement("tr");
+        // The chat finds a row by its id to highlight it.
+        row.dataset.id = doc.id;
         // The two filename columns are locked, even in Edit Mode.
         row.appendChild(makeCell(doc.original_filename));
         row.appendChild(makeCell(doc.filename));
@@ -352,6 +354,58 @@ async function loadCatalog() {
         showMessage(t("catalog.load_failed",
             { message: errorText(error) }));
     }
+}
+
+/**
+ * Mark the tab that matches a status. "Classified" has no tab of its
+ * own, so then no tab is marked.
+ * @param {string} status - "", "Manual Review" or "Classified".
+ */
+function selectStatus(status) {
+    currentStatus = status;
+    document.querySelectorAll(".tab").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.status === status);
+    });
+}
+
+/**
+ * Put filters from the chat into the catalog controls and reload.
+ * The backend already checked every value.
+ * @param {Object} filters - Any of media_type, source, status, text.
+ */
+async function applyCatalogFilters(filters) {
+    document.getElementById("search-input").value = filters.text || "";
+    document.getElementById("filter-media-type").value =
+        filters.media_type || "";
+    const source = document.getElementById("filter-source");
+    // The source list is filled after the first load, so add the
+    // option now if it is not there yet.
+    if (filters.source && ![...source.options]
+            .some((option) => option.value === filters.source)) {
+        const option = document.createElement("option");
+        option.value = filters.source;
+        option.textContent = filters.source;
+        source.appendChild(option);
+    }
+    source.value = filters.source || "";
+    selectStatus(filters.status || "");
+    await loadCatalog();
+}
+
+/**
+ * Show one document in the table: clear the filters, scroll to its
+ * row, and highlight it for two seconds.
+ * @param {number} id
+ */
+async function highlightDocument(id) {
+    await applyCatalogFilters({});
+    const row = document.querySelector(`#catalog-body tr[data-id="${id}"]`);
+    if (!row) {
+        return;
+    }
+    row.scrollIntoView({ block: "center" });
+    row.classList.add("row-highlight");
+    setTimeout(() => row.classList.remove("row-highlight"), 2000);
 }
 
 // Tabs: switch between All Files and Manual Review.

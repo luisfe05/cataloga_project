@@ -308,3 +308,35 @@ async function changePassword(currentPassword, newPassword) {
     });
     return handleResponse(response);
 }
+
+// --- Chat ---
+
+/** POST /chat - send one message. The answer is one action from a
+ * fixed list; the backend never changes anything here.
+ * @param {string} message
+ * @param {Array<Object>} history - Last messages: [{role, text}].
+ * @returns {Promise<Object>} { action, reply, notice, sources,
+ *     documents, filters, rename, project }
+ */
+async function sendChatMessage(message, history) {
+    const response = await apiFetch(`${BASE_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message, history: history }),
+    });
+    return handleResponse(response);
+}
+
+/** POST /documents/:id/rename - rename after the user clicked Confirm.
+ * @param {number} id
+ * @param {string} newName
+ * @returns {Promise<Object>} The updated document.
+ */
+async function renameDocument(id, newName) {
+    const response = await apiFetch(`${BASE_URL}/documents/${id}/rename`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ new_name: newName }),
+    });
+    return handleResponse(response);
+}

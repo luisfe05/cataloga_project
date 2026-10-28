@@ -74,6 +74,17 @@
                 <span data-i18n="nav.settings">Settings</span>
             </a>
         </div>
+
+        <!-- Opens the chat panel. Not a .nav-link, because app.js
+             gives every .nav-link a view to switch to. The logomark
+             is the SVG as is (Paper with the Violet tab). -->
+        <button type="button" class="chat-toggle" id="chat-toggle"
+                aria-expanded="false" aria-controls="chat-panel">
+            <img class="chat-logomark" src="assets/logomark-paper.svg"
+                 alt="">
+            <span data-i18n="chat.open">Ask Cataloga</span>
+        </button>
+
         <button type="button" class="logout-button" id="logout-button">
             <span class="icon icon-logout"></span>
             <span data-i18n="auth.log_out">Log out</span>
@@ -418,6 +429,66 @@
         <p class="toolbar-message" id="toolbar-message"></p>
     </main>
 
+    <!-- Chat panel on the right, filled by chat.js. The conversation
+         lives only in memory and is cleared when the project changes. -->
+    <aside class="chat-panel hidden" id="chat-panel"
+           aria-labelledby="chat-title">
+        <header class="chat-header">
+            <span class="chat-avatar">
+                <img src="assets/logomark-midnight.svg" alt="">
+            </span>
+            <h2 id="chat-title" data-i18n="chat.title">Cataloga assistant</h2>
+            <!-- The × is hidden from screen readers; they read the
+                 translated word instead -->
+            <button type="button" class="chat-close" id="chat-close">
+                <span aria-hidden="true">×</span>
+                <span class="visually-hidden"
+                      data-i18n="chat.close">Close</span>
+            </button>
+        </header>
+
+        <div class="chat-messages" id="chat-messages" aria-live="polite">
+            <!-- Shown while the conversation is empty -->
+            <div class="chat-empty" id="chat-empty">
+                <span class="chat-avatar chat-avatar-large">
+                    <img src="assets/logomark-midnight.svg" alt="">
+                </span>
+                <p class="chat-empty-title"
+                   data-i18n="chat.empty_title">How can I help?</p>
+                <p class="chat-empty-hint" data-i18n="chat.empty_hint"></p>
+                <div class="chat-examples">
+                    <button type="button" class="chat-example"
+                            data-i18n="chat.example_summary"
+                            data-prompt="chat.example_summary">Summarize
+                        this project</button>
+                    <button type="button" class="chat-example"
+                            data-i18n="chat.example_press"
+                            data-prompt="chat.example_press">Find press
+                        clippings</button>
+                    <button type="button" class="chat-example"
+                            data-i18n="chat.example_review"
+                            data-prompt="chat.example_review">Show items in
+                        Manual Review</button>
+                    <!-- Rename needs a file and a name, so it only
+                         starts the sentence for the user to finish -->
+                    <button type="button" class="chat-example"
+                            data-i18n="chat.example_rename"
+                            data-prompt="chat.example_rename_prompt"
+                            data-fill-only="true">Rename a file</button>
+                </div>
+            </div>
+        </div>
+
+        <form class="chat-form" id="chat-form">
+            <textarea id="chat-input" rows="2" maxlength="1000"
+                      placeholder="Ask about your files…"
+                      data-i18n-placeholder="chat.placeholder"
+                      aria-labelledby="chat-title"></textarea>
+            <button type="submit" class="primary-button" id="chat-send"
+                    data-i18n="chat.send">Send</button>
+        </form>
+    </aside>
+
     <!-- Confirmation for Remove project. A <dialog> shown with
          showModal() stays inside the app window and blocks the page
          behind it until it is closed. -->
@@ -447,6 +518,7 @@
     <script src="js/catalog.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/chat.js"></script>
 
 </body>
 </html>
