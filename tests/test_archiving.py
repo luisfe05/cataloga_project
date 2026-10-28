@@ -11,7 +11,7 @@ from backend.config import account
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
-from backend.pipeline import archive_rules, naming
+from backend.pipeline import archive_rules, chat_assistant, naming
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
@@ -623,3 +623,24 @@ def test_export_has_keywords_in_one_cell(flask_client, app):
     active_repo(app).add_document(make_doc(keywords=["a", "b"]))
     text = flask_client.get("/documents/export").get_data(as_text=True)
     assert "a; b" in text
+
+
+# --- Chat ---
+
+def test_chat_finds_documents_by_keyword():
+    """The chat picks documents whose keywords match the message."""
+    match = make_doc("a.pdf", keywords=["oceanman"])
+    match.id = 1
+    other = make_doc("b.pdf")
+    other.id = 2
+    found = chat_assistant.find_documents([other, match],
+                                          "find oceanman files")
+    assert found == [match]
+
+
+def test_chat_card_shows_keywords_and_category():
+    """The cards sent to the model carry the new fields."""
+    doc = make_doc(keywords=["malta"], category="Press")
+    card = chat_assistant.document_card(doc)
+    assert card["keywords"] == ["malta"]
+    assert card["category"] == "Press"
