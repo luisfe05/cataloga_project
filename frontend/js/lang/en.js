@@ -38,8 +38,9 @@ const LANG_EN = {
     "catalog.saved": "Saved.",
     "catalog.saved_summary": "Saved. The summary was updated using your edit.",
     "catalog.save_failed": "Could not save.",
-    "catalog.edit_mode_on": "Edit Mode is on. Click a cell to edit it. "
-        + "Automatic refresh is paused.",
+    "catalog.edit_banner": "Editing. Click a cell to change it. It saves "
+        + "when you leave the cell or press Enter. Automatic refresh is "
+        + "paused.",
     "catalog.summary_limit": "Summaries can have up to 100 characters.",
     "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Your old Inbox folder still has files. "

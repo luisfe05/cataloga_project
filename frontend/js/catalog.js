@@ -476,9 +476,13 @@ document.getElementById("filter-source")
     .addEventListener("change", loadCatalog);
 
 // Edit Mode: redraw the table with editable cells, or back to plain text.
+// The bar above the table stays while Edit Mode is on, instead of a
+// toast that goes away after 4 seconds.
 document.getElementById("edit-mode").addEventListener("change", (event) => {
     editMode = event.target.checked;
-    showToolbarMessage(editMode ? t("catalog.edit_mode_on") : "", false);
+    document.getElementById("edit-banner").classList.toggle("hidden",
+        !editMode);
+    showToolbarMessage("", false);
     loadCatalog();
 });
 
