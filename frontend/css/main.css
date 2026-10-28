@@ -1215,11 +1215,13 @@ td.edit-error {
     background: var(--color-white);
 }
 
+/* The number sits right under its label, so each card reads as one
+   compact block. */
 .stat-card {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-8);
-    min-height: 240px;
+    min-height: 168px;
 }
 
 .stat-label {
@@ -1234,7 +1236,6 @@ td.edit-error {
 /* Big numbers in Archivo Light: 72 px, and 96 px for the two
    main ones. */
 .stat-number {
-    margin-top: auto;
     font-family: var(--font-body);
     font-weight: 300;
     font-size: 72px;
@@ -1301,8 +1302,33 @@ td.edit-error {
     color: var(--color-dusk);
 }
 
+/* Manual Review card, two columns wide: the circles on the left and
+   the number on the right, under the label. */
+.review-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-content: start;
+    gap: var(--spacing-8) var(--spacing-24);
+}
+
+.review-card .stat-label {
+    grid-column: 1 / -1;
+}
+
 .review-card .stat-number {
-    align-self: flex-end;
+    align-self: center;
+    justify-self: end;
+}
+
+/* The finding under the Dashboard title, with its button. */
+.dash-finding {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-16);
+    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-24);
+    color: var(--color-midnight);
+    font-size: 15px;
 }
 
 .panel h2 {
@@ -1575,13 +1601,14 @@ body.chat-open .catalog-table {
     overflow-y: auto;
 }
 
-/* Empty panel: a short welcome and four examples. */
+/* Empty panel: a short welcome and four examples, near the top of
+   the panel instead of in the middle. */
 .chat-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-12);
-    margin: auto 0;
+    margin: var(--spacing-48) 0 auto;
     text-align: center;
 }
 
@@ -1886,7 +1913,7 @@ body.chat-open .catalog-table {
 /* Message box at the bottom */
 .chat-form {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: var(--spacing-8);
     padding: var(--spacing-16) var(--spacing-24);
     border-top: 1px solid var(--color-line);

@@ -64,6 +64,10 @@ const LANG_ES = {
     "dash.activity": "Actividad reciente",
     "dash.empty": "Todavía no hay actividad. Pon archivos en la Drop Zone "
         + "para empezar.",
+    "dash.finding_review_one": "1 documento necesita revisión manual.",
+    "dash.finding_review": "{n} documentos necesitan revisión manual.",
+    "dash.finding_done": "Todos los documentos están clasificados.",
+    "dash.review_button": "Revisar en Catálogo",
     "dash.load_failed": "No se pudo cargar el panel: {message}",
     "dash.of_total": "de {n} documentos",
     "dash.no_documents": "Todavía no hay documentos",

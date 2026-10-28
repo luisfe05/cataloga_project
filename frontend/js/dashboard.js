@@ -122,6 +122,27 @@ function renderShares(classified, review) {
 }
 
 /**
+ * Write the dashboard's main finding under the title: how many
+ * documents need manual review, with a button that opens them in
+ * Catalog. Hidden while the project has no documents.
+ * @param {number} classified
+ * @param {number} review
+ */
+function renderFinding(classified, review) {
+    document.getElementById("dash-finding")
+        .classList.toggle("hidden", classified + review === 0);
+    let text = t("dash.finding_done");
+    if (review === 1) {
+        text = t("dash.finding_review_one");
+    } else if (review > 1) {
+        text = t("dash.finding_review", { n: review });
+    }
+    document.getElementById("dash-finding-text").textContent = text;
+    document.getElementById("dash-review-button")
+        .classList.toggle("hidden", review === 0);
+}
+
+/**
  * List the latest actions, newest first.
  * @param {Array<Object>} activity - [{filename, action, timestamp}]
  */
@@ -163,6 +184,7 @@ async function loadDashboard() {
         countUp(document.getElementById("stat-sources"),
             stats.sources_tracked);
         renderShares(stats.documents_classified, stats.needs_manual_review);
+        renderFinding(stats.documents_classified, stats.needs_manual_review);
         renderBreakdown(stats.media_type_breakdown);
         renderActivity(stats.recent_activity);
     } catch (error) {
@@ -172,6 +194,7 @@ async function loadDashboard() {
             countUp(document.getElementById(id), 0);
         });
         renderShares(0, 0);
+        renderFinding(0, 0);
         document.getElementById("stat-total").textContent = "";
         document.getElementById("media-breakdown").innerHTML = "";
         document.getElementById("activity-list").innerHTML = "";
@@ -181,6 +204,14 @@ async function loadDashboard() {
         message.classList.remove("hidden");
     }
 }
+
+// Review in Catalog: open Catalog on the Manual Review tab, with the
+// search and the other filters cleared (applyCatalogFilters in
+// catalog.js).
+document.getElementById("dash-review-button").addEventListener("click", () => {
+    showView("catalog");
+    applyCatalogFilters({ status: "Manual Review" });
+});
 
 // Keep the numbers current while the dashboard is open.
 setInterval(() => {
