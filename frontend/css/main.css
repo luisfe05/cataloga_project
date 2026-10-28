@@ -1890,6 +1890,42 @@ body.chat-open .catalog-table {
         inset 0 -1.5px 0 var(--color-violet);
 }
 
+/* Summaries: at most 2 lines, cut with "…". Read more opens them in
+   place (summary.js). line-clamp needs display: -webkit-box. */
+.summary-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+.summary-text.open {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+}
+
+.read-more {
+    padding: 0;
+    margin-top: 2px;
+    border: none;
+    background: none;
+    color: var(--color-violet);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.read-more:hover {
+    text-decoration: underline;
+}
+
+.read-more[hidden] {
+    display: none;
+}
+
 /* A row the chat pointed to, highlighted for two seconds. */
 .catalog-table tbody tr.row-highlight td {
     background: rgba(73, 59, 178, 0.12);
