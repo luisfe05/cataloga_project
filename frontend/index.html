@@ -209,21 +209,26 @@
             <!-- Message shown when there is nothing to list -->
             <p class="empty-message hidden" id="catalog-message"></p>
 
-            <!-- Catalog table, filled in by catalog.js -->
-            <table class="catalog-table" id="catalog-table">
-                <thead>
-                    <tr>
-                        <th data-i18n="catalog.col_original">Original Filename</th>
-                        <th data-i18n="catalog.col_filename">Filename</th>
-                        <th data-i18n="catalog.col_type">Media Type</th>
-                        <th data-i18n="catalog.col_source">Source</th>
-                        <th data-i18n="catalog.col_date">Date</th>
-                        <th data-i18n="catalog.col_summary">Summary</th>
-                        <th data-i18n="catalog.col_status">Status</th>
-                    </tr>
-                </thead>
-                <tbody id="catalog-body"></tbody>
-            </table>
+            <!-- The table scrolls sideways inside this box when long
+                 file names do not fit, instead of running past the
+                 content area. -->
+            <div class="table-scroll">
+                <!-- Catalog table, filled in by catalog.js -->
+                <table class="catalog-table" id="catalog-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="catalog.col_original">Original Filename</th>
+                            <th data-i18n="catalog.col_filename">Filename</th>
+                            <th data-i18n="catalog.col_type">Media Type</th>
+                            <th data-i18n="catalog.col_source">Source</th>
+                            <th data-i18n="catalog.col_date">Date</th>
+                            <th data-i18n="catalog.col_summary">Summary</th>
+                            <th data-i18n="catalog.col_status">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="catalog-body"></tbody>
+                </table>
+            </div>
         </div>
 
         <div id="view-dashboard" class="view hidden">
