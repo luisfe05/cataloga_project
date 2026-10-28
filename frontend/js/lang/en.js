@@ -204,6 +204,7 @@ const LANG_EN = {
     "auth.log_out": "Log out",
     "auth.password_mismatch": "The passwords do not match.",
     "account.title": "Account",
+    "account.hint": "One account for the whole app, for every project.",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
     "account.new_password": "New password",
