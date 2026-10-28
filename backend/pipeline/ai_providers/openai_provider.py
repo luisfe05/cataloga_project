@@ -9,24 +9,11 @@ class OpenAIClient(AIProviderClient):
     """OpenAI-specific implementation of AIProviderClient."""
 
     def __init__(self, model="gpt-5.4-nano"):
-        """Initialize with the OpenAI provider name and chosen model.
-
-        Args:
-            model (str): OpenAI model to use. Defaults to gpt-5.4-nano,
-                the lowest-cost option.
-        """
+        """Initialize with the OpenAI provider name and chosen model."""
         super().__init__(provider_name="openai", model=model)
 
     def send_prompt(self, system_prompt, text):
-        """Send one request to the OpenAI API and return its answer.
-
-        Args:
-            system_prompt (str): The instructions for the AI.
-            text (str): The content the instructions apply to.
-
-        Returns:
-            str: The model's answer as plain text.
-        """
+        """Send one request to the OpenAI API and return its answer."""
         client = OpenAI(api_key=self.api_key)
         response = client.chat.completions.create(
             model=self.model,

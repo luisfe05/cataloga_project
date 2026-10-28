@@ -1,8 +1,4 @@
-"""Tests for CatalogRepository.
-
-Every test gets its own empty database in a temporary folder, so tests
-never touch database/catalog.db and never affect each other.
-"""
+"""Tests for CatalogRepository."""
 
 import sqlite3
 

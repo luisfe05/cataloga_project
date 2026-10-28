@@ -1,8 +1,4 @@
-"""Tests for opening, revealing, and previewing a document's file.
-
-POST /documents/<id>/open, /reveal, and /preview. subprocess.Popen is
-replaced by a fake, so no app, Finder, or Quick Look window opens.
-"""
+"""Tests for opening, revealing, and previewing a document's file."""
 
 import os
 

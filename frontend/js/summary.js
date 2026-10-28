@@ -1,24 +1,9 @@
-/**
- * summary.js
- *
- * A summary shown in at most 2 lines, cut with "…" by CSS line-clamp.
- * When the text does not fit, a "Read more" button opens it in place,
- * and "Show less" closes it again. Used by Catalog and the chat cards.
- *
- * Whether the text fits is only known once it is drawn, so a
- * ResizeObserver checks it then, and again whenever its width changes
- * (a smaller window, or the chat panel opening).
- */
+/** summary.js: summaries cut at 2 lines, with Read more when the text does not fit. */
 
-// Ids of the summaries the user opened. Catalog redraws its table
-// every few seconds, so this keeps them open after a redraw.
+// Ids of open summaries, so they stay open when Catalog redraws its table.
 const openSummaries = new Set();
 
-/**
- * Show the button only when it is needed: always while the summary is
- * open (to close it), and while closed only if the text is cut.
- * @param {HTMLElement} text - The .summary-text element.
- */
+/** Show the button while open, or while closed only if the text is cut. */
 function updateReadMore(text) {
     const button = text.nextElementSibling;
     const isOpen = text.classList.contains("open");
@@ -32,12 +17,7 @@ const summaryObserver = new ResizeObserver((entries) => {
     entries.forEach((entry) => updateReadMore(entry.target));
 });
 
-/**
- * Build a summary with its Read more / Show less button.
- * @param {string} summary - The summary text.
- * @param {number} id - The document id, to remember if it is open.
- * @returns {HTMLDivElement}
- */
+/** Build a summary with its Read more / Show less button. */
 function makeSummary(summary, id) {
     const block = document.createElement("div");
     block.className = "summary-block";
@@ -50,8 +30,7 @@ function makeSummary(summary, id) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "read-more";
-    // An open summary always needs its Show less button. A closed one
-    // waits for the observer to say if the text is cut.
+    // A closed summary waits for the observer to say if the text is cut.
     button.hidden = !openSummaries.has(id);
 
     // Draw the open or closed state, with its button text.
@@ -81,11 +60,7 @@ function makeSummary(summary, id) {
     return block;
 }
 
-/**
- * Stop watching the summaries inside an element that is about to be
- * emptied, so the observer does not keep rows that are gone.
- * @param {HTMLElement} container
- */
+/** Stop watching summaries in an element about to be emptied. */
 function forgetSummaries(container) {
     container.querySelectorAll(".summary-text").forEach((text) => {
         summaryObserver.unobserve(text);

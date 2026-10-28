@@ -1,16 +1,4 @@
-"""AIProviderClient base class.
-
-Defines the interface that every provider module must implement.
-The ClassificationPipeline always talks to an AIProviderClient, so
-swapping providers only means changing which subclass is instantiated.
-
-The prompts, the reading of the AI's answers, and the retries all live
-here, so they are written once. Each provider subclass only implements
-send_prompt(), which sends text to its own API and returns the answer.
-
-API keys are fetched from the OS keyring at runtime using the keyring
-library. They are never written to the database, a file, or a log.
-"""
+"""AIProviderClient base class."""
 
 import time
 
@@ -18,17 +6,14 @@ import keyring
 
 from backend.models.document import MEDIA_TYPES
 
-# keyring service name used across all providers.
 KEYRING_SERVICE = "cataloga"
 
-# Longest summary allowed (scope change of Oct 25, was 500).
+# Scope change of Oct 25 (was 500).
 MAX_SUMMARY_LENGTH = 100
 
-# Only the start of a long document is sent, to stay inside free API
-# limits. The first pages are usually enough to classify and summarize.
+# Only the start of a document is sent, to stay inside free API limits.
 MAX_INPUT_CHARS = 20000
 
-# How many times to try a request before giving up.
 MAX_ATTEMPTS = 3
 
 CLASSIFICATION_PROMPT = """You are organizing files in a research archive.
@@ -56,15 +41,7 @@ CONNECTION_TEST_PROMPT = "Reply with the single word OK."
 
 
 def save_api_key(provider_name, api_key):
-    """Save a provider's API key in the OS keyring.
-
-    This is the only place the app writes a key. It is never written to
-    the database or to a file.
-
-    Args:
-        provider_name (str): e.g. 'gemini'. Used as the keyring username.
-        api_key (str): The key the user typed in Settings.
-    """
+    """Save a provider's API key in the OS keyring."""
     keyring.set_password(KEYRING_SERVICE, provider_name, api_key)
 
 
@@ -72,50 +49,20 @@ class AIProviderClient:
     """Base class for AI provider integrations."""
 
     def __init__(self, provider_name, model):
-        """Store provider identity; fetch the API key from the OS keyring.
-
-        Args:
-            provider_name (str): Name used as the keyring username
-                (e.g. 'gemini').
-            model (str): The model to use for requests
-                (e.g. 'gemini-2.5-flash').
-        """
+        """Store provider identity; fetch the API key from the OS keyring."""
         self.provider_name = provider_name
         self.model = model
-        # Key is fetched here so it is available for the session, but never
-        # written to disk or logged. None means no key was saved yet.
+        # The key stays in memory: never written to disk or logged.
         self.api_key = keyring.get_password(KEYRING_SERVICE, provider_name)
-        # Seconds to wait between retries. Tests set this to 0.
+        # Seconds between retries. Tests set this to 0.
         self.retry_delay = 5
 
     def send_prompt(self, system_prompt, text):
-        """Send one request to the provider's API and return its answer.
-
-        Every provider subclass must implement this method.
-
-        Args:
-            system_prompt (str): The instructions for the AI.
-            text (str): The content the instructions apply to.
-
-        Returns:
-            str: The AI's answer as plain text.
-        """
+        """Send one request to the provider's API and return its answer."""
         raise NotImplementedError
 
     def ask(self, system_prompt, text):
-        """Call send_prompt(), trying again if the request fails.
-
-        Free API tiers often reject a request for a few seconds when too
-        many are sent. Waiting a little longer each time and trying again
-        usually fixes it.
-
-        Args:
-            system_prompt (str): The instructions for the AI.
-            text (str): The content the instructions apply to.
-
-        Returns:
-            str or None: The answer, or None if every attempt failed.
-        """
+        """Call send_prompt(), trying again if the request fails."""
         if not self.api_key:
             return None
         for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -124,22 +71,13 @@ class AIProviderClient:
                                           text[:MAX_INPUT_CHARS])
                 return (answer or "").strip()
             except Exception:
-                # Wait 5 s, then 10 s, before the next attempt.
+                # Wait 5 s, then 10 s.
                 if attempt < MAX_ATTEMPTS:
                     time.sleep(self.retry_delay * attempt)
         return None
 
     def send_classification_request(self, text):
-        """Send document text to the AI and return the media type label.
-
-        Args:
-            text (str): Extracted text from the document.
-
-        Returns:
-            str or None: One of Press / Audio / Video / Photos / Documents,
-                or None if the AI failed or gave an answer that is not a
-                valid media type.
-        """
+        """Send document text to the AI and return the media type label."""
         answer = self.ask(CLASSIFICATION_PROMPT, text)
         if not answer:
             return None
@@ -151,18 +89,7 @@ class AIProviderClient:
         return None
 
     def send_summary_request(self, text, facts=None):
-        """Send document text to the AI and return a summary.
-
-        Args:
-            text (str): Extracted text from the document.
-            facts (dict, optional): Details the researcher typed in by
-                hand, e.g. {'source': 'Claridad', 'document_date': '1980'}.
-                They are sent before the text so the AI uses them instead
-                of guessing.
-
-        Returns:
-            str: Summary, up to 100 characters. Empty string on failure.
-        """
+        """Send document text to the AI and return a summary."""
         if facts:
             lines = ["Facts confirmed by the researcher (use them):"]
             for name, value in facts.items():
@@ -178,18 +105,7 @@ class AIProviderClient:
         return answer
 
     def test_connection(self):
-        """Check that the API key and model work with a small test call.
-
-        Unlike the other methods, this one does not retry, so the user
-        sees the real error message right away in the settings screen.
-
-        Returns:
-            bool: True if the connection succeeds.
-
-        Raises:
-            ValueError: If no API key is saved for this provider.
-            Exception: The provider's own error if the call fails.
-        """
+        """Check that the API key and model work with a small test call."""
         if not self.api_key:
             raise ValueError("No API key saved for " + self.provider_name)
         self.send_prompt(CONNECTION_TEST_PROMPT, "ping")

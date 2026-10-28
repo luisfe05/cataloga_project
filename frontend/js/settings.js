@@ -1,45 +1,6 @@
-/**
- * settings.js
- *
- * Settings view (Screen 2). It has two modes:
- * - "edit": the active project. The name, file names, and AI provider
- *   can change; the folder cannot, because the catalog is inside it.
- * - "new": a new project, with its name, folder, file names, and AI
- *   provider. Used for the first project and from the header's
- *   "New project" option.
- *
- * When Save (or Create project) is clicked:
- * 1. The project is saved (PUT /settings) or created (POST /projects).
- * 2. The AI connection is tested (POST /settings/ai-provider/test).
- * 3. Only if the test passes, the provider is saved
- *    (PUT /settings/ai-provider), which writes the key to the keyring.
- * This way a wrong API key is never saved. The key is kept per
- * provider, so a new project can use it without typing it again.
- *
- * Every new project starts with Ollama Cloud. The provider fields are
- * inside "Advanced settings", which is closed unless the chosen
- * provider still needs a key or the project uses another provider.
- * The backend only says which providers have a key, never the key.
- *
- * If the chosen folder already has the user's own files, the backend
- * answers step 1 with a "folder_not_empty" warning. The button then
- * changes to "Save anyway", and the next click confirms the folder.
- *
- * Remove project (only for the active project) asks first in a dialog
- * inside the app, then calls DELETE /projects. It only takes the
- * project out of the list: the folder and its catalog stay.
- *
- * The Language dropdown works on its own: a new choice is applied and
- * saved right away (PUT /settings with only the language).
- *
- * The File names section is saved with the Save button. Its template is
- * checked here while the user types, with the same rules as
- * backend/pipeline/naming.py, and the backend checks it again.
- */
+/** settings.js: Settings. Save tests the AI first, so a wrong API key is never saved. */
 
-// Providers and models offered in the form. The key is the name the
-// backend uses. The first model of each provider is the default, chosen
-// for a free tier or the lowest cost.
+// The key is the backend's name. The first model is the default: free or cheapest.
 const AI_PROVIDERS = {
     ollama: {
         label: "Ollama Cloud",
@@ -68,7 +29,6 @@ const AI_PROVIDERS = {
     },
 };
 
-// The three naming methods, as the templates the backend saves.
 const NAMING_METHODS = {
     m1: "{date}_{topic}",
     m2: "{source}_{date}_{topic}",
@@ -79,7 +39,7 @@ const NAMING_METHODS = {
 const NAMING_TOKENS = ["date", "source", "topic", "number", "original"];
 const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
 
-// Example values for the live preview (from the approved examples).
+// Example values for the live preview.
 const PREVIEW_PARTS = {
     date: "2026-07-15",
     source: "el-nuevo-dia",
@@ -88,28 +48,24 @@ const PREVIEW_PARTS = {
     original: "scan-0042",
 };
 
-// True after the user has seen the folder warning and may confirm it.
+// True after the folder warning, so the next click confirms it.
 let folderWarningShown = false;
 
 // "edit" for the active project, "new" while creating a project.
 let projectMode = "edit";
 
-// False before the first project exists (then there is nothing to go
-// back to, so Cancel is hidden).
+// False before the first project: nothing to go back to, so Cancel is hidden.
 let hasProjects = false;
 
 // True once pywebview's folder picker can be used.
 let pywebviewReady = Boolean(window.pywebview && window.pywebview.api);
 
-// Saved name of the active project, for the Remove project dialog.
+// For the Remove project dialog.
 let savedProjectName = "";
 
-// Names of the providers that have an API key ready, from GET /settings.
+// Providers with an API key ready. The backend never sends the key itself.
 let providersWithKey = [];
 
-/**
- * Show "Save" or "Save anyway" on the button, in the current language.
- */
 function updateSaveButton() {
     let text = t("settings.save");
     if (folderWarningShown) {
@@ -120,24 +76,16 @@ function updateSaveButton() {
     document.getElementById("save-button").textContent = text;
 }
 
-/**
- * Show Browse only in the desktop window and only for a new project.
- */
 function updateBrowseButton() {
     document.getElementById("browse-button").classList.toggle(
         "hidden", !(pywebviewReady && projectMode === "new"));
 }
 
-/**
- * Switch the form between the active project and a new project.
- * @param {string} mode - "edit" or "new".
- */
 function setProjectMode(mode) {
     projectMode = mode;
     const isNew = mode === "new";
     document.getElementById("project-form-title").textContent =
         t(isNew ? "project.new_title" : "project.edit_title");
-    // readOnly keeps the folder visible but not editable.
     document.getElementById("target-directory").readOnly = !isNew;
     document.getElementById("folder-locked")
         .classList.toggle("hidden", isNew);
@@ -149,10 +97,7 @@ function setProjectMode(mode) {
     resetFolderWarning();
 }
 
-/**
- * Empty the form for a new project. The AI provider goes back to
- * Ollama Cloud, like the backend does for every new project.
- */
+/** Empty the form for a new project, which starts with Ollama Cloud. */
 function startNewProject() {
     setProjectMode("new");
     document.getElementById("research-name").value = "";
@@ -163,26 +108,16 @@ function startNewProject() {
     showSettingsMessage("", "");
 }
 
-/**
- * True when the provider chosen in the form has an API key ready.
- * @returns {boolean}
- */
 function chosenProviderHasKey() {
     const provider = document.getElementById("ai-provider").value;
     return providersWithKey.includes(provider);
 }
 
-/**
- * Show the API key field's hint, in the current language.
- */
 function updateKeyPlaceholder() {
     document.getElementById("api-key").placeholder = chosenProviderHasKey()
         ? t("settings.api_key_saved") : t("settings.api_key_placeholder");
 }
 
-/**
- * Say which provider and model are in use, or that a key is missing.
- */
 function updateAIStatus() {
     const provider = document.getElementById("ai-provider").value;
     const model = document.getElementById("ai-model").value;
@@ -191,12 +126,7 @@ function updateAIStatus() {
         ? t("settings.ai_using", vars) : t("settings.ai_needs_key", vars);
 }
 
-/**
- * Put a provider and model in the form and decide if Advanced settings
- * starts open: only when the provider needs a key or is not Ollama.
- * @param {string} provider - A key of AI_PROVIDERS.
- * @param {string} model - Model to select, if it is in the list.
- */
+/** Show a provider. Advanced settings opens only if it needs a key or is not Ollama. */
 function showProvider(provider, model) {
     document.getElementById("ai-provider").value = provider;
     fillModels(model);
@@ -206,25 +136,16 @@ function showProvider(provider, model) {
     updateAIStatus();
 }
 
-/**
- * Put the Save button back to normal and forget any folder warning.
- */
 function resetFolderWarning() {
     folderWarningShown = false;
     updateSaveButton();
 }
 
-/**
- * Check a naming template. Same rules as validate_template() in
- * backend/pipeline/naming.py.
- * @param {string} template
- * @returns {Object|null} null if valid, or {reason, token}.
- */
+/** Same rules as validate_template() in naming.py; the backend checks again. */
 function validateTemplate(template) {
     if (!template.trim()) {
         return { reason: "empty", token: "" };
     }
-    // Every {word} in the template.
     const found = [...template.matchAll(/\{([^{}]*)\}/g)]
         .map((match) => match[1]);
     const unknown = found.find((name) => !NAMING_TOKENS.includes(name));
@@ -234,7 +155,7 @@ function validateTemplate(template) {
     if (found.length === 0) {
         return { reason: "no_token", token: "" };
     }
-    // The braces are removed first, since they are allowed.
+    // The braces are allowed, so remove them first.
     const text = template.replace(/\{[^{}]*\}/g, "");
     if ([...text].some((char) => FORBIDDEN_CHARACTERS.includes(char))) {
         return { reason: "chars", token: "" };
@@ -242,12 +163,7 @@ function validateTemplate(template) {
     return null;
 }
 
-/**
- * Fill a template with the example values, like render_template() in
- * backend/pipeline/naming.py.
- * @param {string} template
- * @returns {string} For example "2026-07-15_oceanman-malta.pdf".
- */
+/** Fill a template with example values, like render_template() in naming.py. */
 function previewFilename(template) {
     let name = template;
     NAMING_TOKENS.forEach((token) => {
@@ -258,10 +174,6 @@ function previewFilename(template) {
     return (name || PREVIEW_PARTS.number) + ".pdf";
 }
 
-/**
- * Return the template for the method picked in the File names section.
- * @returns {string}
- */
 function chosenTemplate() {
     const picked = document.querySelector(
         'input[name="naming-method"]:checked');
@@ -272,11 +184,7 @@ function chosenTemplate() {
     return NAMING_METHODS[method];
 }
 
-/**
- * Show the template box for Custom, check the template, and update the
- * preview. Called on every change and key press in the section.
- * @returns {boolean} True if the template is valid.
- */
+/** Show Custom's box, check the template, and update the preview. */
 function updateNamingPreview() {
     const picked = document.querySelector(
         'input[name="naming-method"]:checked');
@@ -293,11 +201,7 @@ function updateNamingPreview() {
     return !problem;
 }
 
-/**
- * Select the method that matches a saved template. A template that is
- * not one of the three methods is shown as Custom.
- * @param {string} template
- */
+/** Select the method for a saved template; anything else is Custom. */
 function showSavedTemplate(template) {
     let method = "custom";
     Object.keys(NAMING_METHODS).forEach((key) => {
@@ -312,21 +216,12 @@ function showSavedTemplate(template) {
     updateNamingPreview();
 }
 
-/**
- * Show a message under the Save button.
- * @param {string} text
- * @param {string} kind - "error", "success", or "" for neutral.
- */
 function showSettingsMessage(text, kind) {
     const message = document.getElementById("settings-message");
     message.textContent = text;
     message.className = "form-message " + kind;
 }
 
-/**
- * Fill the Model dropdown with the models of the chosen provider.
- * @param {string} chosenModel - Model to select, if it is in the list.
- */
 function fillModels(chosenModel) {
     const provider = document.getElementById("ai-provider").value;
     const select = document.getElementById("ai-model");
@@ -342,9 +237,6 @@ function fillModels(chosenModel) {
     }
 }
 
-/**
- * Fill the AI Provider dropdown once, when the page loads.
- */
 function fillProviders() {
     const select = document.getElementById("ai-provider");
     Object.keys(AI_PROVIDERS).forEach((name) => {
@@ -355,10 +247,7 @@ function fillProviders() {
     });
 }
 
-/**
- * Load the saved settings into the form. The API key is never sent by
- * the backend, so the key field only shows a hint when one is saved.
- */
+/** Load the saved settings. The backend never sends the API key. */
 async function loadSettings() {
     try {
         const settings = await getSettings();
@@ -400,17 +289,12 @@ async function loadSettings() {
     }
 }
 
-/**
- * Save the form, following the three steps described at the top.
- * @param {Event} event
- */
+/** Save: project, then AI test, then provider (only if the test passed). */
 async function saveSettings(event) {
-    // Stop the form from reloading the page.
     event.preventDefault();
 
     const saveButton = document.getElementById("save-button");
-    // A wrong template is shown under the File names section, and
-    // nothing is sent.
+    // A wrong template shows its error and nothing is sent.
     if (!updateNamingPreview()) {
         showSettingsMessage(
             document.getElementById("naming-error").textContent, "error");
@@ -472,9 +356,6 @@ async function saveSettings(event) {
     }
 }
 
-/**
- * Ask in the app's own dialog before removing the active project.
- */
 function openRemoveDialog() {
     document.getElementById("remove-project-title").textContent =
         t("project.remove_title", { name: savedProjectName });
@@ -483,11 +364,7 @@ function openRemoveDialog() {
     document.getElementById("remove-project-dialog").showModal();
 }
 
-/**
- * Take the active project out of the list (DELETE /projects). The
- * backend makes the most recently opened project active. With none
- * left, loadSettings() shows the New project form.
- */
+/** Remove the active project from the list. The most recently opened one becomes active. */
 async function confirmRemoveProject() {
     const dialog = document.getElementById("remove-project-dialog");
     const confirmButton = document.getElementById("remove-project-confirm");
@@ -496,7 +373,6 @@ async function confirmRemoveProject() {
         await removeProject(
             document.getElementById("target-directory").value);
     } catch (error) {
-        // Keep the dialog open and say what went wrong.
         document.getElementById("remove-project-error").textContent =
             errorText(error);
         confirmButton.disabled = false;
@@ -507,10 +383,7 @@ async function confirmRemoveProject() {
     showSettingsMessage(t("project.removed"), "success");
 }
 
-/**
- * Open the system folder picker. It only exists inside the desktop
- * window (pywebview), so in a normal browser the button is hidden.
- */
+/** Open the folder picker. Only the desktop window has it, so a browser hides Browse. */
 async function browseFolder() {
     const folder = await window.pywebview.api.choose_folder();
     if (folder) {
@@ -519,11 +392,7 @@ async function browseFolder() {
     }
 }
 
-/**
- * Apply and save the language picked in the dropdown.
- * Fixed text changes right away; the views are reloaded so the text
- * built by JavaScript (tables, messages) changes too.
- */
+/** Apply and save the language; reload the views so JS-built text changes too. */
 async function changeLanguage() {
     const language = document.getElementById("language-select").value;
     setLanguage(language);
@@ -578,18 +447,16 @@ document.getElementById("ai-provider")
     });
 document.getElementById("ai-model")
     .addEventListener("change", updateAIStatus);
-// A different folder needs its own warning, so start over when it changes.
+// A different folder needs its own warning.
 document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
-// The preview follows every method change and every key press.
 document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
 document.getElementById("naming-template")
     .addEventListener("input", updateNamingPreview);
 
-// fillProviders() and loadSettings() are first called by startApp() in
-// app.js, after the saved language is known.
+// startApp() in app.js calls fillProviders() and loadSettings() after the language loads.

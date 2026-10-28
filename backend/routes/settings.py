@@ -1,16 +1,4 @@
-"""Settings routes.
-
-Endpoints:
-    GET  /settings                      Return the active project's
-                                        settings and the app language.
-    PUT  /settings                      Update the project's name and
-                                        naming_template, and language.
-    PUT  /settings/ai-provider          Update the active project's
-                                        provider and model, write the
-                                        API key to the keyring.
-    POST /settings/ai-provider/test     Test whether the provider
-                                        config connects.
-"""
+"""Settings routes."""
 
 from flask import Blueprint, current_app, jsonify, request
 from keyring.errors import KeyringError
@@ -29,15 +17,7 @@ settings_bp = Blueprint("settings", __name__)
 
 
 def read_text_fields(body, names):
-    """Return the stripped text of each field, or None if one is missing.
-
-    Args:
-        body (dict or None): The parsed JSON body.
-        names (tuple[str]): Fields that must be non-empty text.
-
-    Returns:
-        dict or None: {name: text}, or None if any field is missing.
-    """
+    """Return the stripped text of each field, or None if one is missing."""
     if not isinstance(body, dict):
         return None
     values = {}
@@ -51,18 +31,7 @@ def read_text_fields(body, names):
 
 @settings_bp.route("/settings", methods=["GET"])
 def get_settings():
-    """Return the settings of the active project and the app language.
-
-    Returns:
-        200: JSON with research_name, target_directory (the project
-             folder), language (the same for every project),
-             naming_template, active_provider, active_model,
-             old_inbox_has_files, project_status ('none',
-             'unavailable', or 'ok'), providers_with_key, and the
-             account's username. With no
-             usable project, the project fields are empty. API keys
-             are never returned, only which providers have one.
-    """
+    """Return the settings of the active project and the app language."""
     data = projects.load_projects(projects_path())
     folder = data["active_folder"]
     status = project_status(folder)
@@ -90,15 +59,7 @@ def get_settings():
 
 
 def providers_with_key():
-    """Return the names of the providers that have an API key ready.
-
-    Only the names are sent to the screen, never the keys. Each client
-    looks for its own key (the keyring, and for Ollama Cloud also the
-    development key), so this uses the same rules as the real requests.
-
-    Returns:
-        list[str]: e.g. ['ollama', 'groq'].
-    """
+    """Return the names of the providers that have an API key ready."""
     names = []
     for name, client_class in PROVIDERS.items():
         if client_class().api_key:
@@ -108,26 +69,7 @@ def providers_with_key():
 
 @settings_bp.route("/settings", methods=["PUT"])
 def update_settings():
-    """Update the active project's name and naming template, and the
-    app language.
-
-    The project folder cannot change here: the catalog is saved inside
-    it. A new folder means a new project (POST /projects).
-
-    A body with only 'language' saves just the language, which works
-    even before any project exists.
-
-    Request body (JSON): research_name, and optional naming_template
-                         (str) and language ('en' or 'es').
-
-    Returns:
-        200: JSON of the updated settings (same shape as GET).
-        400: If the name is missing, the language is not supported, or
-             the naming template is not valid. An 'invalid_template'
-             error includes 'reason' ('empty', 'no_token', 'unknown',
-             'chars') and 'token'.
-        409: If there is no usable project.
-    """
+    """Save the project name, naming template, and app language."""
     body = request.get_json(silent=True)
     if isinstance(body, dict) and "language" in body and \
             body["language"] not in LANGUAGES:
@@ -156,9 +98,7 @@ def update_settings():
     folder = projects.active_folder(projects_path())
     config = AppConfig(repo)
 
-    # Saving the same project again also renames an old Inbox to Drop
-    # Zone. It must run before ensure_archive_structure(), which would
-    # otherwise create an empty Drop Zone next to the old Inbox.
+    # Must run before ensure_archive_structure(), or Drop Zone is doubled.
     organizer = FileOrganizer(folder)
     organizer.migrate_old_inbox()
     organizer.ensure_archive_structure()
@@ -175,22 +115,7 @@ def update_settings():
 
 @settings_bp.route("/settings/ai-provider", methods=["PUT"])
 def update_ai_provider():
-    """Update the active AI provider, model, and API key.
-
-    The provider and model are saved in the active project's catalog.
-    The API key is written to the OS keyring, one per provider, so every
-    project shares it. It is never stored in the database or returned in
-    any response. If api_key is empty, the key already saved for that
-    provider is kept.
-
-    Request body (JSON): provider_name, model, api_key.
-
-    Returns:
-        200: The active provider and model (no key echoed back).
-        400: If a field is missing, the provider is not supported, or
-             the keyring could not save the key ('keyring_failed').
-        409: If there is no usable project.
-    """
+    """Update the active AI provider, model, and API key."""
     body = request.get_json(silent=True)
     values = read_text_fields(body, ("provider_name", "model"))
     if values is None:
@@ -209,9 +134,7 @@ def update_ai_provider():
         try:
             save_api_key(values["provider_name"], api_key.strip())
         except KeyringError:
-            # For example macOS error -25244, when the Keychain refuses
-            # to let the app write. Nothing is saved, not even the
-            # provider, so the project keeps working as before.
+            # Like macOS error -25244. Nothing is saved, not even the provider.
             return error_response(
                 "keyring_failed",
                 "The API key could not be saved in the system keychain.",
@@ -225,17 +148,7 @@ def update_ai_provider():
 
 @settings_bp.route("/settings/ai-provider/test", methods=["POST"])
 def test_ai_provider():
-    """Test whether the provided AI credentials can connect.
-
-    The key in the body is only used for this test. It is not saved.
-    If api_key is empty, the key already saved for the provider is used.
-
-    Request body (JSON): provider_name, model, api_key.
-
-    Returns:
-        200: {"connected": true} if test_connection() succeeds.
-        400: {"error": {"code": "...", "message": "..."}} on failure.
-    """
+    """Test whether the provided AI credentials can connect."""
     body = request.get_json(silent=True)
     values = read_text_fields(body, ("provider_name", "model"))
     if values is None:

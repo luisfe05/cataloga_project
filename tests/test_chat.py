@@ -1,9 +1,4 @@
-"""Tests for the chat (POST /chat) and the confirmed rename
-(POST /documents/<id>/rename).
-
-The AI is never called: a fake client returns a fixed answer. Uses the
-app and flask_client fixtures from conftest.py.
-"""
+"""Tests for POST /chat and the confirmed rename."""
 
 import json
 import os
@@ -24,11 +19,7 @@ class FakeClient:
     """Stands in for an AIProviderClient and returns a fixed answer."""
 
     def __init__(self, answer):
-        """Remember the answer and record every prompt sent.
-
-        Args:
-            answer (str or None): What ask() returns.
-        """
+        """Remember the answer and record every prompt sent."""
         self.answer = answer
         self.prompts = []
 
@@ -47,10 +38,7 @@ def repo(app):
 
 @pytest.fixture
 def fake_ai(monkeypatch, repo):
-    """Make /chat use a FakeClient. Returns a function to set its answer.
-
-    The answer can be a dict (sent as JSON) or a string (sent as is).
-    """
+    """Make /chat use a FakeClient. Returns a function to set its answer."""
     repo.set_active_provider("gemini", "gemini-2.5-flash")
     client = FakeClient(None)
     monkeypatch.setattr(chat_route, "create_client",
@@ -83,10 +71,7 @@ def add_file_doc(repo, folder, filename, media_type="Press", source=None,
 
 
 def snapshot(app):
-    """Return every row of the catalog and every file of the project.
-
-    Used to check that /chat never changes anything.
-    """
+    """Return every row of the catalog and every file of the project."""
     folder = app.config["PROJECT_FOLDER"]
     conn = sqlite3.connect(projects.catalog_path(folder))
     try:

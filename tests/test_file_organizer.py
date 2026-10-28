@@ -1,8 +1,4 @@
-"""Tests for FileOrganizer.
-
-Each test works inside its own temporary folder, so no real files are
-ever moved.
-"""
+"""Tests for FileOrganizer."""
 
 import os
 

@@ -1,35 +1,17 @@
-"""FileOrganizer.
-
-Handles the archive's folder structure and moves each cataloged file
-into its media-type folder under its new name. Creates the five
-media-type subdirectories if they don't exist. The new name itself is
-built in naming.py; FileOrganizer only makes sure it is not taken,
-adding -2, -3, and so on when it is.
-
-New files are dropped into the Drop Zone folder. Only Drop Zone is
-processed, so anything else the user already had in the project folder
-is never moved. Projects made before Drop Zone existed used a folder
-called Inbox: migrate_old_inbox() renames it to Drop Zone.
-
-FileOrganizer only works with folders and files. It never touches the
-database: CatalogRepository owns all database reads and writes.
-"""
+"""FileOrganizer."""
 
 import os
 import shutil
 import subprocess
 
-# The five media-type folders.
 MEDIA_TYPES = ("Press", "Audio", "Video", "Photos", "Documents")
 
-# Subfolder where the user drops new files to be cataloged.
 DROP_ZONE_FOLDER = "Drop Zone"
 
-# Name of the same folder in projects made before Drop Zone existed.
+# The same folder in projects made before Drop Zone existed.
 OLD_INBOX_FOLDER = "Inbox"
 
-# Hidden folder where each project keeps its own catalog (catalog.db).
-# It is never processed and never counted as the user's content.
+# Each project's catalog. Never processed or counted as user files.
 CATALOG_FOLDER = ".cataloga"
 
 
@@ -37,59 +19,25 @@ class FileOrganizer:
     """Manages the archive folder structure and file renaming."""
 
     def __init__(self, target_directory):
-        """Set up the organizer for a specific archive folder.
-
-        Args:
-            target_directory (str): Absolute path to the root archive folder.
-        """
+        """Set up the organizer for a specific archive folder."""
         self.target_directory = target_directory
 
     def folder_for(self, media_type):
-        """Return the path of the subfolder for a media type.
-
-        Args:
-            media_type (str): One of the five valid media types.
-
-        Returns:
-            str: For example /archive/Press for 'Press'.
-
-        Raises:
-            ValueError: If media_type is not one of the five valid types.
-        """
+        """Return the path of the subfolder for a media type."""
         if media_type not in MEDIA_TYPES:
             raise ValueError("Unknown media type: " + str(media_type))
         return os.path.join(self.target_directory, media_type)
 
     def drop_zone_folder(self):
-        """Return the path of the Drop Zone folder.
-
-        Returns:
-            str: For example /archive/Drop Zone.
-        """
+        """Return the path of the Drop Zone folder."""
         return os.path.join(self.target_directory, DROP_ZONE_FOLDER)
 
     def old_inbox_folder(self):
-        """Return the path of the old Inbox folder.
-
-        Returns:
-            str: For example /archive/Inbox.
-        """
+        """Return the path of the old Inbox folder."""
         return os.path.join(self.target_directory, OLD_INBOX_FOLDER)
 
     def migrate_old_inbox(self):
-        """Rename the old Inbox folder to Drop Zone, one time only.
-
-        Only call this for the project folder already saved in Settings.
-        In that folder, Inbox was created by Cataloga, so renaming it is
-        safe. Renaming the folder keeps every file inside it, so nothing
-        is moved or renamed.
-
-        If Drop Zone already exists, nothing happens: Inbox is then
-        treated as one of the user's own folders.
-
-        Returns:
-            bool: True if Inbox was renamed, False if nothing changed.
-        """
+        """Rename the old Inbox folder to Drop Zone, one time only."""
         if not os.path.isdir(self.old_inbox_folder()):
             return False
         if os.path.exists(self.drop_zone_folder()):
@@ -98,28 +46,13 @@ class FileOrganizer:
         return True
 
     def ensure_archive_structure(self):
-        """Create Drop Zone and the five media-type folders if missing.
-
-        Creates: Drop Zone/, Press/, Audio/, Video/, Photos/, Documents/
-        inside target_directory. Folders that already exist are left
-        alone.
-        """
-        # exist_ok=True means no error if the folder is already there.
+        """Create Drop Zone and the five media-type folders if missing."""
         os.makedirs(self.drop_zone_folder(), exist_ok=True)
         for media_type in MEDIA_TYPES:
             os.makedirs(self.folder_for(media_type), exist_ok=True)
 
     def count_existing_items(self):
-        """Count the user's own files and folders in the project folder.
-
-        Cataloga's folders (Drop Zone, .cataloga, and the five media types)
-        and hidden files like .DS_Store are not counted. Creating a project
-        uses this number to warn the user before using a folder that
-        already has content.
-
-        Returns:
-            int: How many of the user's items are in the folder.
-        """
+        """Count the user's own files and folders in the project folder."""
         if not os.path.isdir(self.target_directory):
             return 0
         own_folders = set(MEDIA_TYPES) | {DROP_ZONE_FOLDER, CATALOG_FOLDER}
@@ -131,19 +64,7 @@ class FileOrganizer:
         return count
 
     def unique_filename(self, folder, filename):
-        """Return a name that is not taken yet in a folder.
-
-        Example: if 2026-07-15_malta.pdf exists, the result is
-        2026-07-15_malta-2.pdf, then -3, and so on.
-
-        Args:
-            folder (str): The folder the file will go into.
-            filename (str): The name the file should get.
-
-        Returns:
-            str: filename itself, or filename with -2, -3... added
-                before the extension.
-        """
+        """Return a name that is not taken yet in a folder."""
         base, extension = os.path.splitext(filename)
         candidate = filename
         number = 2
@@ -153,23 +74,7 @@ class FileOrganizer:
         return candidate
 
     def move_and_rename_file(self, original_path, media_type, new_filename):
-        """Move a file into its media-type folder with its new name.
-
-        Args:
-            original_path (str): Absolute path to the file before
-                classification.
-            media_type (str): Determines which subdirectory to move it into.
-            new_filename (str): The name built by naming.make_filename().
-                If it is taken, -2, -3... is added.
-
-        Returns:
-            str: The absolute path to the file in its new location. The new
-                filename is os.path.basename() of this path.
-
-        Raises:
-            FileNotFoundError: If original_path does not exist.
-            ValueError: If media_type is not one of the five valid types.
-        """
+        """Move a file into its media-type folder with its new name."""
         if not os.path.isfile(original_path):
             raise FileNotFoundError(original_path)
 
@@ -179,46 +84,18 @@ class FileOrganizer:
         new_path = os.path.join(folder,
                                 self.unique_filename(folder, new_filename))
 
-        # shutil.move also works when the archive is on an external drive,
-        # where a plain rename between drives would fail.
+        # shutil.move works across drives, where a rename would fail.
         shutil.move(original_path, new_path)
         return new_path
 
     def is_inside_project(self, path):
-        """Return True if a path is inside the project folder.
-
-        realpath() resolves '..' and links first, so a path cannot get out
-        of the folder by a trick like /archive/Press/../../other.
-
-        Args:
-            path (str): Any path.
-
-        Returns:
-            bool
-        """
+        """Return True if a path is inside the project folder."""
         folder = os.path.realpath(self.target_directory)
         real_path = os.path.realpath(path)
         return os.path.commonpath([folder, real_path]) == folder
 
     def rename_file(self, file_path, new_filename):
-        """Give a cataloged file a new name, in the same folder.
-
-        Only used by a rename the user confirmed in the chat. The file
-        never moves to another folder. If the name is taken by another
-        file, -2, -3... is added.
-
-        Args:
-            file_path (str): Absolute path to the file now.
-            new_filename (str): The clean name from
-                naming.clean_new_name().
-
-        Returns:
-            str: The absolute path with the new name.
-
-        Raises:
-            ValueError: If the file is outside the project folder.
-            FileNotFoundError: If the file does not exist.
-        """
+        """Give a cataloged file a new name, in the same folder."""
         if not self.is_inside_project(file_path):
             raise ValueError("The file is outside the project folder.")
         if not os.path.isfile(file_path):
@@ -228,9 +105,7 @@ class FileOrganizer:
         if new_filename == os.path.basename(file_path):
             return file_path
         new_path = os.path.join(folder, new_filename)
-        # samefile() is True when only the capital letters change, on a
-        # disk that ignores them (the macOS default). That is not a
-        # different file, so no -2 is needed.
+        # Same file when only the case changes on a case-blind disk (macOS).
         if os.path.exists(new_path) and \
                 not os.path.samefile(new_path, file_path):
             new_path = os.path.join(
@@ -239,42 +114,18 @@ class FileOrganizer:
         return new_path
 
     def run_command(self, arguments):
-        """Start a macOS command for a file and do not wait for it.
-
-        The arguments go as a list, never through a shell, so a file
-        name with spaces or symbols is passed as it is and cannot run
-        anything else. The output is thrown away so it never shows up
-        in the app's log.
-
-        Args:
-            arguments (list[str]): The command and its arguments.
-        """
+        """Start a macOS command for a file and do not wait for it."""
         subprocess.Popen(arguments, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL)
 
     def open_file(self, file_path):
-        """Open a file with its default app, like a double click.
-
-        Args:
-            file_path (str): A file already checked to be inside the
-                project.
-        """
+        """Open a file with its default app, like a double click."""
         self.run_command(["open", file_path])
 
     def reveal_file(self, file_path):
-        """Show a file in Finder, selected.
-
-        Args:
-            file_path (str): A file already checked to be inside the
-                project.
-        """
+        """Show a file in Finder, selected."""
         self.run_command(["open", "-R", file_path])
 
     def preview_file(self, file_path):
-        """Show a Quick Look preview, like the space bar in Finder.
-
-        Args:
-            file_path (str): A file already checked to be inside the
-                project.
-        """
+        """Show a Quick Look preview, like the space bar in Finder."""
         self.run_command(["qlmanage", "-p", file_path])
