@@ -56,7 +56,23 @@
     --font-body: "Archivo", sans-serif;
     --font-label: "Archivo Narrow", sans-serif;
 
-    --sidebar-width: 240px;
+    /* Glass: translucent white with a blur behind it. 70% for cards,
+       85% where text sits on the dark login background or floats over
+       other content. */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-bg-strong: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --glass-blur: blur(16px);
+    --shadow-glass: 0 4px 16px rgba(8, 5, 28, 0.05);
+
+    /* The frame: top bar and sidebar share this gradient. */
+    --frame-gradient: linear-gradient(135deg, var(--color-midnight),
+        var(--color-nebula) 55%, var(--color-violet));
+    --frame-gap: 12px;
+    --topbar-height: 64px;
+    --sidebar-width: 200px;
+    /* Room at the bottom of the content for the chat button. */
+    --chat-button-room: 88px;
 }
 
 * {
@@ -65,11 +81,21 @@
     padding: 0;
 }
 
+/* Paper with three large, very soft spots of Violet and Dusk. They
+   stay in place while the page scrolls and never move. */
 body {
     font-family: var(--font-body);
     font-size: 15px;
     line-height: 22px;
-    background: var(--color-paper);
+    background-color: var(--color-paper);
+    background-image:
+        radial-gradient(circle at 85% 10%, rgba(73, 59, 178, 0.22),
+            transparent 40%),
+        radial-gradient(circle at 15% 90%, rgba(70, 65, 123, 0.2),
+            transparent 45%),
+        radial-gradient(circle at 55% 55%, rgba(73, 59, 178, 0.1),
+            transparent 50%);
+    background-attachment: fixed;
     color: var(--color-deep-space);
 }
 
@@ -151,7 +177,7 @@ textarea {
     gap: var(--spacing-32);
     min-height: 100vh;
     padding: var(--spacing-64) var(--spacing-16);
-    background: var(--color-deep-space);
+    background: var(--frame-gradient);
 }
 
 .auth-logo {
@@ -164,8 +190,12 @@ textarea {
     width: 100%;
     max-width: 400px;
     padding: var(--spacing-32);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    background: var(--color-white);
+    background: var(--glass-bg-strong);
+    box-shadow: var(--shadow-glass);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
 }
 
 .auth-form h2 {
@@ -181,25 +211,89 @@ textarea {
     margin-top: var(--spacing-8);
 }
 
-/* Sidebar */
-#nav-bar {
+/* The frame. #nav-bar only groups the top bar, the sidebar, and the
+   chat button; each of them is fixed on its own. */
+.topbar,
+.sidebar {
     position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: var(--sidebar-width);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-24);
-    padding: var(--spacing-24) var(--spacing-16);
-    background: var(--color-deep-space);
+    z-index: 5;
+    border-radius: var(--radius-lg);
+    background: var(--frame-gradient);
     color: var(--color-paper);
 }
 
-/* 160 px keeps the horizontal logo above its 120 px minimum. */
+/* Top bar: logo, search in the middle, user on the right. */
+.topbar {
+    top: var(--frame-gap);
+    left: var(--frame-gap);
+    right: var(--frame-gap);
+    height: var(--topbar-height);
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--spacing-24);
+    padding: 0 var(--spacing-16) 0 0;
+}
+
+/* Sidebar under the top bar, 200 px wide. */
+.sidebar {
+    top: calc(var(--frame-gap) * 2 + var(--topbar-height));
+    left: var(--frame-gap);
+    bottom: var(--frame-gap);
+    width: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-16) var(--spacing-12);
+}
+
+/* 140 px keeps the horizontal logo above its 120 px minimum. */
 .app-logo {
-    width: 160px;
-    margin: var(--spacing-8) var(--spacing-8) 0;
+    width: 140px;
+    margin-left: var(--spacing-24);
+}
+
+/* The search in the top bar: translucent white on the gradient. */
+.topbar .search-box {
+    max-width: 560px;
+    width: 100%;
+    justify-self: center;
+    color: var(--color-paper);
+}
+
+.topbar .search-box .icon {
+    top: 11px;
+}
+
+.topbar .search-box input {
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
+    color: var(--color-paper);
+}
+
+.topbar .search-box input::placeholder {
+    color: rgba(238, 245, 250, 0.9);
+}
+
+.topbar .search-box input:focus {
+    outline: 2px solid var(--color-paper);
+    outline-offset: 0;
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* The user's name and Log out. */
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.icon-user {
+    mask-image: url("../assets/icons/circle-user.svg");
+    -webkit-mask-image: url("../assets/icons/circle-user.svg");
 }
 
 /* The links can shrink so the project list scrolls inside the
@@ -229,7 +323,7 @@ textarea {
     border: none;
     border-radius: var(--radius-md);
     background: none;
-    color: rgba(238, 245, 250, 0.72);
+    color: rgba(238, 245, 250, 0.85);
     font-size: 14px;
     text-align: left;
     cursor: pointer;
@@ -240,7 +334,7 @@ textarea {
 }
 
 .project-link:hover {
-    background: var(--color-midnight);
+    background: rgba(255, 255, 255, 0.12);
     color: var(--color-paper);
 }
 
@@ -253,7 +347,7 @@ textarea {
 
 /* Folder missing: dimmed, but it can still be opened to remove it. */
 .project-link.unavailable {
-    opacity: 0.5;
+    color: rgba(238, 245, 250, 0.75);
     font-style: italic;
 }
 
@@ -263,7 +357,7 @@ textarea {
 
 .project-empty {
     padding: 6px var(--spacing-12);
-    color: rgba(238, 245, 250, 0.5);
+    color: rgba(238, 245, 250, 0.7);
     font-size: 14px;
 }
 
@@ -274,42 +368,50 @@ textarea {
     gap: var(--spacing-12);
     padding: var(--spacing-8) var(--spacing-12);
     border-radius: var(--radius-md);
-    color: rgba(238, 245, 250, 0.72);
+    color: rgba(238, 245, 250, 0.85);
     text-decoration: none;
     font-size: 15px;
 }
 
 .nav-link:hover,
 .logout-button:hover {
-    background: var(--color-midnight);
+    background: rgba(255, 255, 255, 0.12);
     color: var(--color-paper);
 }
 
-/* The open view: Nebula background. The sidebar has no Violet, so
-   the accent stays on the content. */
+/* The open view: white at 20% on the gradient. */
 .nav-link.active {
-    background: var(--color-nebula);
+    background: rgba(255, 255, 255, 0.2);
     color: var(--color-paper);
     font-weight: 600;
 }
 
-/* Log out stays at the bottom of the sidebar. */
+/* Log out in the top bar, after the user's name. */
 .logout-button {
-    margin-top: auto;
+    margin-left: var(--spacing-8);
     border: none;
     background: none;
     cursor: pointer;
-    text-align: left;
+    font-size: 14px;
 }
 
-/* Main area, to the right of the sidebar */
+/* The content: a rounded area apart from the frame. The bottom
+   padding keeps the chat button off the last row, Save, and the
+   bottom of every screen. */
 #app-main {
-    margin-left: var(--sidebar-width);
-    min-height: 100vh;
+    min-height: calc(100vh - var(--topbar-height)
+        - var(--frame-gap) * 3);
+    margin: calc(var(--topbar-height) + var(--frame-gap) * 2)
+        var(--frame-gap) var(--frame-gap)
+        calc(var(--sidebar-width) + var(--frame-gap) * 2);
+    padding-bottom: var(--chat-button-room);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.35);
 }
 
 .view {
-    padding: var(--spacing-32) var(--spacing-48);
+    padding: var(--spacing-32);
 }
 
 /* Screen titles: Archivo SemiBold. */
@@ -322,12 +424,12 @@ textarea {
     margin-bottom: var(--spacing-24);
 }
 
-/* Catalog: search, Download and Edit Mode */
+/* Catalog: Download and Edit Mode, at the right end of the filters */
 .toolbar {
     display: flex;
     align-items: center;
-    gap: var(--spacing-16);
-    margin-bottom: var(--spacing-16);
+    gap: var(--spacing-12);
+    margin-left: auto;
 }
 
 .search-box {
@@ -437,13 +539,22 @@ textarea {
     text-transform: uppercase;
     color: var(--color-dusk);
     text-align: left;
-    padding: var(--spacing-16);
+    padding: var(--spacing-16) var(--spacing-12);
     border-bottom: 1px solid var(--color-line);
     white-space: nowrap;
 }
 
+/* Long file names make the table wider than the content area; then
+   only the table scrolls sideways. */
+.table-scroll {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+}
+
+/* 12 px on the sides, so the seven columns fit in the content area of
+   the smallest window (1100 px). */
 .catalog-table td {
-    padding: 10px var(--spacing-16);
+    padding: 10px var(--spacing-12);
     border-bottom: 1px solid var(--color-line);
     vertical-align: middle;
 }
@@ -523,8 +634,9 @@ td.media-type[data-type="Video"]::before {
     white-space: nowrap;
 }
 
+/* Missing values: Dusk italic. Solid Dusk keeps 4.5:1 on the glass. */
 .placeholder {
-    color: rgba(70, 65, 123, 0.56);
+    color: var(--color-dusk);
     font-style: italic;
 }
 
@@ -909,12 +1021,15 @@ code:empty {
 /* Confirmation dialog in the app window */
 .confirm-dialog {
     margin: auto;
-    border: none;
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     max-width: 420px;
     padding: var(--spacing-32);
     color: var(--color-deep-space);
+    background: var(--glass-bg-strong);
     box-shadow: var(--shadow-lg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
 }
 
 /* The page behind the open dialog is dimmed. */
@@ -1006,7 +1121,8 @@ code:empty {
     display: flex;
     gap: var(--spacing-8);
     position: fixed;
-    right: var(--spacing-24);
+    /* Left of the chat button, so it never covers it. */
+    right: 96px;
     bottom: var(--spacing-24);
     z-index: 10;
     max-width: 420px;
@@ -1346,7 +1462,9 @@ td.edit-error {
        a label is longer. */
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--spacing-16);
-    align-items: end;
+    /* Top-aligned: every bar starts at the same height, even when one
+       type name takes two lines under it. */
+    align-items: start;
 }
 
 .breakdown-item {
@@ -1396,7 +1514,16 @@ td.edit-error {
 .breakdown-header {
     display: flex;
     flex-direction: column;
+    min-width: 0;
     color: var(--color-dusk);
+}
+
+/* A long type name ("Documentos") breaks with a hyphen instead of
+   running into the next bar. The hyphen follows the page language. */
+.breakdown-type {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    overflow-wrap: anywhere;
 }
 
 /* Recent activity: soft rows with the action as a badge. */
@@ -1456,77 +1583,71 @@ td.edit-error {
     white-space: nowrap;
 }
 
-/* Chat button in the sidebar. Looks like a nav link, with the
-   logomark as is instead of a Lucide icon. */
+/* Chat button: a 56 px Violet circle fixed at the bottom right, with
+   the Paper logomark. */
 .chat-toggle {
+    position: fixed;
+    right: var(--spacing-24);
+    bottom: var(--spacing-24);
+    z-index: 21;
     display: flex;
     align-items: center;
-    gap: var(--spacing-12);
-    padding: var(--spacing-8) var(--spacing-12);
+    justify-content: center;
+    width: 56px;
+    height: 56px;
     border: none;
-    border-radius: var(--radius-md);
-    background: none;
-    color: rgba(238, 245, 250, 0.72);
-    font-size: 15px;
-    text-align: left;
+    border-radius: var(--radius-full);
+    background: var(--color-violet);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
 }
 
-.chat-toggle:hover {
-    background: var(--color-midnight);
-    color: var(--color-paper);
-}
-
+.chat-toggle:hover,
 .chat-toggle[aria-expanded="true"] {
     background: var(--color-nebula);
-    color: var(--color-paper);
-    font-weight: 600;
 }
 
-/* The logomark is wider than tall: 24 px wide keeps it above the
+/* The logomark is wider than tall: 28 px wide keeps it above the
    16 px minimum of BRAND.md. */
 .chat-logomark {
-    width: 24px;
+    width: 28px;
     height: auto;
     flex-shrink: 0;
 }
 
-/* Chat panel on the right. While it is open, the main area makes
-   room for it instead of being covered. */
+/* Chat window: floats above its button, over the app. It is 560 px
+   tall, or less when the window is short: it never goes above the
+   top bar. 196 px = the button and its gap (96) plus the top bar and
+   its gaps (100). */
 .chat-panel {
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 15;
-    width: 400px;
+    right: var(--spacing-24);
+    bottom: 96px;
+    z-index: 20;
+    width: 380px;
+    height: min(560px, calc(100vh - 196px));
     display: flex;
     flex-direction: column;
-    background: var(--color-white);
-    border-left: 1px solid var(--color-line);
+    overflow: hidden;
+    /* Glass: white at 60% with a stronger blur, so the app shows
+       blurred behind it. Everything with text inside is solid. */
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.6);
     box-shadow: var(--shadow-lg);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    transform-origin: bottom right;
+    animation: chat-open 180ms ease-out;
 }
 
-body.chat-open #app-main {
-    margin-right: 400px;
-}
-
-body.chat-open .toolbar-message {
-    right: calc(400px + var(--spacing-24));
-}
-
-/* Less room while the chat is open: the dashboard uses two columns
-   and the table scrolls sideways instead of squeezing its text. */
-body.chat-open .dash-grid {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-body.chat-open #view-catalog {
-    overflow-x: auto;
-}
-
-body.chat-open .catalog-table {
-    min-width: 960px;
+/* Opening: a short fade and scale. It runs each time the window goes
+   from hidden to shown. */
+@keyframes chat-open {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
 }
 
 /* Logged out: the sidebar is hidden, so the chat is too. */
@@ -1538,7 +1659,7 @@ body.chat-open .catalog-table {
     display: flex;
     align-items: center;
     gap: var(--spacing-12);
-    padding: var(--spacing-16) var(--spacing-24);
+    padding: var(--spacing-12) var(--spacing-16);
     border-bottom: 1px solid var(--color-line);
 }
 
@@ -1556,7 +1677,8 @@ body.chat-open .catalog-table {
     border: none;
     border-radius: var(--radius-full);
     background: none;
-    color: var(--color-dusk);
+    /* Midnight keeps the × clear on the glass. */
+    color: var(--color-midnight);
     font-size: 22px;
     cursor: pointer;
 }
@@ -1597,7 +1719,7 @@ body.chat-open .catalog-table {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-16);
-    padding: var(--spacing-24);
+    padding: var(--spacing-16);
     overflow-y: auto;
 }
 
@@ -1608,7 +1730,12 @@ body.chat-open .catalog-table {
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-12);
-    margin: var(--spacing-48) 0 auto;
+    margin: var(--spacing-8) 0 auto;
+    /* A solid card, so the Dusk hint keeps 4.5:1 whatever is behind
+       the glass. */
+    padding: var(--spacing-24) var(--spacing-16) var(--spacing-16);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
     text-align: center;
 }
 
@@ -1680,10 +1807,12 @@ body.chat-open .catalog-table {
     gap: var(--spacing-8);
 }
 
+/* The assistant: solid white with Deep Space text. */
 .chat-assistant .chat-bubble {
     align-self: flex-start;
+    border: 1px solid var(--color-line);
     border-radius: 4px 16px 16px 16px;
-    background: var(--color-paper);
+    background: var(--color-white);
     color: var(--color-deep-space);
 }
 
@@ -1805,10 +1934,15 @@ body.chat-open .catalog-table {
     height: 13px;
 }
 
-.chat-filters {
+/* Sources and filters sit on solid white, like the cards, so their
+   small labels stay readable on the glass. */
+.chat-sources,
+.chat-filters,
+.chat-note {
     padding: var(--spacing-12);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-md);
+    background: var(--color-white);
 }
 
 .chat-chip {
@@ -1915,7 +2049,7 @@ body.chat-open .catalog-table {
     display: flex;
     align-items: center;
     gap: var(--spacing-8);
-    padding: var(--spacing-16) var(--spacing-24);
+    padding: var(--spacing-12) var(--spacing-16);
     border-top: 1px solid var(--color-line);
 }
 
@@ -1925,6 +2059,7 @@ body.chat-open .catalog-table {
     padding: 10px var(--spacing-12);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-md);
+    background: var(--color-white);
     font-size: 14px;
     line-height: 20px;
 }
@@ -2100,19 +2235,34 @@ td.editable {
     font-variant-numeric: tabular-nums;
 }
 
-/* Narrow windows: the chat covers the page instead of pushing it. */
-@media (max-width: 1100px) {
-    body.chat-open #app-main {
-        margin-right: 0;
-    }
+/* One rule for every glass surface: cards, panels, the table, and
+   controls that sit on the page. It comes after their own rules, so
+   it replaces their white background and border. */
+.glass,
+.catalog-table,
+.tabs,
+.filter-row select,
+.pill-button,
+.switch-label,
+.stat-card,
+.panel,
+.settings-fields,
+.edit-banner,
+.warning-message {
+    background-color: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+}
 
-    body.chat-open .toolbar-message {
-        right: var(--spacing-24);
-    }
+/* The colored left edge of these two stays on top of the glass border. */
+.edit-banner {
+    border-left: 3px solid var(--color-violet);
+}
 
-    .chat-panel {
-        width: min(400px, 100%);
-    }
+.warning-message {
+    border-left: 3px solid var(--color-dusk);
 }
 
 /* Less motion: no growing bars, no lift on hover. countUp() in
@@ -2138,7 +2288,8 @@ td.editable {
         transition: none;
     }
 
-    .chat-thinking {
+    .chat-thinking,
+    .chat-panel {
         animation: none;
     }
 }
@@ -2173,7 +2324,4 @@ td.editable {
         grid-column: 1;
     }
 
-    #view-catalog {
-        overflow-x: auto;
-    }
 }

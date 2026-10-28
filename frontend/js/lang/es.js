@@ -17,7 +17,7 @@ const LANG_ES = {
     // Catalog
     "catalog.tab_all": "Todos los archivos",
     "catalog.tab_review": "Revisión manual ({n})",
-    "catalog.search": "Buscar",
+    "catalog.search": "Buscar en el catálogo",
     "catalog.filter_type_all": "Tipo de medio: todos",
     "catalog.filter_source_all": "Fuente: todas",
     "catalog.download": "Descargar hoja de cálculo",
@@ -73,7 +73,7 @@ const LANG_ES = {
     "dash.no_documents": "Todavía no hay documentos",
 
     // Chat
-    "chat.open": "Pregunta a Cataloga",
+    "chat.open_label": "Abrir el asistente de Cataloga",
     "chat.title": "Asistente de Cataloga",
     "chat.close": "Cerrar",
     "chat.empty_title": "¿En qué te ayudo con este proyecto?",

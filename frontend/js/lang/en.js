@@ -17,7 +17,7 @@ const LANG_EN = {
     // Catalog
     "catalog.tab_all": "All Files",
     "catalog.tab_review": "Manual Review ({n})",
-    "catalog.search": "Search",
+    "catalog.search": "Search the catalog",
     "catalog.filter_type_all": "Media Type: All",
     "catalog.filter_source_all": "Source: All",
     "catalog.download": "Download Worksheet",
@@ -72,7 +72,7 @@ const LANG_EN = {
     "dash.no_documents": "No documents yet",
 
     // Chat
-    "chat.open": "Ask Cataloga",
+    "chat.open_label": "Open Cataloga assistant",
     "chat.title": "Cataloga assistant",
     "chat.close": "Close",
     "chat.empty_title": "How can I help with this project?",
