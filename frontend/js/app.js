@@ -1,16 +1,4 @@
-/**
- * app.js
- *
- * Switches between the three views (Catalog, Dashboard, Settings) when a
- * link in the navigation bar is clicked. Only one view is visible at a
- * time; the others get the "hidden" class.
- *
- * Also starts the app: startApp() reads the saved language first, so
- * every screen is drawn in that language from the start.
- *
- * The project list in the sidebar lives here too, because it changes
- * what every view shows.
- */
+/** app.js: view switching, the sidebar project list, and app start. */
 
 // data-folder of the New project button at the end of the list.
 const NEW_PROJECT_OPTION = "__new__";
@@ -18,10 +6,6 @@ const NEW_PROJECT_OPTION = "__new__";
 // Folder of the active project, so a click on it only opens Catalog.
 let activeFolder = "";
 
-/**
- * Show one view and hide the others.
- * @param {string} name - "catalog", "dashboard", or "settings".
- */
 function showView(name) {
     document.querySelectorAll(".view").forEach((view) => {
         view.classList.toggle("hidden", view.id !== `view-${name}`);
@@ -37,19 +21,11 @@ function showView(name) {
 
 document.querySelectorAll(".nav-link").forEach((link) => {
     link.addEventListener("click", (event) => {
-        // Stop the "#" link from jumping to the top of the page.
         event.preventDefault();
         showView(link.dataset.view);
     });
 });
 
-/**
- * Make one button of the project list.
- * @param {string} text - What the button says.
- * @param {string} folder - Project folder, or NEW_PROJECT_OPTION.
- * @param {string} title - Tooltip with the full text.
- * @returns {HTMLLIElement}
- */
 function makeProjectButton(text, folder, title) {
     const item = document.createElement("li");
     const button = document.createElement("button");
@@ -62,13 +38,7 @@ function makeProjectButton(text, folder, title) {
     return item;
 }
 
-/**
- * Fill the project list in the sidebar and the title of Catalog.
- * Projects whose folder is missing (for example, an external drive that
- * is not connected) are dimmed and marked as not available. They can
- * still be opened, so they can be removed in Settings.
- * Called again after a language change, so the text is redrawn.
- */
+/** Fill the sidebar project list and the Catalog title. Missing folders stay clickable. */
 async function loadProjectHeader() {
     let list;
     try {
@@ -105,7 +75,6 @@ async function loadProjectHeader() {
     newItem.firstChild.classList.add("new-project");
     projectList.appendChild(newItem);
 
-    // The Catalog title shows the active project's name.
     const active = list.projects
         .find((project) => project.folder === activeFolder);
     const title = document.getElementById("catalog-title");
@@ -113,9 +82,6 @@ async function loadProjectHeader() {
     title.title = title.textContent;
 }
 
-/**
- * Redraw everything after the active project changed.
- */
 async function refreshAfterProjectChange() {
     // Answers about the old project must not mix with the new one.
     clearChat();
@@ -128,11 +94,7 @@ async function refreshAfterProjectChange() {
     }
 }
 
-/**
- * Handle a click in the project list: switch to that project and open
- * Catalog, or open the New project form in Settings.
- * @param {string} folder - Project folder, or NEW_PROJECT_OPTION.
- */
+/** Switch to a project and open Catalog, or open the New project form. */
 async function chooseProject(folder) {
     if (folder === NEW_PROJECT_OPTION) {
         showView("settings");
@@ -151,8 +113,7 @@ async function chooseProject(folder) {
     showView("catalog");
 }
 
-// One listener for the whole list, because its buttons are redrawn
-// every time loadProjectHeader() runs.
+// One listener for the list, because loadProjectHeader() redraws its buttons.
 document.getElementById("project-list").addEventListener("click", (event) => {
     const button = event.target.closest(".project-link");
     if (button) {
@@ -160,12 +121,7 @@ document.getElementById("project-list").addEventListener("click", (event) => {
     }
 });
 
-/**
- * Load the saved language, then show the account screen: create the
- * account the first time, log in after that (see auth.js).
- * GET /auth/status works without logging in. If the backend does not
- * answer, the app starts in English and the login screen says so.
- */
+/** Load the saved language, then show the setup or login screen. */
 async function startApp() {
     let status = null;
     try {
@@ -185,10 +141,7 @@ async function startApp() {
     }
 }
 
-/**
- * Show the app after a successful login or account setup, and draw
- * every screen with the active project's data.
- */
+/** Show the app after login and draw every screen. */
 function enterApp() {
     document.getElementById("auth-screen").classList.add("hidden");
     document.getElementById("nav-bar").classList.remove("hidden");
@@ -202,6 +155,5 @@ function enterApp() {
     loadCatalog();
 }
 
-// DOMContentLoaded fires after every script at the end of the page has
-// run, so all the functions above exist by then.
+// DOMContentLoaded fires after every script has run, so all functions exist.
 document.addEventListener("DOMContentLoaded", startApp);

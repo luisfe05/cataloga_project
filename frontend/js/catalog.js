@@ -1,38 +1,23 @@
-/**
- * catalog.js
- *
- * Catalog view (Screen 1).
- * Renders the document table and handles the tabs, search box, filters,
- * Edit Mode, and the Download Worksheet button. The table refreshes every
- * few seconds, so files dropped into the Drop Zone show up once the folder
- * watcher has processed them.
- */
+/** catalog.js: the table, tabs, search, filters, Edit Mode, and Download Worksheet. */
 
-// Seconds between automatic refreshes of the table.
 const REFRESH_SECONDS = 10;
 
-// What the user picked on the tabs. "" means All Files.
+// "" means All Files.
 let currentStatus = "";
 
-// True while the Edit Mode switch is on.
 let editMode = false;
 
-// The row the user clicked last. The space bar previews its file.
+// The row clicked last. The space bar previews its file.
 let selectedDocumentId = null;
 
-// Columns the user can edit in Edit Mode. The filenames are locked and
-// media_type is left out because changing it would not move the file.
+// Filenames are locked; media_type is left out because changing it would not move the file.
 const EDITABLE_TEXT_FIELDS = ["source", "document_date", "summary"];
 const STATUSES = ["Classified", "Manual Review"];
 
-// Longest summary the backend accepts (MAX_SUMMARY_LENGTH in Python).
+// Same as MAX_SUMMARY_LENGTH in Python.
 const MAX_SUMMARY_LENGTH = 100;
 
-/**
- * Collect the current tab, search text, and filters for GET /documents.
- * Empty values are left out so the backend ignores them.
- * @returns {Object}
- */
+/** Current tab, search, and filters for GET /documents. Empty values are left out. */
 function readFilters() {
     const filters = {
         status: currentStatus,
@@ -48,13 +33,7 @@ function readFilters() {
     return filters;
 }
 
-/**
- * Build one table cell. textContent (not innerHTML) is used so text from
- * files or the AI is always shown as plain text, never run as HTML.
- * @param {string|null} text
- * @param {string} [className]
- * @returns {HTMLTableCellElement}
- */
+/** One table cell. textContent, so text from files or the AI is never run as HTML. */
 function makeCell(text, className) {
     const cell = document.createElement("td");
     cell.textContent = text || "";
@@ -64,15 +43,10 @@ function makeCell(text, className) {
     return cell;
 }
 
-// Timer that clears the toast. A new message restarts it, so the new
-// message is not cleared early by the timer of the old one.
+// A new message restarts the timer, so the old timer cannot clear it early.
 let toolbarMessageTimer = null;
 
-/**
- * Show a short message as a toast. It clears itself after 4 seconds.
- * @param {string} text - Empty string clears it.
- * @param {boolean} isError
- */
+/** Show a short message as a toast. It clears itself after 4 seconds. */
 function showToolbarMessage(text, isError) {
     const message = document.getElementById("toolbar-message");
     message.textContent = text;
@@ -83,21 +57,11 @@ function showToolbarMessage(text, isError) {
     }, 4000);
 }
 
-/**
- * Save one edited field with PATCH /documents/<id>.
- * An empty value is saved as null, so the field counts as missing.
- * Editing the source or date also makes the backend rewrite the summary
- * with the AI, which can take a few seconds.
- * @param {number} id
- * @param {string} field
- * @param {string} value
- * @returns {Promise<Object|null>} The updated document, or null on error.
- */
+/** Save one field. Empty is saved as null. Source or date also rewrite the summary (slow). */
 async function saveField(id, field, value) {
     const fields = {};
     fields[field] = value.trim() === "" ? null : value.trim();
-    // Check the summary length here too, so the user gets a clear
-    // message instead of a generic error from the backend.
+    // Check here too, for a clear message instead of a generic backend error.
     if (field === "summary" && fields.summary
             && fields.summary.length > MAX_SUMMARY_LENGTH) {
         showToolbarMessage(t("catalog.summary_limit"), true);
@@ -116,22 +80,14 @@ async function saveField(id, field, value) {
     }
 }
 
-/**
- * Build a text cell the user can type in while Edit Mode is on.
- * The change is saved when the user leaves the cell or presses Enter.
- * @param {Object} doc
- * @param {string} field - One of EDITABLE_TEXT_FIELDS.
- * @returns {HTMLTableCellElement}
- */
+/** A text cell for Edit Mode. Saves on Enter or when the user leaves the cell. */
 function makeEditableCell(doc, field) {
     const original = doc[field] || "";
-    // Dates stay on one line, like in the normal table.
     const className =
         field === "document_date" ? "editable nowrap" : "editable";
     const cell = makeCell(original, className);
     // data-field lets other code find this cell, e.g. the summary.
     cell.dataset.field = field;
-    // contentEditable lets the user type straight into the cell.
     cell.contentEditable = "true";
 
     cell.addEventListener("keydown", (event) => {
@@ -162,11 +118,7 @@ function makeEditableCell(doc, field) {
     return cell;
 }
 
-/**
- * Build the Status cell: a dropdown in Edit Mode, plain text otherwise.
- * @param {Object} doc
- * @returns {HTMLTableCellElement}
- */
+/** Build the Status cell: a dropdown in Edit Mode, plain text otherwise. */
 function makeStatusCell(doc) {
     const statusClass =
         doc.status === "Manual Review" ? "nowrap status-review" : "nowrap";
@@ -200,13 +152,7 @@ function makeStatusCell(doc) {
     return cell;
 }
 
-/**
- * Build the Filename cell: the name opens the file, and the eye and
- * folder icons preview it or show it in Finder (files.js). In Edit
- * Mode the name is plain text, because it is locked; the icons stay.
- * @param {Object} doc
- * @returns {HTMLTableCellElement}
- */
+/** Filename cell: the name opens the file. In Edit Mode it is plain text, but the icons stay. */
 function makeFilenameCell(doc) {
     const cell = makeCell("", "filename-cell");
     if (editMode) {
@@ -218,12 +164,7 @@ function makeFilenameCell(doc) {
     return cell;
 }
 
-/**
- * Mark one row as selected, so the space bar knows which file to
- * preview. The id is kept, because the table is redrawn every few
- * seconds.
- * @param {number|null} id
- */
+/** Select a row for the space bar. The id is kept because the table is redrawn. */
 function selectRow(id) {
     selectedDocumentId = id;
     document.querySelectorAll("#catalog-body tr").forEach((row) => {
@@ -233,10 +174,6 @@ function selectRow(id) {
     });
 }
 
-/**
- * Fill the table body with one row per document.
- * @param {Array<Object>} documents
- */
 function renderTable(documents) {
     const body = document.getElementById("catalog-body");
     forgetSummaries(body);
@@ -250,8 +187,7 @@ function renderTable(documents) {
         row.appendChild(makeCell(doc.original_filename));
         row.appendChild(makeFilenameCell(doc));
         const typeCell = makeCell(valueLabel(doc.media_type), "media-type");
-        // The stored value ("Press", "Audio"...) picks the icon in the
-        // CSS, so it works in English and Spanish.
+        // The stored value picks the icon in CSS, so it works in both languages.
         typeCell.dataset.type = doc.media_type;
         row.appendChild(typeCell);
 
@@ -280,10 +216,6 @@ function renderTable(documents) {
     selectRow(selectedDocumentId);
 }
 
-/**
- * Show a message instead of the table, or hide it when there is data.
- * @param {string} text - Empty string hides the message.
- */
 function showMessage(text) {
     const message = document.getElementById("catalog-message");
     message.textContent = text;
@@ -292,11 +224,7 @@ function showMessage(text) {
         .classList.toggle("hidden", Boolean(text));
 }
 
-/**
- * Rebuild the Source dropdown from the sources in the catalog, keeping
- * the current choice selected.
- * @param {Array<Object>} allDocuments
- */
+/** Rebuild the Source dropdown, keeping the current choice. */
 function updateSourceFilter(allDocuments) {
     const select = document.getElementById("filter-source");
     const chosen = select.value;
@@ -318,11 +246,7 @@ function updateSourceFilter(allDocuments) {
     select.value = sources.includes(chosen) ? chosen : "";
 }
 
-/**
- * Show or hide the warning about files left in the old Inbox folder.
- * It only informs: nothing is moved.
- * @param {Object} settings - Includes old_inbox_has_files (boolean).
- */
+/** Show or hide the old Inbox warning. It only informs: nothing is moved. */
 function renderOldInboxWarning(settings) {
     const warning = document.getElementById("catalog-warning");
     warning.textContent = settings.old_inbox_has_files
@@ -330,14 +254,9 @@ function renderOldInboxWarning(settings) {
     warning.classList.toggle("hidden", !settings.old_inbox_has_files);
 }
 
-/**
- * Fill the progress bar in the header: Classified vs. Manual Review.
- * @param {number} classified
- * @param {number} review
- */
+/** Fill the progress bar in the header: Classified vs. Manual Review. */
 function renderProgress(classified, review) {
     const total = classified + review;
-    // Avoid dividing by zero when the catalog is empty.
     const percent = total ? Math.round((classified / total) * 100) : 0;
     countUp(document.getElementById("progress-classified"), classified);
     countUp(document.getElementById("progress-review"), review);
@@ -349,16 +268,12 @@ function renderProgress(classified, review) {
         `${percent}%`);
 }
 
-/**
- * Load everything the catalog needs and draw it.
- */
 async function loadCatalog() {
     try {
         const settings = await getSettings();
         renderOldInboxWarning(settings);
 
-        // Only the active project is shown. With no project, or when its
-        // folder is missing, say so instead of showing an empty table.
+        // Only the active project is shown. With none, or a missing folder, say so.
         if (settings.project_status !== "ok") {
             document.getElementById("tab-review").textContent =
                 t("catalog.tab_review", { n: 0 });
@@ -370,8 +285,7 @@ async function loadCatalog() {
             return;
         }
 
-        // All documents (no filters) feed the Source list and the
-        // Manual Review counter, so they stay complete while filtering.
+        // All documents feed the Source list and counter, so they stay complete while filtering.
         const allDocuments = await getDocuments();
         updateSourceFilter(allDocuments);
         const reviewCount = allDocuments
@@ -399,11 +313,7 @@ async function loadCatalog() {
     }
 }
 
-/**
- * Mark the tab that matches a status. "Classified" has no tab of its
- * own, so then no tab is marked.
- * @param {string} status - "", "Manual Review" or "Classified".
- */
+/** Mark the tab for a status. "Classified" has no tab. */
 function selectStatus(status) {
     currentStatus = status;
     document.querySelectorAll(".tab").forEach((tab) => {
@@ -411,18 +321,13 @@ function selectStatus(status) {
     });
 }
 
-/**
- * Put filters from the chat into the catalog controls and reload.
- * The backend already checked every value.
- * @param {Object} filters - Any of media_type, source, status, text.
- */
+/** Put the chat's filters into the controls and reload. The backend already checked them. */
 async function applyCatalogFilters(filters) {
     document.getElementById("search-input").value = filters.text || "";
     document.getElementById("filter-media-type").value =
         filters.media_type || "";
     const source = document.getElementById("filter-source");
-    // The source list is filled after the first load, so add the
-    // option now if it is not there yet.
+    // The source list fills after the first load, so add the option if it is missing.
     if (filters.source && ![...source.options]
             .some((option) => option.value === filters.source)) {
         const option = document.createElement("option");
@@ -435,11 +340,7 @@ async function applyCatalogFilters(filters) {
     await loadCatalog();
 }
 
-/**
- * Show one document in the table: clear the filters, scroll to its
- * row, and highlight it for two seconds.
- * @param {number} id
- */
+/** Clear the filters, scroll to a document's row, and highlight it for two seconds. */
 async function highlightDocument(id) {
     await applyCatalogFilters({});
     const row = document.querySelector(`#catalog-body tr[data-id="${id}"]`);
@@ -451,7 +352,6 @@ async function highlightDocument(id) {
     setTimeout(() => row.classList.remove("row-highlight"), 2000);
 }
 
-// Tabs: switch between All Files and Manual Review.
 document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => {
         currentStatus = tab.dataset.status;
@@ -462,11 +362,9 @@ document.querySelectorAll(".tab").forEach((tab) => {
     });
 });
 
-// Search: wait until the user stops typing for 300 ms before searching,
-// so the backend is not called on every key press.
+// Search 300 ms after the last key press, not on every key.
 let searchTimer = null;
-// The search box is in the top bar, so typing on another screen opens
-// Catalog first.
+// The search is in the top bar, so typing elsewhere opens Catalog first.
 document.getElementById("search-input").addEventListener("input", () => {
     if (document.getElementById("view-catalog").classList
             .contains("hidden")) {
@@ -481,9 +379,7 @@ document.getElementById("filter-media-type")
 document.getElementById("filter-source")
     .addEventListener("change", loadCatalog);
 
-// Edit Mode: redraw the table with editable cells, or back to plain text.
-// The bar above the table stays while Edit Mode is on, instead of a
-// toast that goes away after 4 seconds.
+// Edit Mode: redraw the table; the bar above it stays while Edit Mode is on.
 document.getElementById("edit-mode").addEventListener("change", (event) => {
     editMode = event.target.checked;
     document.getElementById("edit-banner").classList.toggle("hidden",
@@ -506,24 +402,16 @@ document.getElementById("download-button")
         }
     });
 
-// The first loadCatalog() call is made by startApp() in app.js, after
-// the saved language is known.
+// startApp() in app.js makes the first loadCatalog() call, after the language is known.
 
-// Refresh on a timer, except in Edit Mode, where a refresh would redraw
-// the table and erase what the user is typing.
-// Nothing is asked while logged out.
+// No refresh in Edit Mode (it would erase typing) or while logged out.
 setInterval(() => {
     if (!editMode && sessionToken) {
         loadCatalog();
     }
 }, REFRESH_SECONDS * 1000);
 
-/**
- * Is the user typing or on a control that uses the space bar itself?
- * Then the space bar must not open a preview.
- * @param {Element} target
- * @returns {boolean}
- */
+/** Does this element use the space bar itself? Then no preview. */
 function spaceBelongsToControl(target) {
     const tags = ["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A"];
     return tags.includes(target.tagName) || target.isContentEditable;
@@ -537,7 +425,7 @@ document.addEventListener("keydown", (event) => {
             || spaceBelongsToControl(event.target)) {
         return;
     }
-    // Without this the space bar would also scroll the page down.
+    // Otherwise the space bar also scrolls the page.
     event.preventDefault();
     runFileAction(selectedDocumentId, "preview");
 });

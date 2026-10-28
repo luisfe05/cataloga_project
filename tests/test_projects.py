@@ -1,9 +1,4 @@
-"""Tests for multi-project support.
-
-Covers the project list (backend/config/projects.py), the four
-project routes, and turning the old single database into the first
-project. Everything runs in temporary folders.
-"""
+"""Tests for multi-project support."""
 
 import os
 import sqlite3
@@ -68,8 +63,7 @@ def test_get_projects(flask_client, app):
 # --- POST /projects ---
 
 def test_create_project(flask_client, app, tmp_path):
-    """A new project gets its catalog, folders, and template, and
-    becomes the active one."""
+    """A new project gets its catalog, folders, and becomes active."""
     folder = tmp_path / "Second"
     folder.mkdir()
     response = flask_client.post("/projects", json={
@@ -90,8 +84,7 @@ def test_create_project(flask_client, app, tmp_path):
 
 def test_create_project_starts_with_ollama_cloud(flask_client, app,
                                                  tmp_path):
-    """A new project always starts with Ollama Cloud, even when the
-    active project uses another provider."""
+    """A new project always starts with Ollama Cloud."""
     repo = CatalogRepository(
         projects.catalog_path(app.config["PROJECT_FOLDER"]))
     repo.set_active_provider("groq", "llama-3.1-8b-instant")
@@ -167,8 +160,7 @@ def test_create_project_twice(flask_client, app):
 
 
 def test_create_project_warns_about_user_files(flask_client, tmp_path):
-    """A folder with the user's files needs confirmation first, and the
-    files are never moved."""
+    """A folder with user files needs confirmation; files never move."""
     folder = tmp_path / "PEDRO_NAVAJA"
     folder.mkdir()
     (folder / "poster.png").write_text("x")
@@ -198,8 +190,7 @@ def test_create_project_in_a_new_folder_never_renames_its_inbox(
 
 
 def test_open_a_folder_that_already_has_a_catalog(flask_client, tmp_path):
-    """A folder with .cataloga/catalog.db is opened with its data and
-    its own name."""
+    """A folder with a catalog opens with its data and name."""
     folder = tmp_path / "From another Mac"
     other_list = str(tmp_path / "other_projects.json")
     repo = make_project(other_list, folder, name="Old Research")
@@ -235,11 +226,7 @@ def test_switch_needs_a_folder(flask_client):
 # --- DELETE /projects ---
 
 def set_last_opened(projects_path, times):
-    """Write a last_opened time for each folder in the project list.
-
-    Projects made in the same second get the same time, so tests set
-    clear times by hand.
-    """
+    """Write a last_opened time for each folder in the project list."""
     data = projects.load_projects(projects_path)
     for project in data["projects"]:
         project["last_opened"] = times[project["folder"]]
@@ -286,9 +273,7 @@ def test_remove_the_active_project(flask_client, app, projects_path,
 
 
 def test_remove_the_last_project(flask_client, app, projects_path):
-    """With no project left, the app is back to the New project state,
-    and the list file stays (so the old database is not converted
-    again)."""
+    """Removing the last project keeps the list file."""
     response = flask_client.delete(
         "/projects", json={"folder": app.config["PROJECT_FOLDER"]})
 
@@ -351,13 +336,7 @@ def test_remove_needs_a_folder(flask_client):
 # --- Turning the old single database into the first project ---
 
 def make_old_database(path, folder, with_language=True):
-    """Build a database like the one used before projects existed.
-
-    Args:
-        path (str): Where to write it.
-        folder (pathlib.Path): The project folder it was using.
-        with_language (bool): False for a database older than #19.
-    """
+    """Build a database like the one used before projects existed."""
     init_db(path)
     repo = CatalogRepository(path)
     repo.save_app_config("El Delfin", str(folder))

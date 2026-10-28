@@ -1,8 +1,4 @@
-"""Tests for the interface language files.
-
-en.js and es.js must have the same keys, and each text must use the
-same {variables} in both languages, or t() would leave a blank.
-"""
+"""Tests for the interface language files."""
 
 import os
 import re
@@ -15,17 +11,7 @@ KEY_PATTERN = re.compile(r'^\s*"([^"]+)":', re.MULTILINE)
 
 
 def read_entries(file_name):
-    """Return {key: text} from a language file.
-
-    The text of each key is everything up to the next key, which is
-    enough to compare the {variables} it uses.
-
-    Args:
-        file_name (str): 'en.js' or 'es.js'.
-
-    Returns:
-        dict: Key to raw text.
-    """
+    """Return {key: text} from a language file."""
     with open(os.path.join(LANG_FOLDER, file_name), encoding="utf-8") as f:
         content = f.read()
     matches = list(KEY_PATTERN.finditer(content))

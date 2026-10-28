@@ -1,9 +1,4 @@
-"""Integration tests for Flask routes using the test client.
-
-Uses the app and flask_client fixtures from conftest.py.
-Tests confirm correct HTTP status codes and response shapes,
-not business logic (that belongs in the unit test files).
-"""
+"""Integration tests for Flask routes using the test client."""
 
 import os
 import shutil
@@ -223,8 +218,7 @@ def test_put_settings_with_no_project(empty_client):
 
 
 def test_language_is_global(empty_client, tmp_path):
-    """The language can be saved before any project, and stays the same
-    after a project is created."""
+    """The language is saved before any project and kept after."""
     response = empty_client.put("/settings", json={"language": "es"})
     assert response.status_code == 200
     folder = tmp_path / "New"
@@ -334,8 +328,7 @@ def test_put_ai_provider_saves_key_in_keyring(flask_client, fake_keyring):
 
 
 def test_put_ai_provider_keyring_failure(flask_client, monkeypatch):
-    """If the keychain refuses the key (macOS error -25244), the answer
-    is a clear 400 error and the provider is not changed."""
+    """A keychain error gives a clear 400 and keeps the provider."""
     def refuse(service, name, key):
         raise KeyringError("Can't store password on keychain: (-25244)")
     monkeypatch.setattr(base.keyring, "set_password", refuse)
@@ -358,8 +351,7 @@ def test_get_settings_lists_providers_with_key(flask_client, fake_keyring):
 
 def test_get_settings_counts_ollama_development_key(flask_client,
                                                     monkeypatch):
-    """Running from the code, the .env key makes Ollama Cloud ready, and
-    the key is not sent."""
+    """The .env key makes Ollama Cloud ready and is never sent."""
     monkeypatch.setenv("OLLAMA_API_KEY", "dev-key")
     response = flask_client.get("/settings")
     assert response.get_json()["providers_with_key"] == ["ollama"]
