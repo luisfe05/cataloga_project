@@ -158,9 +158,27 @@ textarea {
     width: 160px;
 }
 
+/* The login and setup card: 400 px wide, with the button across the
+   whole card. */
 .auth-form {
     width: 100%;
     max-width: 400px;
+    padding: var(--spacing-32);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+}
+
+.auth-form h2 {
+    margin-bottom: var(--spacing-24);
+}
+
+.auth-form h2 + .hint {
+    margin-top: calc(-1 * var(--spacing-16));
+}
+
+.auth-form .primary-button {
+    align-self: stretch;
+    margin-top: var(--spacing-8);
 }
 
 /* Sidebar */
@@ -520,29 +538,74 @@ td.media-type[data-type="Video"]::before {
     font-weight: 600;
 }
 
-/* Settings and account forms: white cards */
+/* Forms: one column of labels and fields. */
 .settings-form {
     display: flex;
     flex-direction: column;
-    max-width: 640px;
-    padding: var(--spacing-32);
-    margin-bottom: var(--spacing-24);
-    border-radius: var(--radius-lg);
-    background: var(--color-white);
-    box-shadow: var(--shadow-sm);
 }
 
 .settings-form h2 {
     font-size: 18px;
+    line-height: 24px;
     font-weight: 600;
     color: var(--color-midnight);
 }
 
-/* Every section after the first one starts with a line. */
-.settings-form h2:not(:first-child) {
-    margin-top: var(--spacing-24);
+/* Settings: one row per section. The title and what the section does
+   take the left third; the fields sit in a white panel on the right.
+   A line separates the rows. */
+.settings-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--spacing-48);
+    max-width: 1040px;
+    padding: var(--spacing-32) 0;
+    border-top: 1px solid var(--color-line);
+}
+
+#settings-form .settings-section:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+
+.settings-form .settings-intro .hint {
+    margin-bottom: 0;
+}
+
+.settings-fields {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-24);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+}
+
+/* No extra space under the last field of a panel. */
+.settings-fields > :last-child {
+    margin-bottom: 0;
+}
+
+/* A smaller title inside a panel, like Change password. */
+.settings-fields h3 {
+    margin: var(--spacing-8) 0 var(--spacing-16);
     padding-top: var(--spacing-24);
     border-top: 1px solid var(--color-line);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-midnight);
+}
+
+/* Save and Cancel line up with the panels, under the right column. */
+.settings-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 0 var(--spacing-48);
+    max-width: 1040px;
+    padding-bottom: var(--spacing-32);
+}
+
+.settings-actions > * {
+    grid-column: 2;
 }
 
 .settings-form .hint {
@@ -835,14 +898,10 @@ code:empty {
     color: var(--color-violet);
 }
 
-/* Remove project: kept apart from Save so it is not clicked by mistake */
-.remove-project {
-    border-top: 1px solid var(--color-line);
-    margin-top: var(--spacing-32);
-    padding-top: var(--spacing-24);
-}
-
+/* Remove project: the last section, apart from Save so it is not
+   clicked by mistake. */
 .remove-project .secondary-button {
+    align-self: flex-start;
     color: var(--color-deep-space);
     margin-bottom: 0;
 }
@@ -882,6 +941,12 @@ code:empty {
 
 .confirm-dialog .form-message {
     margin-bottom: 0;
+}
+
+/* A thinner focus ring, so it does not look doubled on the dark
+   Remove button. */
+.confirm-dialog button:focus-visible {
+    outline-width: 1.5px;
 }
 
 /* Edit Mode switch in the catalog toolbar */
@@ -2025,6 +2090,16 @@ td.editable {
 
     .catalog-progress {
         width: 100%;
+    }
+
+    .settings-section,
+    .settings-actions {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--spacing-16);
+    }
+
+    .settings-actions > * {
+        grid-column: 1;
     }
 
     #view-catalog {

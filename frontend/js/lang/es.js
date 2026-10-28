@@ -208,6 +208,7 @@ const LANG_ES = {
     "auth.log_out": "Cerrar sesión",
     "auth.password_mismatch": "Las contraseñas no coinciden.",
     "account.title": "Cuenta",
+    "account.hint": "Una sola cuenta para toda la app y todos los proyectos.",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
     "account.new_password": "Contraseña nueva",

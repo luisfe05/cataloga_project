@@ -257,170 +257,214 @@
         </div>
         <div id="view-settings" class="view hidden">
             <h1 class="view-title" data-i18n="nav.settings">Settings</h1>
+            <!-- Each section is one row: its title and what it does on
+                 the left, its fields on the right. -->
             <form class="settings-form" id="settings-form">
 
                 <!-- Saved as soon as it changes, not with the Save button -->
-                <h2 data-i18n="lang.title">Language</h2>
-                <p class="hint" data-i18n="lang.hint">
-                    Changes the app's buttons, labels and messages. File names
-                    and summaries are not translated.
-                </p>
-                <select id="language-select" aria-label="Language">
-                    <option value="en" data-i18n="lang.en">English</option>
-                    <option value="es" data-i18n="lang.es">Español
-                        (Latinoamérica)</option>
-                </select>
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="lang.title">Language</h2>
+                        <p class="hint" data-i18n="lang.hint">
+                            Changes the app's buttons, labels and messages. File names
+                            and summaries are not translated.
+                        </p>
+                    </div>
+                    <div class="settings-fields">
+                        <select id="language-select" aria-label="Language">
+                            <option value="en" data-i18n="lang.en">English</option>
+                            <option value="es" data-i18n="lang.es">Español
+                                (Latinoamérica)</option>
+                        </select>
+                    </div>
+                </section>
 
-                <!-- "Project settings" or "New project", set by
-                     settings.js -->
-                <h2 id="project-form-title">Project settings</h2>
-                <p class="hint" data-i18n="settings.research_hint">
-                    Configure your research project and where files are stored.
-                    Cataloga creates a Drop Zone folder inside it: drop new
-                    files there to have them cataloged.
-                </p>
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <!-- "Project settings" or "New project", set by
+                             settings.js -->
+                        <h2 id="project-form-title">Project settings</h2>
+                        <p class="hint" data-i18n="settings.research_hint">
+                            Configure your research project and where files are stored.
+                            Cataloga creates a Drop Zone folder inside it: drop new
+                            files there to have them cataloged.
+                        </p>
+                    </div>
+                    <div class="settings-fields">
+                        <label for="research-name"
+                               data-i18n="settings.research_name">Research Name</label>
+                        <input type="text" id="research-name" required>
 
-                <label for="research-name"
-                       data-i18n="settings.research_name">Research Name</label>
-                <input type="text" id="research-name" required>
-
-                <label for="target-directory"
-                       data-i18n="settings.folder">Target Data Folder</label>
-                <div class="folder-row">
-                    <input type="text" id="target-directory" required>
-                    <button type="button" class="secondary-button"
-                            id="browse-button"
-                            data-i18n="settings.browse">Browse</button>
-                </div>
-                <!-- Shown for an existing project, whose folder is fixed -->
-                <p class="hint folder-locked hidden" id="folder-locked"
-                   data-i18n="project.folder_locked"></p>
+                        <label for="target-directory"
+                               data-i18n="settings.folder">Target Data Folder</label>
+                        <div class="folder-row">
+                            <input type="text" id="target-directory" required>
+                            <button type="button" class="secondary-button"
+                                    id="browse-button"
+                                    data-i18n="settings.browse">Browse</button>
+                        </div>
+                        <!-- Shown for an existing project, whose folder is fixed -->
+                        <p class="hint folder-locked hidden" id="folder-locked"
+                           data-i18n="project.folder_locked"></p>
+                    </div>
+                </section>
 
                 <!-- File names: one of 3 methods or a custom template.
                      Saved with the Save button. -->
-                <h2 data-i18n="naming.title">File names</h2>
-                <p class="hint" data-i18n="naming.hint">
-                    Choose how Cataloga names new files. Files already in the
-                    catalog keep their names.
-                </p>
-                <div class="naming-options" id="naming-options">
-                    <label class="naming-option">
-                        <input type="radio" name="naming-method" value="m1">
-                        <span data-i18n="naming.m1">Date and topic</span>
-                        <code data-i18n="naming.m1_example"></code>
-                    </label>
-                    <label class="naming-option">
-                        <input type="radio" name="naming-method" value="m2">
-                        <span data-i18n="naming.m2">Source, date and topic</span>
-                        <code data-i18n="naming.m2_example"></code>
-                    </label>
-                    <label class="naming-option">
-                        <input type="radio" name="naming-method" value="m3">
-                        <span data-i18n="naming.m3">Number and topic</span>
-                        <code data-i18n="naming.m3_example"></code>
-                    </label>
-                    <label class="naming-option">
-                        <input type="radio" name="naming-method"
-                               value="custom">
-                        <span data-i18n="naming.custom">Custom</span>
-                    </label>
-                </div>
-
-                <div class="naming-custom hidden" id="naming-custom">
-                    <label for="naming-template"
-                           data-i18n="naming.template">Template</label>
-                    <input type="text" id="naming-template"
-                           autocomplete="off" spellcheck="false">
-                    <p class="hint" data-i18n="naming.template_help"></p>
-                </div>
-
-                <p class="naming-preview">
-                    <span data-i18n="naming.preview">Preview</span>:
-                    <code id="naming-preview"></code>
-                </p>
-                <p class="form-message error" id="naming-error"></p>
-                <ul class="naming-rules">
-                    <li data-i18n="naming.media_rule"></li>
-                    <li data-i18n="naming.duplicate_rule"></li>
-                    <li data-i18n="naming.changed_note"></li>
-                </ul>
-
-                <h2 data-i18n="settings.ai_title">AI Provider</h2>
-                <!-- Filled by settings.js: which provider is in use -->
-                <p class="hint" id="ai-status"></p>
-
-                <!-- Closed by default. settings.js opens it when the
-                     chosen provider still needs an API key. -->
-                <details class="advanced-settings" id="ai-advanced">
-                    <summary data-i18n="settings.advanced">Advanced
-                        settings</summary>
-                    <div class="advanced-fields">
-                        <p class="hint" data-i18n="settings.ai_hint">Use
-                            another AI provider with your own API key.</p>
-
-                        <label for="ai-provider"
-                               data-i18n="settings.ai_provider">AI
-                            Provider</label>
-                        <select id="ai-provider"></select>
-
-                        <label for="api-key"
-                               data-i18n="settings.api_key">API Key</label>
-                        <input type="password" id="api-key"
-                               autocomplete="off">
-
-                        <label for="ai-model"
-                               data-i18n="settings.model">Model</label>
-                        <select id="ai-model"></select>
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="naming.title">File names</h2>
+                        <p class="hint" data-i18n="naming.hint">
+                            Choose how Cataloga names new files. Files already in the
+                            catalog keep their names.
+                        </p>
                     </div>
-                </details>
+                    <div class="settings-fields">
+                        <div class="naming-options" id="naming-options">
+                            <label class="naming-option">
+                                <input type="radio" name="naming-method" value="m1">
+                                <span data-i18n="naming.m1">Date and topic</span>
+                                <code data-i18n="naming.m1_example"></code>
+                            </label>
+                            <label class="naming-option">
+                                <input type="radio" name="naming-method" value="m2">
+                                <span data-i18n="naming.m2">Source, date and topic</span>
+                                <code data-i18n="naming.m2_example"></code>
+                            </label>
+                            <label class="naming-option">
+                                <input type="radio" name="naming-method" value="m3">
+                                <span data-i18n="naming.m3">Number and topic</span>
+                                <code data-i18n="naming.m3_example"></code>
+                            </label>
+                            <label class="naming-option">
+                                <input type="radio" name="naming-method"
+                                       value="custom">
+                                <span data-i18n="naming.custom">Custom</span>
+                            </label>
+                        </div>
 
-                <div class="form-buttons">
-                    <button type="submit" class="primary-button"
-                            id="save-button">Save</button>
-                    <!-- Only while creating a project -->
-                    <button type="button" class="secondary-button hidden"
-                            id="cancel-new-project"
-                            data-i18n="project.cancel">Cancel</button>
-                </div>
-                <p class="form-message" id="settings-message"></p>
+                        <div class="naming-custom hidden" id="naming-custom">
+                            <label for="naming-template"
+                                   data-i18n="naming.template">Template</label>
+                            <input type="text" id="naming-template"
+                                   autocomplete="off" spellcheck="false">
+                            <p class="hint" data-i18n="naming.template_help"></p>
+                        </div>
 
-                <!-- Only for the active project. Opens the dialog below. -->
-                <div class="remove-project hidden" id="remove-project-section">
-                    <button type="button" class="secondary-button"
-                            id="remove-project-button"
-                            data-i18n="project.remove">Remove project</button>
+                        <p class="naming-preview">
+                            <span data-i18n="naming.preview">Preview</span>:
+                            <code id="naming-preview"></code>
+                        </p>
+                        <p class="form-message error" id="naming-error"></p>
+                        <ul class="naming-rules">
+                            <li data-i18n="naming.media_rule"></li>
+                            <li data-i18n="naming.duplicate_rule"></li>
+                            <li data-i18n="naming.changed_note"></li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="settings.ai_title">AI Provider</h2>
+                        <!-- Filled by settings.js: which provider is in use -->
+                        <p class="hint" id="ai-status"></p>
+                    </div>
+                    <div class="settings-fields">
+                        <!-- Closed by default. settings.js opens it when the
+                             chosen provider still needs an API key. -->
+                        <details class="advanced-settings" id="ai-advanced">
+                            <summary data-i18n="settings.advanced">Advanced
+                                settings</summary>
+                            <div class="advanced-fields">
+                                <p class="hint" data-i18n="settings.ai_hint">Use
+                                    another AI provider with your own API key.</p>
+
+                                <label for="ai-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="ai-provider"></select>
+
+                                <label for="api-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="api-key"
+                                       autocomplete="off">
+
+                                <label for="ai-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="ai-model"></select>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+
+                <!-- Save sits under the fields column, for every section
+                     above except Language -->
+                <div class="settings-actions">
+                    <div class="form-buttons">
+                        <button type="submit" class="primary-button"
+                                id="save-button">Save</button>
+                        <!-- Only while creating a project -->
+                        <button type="button" class="secondary-button hidden"
+                                id="cancel-new-project"
+                                data-i18n="project.cancel">Cancel</button>
+                    </div>
+                    <p class="form-message" id="settings-message"></p>
                 </div>
             </form>
 
             <!-- Account: one for the whole app, not per project. Its
                  own form, so the project's Save button never sends it. -->
             <form class="settings-form" id="password-form">
-                <h2 data-i18n="account.title">Account</h2>
-                <label for="account-username"
-                       data-i18n="auth.username">Username</label>
-                <input type="text" id="account-username" readonly>
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="account.title">Account</h2>
+                        <p class="hint" data-i18n="account.hint">One account for
+                            the whole app, for every project.</p>
+                    </div>
+                    <div class="settings-fields">
+                        <label for="account-username"
+                               data-i18n="auth.username">Username</label>
+                        <input type="text" id="account-username" readonly>
 
-                <h2 data-i18n="account.change_password">Change password</h2>
-                <label for="current-password"
-                       data-i18n="account.current_password">Current
-                    password</label>
-                <input type="password" id="current-password"
-                       autocomplete="current-password">
-                <label for="new-password"
-                       data-i18n="account.new_password">New password</label>
-                <input type="password" id="new-password"
-                       autocomplete="new-password">
-                <label for="confirm-new-password"
-                       data-i18n="auth.confirm_password">Confirm
-                    password</label>
-                <input type="password" id="confirm-new-password"
-                       autocomplete="new-password">
-                <button type="submit" class="primary-button"
-                        id="change-password-button"
-                        data-i18n="account.change_password">Change
-                    password</button>
-                <p class="form-message" id="password-message"></p>
+                        <h3 data-i18n="account.change_password">Change password</h3>
+                        <label for="current-password"
+                               data-i18n="account.current_password">Current
+                            password</label>
+                        <input type="password" id="current-password"
+                               autocomplete="current-password">
+                        <label for="new-password"
+                               data-i18n="account.new_password">New password</label>
+                        <input type="password" id="new-password"
+                               autocomplete="new-password">
+                        <label for="confirm-new-password"
+                               data-i18n="auth.confirm_password">Confirm
+                            password</label>
+                        <input type="password" id="confirm-new-password"
+                               autocomplete="new-password">
+                        <button type="submit" class="primary-button"
+                                id="change-password-button"
+                                data-i18n="account.change_password">Change
+                            password</button>
+                        <p class="form-message" id="password-message"></p>
+                    </div>
+                </section>
             </form>
+
+            <!-- Only for the active project, and always last. The text
+                 says what Remove does before the dialog asks again. -->
+            <section class="settings-section remove-project hidden"
+                     id="remove-project-section">
+                <div class="settings-intro">
+                    <h2 data-i18n="project.remove">Remove project</h2>
+                    <p class="hint" data-i18n="project.remove_text"></p>
+                </div>
+                <div class="settings-fields">
+                    <button type="button" class="secondary-button"
+                            id="remove-project-button"
+                            data-i18n="project.remove">Remove project</button>
+                </div>
+            </section>
         </div>
 
         <!-- Short messages from the catalog (saved, exported, errors).
@@ -495,13 +539,16 @@
     <dialog class="confirm-dialog" id="remove-project-dialog">
         <h2 id="remove-project-title"></h2>
         <p data-i18n="project.remove_text"></p>
+        <!-- Cancel has the focus when the dialog opens, so Enter does
+             not remove the project by mistake. Remove is last, on the
+             right, like in macOS dialogs. -->
         <div class="form-buttons">
+            <button type="button" class="secondary-button"
+                    id="remove-project-cancel" autofocus
+                    data-i18n="project.cancel">Cancel</button>
             <button type="button" class="primary-button danger-button"
                     id="remove-project-confirm"
                     data-i18n="project.remove_confirm">Remove</button>
-            <button type="button" class="secondary-button"
-                    id="remove-project-cancel"
-                    data-i18n="project.cancel">Cancel</button>
         </div>
         <p class="form-message error" id="remove-project-error"></p>
     </dialog>
