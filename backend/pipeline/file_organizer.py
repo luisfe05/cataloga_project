@@ -17,6 +17,7 @@ database: CatalogRepository owns all database reads and writes.
 
 import os
 import shutil
+import subprocess
 
 # The five media-type folders.
 MEDIA_TYPES = ("Press", "Audio", "Video", "Photos", "Documents")
@@ -236,3 +237,44 @@ class FileOrganizer:
                 folder, self.unique_filename(folder, new_filename))
         os.rename(file_path, new_path)
         return new_path
+
+    def run_command(self, arguments):
+        """Start a macOS command for a file and do not wait for it.
+
+        The arguments go as a list, never through a shell, so a file
+        name with spaces or symbols is passed as it is and cannot run
+        anything else. The output is thrown away so it never shows up
+        in the app's log.
+
+        Args:
+            arguments (list[str]): The command and its arguments.
+        """
+        subprocess.Popen(arguments, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL)
+
+    def open_file(self, file_path):
+        """Open a file with its default app, like a double click.
+
+        Args:
+            file_path (str): A file already checked to be inside the
+                project.
+        """
+        self.run_command(["open", file_path])
+
+    def reveal_file(self, file_path):
+        """Show a file in Finder, selected.
+
+        Args:
+            file_path (str): A file already checked to be inside the
+                project.
+        """
+        self.run_command(["open", "-R", file_path])
+
+    def preview_file(self, file_path):
+        """Show a Quick Look preview, like the space bar in Finder.
+
+        Args:
+            file_path (str): A file already checked to be inside the
+                project.
+        """
+        self.run_command(["qlmanage", "-p", file_path])
