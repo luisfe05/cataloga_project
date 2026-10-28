@@ -10,6 +10,7 @@
 set -e
 
 # --windowed        make a Mac .app with no Terminal window
+# --icon            the app icon shown in Finder and the Dock
 # --add-data        include the frontend folder (HTML, CSS, JS)
 # --hidden-import   keyring picks its macOS backend at runtime, so
 #                   PyInstaller can't see that it is needed
@@ -19,6 +20,7 @@ set -e
 pyinstaller \
     --name Cataloga \
     --windowed \
+    --icon "$(pwd)/assets/Cataloga.icns" \
     --add-data "$(pwd)/frontend:frontend" \
     --hidden-import keyring.backends.macOS \
     --specpath build \
