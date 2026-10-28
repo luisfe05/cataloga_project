@@ -64,6 +64,47 @@ const LANG_ES = {
     "dash.load_failed": "No se pudo cargar el panel: {message}",
     "dash.of_total": "de {n} documentos",
     "dash.no_documents": "Todavía no hay documentos",
+
+    // Chat
+    "chat.open": "Pregunta a Cataloga",
+    "chat.title": "Asistente de Cataloga",
+    "chat.close": "Cerrar",
+    "chat.empty_title": "¿En qué te ayudo con este proyecto?",
+    "chat.empty_hint": "Puedo buscar archivos, filtrar el catálogo, resumir "
+        + "el proyecto y proponer nombres nuevos. Nunca renombro un archivo "
+        + "sin tu confirmación.",
+    "chat.example_summary": "Resume este proyecto",
+    "chat.example_press": "Busca recortes de prensa",
+    "chat.example_review": "Muestra lo que está en revisión manual",
+    "chat.example_rename": "Renombra un archivo",
+    "chat.example_rename_prompt": "Renombra el archivo ",
+    "chat.placeholder": "Pregunta sobre tus archivos…",
+    "chat.send": "Enviar",
+    "chat.thinking": "Pensando…",
+    "chat.sources": "Fuentes",
+    "chat.filters_applied": "Filtros aplicados en el catálogo",
+    "chat.open_catalog": "Abrir catálogo",
+    "chat.rename_title": "Nombre nuevo propuesto",
+    "chat.confirm": "Confirmar",
+    "chat.cancel": "Cancelar",
+    "chat.renamed": "Renombrado a {name}",
+    "chat.rename_cancelled": "Cancelado. No se cambió nada.",
+    "chat.summary_total": "Documentos",
+    "chat.summary_dates": "Fechas",
+    "chat.summary_sources": "Fuentes principales",
+    "chat.notice_invalid_reply": "Perdón, no entendí eso. Intenta preguntarlo "
+        + "de otra forma.",
+    "chat.notice_ai_unavailable": "El proveedor de IA no respondió. Revisa "
+        + "Configuración > Proveedor de IA e inténtalo de nuevo.",
+    "chat.notice_no_documents": "No encontré documentos que coincidan. Prueba "
+        + "con otras palabras.",
+    "chat.notice_no_filters": "No pude convertir eso en filtros del catálogo. "
+        + "Prueba con un tipo, una fuente o un estado.",
+    "chat.notice_rename_not_found": "No encontré ese archivo en este "
+        + "proyecto. Prueba con su nombre o su fecha.",
+    "chat.notice_rename_invalid": "Ese nombre no tiene caracteres válidos. "
+        + "Usa letras y números.",
+    "chat.notice_rename_same": "El archivo ya tiene ese nombre.",
     "time.just_now": "justo ahora",
     "time.minutes": "hace {n} min",
     "time.hour": "hace 1 hora",
@@ -200,6 +241,7 @@ const LANG_ES = {
     "value.Classified": "Clasificado",
     "value.Manual Review": "Revisión manual",
     "value.Edited": "Editado",
+    "value.Renamed": "Renombrado",
 
     // Errors, one per backend error code
     "error.not_found":
@@ -238,4 +280,7 @@ const LANG_ES = {
     "error.account_exists": "La cuenta ya existe. Inicia sesión.",
     "error.no_account": "Primero crea la cuenta.",
     "error.generic": "Algo salió mal. Inténtalo de nuevo.",
+    "error.invalid_name": "El nombre nuevo no tiene caracteres válidos.",
+    "error.file_missing": "El archivo no está o está fuera de la carpeta del "
+        + "proyecto.",
 };

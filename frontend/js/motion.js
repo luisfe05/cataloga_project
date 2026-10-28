@@ -35,7 +35,11 @@ function countUp(element, value) {
     }
     const startTime = performance.now();
     const step = (now) => {
-        const progress = Math.min((now - startTime) / COUNT_UP_MS, 1);
+        // The time of a frame can be a little before startTime, so
+        // keep progress between 0 and 1. A negative one would make the
+        // number jump below zero.
+        const progress = Math.max(0,
+            Math.min((now - startTime) / COUNT_UP_MS, 1));
         // Ease out: fast at first, slow at the end.
         const eased = 1 - Math.pow(1 - progress, 3);
         element.textContent = Math.round(start + (value - start) * eased);
