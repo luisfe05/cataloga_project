@@ -33,10 +33,12 @@ const NAMING_METHODS = {
     m1: "{date}_{topic}",
     m2: "{source}_{date}_{topic}",
     m3: "{number}_{topic}",
+    m4: "{topic}_{source}_{date}_{topic_number}",
 };
 
 // Parts a template can use, and characters a file name cannot have.
-const NAMING_TOKENS = ["date", "source", "topic", "number", "original"];
+const NAMING_TOKENS = ["date", "source", "topic", "number", "original",
+    "topic_number"];
 const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
 
 // Example values for the live preview.
@@ -46,6 +48,7 @@ const PREVIEW_PARTS = {
     topic: "oceanman-malta",
     number: "0001",
     original: "scan-0042",
+    topic_number: "001",
 };
 
 // True after the folder warning, so the next click confirms it.
@@ -93,6 +96,9 @@ function setProjectMode(mode) {
         .classList.toggle("hidden", !(isNew && hasProjects));
     document.getElementById("remove-project-section")
         .classList.toggle("hidden", isNew);
+    // Suggest needs the project's AI provider, so categories come after creating it.
+    document.getElementById("categories-section")
+        .classList.toggle("hidden", isNew);
     updateBrowseButton();
     resetFolderWarning();
 }
@@ -103,7 +109,9 @@ function startNewProject() {
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
     document.getElementById("api-key").value = "";
-    showSavedTemplate(NAMING_METHODS.m1);
+    // New projects start with method 4.
+    showSavedTemplate(NAMING_METHODS.m4);
+    showCategories("", []);
     showProvider("ollama", "");
     showSettingsMessage("", "");
 }
@@ -265,6 +273,7 @@ async function loadSettings() {
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
+        showCategories(settings.industry, settings.categories);
 
         document.getElementById("api-key").value = "";
         providersWithKey = settings.providers_with_key;
@@ -330,6 +339,8 @@ async function saveSettings(event) {
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
+                industry: document.getElementById("industry").value,
+                categories: readCategories(),
             });
         }
         resetFolderWarning();

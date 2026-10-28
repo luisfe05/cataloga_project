@@ -55,6 +55,24 @@ const LANG_EN = {
     "catalog.backend_down": "the app's backend is not responding.",
     "catalog.export_saved": "Worksheet saved to {path}",
     "catalog.export_failed": "Could not save the worksheet.",
+    "catalog.filter_category_all": "Category: All",
+    "catalog.filter_subcategory_all": "Subcategory: All",
+    "catalog.more_columns": "More columns",
+    "catalog.col_category": "Category",
+    "catalog.col_subcategory": "Subcategory",
+    "catalog.col_keywords": "Keywords",
+    "catalog.col_counterparty": "Counterparty",
+    "catalog.col_confidentiality": "Confidentiality",
+    "catalog.col_owner": "Owner",
+    "catalog.col_effective_start": "Effective start",
+    "catalog.col_effective_end": "Effective end",
+    "catalog.not_in_list": "{value} (not in list)",
+    "catalog.note_duplicate": "Duplicate of {name}",
+    "catalog.note_no_category": "Category not in the project list",
+    "catalog.keywords_limit": "Use up to 5 keywords, separated by commas, "
+        + "with up to 40 characters each.",
+    "catalog.counterparty_limit": "Counterparty can have up to 100 characters.",
+    "catalog.date_format": "Write the date as YYYY-MM-DD, like 2026-07-15.",
 
     // Dashboard
     "dash.classified": "Documents Classified",
@@ -177,23 +195,44 @@ const LANG_EN = {
     "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
     "naming.m3": "Number and topic",
     "naming.m3_example": "0001_oceanman-malta.pdf",
+    "naming.m4": "Topic, source, date and number",
+    "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Custom",
     "naming.template": "Template",
     "naming.template_help":
-        "Use {date}, {source}, {topic}, {number} and {original}.",
+        "Use {date}, {source}, {topic}, {number}, {topic_number} and {original}.",
     "naming.preview": "Preview",
     "naming.media_rule": "Photos, audio and video use the file date and a "
         + "number, for example 2026-07-15_0001.jpg.",
     "naming.duplicate_rule":
         "If a name already exists, Cataloga adds -2, -3 and so on.",
     "naming.changed_note": "Only new files will use this method.",
-    "naming.err_empty": "Write a template, or choose one of the 3 methods.",
+    "naming.err_empty": "Write a template, or choose one of the 4 methods.",
     "naming.err_no_token": "Add at least one of {date}, {source}, {topic}, "
-        + "{number} or {original}.",
+        + "{number}, {topic_number} or {original}.",
     "naming.err_unknown": "{token} is not a valid part. Use {date}, "
-        + "{source}, {topic}, {number} or {original}.",
+        + "{source}, {topic}, {number}, {topic_number} or {original}.",
     "naming.err_chars":
         "File names cannot use these characters: / \\ : * ? \" < > |",
+
+    // Settings: categories (Digital Archiving Guideline)
+    "categories.title": "Categories",
+    "categories.hint": "Cataloga sorts each new document into one of these "
+        + "categories. Write your industry and click Suggest categories, "
+        + "then edit the list.",
+    "categories.industry": "Industry",
+    "categories.industry_placeholder": "For example: sports documentary",
+    "categories.suggest": "Suggest categories",
+    "categories.suggesting": "Asking the AI provider for categories...",
+    "categories.suggested": "The list was replaced. Click Save to keep it.",
+    "categories.need_industry": "Write the industry first.",
+    "categories.add": "Add category",
+    "categories.remove": "Remove category",
+    "categories.name_placeholder": "Category",
+    "categories.subs_placeholder": "Subcategories, separated by commas",
+    "categories.rules": "Up to 10 categories. A document that fits none goes "
+        + "to Manual Review. Documents keep their category if you change "
+        + "the list.",
 
     // Account and login
     "auth.setup_title": "Create your account",
@@ -253,6 +292,10 @@ const LANG_EN = {
     "value.Manual Review": "Manual Review",
     "value.Edited": "Edited",
     "value.Renamed": "Renamed",
+    "value.Public": "Public",
+    "value.Internal": "Internal",
+    "value.Confidential": "Confidential",
+    "value.Restricted": "Restricted",
 
     // Errors, one per backend error code
     "error.not_found":
@@ -293,4 +336,9 @@ const LANG_EN = {
     "error.generic": "Something went wrong. Try again.",
     "error.invalid_name": "The new name has no valid characters.",
     "error.file_missing": "The file is missing or outside the project folder.",
+    "error.invalid_categories": "The category list is not valid. Check the "
+        + "names and keep 10 categories or fewer.",
+    "error.suggest_failed":
+        "The AI provider did not suggest categories. Try again.",
+    "error.no_provider": "Choose an AI provider in Settings first.",
 };
