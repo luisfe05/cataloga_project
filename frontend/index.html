@@ -12,7 +12,8 @@
          Until the user logs in, the nav bar and the views stay hidden.
          auth.js decides which form to show. -->
     <section class="auth-screen hidden" id="auth-screen">
-        <h1 class="auth-title">Cataloga</h1>
+        <img class="auth-logo" src="assets/logo-vertical-paper.svg"
+             alt="Cataloga">
 
         <form class="settings-form auth-form hidden" id="setup-form">
             <h2 data-i18n="auth.setup_title">Create your account</h2>
@@ -48,49 +49,80 @@
         </form>
     </section>
 
-    <!-- Navigation bar (hidden until the user logs in) -->
+    <!-- Sidebar navigation (hidden until the user logs in).
+         The text sits in its own span with data-i18n, so translating
+         it does not remove the icon next to it. -->
     <nav id="nav-bar" class="hidden">
-        <span class="app-title">Cataloga</span>
+        <img class="app-logo" src="assets/logo-horizontal-paper.svg"
+             alt="Cataloga">
+
+        <!-- Project header: switch projects or start a new one -->
+        <section class="project-header">
+            <div class="project-badge" id="project-badge"></div>
+            <div class="project-picker">
+                <label class="project-label" for="project-select"
+                       data-i18n="header.project">Project</label>
+                <select class="project-select" id="project-select">
+                </select>
+            </div>
+        </section>
+
         <div class="nav-links">
-            <a href="#" class="nav-link active" data-view="catalog"
-               data-i18n="nav.catalog">Catalog</a>
-            <a href="#" class="nav-link" data-view="dashboard"
-               data-i18n="nav.dashboard">Dashboard</a>
-            <a href="#" class="nav-link" data-view="settings"
-               data-i18n="nav.settings">Settings</a>
-            <button type="button" class="logout-button" id="logout-button"
-                    data-i18n="auth.log_out">Log out</button>
+            <a href="#" class="nav-link active" data-view="catalog">
+                <span class="icon icon-catalog"></span>
+                <span data-i18n="nav.catalog">Catalog</span>
+            </a>
+            <a href="#" class="nav-link" data-view="dashboard">
+                <span class="icon icon-dashboard"></span>
+                <span data-i18n="nav.dashboard">Dashboard</span>
+            </a>
+            <a href="#" class="nav-link" data-view="settings">
+                <span class="icon icon-settings"></span>
+                <span data-i18n="nav.settings">Settings</span>
+            </a>
         </div>
+        <button type="button" class="logout-button" id="logout-button">
+            <span class="icon icon-logout"></span>
+            <span data-i18n="auth.log_out">Log out</span>
+        </button>
     </nav>
 
     <!-- View containers: only one is visible at a time. Hidden until
          the user logs in. -->
     <main id="app-main" class="hidden">
         <div id="view-catalog" class="view">
+            <h1 class="view-title" data-i18n="nav.catalog">Catalog</h1>
 
-            <!-- Project header: switch projects or start a new one -->
-            <section class="project-header">
-                <div class="project-badge" id="project-badge"></div>
-                <div>
-                    <label class="project-label" for="project-select"
-                           data-i18n="header.project">Project</label>
-                    <select class="project-select" id="project-select">
-                    </select>
+            <!-- Search, Download and Edit Mode -->
+            <div class="toolbar">
+                <div class="search-box">
+                    <span class="icon icon-search"></span>
+                    <input type="search" id="search-input"
+                           placeholder="Search"
+                           data-i18n-placeholder="catalog.search">
                 </div>
-            </section>
-
-            <!-- Tabs: all files or only the ones that need manual review -->
-            <div class="tabs">
-                <button class="tab active" data-status=""
-                        data-i18n="catalog.tab_all">All Files</button>
-                <button class="tab" data-status="Manual Review"
-                        id="tab-review">Manual Review (0)</button>
+                <button type="button" class="pill-button"
+                        id="download-button">
+                    <span class="icon icon-download"></span>
+                    <span data-i18n="catalog.download">Download
+                        Worksheet</span>
+                </button>
+                <label class="switch-label">
+                    <span data-i18n="catalog.edit_mode">Edit Mode</span>
+                    <input type="checkbox" id="edit-mode">
+                    <span class="switch"></span>
+                </label>
             </div>
 
-            <!-- Search and filters -->
-            <div class="toolbar">
-                <input type="search" id="search-input" placeholder="Search"
-                       data-i18n-placeholder="catalog.search">
+            <!-- Tabs (all files or only the ones that need manual
+                 review) and filters -->
+            <div class="filter-row">
+                <div class="tabs">
+                    <button class="tab active" data-status=""
+                            data-i18n="catalog.tab_all">All Files</button>
+                    <button class="tab" data-status="Manual Review"
+                            id="tab-review">Manual Review (0)</button>
+                </div>
                 <select id="filter-media-type">
                     <option value=""
                             data-i18n="catalog.filter_type_all">Media Type: All</option>
@@ -104,16 +136,7 @@
                 <select id="filter-source">
                     <option value="">Source: All</option>
                 </select>
-                <button type="button" class="pill-button"
-                        id="download-button"
-                        data-i18n="catalog.download">Download Worksheet</button>
-                <label class="switch-label">
-                    <span data-i18n="catalog.edit_mode">Edit Mode</span>
-                    <input type="checkbox" id="edit-mode">
-                    <span class="switch"></span>
-                </label>
             </div>
-            <p class="toolbar-message" id="toolbar-message"></p>
 
             <!-- Warning shown when the old Inbox folder still has files -->
             <p class="warning-message hidden" id="catalog-warning"></p>
@@ -140,6 +163,7 @@
 
         <div id="view-dashboard" class="view hidden">
             <div class="dashboard">
+                <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
 
                 <!-- Three summary numbers -->
                 <div class="stat-cards">
@@ -157,15 +181,23 @@
                     </div>
                 </div>
 
-                <h2 data-i18n="dash.breakdown">Media Type Breakdown</h2>
-                <div class="breakdown" id="media-breakdown"></div>
-
-                <h2 data-i18n="dash.activity">Recent Activity</h2>
-                <ul class="activity-list" id="activity-list"></ul>
-                <p class="empty-message hidden" id="dashboard-message"></p>
+                <!-- Two panels side by side -->
+                <div class="dash-columns">
+                    <section class="panel">
+                        <h2 data-i18n="dash.breakdown">Media Type Breakdown</h2>
+                        <div class="breakdown" id="media-breakdown"></div>
+                    </section>
+                    <section class="panel">
+                        <h2 data-i18n="dash.activity">Recent Activity</h2>
+                        <ul class="activity-list" id="activity-list"></ul>
+                        <p class="empty-message hidden"
+                           id="dashboard-message"></p>
+                    </section>
+                </div>
             </div>
         </div>
         <div id="view-settings" class="view hidden">
+            <h1 class="view-title" data-i18n="nav.settings">Settings</h1>
             <form class="settings-form" id="settings-form">
 
                 <!-- Saved as soon as it changes, not with the Save button -->
@@ -331,6 +363,11 @@
                 <p class="form-message" id="password-message"></p>
             </form>
         </div>
+
+        <!-- Short messages from the catalog (saved, exported, errors).
+             Outside the views so it shows as a toast on any screen;
+             catalog.js clears it after a few seconds. -->
+        <p class="toolbar-message" id="toolbar-message"></p>
     </main>
 
     <!-- Confirmation for Remove project. A <dialog> shown with

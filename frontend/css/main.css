@@ -1,4 +1,61 @@
-/* main.css - base styles for Cataloga, following the wireframes */
+/* main.css - styles for Cataloga, following the brand rules
+   (Design/BRAND.md): night sky colors, Violet as the only accent. */
+
+/* Fonts are bundled in frontend/fonts so the app works offline. */
+@font-face {
+    font-family: "Geo";
+    src: url("../fonts/Geo-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+}
+
+/* Variable font: one file covers every weight from 400 to 700. */
+@font-face {
+    font-family: "Archivo Narrow";
+    src: url("../fonts/ArchivoNarrow-VariableFont_wght.ttf")
+        format("truetype");
+    font-weight: 400 700;
+    font-style: normal;
+}
+
+/* Brand values. Every color, space and radius below comes from here. */
+:root {
+    --color-deep-space: #08051c;
+    --color-midnight: #221854;
+    --color-nebula: #342476;
+    --color-dusk: #46417b;
+    --color-violet: #493bb2;
+    --color-paper: #eef5fa;
+    --color-white: #ffffff;
+    --color-line: rgba(70, 65, 123, 0.16);
+
+    --spacing-4: 4px;
+    --spacing-8: 8px;
+    --spacing-12: 12px;
+    --spacing-16: 16px;
+    --spacing-24: 24px;
+    --spacing-32: 32px;
+    --spacing-48: 48px;
+    --spacing-64: 64px;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-full: 999px;
+
+    /* Shadows use Deep Space, not black, to stay in the palette. */
+    --shadow-sm: 0 1px 2px rgba(8, 5, 28, 0.06);
+    --shadow-md: 0 8px 24px rgba(8, 5, 28, 0.08);
+    --shadow-lg: 0 24px 64px rgba(8, 5, 28, 0.24);
+
+    /* "Archivo" is used once its files are in frontend/fonts.
+       Until then the browser falls back to Archivo Narrow. */
+    --font-body: "Archivo", "Archivo Narrow", sans-serif;
+    --font-label: "Archivo Narrow", sans-serif;
+    --font-title: "Geo", sans-serif;
+
+    --sidebar-width: 240px;
+}
 
 * {
     box-sizing: border-box;
@@ -7,71 +64,18 @@
 }
 
 body {
-    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
-    background: #ffffff;
-    color: #1a1a1a;
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 22px;
+    background: var(--color-paper);
+    color: var(--color-deep-space);
 }
 
-/* Navigation bar */
-#nav-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #5a5f6b;
-    color: #ffffff;
-    padding: 0 32px;
-    height: 72px;
-}
-
-.app-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-}
-
-.nav-link {
-    color: #d0d3d8;
-    text-decoration: none;
-    font-size: 0.95rem;
-}
-
-.nav-link.active {
-    color: #ffffff;
-    font-weight: 600;
-}
-
-/* Log out, at the end of the nav bar */
-.logout-button {
-    background: none;
-    border: 1px solid #d0d3d8;
-    border-radius: 6px;
-    color: #ffffff;
-    cursor: pointer;
-    font-size: 0.85rem;
-    padding: 6px 12px;
-}
-
-/* Account screen: create the account or log in */
-.auth-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 64px;
-}
-
-.auth-title {
-    color: #5a5f6b;
-    font-size: 1.8rem;
-    font-weight: 600;
-}
-
-.auth-form {
-    width: 100%;
+button,
+input,
+select {
+    font-family: inherit;
+    color: inherit;
 }
 
 /* View switching */
@@ -79,142 +83,408 @@ body {
     display: none !important;
 }
 
-/* Project header */
+/* Keyboard focus: a Violet ring on everything that can be focused. */
+:focus-visible {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 2px;
+}
+
+/* Icons: Lucide SVG files used as a mask, so they take the text color.
+   pywebview uses WebKit, which still needs the -webkit- version. */
+.icon {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    background-color: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+}
+
+.icon-catalog {
+    mask-image: url("../assets/icons/folder-open.svg");
+    -webkit-mask-image: url("../assets/icons/folder-open.svg");
+}
+
+.icon-dashboard {
+    mask-image: url("../assets/icons/layout-dashboard.svg");
+    -webkit-mask-image: url("../assets/icons/layout-dashboard.svg");
+}
+
+.icon-settings {
+    mask-image: url("../assets/icons/settings.svg");
+    -webkit-mask-image: url("../assets/icons/settings.svg");
+}
+
+.icon-logout {
+    mask-image: url("../assets/icons/log-out.svg");
+    -webkit-mask-image: url("../assets/icons/log-out.svg");
+}
+
+.icon-search {
+    mask-image: url("../assets/icons/search.svg");
+    -webkit-mask-image: url("../assets/icons/search.svg");
+}
+
+.icon-download {
+    mask-image: url("../assets/icons/download.svg");
+    -webkit-mask-image: url("../assets/icons/download.svg");
+}
+
+/* Account screen: create the account or log in */
+.auth-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-32);
+    min-height: 100vh;
+    padding: var(--spacing-64) var(--spacing-16);
+    background: var(--color-deep-space);
+}
+
+.auth-logo {
+    width: 160px;
+}
+
+.auth-form {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Sidebar */
+#nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-24);
+    padding: var(--spacing-24) var(--spacing-16);
+    background: var(--color-deep-space);
+    color: var(--color-paper);
+}
+
+/* 160 px keeps the horizontal logo above its 120 px minimum. */
+.app-logo {
+    width: 160px;
+    margin: var(--spacing-8) var(--spacing-8) 0;
+}
+
 .project-header {
     display: flex;
     align-items: center;
-    gap: 40px;
-    padding: 16px 52px;
-    border-bottom: 1px solid #e6e6ea;
+    gap: var(--spacing-12);
+    padding: var(--spacing-12);
+    border-radius: var(--radius-md);
+    background: var(--color-midnight);
 }
 
+/* The circle with the first letter of the project name. */
 .project-badge {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #dcdcdc;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--color-violet);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    color: #5a5f6b;
+    font-family: var(--font-title);
+    font-size: 20px;
+    color: var(--color-paper);
+}
+
+.project-picker {
+    min-width: 0;
+    flex: 1;
 }
 
 .project-label {
     display: block;
-    color: #2b2350;
-    font-size: 0.9rem;
+    font-family: var(--font-label);
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 4px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(238, 245, 250, 0.64);
 }
 
-/* Project switcher in the header */
 .project-select {
-    border: 1px solid #c9c9cf;
-    border-radius: 6px;
-    background: #ffffff;
-    color: #2b2350;
-    font-size: 0.9rem;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--color-paper);
+    font-size: 15px;
     font-weight: 600;
-    padding: 6px 10px;
-    min-width: 220px;
+    cursor: pointer;
 }
 
-/* Tabs */
+.project-select option {
+    color: var(--color-deep-space);
+}
+
+.nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.nav-link,
+.logout-button {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+    padding: var(--spacing-8) var(--spacing-12);
+    border-radius: var(--radius-md);
+    color: rgba(238, 245, 250, 0.72);
+    text-decoration: none;
+    font-size: 15px;
+}
+
+.nav-link:hover,
+.logout-button:hover {
+    background: var(--color-midnight);
+    color: var(--color-paper);
+}
+
+/* The open view: Nebula background and a Violet bar on the left. */
+.nav-link.active {
+    background: var(--color-nebula);
+    color: var(--color-paper);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--color-violet);
+}
+
+/* Log out stays at the bottom of the sidebar. */
+.logout-button {
+    margin-top: auto;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+}
+
+/* Main area, to the right of the sidebar */
+#app-main {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+}
+
+.view {
+    padding: var(--spacing-32) var(--spacing-48);
+}
+
+/* Screen titles use Geo, never under 20 px. */
+.view-title {
+    font-family: var(--font-title);
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 44px;
+    color: var(--color-midnight);
+    margin-bottom: var(--spacing-24);
+}
+
+/* Catalog: search, Download and Edit Mode */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-16);
+    margin-bottom: var(--spacing-16);
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    color: var(--color-dusk);
+}
+
+.search-box .icon {
+    position: absolute;
+    top: 13px;
+    left: var(--spacing-16);
+}
+
+.search-box input {
+    width: 100%;
+    height: 44px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    padding: 0 var(--spacing-16) 0 44px;
+    font-size: 15px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Tabs and filters */
+.filter-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-12);
+    margin-bottom: var(--spacing-24);
+}
+
 .tabs {
     display: flex;
-    gap: 2px;
-    padding: 0 32px;
-    margin-top: 12px;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    border: 1px solid var(--color-line);
 }
 
 .tab {
     border: none;
-    border-radius: 10px 10px 0 0;
-    background: #e3e3e6;
-    color: #6b6b75;
-    padding: 12px 20px;
-    font-size: 0.9rem;
+    border-radius: var(--radius-full);
+    background: none;
+    color: var(--color-dusk);
+    padding: 6px var(--spacing-16);
+    font-size: 14px;
     cursor: pointer;
 }
 
+.tab:hover {
+    color: var(--color-midnight);
+}
+
 .tab.active {
-    background: #f3f3f5;
-    color: #2b2350;
+    background: var(--color-violet);
+    color: var(--color-paper);
     font-weight: 600;
 }
 
-/* Search and filters */
-.toolbar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    background: #f3f3f5;
-    padding: 16px 32px;
-}
-
-.toolbar input,
-.toolbar select {
-    border: 1px solid #c9c9cf;
-    border-radius: 18px;
-    background: #ffffff;
-    padding: 7px 14px;
-    font-size: 0.85rem;
-}
-
-.toolbar input {
-    width: 360px;
+.filter-row select {
+    height: 40px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    padding: 0 var(--spacing-16);
+    font-size: 14px;
+    color: var(--color-midnight);
 }
 
 /* Empty and error messages */
 .empty-message {
-    padding: 48px 32px;
-    color: #6b6b75;
+    padding: var(--spacing-48) var(--spacing-32);
+    color: var(--color-dusk);
+    text-align: center;
 }
 
 /* Warning about the old Inbox folder. It only informs. */
 .warning-message {
-    margin: 8px 32px 0;
-    padding: 10px 14px;
-    border-radius: 6px;
-    background: #fff4e5;
-    color: #8a4b00;
-    font-size: 0.85rem;
+    margin-bottom: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16);
+    border-left: 3px solid var(--color-dusk);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    color: var(--color-midnight);
+    font-size: 14px;
 }
 
-/* Catalog table */
+/* Catalog table: a white card with rounded corners */
 .catalog-table {
-    width: calc(100% - 64px);
-    margin: 24px 32px;
-    border-collapse: collapse;
-    font-size: 0.85rem;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    font-size: 14px;
 }
 
 .catalog-table th {
-    background: #ececf0;
-    color: #3a3a44;
-    font-weight: 500;
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-dusk);
     text-align: left;
-    padding: 14px 20px;
+    padding: var(--spacing-16);
+    border-bottom: 1px solid var(--color-line);
     white-space: nowrap;
 }
 
-.catalog-table th:first-child {
-    border-radius: 20px 0 0 20px;
-}
-
-.catalog-table th:last-child {
-    border-radius: 0 20px 20px 0;
-}
-
 .catalog-table td {
-    padding: 12px 20px;
-    border-bottom: 1px solid #e6e6ea;
+    padding: 14px var(--spacing-16);
+    border-bottom: 1px solid var(--color-line);
     vertical-align: middle;
+}
+
+.catalog-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.catalog-table tbody tr:hover td {
+    background: var(--color-paper);
+}
+
+/* Round the corner cells so the hover color does not stick out. */
+.catalog-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: var(--radius-lg);
+}
+
+.catalog-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: var(--radius-lg);
 }
 
 .catalog-table td.summary {
     max-width: 380px;
+    color: var(--color-dusk);
+}
+
+/* Media type with its icon. data-type holds the stored value, so the
+   icon is the same in English and Spanish. */
+.catalog-table td.media-type {
+    white-space: nowrap;
+    color: var(--color-midnight);
+}
+
+td.media-type::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: var(--spacing-8);
+    vertical-align: -3px;
+    background-color: var(--color-violet);
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+}
+
+td.media-type[data-type="Press"]::before {
+    mask-image: url("../assets/icons/newspaper.svg");
+    -webkit-mask-image: url("../assets/icons/newspaper.svg");
+}
+
+td.media-type[data-type="Documents"]::before {
+    mask-image: url("../assets/icons/file-text.svg");
+    -webkit-mask-image: url("../assets/icons/file-text.svg");
+}
+
+td.media-type[data-type="Photos"]::before {
+    mask-image: url("../assets/icons/image.svg");
+    -webkit-mask-image: url("../assets/icons/image.svg");
+}
+
+td.media-type[data-type="Audio"]::before {
+    mask-image: url("../assets/icons/music.svg");
+    -webkit-mask-image: url("../assets/icons/music.svg");
+}
+
+td.media-type[data-type="Video"]::before {
+    mask-image: url("../assets/icons/video.svg");
+    -webkit-mask-image: url("../assets/icons/video.svg");
 }
 
 /* Short values that should stay on one line. */
@@ -223,42 +493,77 @@ body {
 }
 
 .placeholder {
-    color: #b5b5bd;
+    color: rgba(70, 65, 123, 0.56);
+    font-style: italic;
 }
 
+/* Manual Review: Violet text with a Violet ring before it. */
 .status-review {
-    color: #c0632b;
+    color: var(--color-violet);
+    font-weight: 600;
 }
 
-/* Settings form */
+.status-review::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: var(--spacing-8);
+    border: 2px solid var(--color-violet);
+    border-radius: var(--radius-full);
+}
+
+/* Settings and account forms: white cards */
 .settings-form {
     display: flex;
     flex-direction: column;
-    max-width: 420px;
-    padding: 32px;
+    max-width: 640px;
+    padding: var(--spacing-32);
+    margin-bottom: var(--spacing-24);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
 }
 
 .settings-form h2 {
-    font-size: 1.2rem;
+    font-size: 18px;
     font-weight: 600;
-    margin-top: 12px;
+    color: var(--color-midnight);
+}
+
+/* Every section after the first one starts with a line. */
+.settings-form h2:not(:first-child) {
+    margin-top: var(--spacing-24);
+    padding-top: var(--spacing-24);
+    border-top: 1px solid var(--color-line);
 }
 
 .settings-form .hint {
-    color: #6b6b75;
-    font-size: 0.85rem;
-    margin: 12px 0 20px;
+    color: var(--color-dusk);
+    font-size: 14px;
+    margin: var(--spacing-8) 0 var(--spacing-16);
+}
+
+.settings-form .hint:empty {
+    display: none;
 }
 
 /* Advanced settings: closed by default, same column layout inside. */
 .advanced-settings {
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-24);
+    padding: var(--spacing-12) var(--spacing-16);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
 }
 
 .advanced-settings summary {
     cursor: pointer;
     font-weight: 600;
-    color: #3a3a44;
+    color: var(--color-violet);
+}
+
+.advanced-settings[open] summary {
+    margin-bottom: var(--spacing-16);
 }
 
 .advanced-fields {
@@ -266,48 +571,93 @@ body {
     flex-direction: column;
 }
 
+/* Labels: Archivo Narrow SemiBold, uppercase. */
 .settings-form label {
-    font-size: 0.8rem;
+    font-family: var(--font-label);
+    font-size: 12px;
     font-weight: 600;
-    color: #3a3a44;
-    margin-bottom: 6px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-dusk);
+    margin-bottom: var(--spacing-8);
 }
 
 .settings-form input,
 .settings-form select {
-    border: 1px solid #c9c9cf;
-    border-radius: 6px;
-    background: #ffffff;
-    padding: 10px 12px;
-    font-size: 0.9rem;
-    margin-bottom: 20px;
+    height: 40px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    padding: 0 var(--spacing-12);
+    font-size: 15px;
+    margin-bottom: var(--spacing-16);
 }
 
-/* File names section in Settings */
+.settings-form input:focus,
+.settings-form select:focus {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 0;
+    border-color: transparent;
+}
+
+.settings-form input[readonly] {
+    background: var(--color-paper);
+    color: var(--color-dusk);
+}
+
+/* File names section in Settings: each method is a selectable row. */
 .naming-options {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-16);
 }
 
 .settings-form .naming-option {
     display: flex;
-    align-items: baseline;
-    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-12);
+    padding: var(--spacing-12) var(--spacing-16);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 15px;
     font-weight: 400;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--color-deep-space);
     margin-bottom: 0;
+    cursor: pointer;
+}
+
+.settings-form .naming-option:has(input:checked) {
+    border-color: var(--color-violet);
+    box-shadow: inset 0 0 0 1px var(--color-violet);
 }
 
 .settings-form .naming-option input {
+    height: auto;
     margin: 0;
     padding: 0;
+    accent-color: var(--color-violet);
 }
 
-.naming-option code,
-.naming-preview code {
-    font-size: 0.8rem;
-    color: #6b6b75;
+code {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    color: var(--color-midnight);
+    background: var(--color-paper);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+}
+
+code:empty {
+    display: none;
+}
+
+.naming-option code {
+    margin-left: auto;
 }
 
 .naming-custom {
@@ -316,62 +666,64 @@ body {
 }
 
 .naming-custom .hint {
-    margin: -12px 0 16px;
+    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
 }
 
 .naming-preview {
-    font-size: 0.85rem;
-    margin: 0;
+    font-size: 14px;
+    color: var(--color-dusk);
 }
 
 .naming-rules {
-    color: #6b6b75;
-    font-size: 0.8rem;
-    margin: 8px 0 24px;
+    color: var(--color-dusk);
+    font-size: 13px;
+    margin: var(--spacing-16) 0 var(--spacing-24);
     padding-left: 18px;
 }
 
 .settings-form .folder-locked {
-    margin: -12px 0 20px;
-}
-
-.settings-form input[readonly] {
-    background: #f4f4f6;
-    color: #6b6b75;
-}
-
-.form-buttons {
-    display: flex;
-    gap: 8px;
-}
-
-.form-buttons .secondary-button {
-    margin-bottom: 0;
+    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
 }
 
 .folder-row {
     display: flex;
-    gap: 8px;
+    gap: var(--spacing-8);
 }
 
 .folder-row input {
     flex: 1;
 }
 
+.form-buttons {
+    display: flex;
+    gap: var(--spacing-8);
+}
+
+/* Buttons */
 .primary-button,
-.secondary-button {
-    border: none;
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-size: 0.9rem;
+.secondary-button,
+.pill-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-8);
+    height: 40px;
+    padding: 0 var(--spacing-24);
+    border-radius: var(--radius-full);
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
 }
 
 .primary-button {
     align-self: flex-start;
-    background: #5a5f6b;
-    color: #ffffff;
+    border: none;
+    background: var(--color-violet);
+    color: var(--color-paper);
+}
+
+.primary-button:hover {
+    background: var(--color-nebula);
 }
 
 .primary-button:disabled {
@@ -379,84 +731,129 @@ body {
     cursor: default;
 }
 
-.secondary-button {
-    background: #e3e3e6;
-    color: #3a3a44;
-    margin-bottom: 20px;
+.secondary-button,
+.pill-button {
+    border: 1px solid var(--color-line);
+    background: var(--color-white);
+    color: var(--color-midnight);
 }
 
+.secondary-button:hover,
+.pill-button:hover {
+    background: var(--color-paper);
+}
+
+.secondary-button {
+    margin-bottom: var(--spacing-16);
+}
+
+.form-buttons .secondary-button,
+.folder-row .secondary-button {
+    margin-bottom: 0;
+}
+
+.folder-row .secondary-button {
+    height: 40px;
+}
+
+.pill-button {
+    padding: 0 var(--spacing-16);
+    font-size: 14px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Danger: Deep Space, not red. Violet stays the only accent. */
+.danger-button {
+    background: var(--color-deep-space);
+}
+
+.danger-button:hover {
+    background: var(--color-midnight);
+}
+
+/* Messages inside a form. Hidden while they are empty. */
 .form-message {
-    font-size: 0.85rem;
-    margin-top: 16px;
+    margin-top: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16);
+    border-left: 3px solid var(--color-dusk);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    color: var(--color-midnight);
+    font-size: 14px;
+}
+
+.form-message:empty {
+    display: none;
 }
 
 .form-message.error {
-    color: #b3261e;
+    border-left-color: var(--color-deep-space);
+    color: var(--color-deep-space);
+    font-weight: 600;
 }
 
 .form-message.success {
-    color: #2e7d32;
+    border-left-color: var(--color-violet);
+    color: var(--color-violet);
 }
 
 /* Remove project: kept apart from Save so it is not clicked by mistake */
 .remove-project {
-    border-top: 1px solid #e3e3e6;
-    margin-top: 32px;
-    padding-top: 20px;
+    border-top: 1px solid var(--color-line);
+    margin-top: var(--spacing-32);
+    padding-top: var(--spacing-24);
 }
 
 .remove-project .secondary-button {
-    color: #b3261e;
+    color: var(--color-deep-space);
     margin-bottom: 0;
 }
 
 /* Confirmation dialog in the app window */
 .confirm-dialog {
+    margin: auto;
     border: none;
-    border-radius: 10px;
-    max-width: 400px;
-    padding: 28px;
-    color: #3a3a44;
+    border-radius: var(--radius-lg);
+    max-width: 420px;
+    padding: var(--spacing-32);
+    color: var(--color-deep-space);
+    box-shadow: var(--shadow-lg);
 }
 
 /* The page behind the open dialog is dimmed. */
 .confirm-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(8, 5, 28, 0.5);
 }
 
 .confirm-dialog h2 {
-    font-size: 1.1rem;
+    font-size: 18px;
     font-weight: 600;
-    margin-top: 0;
+    color: var(--color-midnight);
+    margin-bottom: var(--spacing-8);
 }
 
 .confirm-dialog p {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin-bottom: 20px;
+    font-size: 15px;
+    color: var(--color-dusk);
+    margin-bottom: var(--spacing-24);
 }
 
-.danger-button {
-    background: #b3261e;
+.confirm-dialog .form-buttons {
+    justify-content: flex-end;
 }
 
-/* Download button and Edit Mode switch in the catalog toolbar */
-.pill-button {
-    border: 1px solid #c9c9cf;
-    border-radius: 18px;
-    background: #ffffff;
-    padding: 7px 14px;
-    font-size: 0.85rem;
-    cursor: pointer;
+.confirm-dialog .form-message {
+    margin-bottom: 0;
 }
 
+/* Edit Mode switch in the catalog toolbar */
 .switch-label {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-left: 32px;
-    font-size: 0.85rem;
-    color: #3a3a44;
+    gap: var(--spacing-12);
+    font-size: 14px;
+    color: var(--color-midnight);
+    white-space: nowrap;
     cursor: pointer;
 }
 
@@ -469,8 +866,8 @@ body {
     position: relative;
     width: 44px;
     height: 24px;
-    border-radius: 12px;
-    background: #d5d5da;
+    border-radius: var(--radius-full);
+    background: var(--color-line);
     transition: background 0.2s;
 }
 
@@ -481,133 +878,196 @@ body {
     left: 3px;
     width: 18px;
     height: 18px;
-    border-radius: 50%;
-    background: #ffffff;
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
     transition: left 0.2s;
 }
 
 .switch-label input:checked + .switch {
-    background: #5a5f6b;
+    background: var(--color-violet);
 }
 
 .switch-label input:checked + .switch::after {
     left: 23px;
 }
 
+/* Toast: bottom right, on any screen. Hidden while empty. */
 .toolbar-message {
-    padding: 8px 32px 0;
-    font-size: 0.85rem;
-    color: #6b6b75;
-    min-height: 1.5em;
+    position: fixed;
+    right: var(--spacing-24);
+    bottom: var(--spacing-24);
+    z-index: 10;
+    max-width: 420px;
+    padding: var(--spacing-12) var(--spacing-16);
+    border-radius: var(--radius-md);
+    background: var(--color-deep-space);
+    color: var(--color-paper);
+    font-size: 14px;
+    box-shadow: var(--shadow-lg);
+}
+
+.toolbar-message:empty {
+    display: none;
 }
 
 .toolbar-message.error {
-    color: #b3261e;
+    border-left: 4px solid var(--color-violet);
+    font-weight: 600;
 }
 
 /* Editable cells while Edit Mode is on */
 td.editable {
-    background: #fbfbfc;
-    outline: 1px dashed #c9c9cf;
+    background: var(--color-paper);
+    outline: 1px dashed rgba(70, 65, 123, 0.4);
     outline-offset: -4px;
     cursor: text;
 }
 
 td.editable:focus {
-    background: #ffffff;
-    outline: 2px solid #5a5f6b;
+    background: var(--color-white);
+    outline: 2px solid var(--color-violet);
 }
 
 td.edit-error {
-    outline: 2px solid #b3261e;
+    outline: 2px solid var(--color-deep-space);
 }
 
 .status-select {
-    border: 1px solid #c9c9cf;
-    border-radius: 6px;
-    padding: 4px 6px;
-    font-size: 0.85rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    padding: var(--spacing-4) var(--spacing-8);
+    font-size: 14px;
 }
 
 /* Dashboard */
-.dashboard {
-    padding: 32px;
-}
-
-.dashboard h2 {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin: 24px 0 14px;
-}
-
 .stat-cards {
-    display: flex;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-24);
+    margin-bottom: var(--spacing-24);
 }
 
+/* The label is after the number in the HTML; column-reverse shows it
+   on top, like the dashboard inspiration. */
 .stat-card {
-    width: 370px;
-    border: 1px solid #e3e3e6;
-    border-radius: 8px;
-    background: #f8f8f9;
-    padding: 18px 20px;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--spacing-8);
+    padding: var(--spacing-24);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
 }
 
 .stat-number {
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: #2b2350;
+    font-family: var(--font-title);
+    font-size: 40px;
+    line-height: 44px;
+    color: var(--color-midnight);
 }
 
 .stat-label {
-    font-size: 0.85rem;
-    color: #6b6b75;
-    margin-top: 6px;
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-dusk);
+}
+
+.dash-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-24);
+    align-items: start;
+}
+
+.panel {
+    padding: var(--spacing-24);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
+}
+
+.panel h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-midnight);
+    margin-bottom: var(--spacing-16);
 }
 
 .breakdown {
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    gap: var(--spacing-16);
 }
 
 .breakdown-item {
-    width: 200px;
-    font-size: 0.85rem;
+    font-size: 14px;
 }
 
 .breakdown-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-8);
+    color: var(--color-dusk);
 }
 
 .breakdown-header strong {
-    color: #2b2350;
+    color: var(--color-midnight);
 }
 
-/* The grey track and the dark fill whose width is the percentage. */
+/* The Paper track and the Violet fill whose width is the percentage. */
 .bar-track {
-    height: 7px;
-    background: #e3e3e6;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-paper);
+    overflow: hidden;
 }
 
 .bar-fill {
     height: 100%;
-    background: #2b2350;
+    border-radius: var(--radius-full);
+    background: var(--color-violet);
 }
 
+/* Recent activity: one soft row per entry. */
 .activity-list {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
 }
 
 .activity-list li {
     display: flex;
     justify-content: space-between;
-    padding: 14px 0;
-    border-bottom: 1px solid #e6e6ea;
-    font-size: 0.85rem;
+    gap: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16);
+    border-radius: var(--radius-md);
+    background: var(--color-paper);
+    font-size: 14px;
 }
 
 .activity-when {
-    color: #8a8a94;
+    color: var(--color-dusk);
+    white-space: nowrap;
+}
+
+/* Narrow windows: stack the dashboard and let the table scroll. */
+@media (max-width: 1000px) {
+    .view {
+        padding: var(--spacing-24);
+    }
+
+    .stat-cards,
+    .dash-columns {
+        grid-template-columns: 1fr;
+    }
+
+    #view-catalog {
+        overflow-x: auto;
+    }
 }
