@@ -211,10 +211,21 @@
             <div class="dashboard">
                 <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
 
+                <!-- What the numbers say, in one line, and the action
+                     that follows from it. Filled by dashboard.js;
+                     hidden while the project has no documents. -->
+                <div class="dash-finding hidden" id="dash-finding">
+                    <p id="dash-finding-text"></p>
+                    <button type="button" class="primary-button hidden"
+                            id="dash-review-button"
+                            data-i18n="dash.review_button">Review in
+                        Catalog</button>
+                </div>
+
                 <!-- Grid of cards. Wide cards take two of the four
                      columns. Every number comes from /dashboard/stats. -->
                 <div class="dash-grid">
-                    <section class="stat-card card-wide">
+                    <section class="stat-card">
                         <p class="stat-label" data-i18n="dash.classified">Documents Classified</p>
                         <p class="stat-number stat-hero"
                            id="stat-classified">0</p>
@@ -223,7 +234,7 @@
 
                     <!-- Two blurred circles sized by their share of all
                          documents: Classified and Manual Review -->
-                    <section class="stat-card review-card">
+                    <section class="stat-card review-card card-wide">
                         <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
                         <div class="review-orbs" aria-hidden="true">
                             <div class="orb-slot">
