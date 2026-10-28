@@ -138,6 +138,11 @@ textarea {
     -webkit-mask-image: url("../assets/icons/download.svg");
 }
 
+.icon-eye {
+    mask-image: url("../assets/icons/eye.svg");
+    -webkit-mask-image: url("../assets/icons/eye.svg");
+}
+
 /* Account screen: create the account or log in */
 .auth-screen {
     display: flex;
@@ -1587,14 +1592,20 @@ body.chat-open .catalog-table {
 .chat-card {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 2px;
     padding: 10px var(--spacing-12);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-md);
     background: var(--color-white);
-    text-align: left;
-    cursor: pointer;
     transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chat-card-top {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    width: 100%;
 }
 
 .chat-card:hover {
@@ -1603,12 +1614,13 @@ body.chat-open .catalog-table {
 }
 
 .chat-card-name {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 14px;
     font-weight: 600;
-    color: var(--color-midnight);
 }
 
 .chat-card-meta {
@@ -1641,23 +1653,36 @@ body.chat-open .catalog-table {
     color: var(--color-dusk);
 }
 
+/* One citation: number, name (opens the file), and the two icons. */
 .chat-source {
+    display: inline-flex;
+    align-items: center;
+    /* The gap keeps the space after the number, which flex drops. */
+    gap: 4px;
     max-width: 100%;
-    padding: 2px 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    padding: 0 4px 0 10px;
     border: 1px solid var(--color-line);
     border-radius: var(--radius-full);
     background: var(--color-white);
-    color: var(--color-midnight);
+    color: var(--color-dusk);
     font-size: 12px;
-    cursor: pointer;
 }
 
-.chat-source:hover {
-    border-color: var(--color-violet);
-    color: var(--color-violet);
+.chat-source .file-link {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-source .file-action {
+    width: 22px;
+    height: 22px;
+}
+
+.chat-source .file-action .icon {
+    width: 13px;
+    height: 13px;
 }
 
 .chat-filters {
@@ -1788,6 +1813,81 @@ body.chat-open .catalog-table {
     outline: 2px solid var(--color-violet);
     outline-offset: 0;
     border-color: transparent;
+}
+
+/* File links: the name opens the file; the eye and folder icons
+   preview it or show it in Finder. */
+.file-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-midnight);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.file-link:hover {
+    color: var(--color-violet);
+    text-decoration: underline;
+}
+
+.file-actions {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 2px;
+    margin-left: var(--spacing-4);
+    vertical-align: middle;
+}
+
+.file-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-dusk);
+    cursor: pointer;
+}
+
+.file-action .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.file-action:hover {
+    background: var(--color-paper);
+    color: var(--color-violet);
+}
+
+.catalog-table td.filename-cell {
+    white-space: nowrap;
+}
+
+/* The selected row: the space bar previews its file. Paper background
+   and a Violet border around the whole row. */
+.catalog-table tbody tr {
+    cursor: default;
+}
+
+.catalog-table tbody tr.row-selected td {
+    background: var(--color-paper);
+    box-shadow: inset 0 1.5px 0 var(--color-violet),
+        inset 0 -1.5px 0 var(--color-violet);
+}
+
+.catalog-table tbody tr.row-selected td:first-child {
+    box-shadow: inset 1.5px 1.5px 0 var(--color-violet),
+        inset 0 -1.5px 0 var(--color-violet);
+}
+
+.catalog-table tbody tr.row-selected td:last-child {
+    box-shadow: inset -1.5px 1.5px 0 var(--color-violet),
+        inset 0 -1.5px 0 var(--color-violet);
 }
 
 /* A row the chat pointed to, highlighted for two seconds. */

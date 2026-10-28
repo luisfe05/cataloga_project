@@ -126,16 +126,21 @@ function openDocument(id) {
 }
 
 /**
- * Build a clickable card for one document.
+ * Build the card for one document. The name opens the file, the icons
+ * preview it or show it in Finder (files.js), and "Show in Catalog"
+ * highlights its row. A card is a div, because buttons cannot go
+ * inside another button.
  * @param {Object} doc - {id, filename, media_type, document_date,
  *     summary}
- * @returns {HTMLButtonElement}
+ * @returns {HTMLDivElement}
  */
 function documentCard(doc) {
-    const card = chatElement("button", "chat-card");
-    card.type = "button";
-    card.title = doc.filename;
-    card.appendChild(chatElement("span", "chat-card-name", doc.filename));
+    const card = chatElement("div", "chat-card");
+    const top = chatElement("div", "chat-card-top");
+    const link = makeFileLink(doc);
+    link.classList.add("chat-card-name");
+    top.append(link, makeFileActions(doc.id));
+    card.appendChild(top);
     const meta = [valueLabel(doc.media_type), doc.document_date]
         .filter(Boolean).join(" · ");
     card.appendChild(chatElement("span", "chat-card-meta", meta));
@@ -143,7 +148,11 @@ function documentCard(doc) {
         card.appendChild(chatElement("span", "chat-card-summary",
             doc.summary));
     }
-    card.addEventListener("click", () => openDocument(doc.id));
+    const show = chatElement("button", "chat-link",
+        t("files.show_in_catalog"));
+    show.type = "button";
+    show.addEventListener("click", () => openDocument(doc.id));
+    card.appendChild(show);
     return card;
 }
 
@@ -160,11 +169,9 @@ function drawSources(body, sources) {
     row.appendChild(chatElement("span", "chat-sources-label",
         t("chat.sources")));
     sources.forEach((doc, index) => {
-        const chip = chatElement("button", "chat-source",
-            `${index + 1}. ${doc.filename}`);
-        chip.type = "button";
-        chip.title = doc.filename;
-        chip.addEventListener("click", () => openDocument(doc.id));
+        // Number, name (opens the file), then the eye and folder icons.
+        const chip = chatElement("span", "chat-source", `${index + 1}. `);
+        chip.append(makeFileLink(doc), makeFileActions(doc.id));
         row.appendChild(chip);
     });
     body.appendChild(row);
