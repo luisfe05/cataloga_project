@@ -38,8 +38,9 @@ const LANG_EN = {
     "catalog.saved": "Saved.",
     "catalog.saved_summary": "Saved. The summary was updated using your edit.",
     "catalog.save_failed": "Could not save.",
-    "catalog.edit_mode_on": "Edit Mode is on. Click a cell to edit it. "
-        + "Automatic refresh is paused.",
+    "catalog.edit_banner": "Editing. Click a cell to change it. It saves "
+        + "when you leave the cell or press Enter. Automatic refresh is "
+        + "paused.",
     "catalog.summary_limit": "Summaries can have up to 100 characters.",
     "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Your old Inbox folder still has files. "
@@ -62,6 +63,10 @@ const LANG_EN = {
     "dash.breakdown": "Media Type Breakdown",
     "dash.activity": "Recent Activity",
     "dash.empty": "No activity yet. Drop files into the Drop Zone to start.",
+    "dash.finding_review_one": "1 document needs manual review.",
+    "dash.finding_review": "{n} documents need manual review.",
+    "dash.finding_done": "Every document is classified.",
+    "dash.review_button": "Review in Catalog",
     "dash.load_failed": "Could not load the dashboard: {message}",
     "dash.of_total": "of {n} documents",
     "dash.no_documents": "No documents yet",
@@ -204,6 +209,7 @@ const LANG_EN = {
     "auth.log_out": "Log out",
     "auth.password_mismatch": "The passwords do not match.",
     "account.title": "Account",
+    "account.hint": "One account for the whole app, for every project.",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
     "account.new_password": "New password",
