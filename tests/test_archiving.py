@@ -1,13 +1,23 @@
 """Tests for the Digital Archiving Guideline (archiving-a)."""
 
+import json
+import os
 import sqlite3
 
 import pytest
 
+from backend import folder_watcher
+from backend.config import account
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
-from backend.pipeline import archive_rules
+from backend.pipeline import archive_rules, naming
+from backend.pipeline.ai_providers import base
+from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline.classification_pipeline import (
+    ClassificationPipeline, remove_gone_duplicates)
+from backend.pipeline.file_organizer import FileOrganizer
+from tests.conftest import make_project
 
 CATEGORIES = [
     {"name": "Contracts", "subcategories": ["Sponsorship", "Rights"]},
@@ -271,3 +281,239 @@ def test_match_category_without_a_list():
     """A project with no categories leaves them empty, with no note."""
     assert archive_rules.match_category([], "Press", None) == \
         (None, None, None)
+
+
+# --- Naming method 4 ---
+
+def test_method_4_name():
+    """Method 4: topic, source, date, and the topic's own number."""
+    parts = naming.build_parts("scan.pdf", 7, document_date="2026-07-15",
+                               source="El Nuevo Día",
+                               topic="Oceanman Malta", topic_number=1)
+    assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
+                                ".pdf") == \
+        "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf"
+
+
+def test_method_4_without_source_or_date():
+    """No source leaves that part out; no date gives 'undated'."""
+    parts = naming.build_parts("scan.pdf", 7, topic="Oceanman Malta",
+                               topic_number=12)
+    assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
+                                ".pdf") == "oceanman-malta_undated_012.pdf"
+
+
+def test_topic_number_goes_to_4_digits():
+    """After 999 the topic number simply has 4 digits."""
+    parts = naming.build_parts("a.pdf", 1, topic="x", topic_number=1000)
+    assert parts["topic_number"] == "1000"
+
+
+def test_next_topic_number_counts_the_same_topic():
+    """Topics that give the same slug count together."""
+    saved = ["Oceanman Malta", "oceanman málta", "Other"]
+    assert naming.next_topic_number("Oceanman Malta", saved) == 3
+    assert naming.next_topic_number("New topic", saved) == 1
+
+
+def test_topic_number_token_in_custom_template():
+    """{topic_number} is valid in a custom template; {number} too."""
+    assert naming.validate_template("{number}_{topic_number}") is None
+
+
+def test_old_projects_keep_method_1_as_fallback():
+    """Only new projects get method 4; the fallback stays method 1."""
+    assert naming.DEFAULT_TEMPLATE == "{date}_{topic}"
+    assert naming.NEW_PROJECT_TEMPLATE == \
+        "{topic}_{source}_{date}_{topic_number}"
+
+
+# --- Pipeline ---
+
+FULL_METADATA = json.dumps({
+    "source": "El Nuevo Día", "document_date": "2026-07-15",
+    "topic": "Oceanman Malta",
+    "keywords": ["swimming", "Malta", "malta", "x" * 60, "", "a", "b"],
+    "counterparty": "Jurutungo Films",
+    "category": "contracts", "subcategory": "rights"})
+
+
+class RecordingAI(AIProviderClient):
+    """Fake AI that answers each kind of request and keeps the prompts."""
+
+    def __init__(self, metadata=FULL_METADATA):
+        super().__init__(provider_name="fake", model="fake-model")
+        self.retry_delay = 0
+        self.metadata = metadata
+        self.prompts = []
+
+    def send_prompt(self, system_prompt, text):
+        self.prompts.append(system_prompt)
+        if system_prompt == base.CLASSIFICATION_PROMPT:
+            return "Press"
+        if system_prompt == base.SUMMARY_PROMPT:
+            return "A news story."
+        return self.metadata
+
+
+@pytest.fixture
+def pipe(tmp_path, monkeypatch, repo):
+    """A pipeline with a fake AI, an archive folder, and a Drop Zone."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: "test-key")
+    drop_zone = tmp_path / "archive" / "Drop Zone"
+    drop_zone.mkdir(parents=True)
+    ai = RecordingAI()
+    pipeline = ClassificationPipeline(
+        ai, repo, FileOrganizer(str(tmp_path / "archive")), owner="luis")
+    repo.save_naming_template(naming.NEW_PROJECT_TEMPLATE)
+    return {"pipeline": pipeline, "ai": ai, "repo": repo,
+            "drop_zone": drop_zone}
+
+
+def drop(pipe, name, text):
+    """Put a text file in the Drop Zone and return its path."""
+    path = pipe["drop_zone"] / name
+    path.write_text(text)
+    return str(path)
+
+
+def test_new_file_gets_all_archive_fields(pipe):
+    """One metadata call fills topic, keywords, counterparty, category."""
+    pipe["repo"].save_categories(CATEGORIES)
+    doc = pipe["pipeline"].classify_document(
+        drop(pipe, "a.txt", "Contract text"))
+    assert doc.filename == "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt"
+    assert doc.keywords == ["swimming", "Malta", "x" * 40, "a", "b"]
+    assert doc.counterparty == "Jurutungo Films"
+    assert (doc.category, doc.subcategory) == ("Contracts", "Rights")
+    assert doc.confidentiality == "Internal"
+    assert doc.owner == "luis"
+    assert len(doc.sha256) == 64
+    assert doc.status == "Classified"
+    # Classification, summary, metadata: no extra AI call.
+    assert len(pipe["ai"].prompts) == 3
+    assert "Contracts" in pipe["ai"].prompts[2]
+
+
+def test_second_file_of_a_topic_gets_002(pipe):
+    """The topic number counts files with the same topic."""
+    pipe["pipeline"].classify_document(drop(pipe, "a.txt", "One"))
+    second = pipe["pipeline"].classify_document(drop(pipe, "b.txt", "Two"))
+    assert second.filename.endswith("_002.txt")
+
+
+def test_no_categories_leaves_category_empty(pipe):
+    """Without a project list, no category and no Manual Review."""
+    doc = pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Text"))
+    assert doc.category is None
+    assert doc.review_note is None
+    assert doc.status == "Classified"
+    assert "categories" not in pipe["ai"].prompts[2]
+
+
+def test_category_not_in_list_goes_to_manual_review(pipe):
+    """A category outside the project list needs a person."""
+    pipe["repo"].save_categories([{"name": "Press", "subcategories": []}])
+    doc = pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Text"))
+    assert doc.category is None
+    assert doc.status == "Manual Review"
+    assert doc.review_note == archive_rules.NO_CATEGORY_NOTE
+
+
+def test_bad_ai_values_are_dropped(pipe):
+    """Wrong types from the AI never reach the database."""
+    pipe["ai"].metadata = json.dumps({
+        "source": "S", "document_date": "2026", "topic": "T",
+        "keywords": "not a list", "counterparty": ["x"]})
+    doc = pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Text"))
+    assert doc.keywords == []
+    assert doc.counterparty is None
+
+
+def test_duplicate_skips_the_ai_and_stays_in_drop_zone(pipe):
+    """Same bytes: no AI, no rename, no move, a Manual Review row."""
+    first = pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Same"))
+    calls = len(pipe["ai"].prompts)
+    copy = drop(pipe, "copy.txt", "Same")
+    doc = pipe["pipeline"].classify_document(copy)
+
+    assert len(pipe["ai"].prompts) == calls
+    assert os.path.isfile(copy)
+    assert doc.file_path == copy
+    assert doc.filename == "copy.txt"
+    assert doc.status == "Manual Review"
+    assert doc.duplicate_of == first.filename
+    assert doc.review_note == "Duplicate of " + first.filename
+    assert doc.media_type == "Documents"
+
+
+def test_duplicate_photo_type_comes_from_extension(pipe):
+    """A duplicate keeps the media type its extension gives."""
+    photo = pipe["drop_zone"] / "p.jpg"
+    photo.write_bytes(b"jpeg bytes")
+    pipe["pipeline"].classify_document(str(photo))
+    again = pipe["drop_zone"] / "p2.jpg"
+    again.write_bytes(b"jpeg bytes")
+    assert pipe["pipeline"].classify_document(str(again)).media_type == \
+        "Photos"
+
+
+def test_duplicate_is_not_hashed_twice(pipe, monkeypatch):
+    """A duplicate row's path is skipped before the hash."""
+    pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Same"))
+    copy = drop(pipe, "copy.txt", "Same")
+    pipe["pipeline"].process_batch([copy])
+    hashed = []
+    monkeypatch.setattr(archive_rules, "sha256_of",
+                        lambda path: hashed.append(path))
+    assert pipe["pipeline"].process_batch([copy]) == []
+    assert hashed == []
+
+
+def test_gone_duplicate_row_is_removed(pipe):
+    """When the user deletes the duplicate, only its row goes."""
+    first = pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Same"))
+    copy = drop(pipe, "copy.txt", "Same")
+    duplicate = pipe["pipeline"].classify_document(copy)
+
+    remove_gone_duplicates(pipe["repo"])
+    assert pipe["repo"].get_document(duplicate.id) is not None
+    os.remove(copy)
+    remove_gone_duplicates(pipe["repo"])
+    assert pipe["repo"].get_document(duplicate.id) is None
+    assert os.path.isfile(first.file_path)
+
+
+def test_old_rows_without_hash_are_not_compared(pipe):
+    """Old documents have no sha256, so a copy of them is a new file."""
+    pipe["repo"].add_document(make_doc("old.txt"))
+    doc = pipe["pipeline"].classify_document(drop(pipe, "a.txt", "Text"))
+    assert doc.duplicate_of is None
+
+
+# --- Watcher ---
+
+def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
+    """The scan uses the account's username and drops gone duplicates."""
+    monkeypatch.setattr(base.keyring, "get_password",
+                        lambda service, name: "test-key")
+    monkeypatch.setattr(folder_watcher, "create_client",
+                        lambda name, model: RecordingAI())
+    projects_path = str(tmp_path / "app" / "projects.json")
+    repo = make_project(projects_path, tmp_path / "Research")
+    repo.set_active_provider("gemini", "gemini-2.5-flash")
+    account.save_account(account.account_path_for(projects_path),
+                         "luis", "password123")
+    drop_zone = tmp_path / "Research" / "Drop Zone"
+    (drop_zone / "a.txt").write_text("Same")
+
+    first = folder_watcher.scan_once(projects_path)
+    assert first[0].owner == "luis"
+    (drop_zone / "copy.txt").write_text("Same")
+    duplicate = folder_watcher.scan_once(projects_path)[0]
+    assert duplicate.duplicate_of == first[0].filename
+
+    os.remove(str(drop_zone / "copy.txt"))
+    assert folder_watcher.scan_once(projects_path) == []
+    assert repo.get_document(duplicate.id) is None

@@ -5,10 +5,11 @@ import os
 import threading
 import time
 
-from backend.config import projects
+from backend.config import account, projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.pipeline.ai_providers import create_client
-from backend.pipeline.classification_pipeline import ClassificationPipeline
+from backend.pipeline.classification_pipeline import (
+    ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
 
 CHECK_INTERVAL = 10
@@ -74,6 +75,7 @@ def scan_once(projects_path):
     organizer = FileOrganizer(folder)
     organizer.migrate_old_inbox()
     log_old_inbox_warning(organizer)
+    remove_gone_duplicates(repo)
 
     provider = repo.get_active_provider()
     if not provider:
@@ -83,10 +85,13 @@ def scan_once(projects_path):
     if not files:
         return []
 
+    saved_account = account.load_account(
+        account.account_path_for(projects_path))
     pipeline = ClassificationPipeline(
         create_client(provider["provider_name"], provider["model"]),
         repo,
         organizer,
+        owner=saved_account["username"] if saved_account else None,
     )
     return pipeline.process_batch(files)
 
