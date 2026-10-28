@@ -9,14 +9,21 @@ METHOD_TEMPLATES = (
     "{date}_{topic}",            # Method 1: 2026-07-15_oceanman-malta
     "{source}_{date}_{topic}",   # Method 2: el-nuevo-dia_2026-07-15_...
     "{number}_{topic}",          # Method 3: 0001_oceanman-malta
+    # Method 4: oceanman-malta_el-nuevo-dia_2026-07-15_001
+    "{topic}_{source}_{date}_{topic_number}",
 )
 
+# Fallback for old projects that never saved a template.
 DEFAULT_TEMPLATE = METHOD_TEMPLATES[0]
+
+# Only projects created from now on start with method 4.
+NEW_PROJECT_TEMPLATE = METHOD_TEMPLATES[3]
 
 # Files without text always use this: 2026-07-15_0001.jpg
 NO_TEXT_TEMPLATE = "{date}_{number}"
 
-TOKENS = ("date", "source", "topic", "number", "original")
+# topic_number goes first so "{topic}" never matches part of it.
+TOKENS = ("topic_number", "date", "source", "topic", "number", "original")
 
 # Not allowed in file names on macOS or Windows.
 FORBIDDEN_CHARACTERS = '/\\:*?"<>|'
@@ -66,7 +73,7 @@ def file_date(path):
 
 
 def build_parts(original_filename, number, document_date=None,
-                source=None, topic=None):
+                source=None, topic=None, topic_number=1):
     """Prepare the value of every template part."""
     original = slugify(os.path.splitext(original_filename)[0])
     return {
@@ -74,8 +81,18 @@ def build_parts(original_filename, number, document_date=None,
         "source": slugify(source, MAX_SOURCE_LENGTH),
         "topic": slugify(topic) or original or "untitled",
         "number": "{:04d}".format(number),
+        # 3 digits; the 1000th file of a topic simply gets 4.
+        "topic_number": "{:03d}".format(topic_number),
         "original": original or "untitled",
     }
+
+
+def next_topic_number(topic, saved_topics):
+    """Return how many saved documents share this topic, plus one."""
+    slug = slugify(topic)
+    if not slug:
+        return 1
+    return sum(1 for saved in saved_topics if slugify(saved) == slug) + 1
 
 
 def validate_template(template):

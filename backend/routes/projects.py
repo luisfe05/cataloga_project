@@ -47,7 +47,7 @@ def create_project():
                               "name and folder are required.", 400)
     name = name.strip()
     folder = projects.normalize_folder(folder)
-    template = body.get("naming_template", naming.DEFAULT_TEMPLATE)
+    template = body.get("naming_template", naming.NEW_PROJECT_TEMPLATE)
 
     if not os.path.isdir(folder):
         return error_response("invalid_directory",
