@@ -978,31 +978,121 @@ td.edit-error {
     font-size: 14px;
 }
 
-/* Dashboard */
-.stat-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-24);
+/* Catalog header: title on the left, progress on the right */
+.catalog-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--spacing-32);
     margin-bottom: var(--spacing-24);
 }
 
-/* The label is after the number in the HTML; column-reverse shows it
-   on top, like the dashboard inspiration. */
-.stat-card {
-    display: flex;
-    flex-direction: column-reverse;
-    gap: var(--spacing-8);
-    padding: var(--spacing-24);
-    border-radius: var(--radius-lg);
-    background: var(--color-white);
-    box-shadow: var(--shadow-sm);
+.catalog-header .view-title {
+    margin-bottom: 0;
 }
 
-.stat-number {
+.catalog-progress {
+    width: min(520px, 55%);
+}
+
+.progress-title,
+.progress-label {
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-dusk);
+}
+
+.progress-title {
+    margin-bottom: var(--spacing-8);
+}
+
+.progress-numbers {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--spacing-32);
+    margin-bottom: var(--spacing-12);
+}
+
+.progress-number {
     font-family: var(--font-title);
     font-size: 40px;
     line-height: 44px;
     color: var(--color-midnight);
+}
+
+.progress-percent {
+    margin-left: auto;
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* The empty part of the bar is striped; the filled part goes from
+   Violet to Paper and ends in a short Deep Space marker. */
+.progress-track {
+    height: 14px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-white);
+    background-image: repeating-linear-gradient(135deg,
+        rgba(70, 65, 123, 0.3) 0 1.5px, transparent 1.5px 6px);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+}
+
+.progress-fill {
+    position: relative;
+    width: var(--share, 0%);
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--color-violet),
+        var(--color-paper));
+    transition: width 0.6s ease-out;
+}
+
+.progress-fill::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    right: -2px;
+    width: 4px;
+    height: 22px;
+    border-radius: var(--radius-full);
+    background: var(--color-deep-space);
+}
+
+/* Dashboard: a grid of large cards. Wide cards take two columns. */
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-24);
+}
+
+.card-wide {
+    grid-column: span 2;
+}
+
+.stat-card,
+.panel {
+    padding: var(--spacing-24);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+/* Hover lifts the card 2 px. */
+.stat-card:hover,
+.panel:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    min-height: 240px;
 }
 
 .stat-label {
@@ -1014,63 +1104,147 @@ td.edit-error {
     color: var(--color-dusk);
 }
 
-.dash-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-24);
-    align-items: start;
+/* Big numbers in Geo: 72 px, and 96 px for the two main ones. */
+.stat-number {
+    margin-top: auto;
+    font-family: var(--font-title);
+    font-size: 72px;
+    line-height: 72px;
+    color: var(--color-midnight);
 }
 
-.panel {
-    padding: var(--spacing-24);
-    border-radius: var(--radius-lg);
-    background: var(--color-white);
-    box-shadow: var(--shadow-sm);
+.stat-hero {
+    font-size: 96px;
+    line-height: 96px;
+}
+
+.stat-sub {
+    color: var(--color-dusk);
+    font-size: 15px;
+}
+
+/* Manual Review card: two blurred Violet circles in dotted rings.
+   JS sets --size from each share of all documents. */
+.review-orbs {
+    display: flex;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-8);
+}
+
+.orb-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-8);
+}
+
+.orb {
+    --ring: 104px;
+    display: block;
+    width: var(--ring);
+    height: var(--ring);
+    border: 1.5px dotted rgba(70, 65, 123, 0.5);
+    border-radius: var(--radius-full);
+    position: relative;
+}
+
+.orb::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--size, 24px);
+    height: var(--size, 24px);
+    transform: translate(-50%, -50%);
+    border-radius: var(--radius-full);
+    background: radial-gradient(circle, var(--color-violet) 35%,
+        rgba(73, 59, 178, 0.55) 60%, rgba(73, 59, 178, 0) 75%);
+    filter: blur(3px);
+    transition: width 0.6s ease-out, height 0.6s ease-out;
+}
+
+.orb-classified::after {
+    opacity: 0.4;
+}
+
+.orb-label {
+    font-size: 13px;
+    color: var(--color-dusk);
+}
+
+.review-card .stat-number {
+    align-self: flex-end;
 }
 
 .panel h2 {
     font-size: 18px;
     font-weight: 600;
     color: var(--color-midnight);
-    margin-bottom: var(--spacing-16);
+    margin-bottom: var(--spacing-24);
 }
 
+/* Media type breakdown: five striped bars with a line on top.
+   The tallest one is Violet. */
 .breakdown {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    /* minmax(0, 1fr) keeps the five columns the same width, even when
+       a label is longer. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--spacing-16);
+    align-items: end;
 }
 
 .breakdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
     font-size: 14px;
 }
 
-.breakdown-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: var(--spacing-8);
-    color: var(--color-dusk);
-}
-
-.breakdown-header strong {
+.breakdown-count {
+    font-family: var(--font-title);
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 44px;
     color: var(--color-midnight);
 }
 
-/* The Paper track and the Violet fill whose width is the percentage. */
 .bar-track {
-    height: 8px;
-    border-radius: var(--radius-full);
-    background: var(--color-paper);
-    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    height: 160px;
 }
 
+/* The border is the line on top. It stays visible at 0%, so an empty
+   type still shows a thin bar. */
 .bar-fill {
-    height: 100%;
-    border-radius: var(--radius-full);
-    background: var(--color-violet);
+    width: 100%;
+    height: var(--share, 0%);
+    border-top: 3px solid var(--color-dusk);
+    background-image: repeating-linear-gradient(135deg,
+        rgba(70, 65, 123, 0.32) 0 1.5px, transparent 1.5px 7px);
+    transition: height 0.6s ease-out;
 }
 
-/* Recent activity: one soft row per entry. */
+.is-top .bar-fill {
+    border-top-color: var(--color-violet);
+    background-image: repeating-linear-gradient(135deg,
+        rgba(73, 59, 178, 0.55) 0 1.5px, transparent 1.5px 7px);
+}
+
+.is-top .breakdown-count {
+    color: var(--color-violet);
+}
+
+/* Type and percent on two lines, so a long type name in Spanish
+   does not push its bar out of line with the others. */
+.breakdown-header {
+    display: flex;
+    flex-direction: column;
+    color: var(--color-dusk);
+}
+
+/* Recent activity: soft rows with the action as a badge. */
 .activity-list {
     list-style: none;
     display: flex;
@@ -1079,13 +1253,37 @@ td.edit-error {
 }
 
 .activity-list li {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--spacing-16);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: var(--spacing-12);
     padding: var(--spacing-12) var(--spacing-16);
     border-radius: var(--radius-md);
     background: var(--color-paper);
     font-size: 14px;
+}
+
+.activity-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activity-badge {
+    padding: 2px var(--spacing-12);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
+    color: var(--color-midnight);
+    font-family: var(--font-label);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.activity-badge.is-review {
+    border: 1.5px solid var(--color-violet);
+    color: var(--color-violet);
 }
 
 .activity-when {
@@ -1093,15 +1291,41 @@ td.edit-error {
     white-space: nowrap;
 }
 
-/* Narrow windows: stack the dashboard and let the table scroll. */
+/* Less motion: no growing bars, no lift on hover. countUp() in
+   motion.js also skips the counting. */
+@media (prefers-reduced-motion: reduce) {
+    .stat-card,
+    .panel,
+    .bar-fill,
+    .progress-fill,
+    .orb::after {
+        transition: none;
+    }
+
+    .stat-card:hover,
+    .panel:hover {
+        transform: none;
+    }
+}
+
+/* Narrow windows: two columns on the dashboard, the catalog header
+   stacked, and the table scrolls. */
 @media (max-width: 1000px) {
     .view {
         padding: var(--spacing-24);
     }
 
-    .stat-cards,
-    .dash-columns {
-        grid-template-columns: 1fr;
+    .dash-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .catalog-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .catalog-progress {
+        width: 100%;
     }
 
     #view-catalog {
