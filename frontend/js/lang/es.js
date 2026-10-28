@@ -166,6 +166,8 @@ const LANG_ES = {
     // Projects (multi-project)
     "header.new_project": "Proyecto nuevo…",
     "header.unavailable": "{name} (no disponible)",
+    "header.unavailable_hint": "No se encuentra la carpeta. Ábrelo y "
+        + "quítalo en Configuración.",
     "project.edit_title": "Configuración del proyecto",
     "project.new_title": "Proyecto nuevo",
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "

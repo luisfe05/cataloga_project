@@ -56,22 +56,15 @@
         <img class="app-logo" src="assets/logo-horizontal-paper.svg"
              alt="Cataloga">
 
-        <!-- Project header: switch projects or start a new one -->
-        <section class="project-header">
-            <div class="project-badge" id="project-badge"></div>
-            <div class="project-picker">
-                <label class="project-label" for="project-select"
-                       data-i18n="header.project">Project</label>
-                <select class="project-select" id="project-select">
-                </select>
-            </div>
-        </section>
-
         <div class="nav-links">
             <a href="#" class="nav-link active" data-view="catalog">
                 <span class="icon icon-catalog"></span>
                 <span data-i18n="nav.catalog">Catalog</span>
             </a>
+            <!-- Projects under Catalog: one button each, plus New
+                 project. Filled by loadProjectHeader() in app.js.
+                 It scrolls when there are many projects. -->
+            <ul class="project-list" id="project-list"></ul>
             <a href="#" class="nav-link" data-view="dashboard">
                 <span class="icon icon-dashboard"></span>
                 <span data-i18n="nav.dashboard">Dashboard</span>
@@ -94,7 +87,15 @@
             <!-- Title and progress: Classified vs. Manual Review,
                  filled by catalog.js from the documents it loads -->
             <div class="catalog-header">
-                <h1 class="view-title" data-i18n="nav.catalog">Catalog</h1>
+                <!-- Active project's name, filled by
+                     loadProjectHeader() in app.js. No data-i18n on
+                     the h1, so a language change does not replace it. -->
+                <div class="catalog-heading">
+                    <h1 class="view-title project-title"
+                        id="catalog-title"></h1>
+                    <p class="view-subtitle"
+                       data-i18n="nav.catalog">Catalog</p>
+                </div>
                 <section class="catalog-progress">
                     <p class="progress-title"
                        data-i18n="catalog.progress">Catalog progress</p>

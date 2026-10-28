@@ -8,12 +8,15 @@
  * Also starts the app: startApp() reads the saved language first, so
  * every screen is drawn in that language from the start.
  *
- * The project dropdown in the header lives here too, because it changes
+ * The project list in the sidebar lives here too, because it changes
  * what every view shows.
  */
 
-// Value of the last option in the project dropdown.
+// data-folder of the New project button at the end of the list.
 const NEW_PROJECT_OPTION = "__new__";
+
+// Folder of the active project, so a click on it only opens Catalog.
+let activeFolder = "";
 
 /**
  * Show one view and hide the others.
@@ -41,9 +44,30 @@ document.querySelectorAll(".nav-link").forEach((link) => {
 });
 
 /**
- * Fill the project dropdown and the round badge in the header.
+ * Make one button of the project list.
+ * @param {string} text - What the button says.
+ * @param {string} folder - Project folder, or NEW_PROJECT_OPTION.
+ * @param {string} title - Tooltip with the full text.
+ * @returns {HTMLLIElement}
+ */
+function makeProjectButton(text, folder, title) {
+    const item = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "project-link";
+    button.dataset.folder = folder;
+    button.textContent = text;
+    button.title = title;
+    item.appendChild(button);
+    return item;
+}
+
+/**
+ * Fill the project list in the sidebar and the title of Catalog.
  * Projects whose folder is missing (for example, an external drive that
- * is not connected) are marked as not available.
+ * is not connected) are dimmed and marked as not available. They can
+ * still be opened, so they can be removed in Settings.
+ * Called again after a language change, so the text is redrawn.
  */
 async function loadProjectHeader() {
     let list;
@@ -52,32 +76,41 @@ async function loadProjectHeader() {
     } catch (error) {
         return;
     }
-    const select = document.getElementById("project-select");
-    select.innerHTML = "";
+    activeFolder = list.active_folder || "";
+    const projectList = document.getElementById("project-list");
+    projectList.innerHTML = "";
     if (list.projects.length === 0) {
-        const empty = document.createElement("option");
-        empty.value = "";
+        const empty = document.createElement("li");
+        empty.className = "project-empty";
         empty.textContent = t("header.no_project");
-        select.appendChild(empty);
+        projectList.appendChild(empty);
     }
     list.projects.forEach((project) => {
-        const option = document.createElement("option");
-        option.value = project.folder;
-        option.textContent = project.available ? project.name
-            : t("header.unavailable", { name: project.name });
-        select.appendChild(option);
+        const item = project.available
+            ? makeProjectButton(project.name, project.folder, project.name)
+            : makeProjectButton(
+                t("header.unavailable", { name: project.name }),
+                project.folder,
+                `${project.name}. ${t("header.unavailable_hint")}`);
+        const button = item.firstChild;
+        button.classList.toggle("unavailable", !project.available);
+        if (project.folder === activeFolder) {
+            button.classList.add("active");
+            button.setAttribute("aria-current", "true");
+        }
+        projectList.appendChild(item);
     });
-    const newOption = document.createElement("option");
-    newOption.value = NEW_PROJECT_OPTION;
-    newOption.textContent = t("header.new_project");
-    select.appendChild(newOption);
-    select.value = list.active_folder;
+    const newText = t("header.new_project");
+    const newItem = makeProjectButton(newText, NEW_PROJECT_OPTION, newText);
+    newItem.firstChild.classList.add("new-project");
+    projectList.appendChild(newItem);
 
+    // The Catalog title shows the active project's name.
     const active = list.projects
-        .find((project) => project.folder === list.active_folder);
-    // The circle shows the first letter of the project name.
-    document.getElementById("project-badge").textContent = active
-        ? active.name.charAt(0).toUpperCase() : "";
+        .find((project) => project.folder === activeFolder);
+    const title = document.getElementById("catalog-title");
+    title.textContent = active ? active.name : t("header.no_project");
+    title.title = title.textContent;
 }
 
 /**
@@ -94,29 +127,36 @@ async function refreshAfterProjectChange() {
 }
 
 /**
- * Handle a choice in the project dropdown: switch to that project, or
- * open the New project form in Settings.
+ * Handle a click in the project list: switch to that project and open
+ * Catalog, or open the New project form in Settings.
+ * @param {string} folder - Project folder, or NEW_PROJECT_OPTION.
  */
-async function chooseProject() {
-    const select = document.getElementById("project-select");
-    if (select.value === NEW_PROJECT_OPTION) {
-        // Put the dropdown back on the active project until the new one
-        // is created.
-        await loadProjectHeader();
+async function chooseProject(folder) {
+    if (folder === NEW_PROJECT_OPTION) {
         showView("settings");
         startNewProject();
         return;
     }
-    try {
-        await setActiveProject(select.value);
-    } catch (error) {
-        showToolbarMessage(errorText(error), true);
+    // The active project is already loaded: just open Catalog.
+    if (folder !== activeFolder) {
+        try {
+            await setActiveProject(folder);
+        } catch (error) {
+            showToolbarMessage(errorText(error), true);
+        }
+        await refreshAfterProjectChange();
     }
-    await refreshAfterProjectChange();
+    showView("catalog");
 }
 
-document.getElementById("project-select")
-    .addEventListener("change", chooseProject);
+// One listener for the whole list, because its buttons are redrawn
+// every time loadProjectHeader() runs.
+document.getElementById("project-list").addEventListener("click", (event) => {
+    const button = event.target.closest(".project-link");
+    if (button) {
+        chooseProject(button.dataset.folder);
+    }
+});
 
 /**
  * Load the saved language, then show the account screen: create the
