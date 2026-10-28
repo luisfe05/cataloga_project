@@ -9,7 +9,17 @@
     font-style: normal;
 }
 
-/* Variable font: one file covers every weight from 400 to 700. */
+/* Variable fonts: one file covers every weight from 400 to 700.
+   Archivo also covers the widths, from Narrow to Expanded. */
+@font-face {
+    font-family: "Archivo";
+    src: url("../fonts/Archivo-VariableFont_wdth,wght.ttf")
+        format("truetype");
+    font-weight: 100 900;
+    font-stretch: 62% 125%;
+    font-style: normal;
+}
+
 @font-face {
     font-family: "Archivo Narrow";
     src: url("../fonts/ArchivoNarrow-VariableFont_wght.ttf")
@@ -48,9 +58,7 @@
     --shadow-md: 0 8px 24px rgba(8, 5, 28, 0.08);
     --shadow-lg: 0 24px 64px rgba(8, 5, 28, 0.24);
 
-    /* "Archivo" is used once its files are in frontend/fonts.
-       Until then the browser falls back to Archivo Narrow. */
-    --font-body: "Archivo", "Archivo Narrow", sans-serif;
+    --font-body: "Archivo", sans-serif;
     --font-label: "Archivo Narrow", sans-serif;
     --font-title: "Geo", sans-serif;
 
@@ -395,7 +403,8 @@ select {
     background: var(--color-white);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
-    font-size: 14px;
+    font-family: var(--font-label);
+    font-size: 15px;
 }
 
 .catalog-table th {
@@ -497,20 +506,14 @@ td.media-type[data-type="Video"]::before {
     font-style: italic;
 }
 
-/* Manual Review: Violet text with a Violet ring before it. */
-.status-review {
+/* Manual Review: a pill badge with a Violet border. */
+.status-review span {
+    display: inline-block;
+    padding: 2px var(--spacing-12);
+    border: 1.5px solid var(--color-violet);
+    border-radius: var(--radius-full);
     color: var(--color-violet);
     font-weight: 600;
-}
-
-.status-review::before {
-    content: "";
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: var(--spacing-8);
-    border: 2px solid var(--color-violet);
-    border-radius: var(--radius-full);
 }
 
 /* Settings and account forms: white cards */
@@ -771,8 +774,40 @@ code:empty {
     background: var(--color-midnight);
 }
 
+/* Icon before an error or success message (form or toast). */
+.form-message.error::before,
+.form-message.success::before,
+.toolbar-message::before {
+    content: "";
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    background-color: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+}
+
+.form-message.error::before,
+.toolbar-message.error::before {
+    mask-image: url("../assets/icons/alert-circle.svg");
+    -webkit-mask-image: url("../assets/icons/alert-circle.svg");
+}
+
+.form-message.success::before,
+.toolbar-message:not(.error)::before {
+    mask-image: url("../assets/icons/check-circle.svg");
+    -webkit-mask-image: url("../assets/icons/check-circle.svg");
+}
+
 /* Messages inside a form. Hidden while they are empty. */
 .form-message {
+    display: flex;
+    gap: var(--spacing-8);
     margin-top: var(--spacing-16);
     padding: var(--spacing-12) var(--spacing-16);
     border-left: 3px solid var(--color-dusk);
@@ -894,6 +929,8 @@ code:empty {
 
 /* Toast: bottom right, on any screen. Hidden while empty. */
 .toolbar-message {
+    display: flex;
+    gap: var(--spacing-8);
     position: fixed;
     right: var(--spacing-24);
     bottom: var(--spacing-24);
