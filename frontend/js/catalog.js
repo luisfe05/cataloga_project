@@ -465,7 +465,13 @@ document.querySelectorAll(".tab").forEach((tab) => {
 // Search: wait until the user stops typing for 300 ms before searching,
 // so the backend is not called on every key press.
 let searchTimer = null;
+// The search box is in the top bar, so typing on another screen opens
+// Catalog first.
 document.getElementById("search-input").addEventListener("input", () => {
+    if (document.getElementById("view-catalog").classList
+            .contains("hidden")) {
+        showView("catalog");
+    }
     clearTimeout(searchTimer);
     searchTimer = setTimeout(loadCatalog, 300);
 });
