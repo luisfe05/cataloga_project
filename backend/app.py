@@ -15,6 +15,7 @@ from flask_cors import CORS
 from backend.config import account, projects
 from backend.db.schema import DB_PATH, init_db
 from backend.routes.auth import auth_bp, require_login
+from backend.routes.chat import chat_bp
 from backend.routes.dashboard import dashboard_bp
 from backend.routes.documents import documents_bp
 from backend.routes.projects import projects_bp
@@ -52,6 +53,7 @@ def create_app(projects_path=projects.PROJECTS_PATH, old_db_path=DB_PATH,
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(settings_bp)
     app.register_blueprint(projects_bp)
+    app.register_blueprint(chat_bp)
 
     # Save the project list's path so routes can find it later.
     app.config["PROJECTS_PATH"] = projects_path

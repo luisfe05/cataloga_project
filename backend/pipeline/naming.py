@@ -202,3 +202,33 @@ def make_filename(template, parts, extension):
     """
     name = render_template(template, parts) or parts["number"]
     return name + extension.lower()
+
+
+def clean_new_name(new_name, extension):
+    """Clean a name the user asked for in the chat, and add the extension.
+
+    Uses the same rules as the naming methods: lowercase, no accents, no
+    symbols. Underscores stay, because they separate the parts of a
+    name (2026-07-15_oceanman-malta). The file always keeps its own
+    extension: 'malta.pdf' and 'malta' give the same result.
+
+    Example: 'Oceanman Malta: Results!' with '.pdf'
+        -> 'oceanman-malta-results.pdf'
+
+    Args:
+        new_name (str or None): The name the user asked for.
+        extension (str): The file's current extension, like '.pdf'.
+
+    Returns:
+        str: The clean name with the extension, or '' if nothing is left.
+    """
+    base, typed_extension = os.path.splitext(str(new_name or "").strip())
+    # Any other "extension" is just part of the name, like 'v1.2'.
+    if typed_extension.lower() != extension.lower():
+        base += typed_extension
+    parts = [slugify(part, MAX_NAME_LENGTH) for part in base.split("_")]
+    name = "_".join(part for part in parts if part)
+    name = name[:MAX_NAME_LENGTH].rstrip("_-")
+    if not name:
+        return ""
+    return name + extension.lower()
