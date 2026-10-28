@@ -88,7 +88,7 @@ function renderBreakdown(breakdown) {
         const label = document.createElement("span");
         label.className = "breakdown-type";
         label.textContent = valueLabel(type);
-        // A long name ends in "…" in a narrow card; the title shows it.
+        // The full name on hover, for a name split in a narrow card.
         label.title = label.textContent;
         const value = document.createElement("span");
         value.textContent = `${percent}%`;

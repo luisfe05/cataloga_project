@@ -1462,7 +1462,9 @@ td.edit-error {
        a label is longer. */
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: var(--spacing-16);
-    align-items: end;
+    /* Top-aligned: every bar starts at the same height, even when one
+       type name takes two lines under it. */
+    align-items: start;
 }
 
 .breakdown-item {
@@ -1516,12 +1518,12 @@ td.edit-error {
     color: var(--color-dusk);
 }
 
-/* A long type name ("Documentos") ends in "…" instead of running into
-   the next bar. The full name is in its title. */
+/* A long type name ("Documentos") breaks with a hyphen instead of
+   running into the next bar. The hyphen follows the page language. */
 .breakdown-type {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    overflow-wrap: anywhere;
 }
 
 /* Recent activity: soft rows with the action as a badge. */
