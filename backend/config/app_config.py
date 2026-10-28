@@ -1,6 +1,6 @@
 """AppConfig."""
 
-from backend.pipeline import naming
+from backend.pipeline import archive_rules, naming
 
 # The language is global, so it lives in projects.json, not in a catalog.
 LANGUAGES = ("en", "es")
@@ -22,6 +22,9 @@ class AppConfig:
             "target_directory": config.get("target_directory", ""),
             "naming_template": config.get("naming_template",
                                           naming.DEFAULT_TEMPLATE),
+            "industry": config.get("industry") or "",
+            "categories": archive_rules.categories_from_text(
+                config.get("categories")),
             "active_provider": provider.get("provider_name"),
             "active_model": provider.get("model"),
         }
@@ -37,6 +40,11 @@ class AppConfig:
             raise ValueError("invalid naming template: " +
                              problem["reason"])
         self.db.save_naming_template(template)
+
+    def update_categories(self, industry, categories):
+        """Save the industry and the checked category list."""
+        self.db.save_industry(industry)
+        self.db.save_categories(categories)
 
     def set_active_provider(self, provider_name, model):
         """Mark a provider as active and store its model name."""

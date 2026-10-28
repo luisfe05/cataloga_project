@@ -39,6 +39,14 @@ Respond with ONLY the summary text, with no labels or quotation marks."""
 
 CONNECTION_TEST_PROMPT = "Reply with the single word OK."
 
+CATEGORIES_PROMPT = """You are helping a researcher set up a research archive.
+For the industry or field the user gives, propose 6 to 10 categories to
+sort its documents, each with 0 to 6 subcategories. Use short names
+(1 to 3 words) in the same language as the user's text.
+
+Respond with ONLY a JSON list in this exact format:
+[{"name": "...", "subcategories": ["...", "..."]}]"""
+
 
 def save_api_key(provider_name, api_key):
     """Save a provider's API key in the OS keyring."""
@@ -103,6 +111,10 @@ class AIProviderClient:
             # Cut at the last full word that fits, then add '...'.
             answer = answer[:MAX_SUMMARY_LENGTH - 3].rsplit(" ", 1)[0] + "..."
         return answer
+
+    def send_categories_request(self, industry):
+        """Ask the AI for a category list for an industry. Saves nothing."""
+        return self.ask(CATEGORIES_PROMPT, industry)
 
     def test_connection(self):
         """Check that the API key and model work with a small test call."""

@@ -8,7 +8,7 @@ from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
 from backend.pipeline.ai_providers.base import save_api_key
-from backend.pipeline import naming
+from backend.pipeline import archive_rules, naming
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import (error_response, get_active_repo,
                             project_status, projects_path)
@@ -39,6 +39,8 @@ def get_settings():
         "research_name": "",
         "target_directory": folder,
         "naming_template": naming.DEFAULT_TEMPLATE,
+        "industry": "",
+        "categories": [],
         "active_provider": None,
         "active_model": None,
     }
@@ -92,6 +94,10 @@ def update_settings():
                 "The naming template is not valid: " + problem["reason"],
                 400, extra=problem)
 
+    archive = read_archive_settings(body)
+    if isinstance(archive, str):
+        return error_response("invalid_categories", archive, 400)
+
     repo, error = get_active_repo()
     if error:
         return error
@@ -108,9 +114,52 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if archive is not None:
+        config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:
         projects.set_language(projects_path(), body["language"])
     return get_settings()
+
+
+def read_archive_settings(body):
+    """Return the checked industry and categories, or an error text."""
+    if "industry" not in body and "categories" not in body:
+        return None
+    industry = body.get("industry") or ""
+    if not isinstance(industry, str) or \
+            len(industry.strip()) > archive_rules.MAX_INDUSTRY_LENGTH:
+        return "industry must be text of {} characters or less".format(
+            archive_rules.MAX_INDUSTRY_LENGTH)
+    try:
+        categories = archive_rules.clean_categories(body.get("categories"))
+    except ValueError as error:
+        return str(error)
+    return {"industry": industry.strip(), "categories": categories}
+
+
+@settings_bp.route("/settings/categories/suggest", methods=["POST"])
+def suggest_categories():
+    """Ask the active AI for categories for an industry. Saves nothing."""
+    body = request.get_json(silent=True)
+    values = read_text_fields(body, ("industry",))
+    if values is None:
+        return error_response("missing_field", "industry is required.", 400)
+    repo, error = get_active_repo()
+    if error:
+        return error
+    provider = repo.get_active_provider()
+    if not provider:
+        return error_response("no_provider",
+                              "Choose an AI provider first.", 400)
+    client = create_client(provider["provider_name"], provider["model"])
+    industry = values["industry"][:archive_rules.MAX_INDUSTRY_LENGTH]
+    categories = archive_rules.parse_category_answer(
+        client.send_categories_request(industry))
+    if not categories:
+        return error_response(
+            "suggest_failed",
+            "The AI provider did not suggest any categories.", 502)
+    return jsonify({"categories": categories}), 200
 
 
 @settings_bp.route("/settings/ai-provider", methods=["PUT"])

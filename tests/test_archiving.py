@@ -17,6 +17,7 @@ from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
+from backend.routes import settings as settings_routes
 from tests.conftest import make_project
 
 CATEGORIES = [
@@ -517,3 +518,108 @@ def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
     os.remove(str(drop_zone / "copy.txt"))
     assert folder_watcher.scan_once(projects_path) == []
     assert repo.get_document(duplicate.id) is None
+
+
+# --- Routes ---
+
+def active_repo(app):
+    """Return the repository of the app fixture's active project."""
+    return CatalogRepository(os.path.join(
+        app.config["PROJECT_FOLDER"], ".cataloga", "catalog.db"))
+
+
+def test_put_settings_saves_industry_and_categories(flask_client):
+    """Save keeps the industry and the cleaned category list."""
+    response = flask_client.put("/settings", json={
+        "research_name": "Research", "industry": " Sports media ",
+        "categories": [{"name": "Contracts", "subcategories": ["Rights"]},
+                       {"name": "contracts"}]})
+    assert response.status_code == 200
+    data = flask_client.get("/settings").get_json()
+    assert data["industry"] == "Sports media"
+    assert data["categories"] == [{"name": "Contracts",
+                                   "subcategories": ["Rights"]}]
+
+
+def test_put_settings_refuses_bad_categories(flask_client):
+    """A category list in the wrong shape is refused with 400."""
+    response = flask_client.put("/settings", json={
+        "research_name": "Research", "categories": "Contracts"})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "invalid_categories"
+
+
+class SuggestAI(AIProviderClient):
+    """Fake AI that answers the category request."""
+
+    def __init__(self, answer):
+        super().__init__(provider_name="fake", model="fake-model")
+        self.api_key = "test-key"
+        self.answer = answer
+
+    def send_prompt(self, system_prompt, text):
+        return self.answer
+
+
+@pytest.mark.parametrize("answer, count", [
+    ('```json\n[{"name": "Contracts", "subcategories": ["Rights"]}]\n```',
+     1),
+    (json.dumps([{"name": str(n)} for n in range(14)]), 10),
+])
+def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
+    """Suggest returns a checked list and saves nothing."""
+    monkeypatch.setattr(settings_routes, "create_client",
+                        lambda name, model: SuggestAI(answer))
+    active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
+    response = flask_client.post("/settings/categories/suggest",
+                                 json={"industry": "Sports media"})
+    assert response.status_code == 200
+    assert len(response.get_json()["categories"]) == count
+    assert flask_client.get("/settings").get_json()["categories"] == []
+
+
+def test_suggest_categories_bad_answer(flask_client, app, monkeypatch):
+    """No usable list from the AI gives a clear error."""
+    monkeypatch.setattr(settings_routes, "create_client",
+                        lambda name, model: SuggestAI("I cannot help."))
+    active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
+    response = flask_client.post("/settings/categories/suggest",
+                                 json={"industry": "Sports media"})
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "suggest_failed"
+
+
+def test_suggest_categories_needs_industry(flask_client):
+    """The industry field is required."""
+    response = flask_client.post("/settings/categories/suggest", json={})
+    assert response.status_code == 400
+
+
+def test_documents_route_filters_by_category(flask_client, app):
+    """GET /documents accepts category and subcategory."""
+    repo = active_repo(app)
+    repo.add_document(make_doc("a.pdf", category="Contracts",
+                               subcategory="Rights"))
+    repo.add_document(make_doc("b.pdf", category="Press"))
+    response = flask_client.get(
+        "/documents?category=Contracts&subcategory=Rights")
+    assert [d["filename"] for d in response.get_json()] == ["a.pdf"]
+
+
+def test_patch_route_edits_archive_fields(flask_client, app):
+    """PATCH saves the new fields and refuses bad ones with 400."""
+    doc = active_repo(app).add_document(make_doc())
+    response = flask_client.patch("/documents/{}".format(doc.id), json={
+        "keywords": ["malta", "swim"], "confidentiality": "Public"})
+    assert response.status_code == 200
+    assert response.get_json()["keywords"] == ["malta", "swim"]
+    response = flask_client.patch("/documents/{}".format(doc.id), json={
+        "confidentiality": "Top secret"})
+    assert response.status_code == 400
+
+
+def test_export_has_keywords_in_one_cell(flask_client, app):
+    """Keywords are exported as 'a; b'."""
+    active_repo(app).add_document(make_doc(keywords=["a", "b"]))
+    text = flask_client.get("/documents/export").get_data(as_text=True)
+    assert "a; b" in text
