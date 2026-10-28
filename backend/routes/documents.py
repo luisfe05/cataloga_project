@@ -24,6 +24,18 @@ EXPORT_COLUMNS = (
     ("Date", "document_date"),
     ("Summary", "summary"),
     ("Status", "status"),
+    ("Topic", "topic"),
+    ("Keywords", "keywords"),
+    ("Category", "category"),
+    ("Subcategory", "subcategory"),
+    ("Counterparty", "counterparty"),
+    ("Confidentiality", "confidentiality"),
+    ("Owner", "owner"),
+    ("Effective Start", "effective_start"),
+    ("Effective End", "effective_end"),
+    ("Duplicate Of", "duplicate_of"),
+    ("Review Note", "review_note"),
+    ("SHA-256", "sha256"),
 )
 
 
@@ -50,7 +62,8 @@ def regenerate_summary(repo, doc):
 def read_filters():
     """Collect the optional filter query params from the request."""
     filters = {}
-    for name in ("media_type", "source", "status", "search"):
+    for name in ("media_type", "source", "status", "search", "category",
+                 "subcategory"):
         value = request.args.get(name)
         if value:
             filters[name] = value
@@ -84,8 +97,12 @@ def export_documents():
     writer = csv.writer(output)
     writer.writerow([header for header, attribute in EXPORT_COLUMNS])
     for doc in documents:
-        writer.writerow([getattr(doc, attribute) or ""
-                         for header, attribute in EXPORT_COLUMNS])
+        row = [getattr(doc, attribute) or ""
+               for header, attribute in EXPORT_COLUMNS]
+        # Keywords are a list; one cell keeps them as "a; b; c".
+        row[EXPORT_COLUMNS.index(("Keywords", "keywords"))] = \
+            "; ".join(doc.keywords)
+        writer.writerow(row)
 
     # Content-Disposition tells the browser to save it as a file.
     return Response(

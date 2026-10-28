@@ -172,6 +172,27 @@ def clean_categories(value, max_categories=MAX_CATEGORIES):
     return categories
 
 
+def parse_category_answer(answer):
+    """Read the JSON list in the AI's answer, or return []."""
+    if not answer:
+        return []
+    start = answer.find("[")
+    end = answer.rfind("]")
+    if start == -1 or end < start:
+        return []
+    try:
+        value = json.loads(answer[start:end + 1])
+    except ValueError:
+        return []
+    if not isinstance(value, list):
+        return []
+    # Extra categories are cut, so a long answer is still useful.
+    try:
+        return clean_categories(value[:MAX_CATEGORIES])
+    except ValueError:
+        return []
+
+
 def categories_from_text(text):
     """Read the category list saved in app_config."""
     if not text:
