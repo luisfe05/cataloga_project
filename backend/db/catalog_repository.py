@@ -1,53 +1,33 @@
-"""CatalogRepository.
-
-The single place in the codebase that reads from and writes to the database.
-All other modules call methods here instead of running SQL directly.
-"""
+"""CatalogRepository."""
 
 from datetime import datetime
 
 from backend.db.schema import get_connection, DB_PATH
 from backend.models.document import Document, LOCKED_FIELDS, MEDIA_TYPES
 
-# Fields the user is allowed to change through update_document().
 EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
                    "status")
 
-# Valid values for the status column.
 STATUSES = ("Classified", "Manual Review")
 
-# Longest summary allowed (scope change of Oct 25, was 500).
+# Scope change of Oct 25 (was 500).
 MAX_SUMMARY_LENGTH = 100
 
-# app_config columns that can be saved one at a time.
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template")
 
-# Naming template used before the user picks one (method 1). Same as
-# naming.DEFAULT_TEMPLATE and the column default in schema.py.
+# Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
 
-# How many entries the dashboard's recent activity list shows.
 RECENT_ACTIVITY_LIMIT = 10
 
 
 def now_timestamp():
-    """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00.
-
-    Returns:
-        str: The current local time, without microseconds.
-    """
+    """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00."""
     return datetime.now().isoformat(timespec="seconds")
 
 
 def row_to_document(row):
-    """Turn one row from the documents table into a Document object.
-
-    Args:
-        row (sqlite3.Row): A row that includes every documents column.
-
-    Returns:
-        Document: The matching Document object.
-    """
+    """Turn one row from the documents table into a Document object."""
     return Document(
         doc_id=row["id"],
         original_filename=row["original_filename"],
@@ -67,26 +47,11 @@ class CatalogRepository:
     """Owns all database reads and writes for documents and activity_log."""
 
     def __init__(self, db_path=DB_PATH):
-        """Remember which database file to use.
-
-        Args:
-            db_path (str): Path to the SQLite file. Defaults to
-                database/catalog.db. Tests pass a temporary file.
-        """
+        """Remember which database file to use."""
         self.db_path = db_path
 
     def log_activity(self, conn, doc_id, action, details=None):
-        """Add one entry to activity_log, using an already open connection.
-
-        The caller commits, so the document change and its log entry are
-        saved together.
-
-        Args:
-            conn (sqlite3.Connection): The open connection to use.
-            doc_id (int): The document the action happened to.
-            action (str): Short description, e.g. 'Classified' or 'Edited'.
-            details (str, optional): Extra text, e.g. 'old.pdf → new.pdf'.
-        """
+        """Add one entry to activity_log, using an already open connection."""
         conn.execute(
             "INSERT INTO activity_log (document_id, action, timestamp, "
             "details) VALUES (?, ?, ?, ?)",
@@ -94,14 +59,7 @@ class CatalogRepository:
         )
 
     def add_document(self, doc):
-        """Insert a new document row and log the 'Classified' event.
-
-        Args:
-            doc (Document): The document to save.
-
-        Returns:
-            Document: The same document with its id set from the new row.
-        """
+        """Insert a new document row and log the 'Classified' event."""
         conn = get_connection(self.db_path)
         try:
             cursor = conn.execute(
@@ -113,7 +71,6 @@ class CatalogRepository:
                  doc.source, doc.document_date, doc.summary, doc.status,
                  doc.file_path, doc.date_added, doc.date_classified),
             )
-            # lastrowid is the id SQLite gave the new row.
             doc.id = cursor.lastrowid
             self.log_activity(conn, doc.id, doc.status)
             conn.commit()
@@ -122,14 +79,7 @@ class CatalogRepository:
         return doc
 
     def get_document(self, doc_id):
-        """Return one document by its id.
-
-        Args:
-            doc_id (int): The document's primary key.
-
-        Returns:
-            Document or None: The document, or None if the id does not exist.
-        """
+        """Return one document by its id."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -142,21 +92,11 @@ class CatalogRepository:
         return row_to_document(row)
 
     def get_all_documents(self, filters=None):
-        """Return all documents, optionally filtered.
-
-        Args:
-            filters (dict, optional): Keys: media_type, source, status,
-                search. Empty or missing keys are ignored. search looks
-                for the text inside the filenames, source, and summary.
-
-        Returns:
-            list[Document]: Matching documents, oldest first.
-        """
+        """Return all documents, optionally filtered."""
         if filters is None:
             filters = {}
 
-        # Build the WHERE clause one condition at a time. The values go in
-        # a separate list so SQLite fills the ? placeholders safely.
+        # Values go in a separate list so SQLite fills the ? safely.
         conditions = []
         values = []
         for field in ("media_type", "source", "status"):
@@ -185,17 +125,7 @@ class CatalogRepository:
         return [row_to_document(row) for row in rows]
 
     def has_file_path(self, file_path):
-        """Return True if a document with this file_path is already saved.
-
-        ClassificationPipeline uses this to skip files that were already
-        processed, so only new files are sent to the AI.
-
-        Args:
-            file_path (str): Absolute path of the file.
-
-        Returns:
-            bool: True if the path is already in the documents table.
-        """
+        """Return True if a document with this file_path is already saved."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -206,25 +136,11 @@ class CatalogRepository:
         return row is not None
 
     def get_by_status(self, status):
-        """Return all documents with the given status.
-
-        Args:
-            status (str): 'Classified' or 'Manual Review'.
-
-        Returns:
-            list[Document]: Matching documents.
-        """
+        """Return all documents with the given status."""
         return self.get_all_documents({"status": status})
 
     def check_fields(self, fields):
-        """Raise ValueError if any field in an update is not allowed.
-
-        Args:
-            fields (dict): Field names and new values from the user.
-
-        Raises:
-            ValueError: With a message that explains the problem.
-        """
+        """Raise ValueError if any field in an update is not allowed."""
         for name in fields:
             if name in LOCKED_FIELDS:
                 raise ValueError(name + " is locked and cannot be edited")
@@ -242,22 +158,7 @@ class CatalogRepository:
                              .format(MAX_SUMMARY_LENGTH))
 
     def update_document(self, doc_id, fields):
-        """Update editable fields on a document.
-
-        Rejects any attempt to change original_filename or filename with a
-        ValueError, which the route will translate into a 400 response.
-
-        Args:
-            doc_id (int): The document's primary key.
-            fields (dict): Field names and new values.
-
-        Returns:
-            Document: The updated document.
-
-        Raises:
-            ValueError: If fields has a locked, unknown, or invalid value.
-            KeyError: If doc_id does not exist.
-        """
+        """Update editable fields on a document."""
         # Check everything before touching the database.
         self.check_fields(fields)
         if self.get_document(doc_id) is None:
@@ -265,8 +166,7 @@ class CatalogRepository:
         if not fields:
             return self.get_document(doc_id)
 
-        # Column names come only from EDITABLE_FIELDS (checked above),
-        # never straight from the user, so building the SET part is safe.
+        # Safe: column names come only from EDITABLE_FIELDS, never the user.
         set_parts = [name + " = ?" for name in fields]
         values = list(fields.values())
         values.append(doc_id)
@@ -285,23 +185,7 @@ class CatalogRepository:
         return self.get_document(doc_id)
 
     def rename_document(self, doc_id, new_filename, new_path):
-        """Save a new filename after a rename the user confirmed.
-
-        This is the only way filename changes after classification, and
-        only POST /documents/<id>/rename calls it. original_filename
-        never changes. The old and new names go to activity_log.
-
-        Args:
-            doc_id (int): The document's primary key.
-            new_filename (str): The file's new name.
-            new_path (str): The file's new absolute path.
-
-        Returns:
-            Document: The updated document.
-
-        Raises:
-            KeyError: If doc_id does not exist.
-        """
+        """Save a new filename after a rename the user confirmed."""
         doc = self.get_document(doc_id)
         if doc is None:
             raise KeyError(doc_id)
@@ -321,19 +205,7 @@ class CatalogRepository:
         return self.get_document(doc_id)
 
     def get_project_summary(self):
-        """Return the numbers the chat uses to describe the project.
-
-        Returns:
-            dict: {
-                'total': int,
-                'classified': int,
-                'manual_review': int,
-                'by_type': {media_type: count, ...},
-                'top_sources': [{'source': str, 'count': int}, ...],
-                'first_date': str or None,
-                'last_date': str or None,
-            }
-        """
+        """Return the numbers the chat uses to describe the project."""
         conn = get_connection(self.db_path)
         try:
             status_rows = conn.execute(
@@ -375,18 +247,7 @@ class CatalogRepository:
         }
 
     def get_dashboard_stats(self):
-        """Return aggregate data for the dashboard.
-
-        Returns:
-            dict: {
-                'documents_classified': int,
-                'needs_manual_review': int,
-                'sources_tracked': int,
-                'media_type_breakdown': {type: count, ...},
-                'recent_activity': [{'filename': str, 'action': str,
-                                     'timestamp': str}, ...]
-            }
-        """
+        """Return aggregate data for the dashboard."""
         conn = get_connection(self.db_path)
         try:
             classified = conn.execute(
@@ -434,13 +295,7 @@ class CatalogRepository:
         }
 
     def get_app_config(self):
-        """Return the single app_config row as a dict, or None if unset.
-
-        Returns:
-            dict or None: {'research_name', 'target_directory',
-                'app_lock_password_hash', 'language', 'naming_template'},
-                or None before first setup.
-        """
+        """Return the single app_config row as a dict, or None if unset."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -456,15 +311,7 @@ class CatalogRepository:
         return dict(row)
 
     def save_app_config(self, research_name, target_directory):
-        """Save research_name and target_directory.
-
-        The app has only one app_config row: it is created the first time
-        and updated after that.
-
-        Args:
-            research_name (str): Name of the current research project.
-            target_directory (str): Path to the archive folder.
-        """
+        """Save research_name and target_directory."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -487,21 +334,7 @@ class CatalogRepository:
             conn.close()
 
     def save_config_value(self, column, value):
-        """Save one setting in the app_config row.
-
-        Some settings (like the language) can be picked before the user
-        chooses a project, so the row is created here if it does not
-        exist yet. Its research_name and target_directory then stay
-        empty strings.
-
-        Args:
-            column (str): One of SINGLE_CONFIG_COLUMNS. The name is put
-                into the SQL text, so only these fixed names are allowed.
-            value (str): The new value, already checked by the caller.
-
-        Raises:
-            ValueError: If column is not in SINGLE_CONFIG_COLUMNS.
-        """
+        """Save one setting in the app_config row."""
         if column not in SINGLE_CONFIG_COLUMNS:
             raise ValueError(column + " is not a single setting")
         conn = get_connection(self.db_path)
@@ -525,42 +358,22 @@ class CatalogRepository:
             conn.close()
 
     def save_language(self, language):
-        """Save the interface language ('en' or 'es').
-
-        Args:
-            language (str): Language code, already checked by the caller.
-        """
+        """Save the interface language ('en' or 'es')."""
         self.save_config_value("language", language)
 
     def save_naming_template(self, template):
-        """Save the file naming template, e.g. '{date}_{topic}'.
-
-        Args:
-            template (str): A template already checked with
-                naming.validate_template().
-        """
+        """Save the file naming template, e.g. '{date}_{topic}'."""
         self.save_config_value("naming_template", template)
 
     def get_naming_template(self):
-        """Return the saved naming template, or the default one.
-
-        Returns:
-            str: For example '{date}_{topic}'.
-        """
+        """Return the saved naming template, or the default one."""
         config = self.get_app_config()
         if config and config["naming_template"]:
             return config["naming_template"]
         return DEFAULT_NAMING_TEMPLATE
 
     def next_number(self):
-        """Return the number for the next file added to the catalog.
-
-        It is the highest document id plus one, so it is unique in this
-        catalog and never repeats, even if a row is deleted.
-
-        Returns:
-            int: 1 for an empty catalog.
-        """
+        """Return the number for the next file added to the catalog."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -570,11 +383,7 @@ class CatalogRepository:
         return (row["highest"] or 0) + 1
 
     def get_active_provider(self):
-        """Return the active AI provider and model, or None if unset.
-
-        Returns:
-            dict or None: {'provider_name': str, 'model': str}
-        """
+        """Return the active AI provider and model, or None if unset."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
@@ -588,15 +397,7 @@ class CatalogRepository:
         return dict(row)
 
     def set_active_provider(self, provider_name, model):
-        """Make one provider the active one and store its model.
-
-        Every other provider is marked inactive first, so only one is
-        active at a time. The API key is never stored here.
-
-        Args:
-            provider_name (str): e.g. 'gemini'.
-            model (str): e.g. 'gemini-2.5-flash'.
-        """
+        """Make one provider the active one and store its model."""
         conn = get_connection(self.db_path)
         try:
             conn.execute("UPDATE ai_provider_config SET is_active = 0")

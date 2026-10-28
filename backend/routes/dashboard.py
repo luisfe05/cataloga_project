@@ -1,8 +1,4 @@
-"""Dashboard routes.
-
-Endpoints:
-    GET /dashboard/stats    Return summary counts and recent activity.
-"""
+"""Dashboard routes."""
 
 from flask import Blueprint, jsonify
 
@@ -13,15 +9,7 @@ dashboard_bp = Blueprint("dashboard", __name__)
 
 @dashboard_bp.route("/dashboard/stats", methods=["GET"])
 def get_stats():
-    """Return dashboard summary data for the active project.
-
-    Returns:
-        200: JSON with documents_classified, needs_manual_review,
-             sources_tracked, media_type_breakdown (dict),
-             recent_activity (list).
-        409: If there is no usable project ('no_project' or
-             'project_unavailable').
-    """
+    """Return dashboard summary data for the active project."""
     repo, error = get_active_repo()
     if error:
         return error

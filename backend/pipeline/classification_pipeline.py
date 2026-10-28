@@ -1,22 +1,4 @@
-"""ClassificationPipeline.
-
-Orchestrates the full classification flow for a single file or a batch:
-1. Extract the text from the file (PDF and plain text files only).
-2. Ask the AI provider for the media type, a summary, and (in one
-   request) the source, the document date, and a short topic.
-3. Validate completeness: flag as Manual Review if any field is missing.
-4. Build the new name from the project's naming template (naming.py) and
-   move the file to the right subdirectory.
-5. Hand the finished Document object to CatalogRepository for storage.
-
-Photos, audio, and video are sorted into their folder by file extension.
-Their content is never sent to the AI (that is out of scope for the MVP),
-so they always end up in Manual Review for a manual summary. Files
-without text are named with the file date and a number.
-
-The template and the number come from this pipeline's own
-CatalogRepository, so each catalog keeps its own naming method.
-"""
+"""ClassificationPipeline."""
 
 import json
 import os
@@ -27,7 +9,7 @@ from pypdf import PdfReader
 from backend.models.document import Document
 from backend.pipeline import naming
 
-# File types sorted by extension alone, without asking the AI.
+# Sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
     ".jpg": "Photos",
     ".jpeg": "Photos",
@@ -48,13 +30,12 @@ EXTENSION_MEDIA_TYPES = {
     ".mxf": "Video",
 }
 
-# File types whose text the pipeline can read and send to the AI.
 READABLE_EXTENSIONS = (".pdf", ".txt")
 
-# Folder used when a file can't be read or the AI can't classify it.
+# Used when a file can't be read or classified.
 FALLBACK_MEDIA_TYPE = "Documents"
 
-# Fields that must be filled in for a document to count as Classified.
+# Needed to count as Classified.
 REQUIRED_FIELDS = ("source", "document_date", "summary")
 
 METADATA_PROMPT = """You are helping a researcher catalog an archive.
@@ -72,29 +53,16 @@ Use null for anything the text does not say. Do not guess.
 Respond with ONLY a JSON object in this exact format:
 {"source": "...", "document_date": "...", "topic": "..."}"""
 
-# Fields read from the AI's metadata answer.
 METADATA_FIELDS = ("source", "document_date", "topic")
 
 
 def now_timestamp():
-    """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00.
-
-    Returns:
-        str: The current local time, without microseconds.
-    """
+    """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00."""
     return datetime.now().isoformat(timespec="seconds")
 
 
 def extract_text(file_path):
-    """Return the text inside a PDF or .txt file.
-
-    Args:
-        file_path (str): Path to the file.
-
-    Returns:
-        str: The text, or an empty string if the file can't be read. A
-            scanned PDF with no text layer also gives an empty string.
-    """
+    """Return the text inside a PDF or .txt file."""
     extension = os.path.splitext(file_path)[1].lower()
     try:
         if extension == ".pdf":
@@ -112,17 +80,7 @@ def extract_text(file_path):
 
 
 def parse_json_answer(answer):
-    """Turn the AI's JSON answer into a dict.
-
-    Models sometimes wrap JSON in markdown fences like ```json ... ```,
-    so those are removed first.
-
-    Args:
-        answer (str or None): The AI's raw answer.
-
-    Returns:
-        dict: The parsed object, or an empty dict if it isn't valid JSON.
-    """
+    """Turn the AI's JSON answer into a dict."""
     if not answer:
         return {}
     text = answer.strip()
@@ -143,28 +101,13 @@ class ClassificationPipeline:
     """Runs the classify-summarize-organize-catalog flow."""
 
     def __init__(self, ai_client, catalog_repo, file_organizer):
-        """Set up the pipeline with its three dependencies.
-
-        Args:
-            ai_client: An AIProviderClient instance for making AI calls.
-            catalog_repo: A CatalogRepository instance for database writes.
-            file_organizer: A FileOrganizer instance for renaming and
-                moving files.
-        """
+        """Set up the pipeline with its three dependencies."""
         self.ai_client = ai_client
         self.db = catalog_repo
         self.file_organizer = file_organizer
 
     def classify_document(self, file_path):
-        """Run the full pipeline on a single file.
-
-        Args:
-            file_path (str): Absolute path to the file to process.
-
-        Returns:
-            Document: The finished Document object, already saved to
-                the database.
-        """
+        """Run the full pipeline on a single file."""
         original_filename = os.path.basename(file_path)
         date_added = now_timestamp()
         extension = os.path.splitext(file_path)[1].lower()
@@ -175,7 +118,6 @@ class ClassificationPipeline:
         has_text = False
 
         if extension in EXTENSION_MEDIA_TYPES:
-            # Photos, audio, video: the extension decides the folder.
             media_type = EXTENSION_MEDIA_TYPES[extension]
         elif extension in READABLE_EXTENSIONS:
             text = extract_text(file_path)
@@ -185,8 +127,7 @@ class ClassificationPipeline:
                 summary = self.generate_summary(text)
                 metadata = self.extract_metadata(text)
 
-        # If nothing decided the type, use the fallback folder. The empty
-        # fields will send the document to Manual Review below.
+        # Empty fields send the document to Manual Review below.
         if media_type is None:
             media_type = FALLBACK_MEDIA_TYPE
 
@@ -209,21 +150,7 @@ class ClassificationPipeline:
         return self.db.add_document(document)
 
     def build_filename(self, file_path, has_text, metadata):
-        """Build the new file name with the project's naming method.
-
-        Files with text use the template saved in this catalog. Files
-        without text (photos, audio, video, scans) always use the file
-        date and a number, whatever the method.
-
-        Args:
-            file_path (str): The file, still in the Drop Zone.
-            has_text (bool): True if text was read from the file.
-            metadata (dict): source, document_date, and topic from the AI.
-
-        Returns:
-            str: The new name, e.g. '2026-07-15_oceanman-malta.pdf'. The
-                FileOrganizer adds -2, -3... if it is taken.
-        """
+        """Build the new file name with the project's naming method."""
         original_filename = os.path.basename(file_path)
         extension = os.path.splitext(file_path)[1]
         number = self.db.next_number()
@@ -242,31 +169,11 @@ class ClassificationPipeline:
         return naming.make_filename(template, parts, extension)
 
     def generate_summary(self, text):
-        """Request a content summary from the AI provider.
-
-        Args:
-            text (str): Extracted text content of the document.
-
-        Returns:
-            str: Summary, capped at 100 characters. Empty string if the
-                AI fails.
-        """
+        """Request a content summary from the AI provider."""
         return self.ai_client.send_summary_request(text)
 
     def regenerate_summary(self, document):
-        """Write a new summary that uses the source and date the user typed.
-
-        Called after the user edits source or document_date in Edit Mode.
-        Only works for files with readable text. If there is no text or
-        the AI fails, the document is returned unchanged.
-
-        Args:
-            document (Document): The document after the user's edit.
-
-        Returns:
-            Document: The document, with the new summary saved if one was
-                generated.
-        """
+        """Write a new summary that uses the source and date the user typed."""
         text = extract_text(document.file_path)
         if not text:
             return document
@@ -278,24 +185,14 @@ class ClassificationPipeline:
         return self.db.update_document(document.id, {"summary": summary})
 
     def extract_metadata(self, text):
-        """Ask the AI to pull source, document date, and topic from the text.
-
-        The topic comes in the same request as the source and date, so
-        naming files does not add another call to the AI.
-
-        Args:
-            text (str): Extracted text content of the document.
-
-        Returns:
-            dict: {'source', 'document_date', 'topic'}, each a str or None.
-        """
+        """Ask the AI for the source, document date, and topic."""
         answer = self.ai_client.ask(METADATA_PROMPT, text)
         result = parse_json_answer(answer)
 
         metadata = {}
         for field in METADATA_FIELDS:
             value = result.get(field)
-            # Keep only real text. null, '', and 'null' all become None.
+            # null, '', and 'null' all become None.
             if isinstance(value, str) and value.strip() and \
                     value.strip().lower() != "null":
                 metadata[field] = value.strip()
@@ -304,18 +201,7 @@ class ClassificationPipeline:
         return metadata
 
     def validate_completeness(self, document):
-        """Check whether all expected fields were filled in.
-
-        If any field is empty, calls document.mark_needs_review() with a
-        list of the missing field names, which sets status to
-        'Manual Review'.
-
-        Args:
-            document (Document): The document to validate.
-
-        Returns:
-            Document: The same document, possibly with status updated.
-        """
+        """Check whether all expected fields were filled in."""
         missing = [field for field in REQUIRED_FIELDS
                    if not getattr(document, field)]
         if missing:
@@ -323,19 +209,7 @@ class ClassificationPipeline:
         return document
 
     def process_batch(self, file_list):
-        """Run classify_document on every new file in a list.
-
-        Files that are already in the catalog are skipped, so running the
-        same folder twice only processes the files added since. A file
-        that fails (for example, it was deleted meanwhile) is skipped so
-        the rest of the batch still runs.
-
-        Args:
-            file_list (list[str]): Absolute paths to the files to process.
-
-        Returns:
-            list[Document]: One Document per file processed.
-        """
+        """Run classify_document on every new file in a list."""
         documents = []
         for file_path in file_list:
             if self.db.has_file_path(file_path):

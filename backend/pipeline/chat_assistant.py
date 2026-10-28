@@ -1,19 +1,4 @@
-"""Chat assistant.
-
-The chat answers with ONE action from a fixed list (ACTIONS). The AI
-model never runs anything: it only writes a JSON answer. Each action
-has a check_ function here that validates the model's data against the
-active project's catalog before the frontend sees it. To add an action
-later, write one more check_ function and add it to ACTIONS.
-
-Nothing in this file writes to the database or the disk. A rename is
-only proposed here; it happens in POST /documents/<id>/rename, after
-the user clicks Confirm.
-
-When the model fails or answers with something invalid, the result is
-an 'answer' action with a 'notice' code. The frontend turns that code
-into a friendly message in the app's language.
-"""
+"""Chat assistant."""
 
 import json
 import os
@@ -23,26 +8,20 @@ import unicodedata
 from backend.models.document import MEDIA_TYPES
 from backend.pipeline.naming import clean_new_name
 
-# How many documents go to the model with each message.
 MAX_CONTEXT_DOCUMENTS = 30
 
-# How many earlier messages the frontend may send, and their length.
 MAX_HISTORY = 6
 MAX_HISTORY_CHARS = 500
 
-# Longest message from the user, reply from the model, and filter text.
 MAX_MESSAGE_CHARS = 1000
 MAX_REPLY_CHARS = 2000
 MAX_FILTER_TEXT = 100
 
-# Most documents shown as cards or cited as sources in one answer.
 MAX_LISTED = 10
 
-# Valid statuses, as stored in the database.
 STATUSES = ("Classified", "Manual Review")
 
-# Short words that would match almost every document. Words under 3
-# letters are skipped too.
+# Words that match almost every document. Words under 3 letters too.
 STOP_WORDS = {
     "the", "and", "for", "with", "from", "about", "find", "show", "all",
     "file", "files", "rename", "this", "that", "what", "which", "please",
@@ -91,49 +70,20 @@ Rules:
 
 
 def fold(text):
-    """Return text in lowercase and without accents, for searching.
-
-    Example: 'Olímpica' -> 'olimpica'
-
-    Args:
-        text (str or None)
-
-    Returns:
-        str
-    """
+    """Return text in lowercase and without accents, for searching."""
     text = unicodedata.normalize("NFKD", str(text or ""))
     return text.encode("ascii", "ignore").decode("ascii").lower()
 
 
 def words_in(message):
-    """Return the words of a message that are worth searching for.
-
-    Args:
-        message (str)
-
-    Returns:
-        set[str]: Words of 3 letters or more that are not stop words.
-    """
+    """Return the words of a message that are worth searching for."""
     words = re.findall(r"[a-z0-9]+", fold(message))
     return {word for word in words
             if len(word) >= 3 and word not in STOP_WORDS}
 
 
 def find_documents(documents, message):
-    """Pick the documents most related to a message.
-
-    Each document gets one point for every word of the message found in
-    its filenames, source, summary or date. With no match at all, the
-    newest documents are used, so the model can still work with dates
-    and synonyms.
-
-    Args:
-        documents (list[Document]): Every document of the project.
-        message (str): The user's message.
-
-    Returns:
-        list[Document]: At most MAX_CONTEXT_DOCUMENTS documents.
-    """
+    """Pick the documents most related to a message."""
     words = words_in(message)
     scored = []
     for doc in documents:
@@ -152,14 +102,7 @@ def find_documents(documents, message):
 
 
 def document_card(doc):
-    """Return the fields the chat shows for one document.
-
-    Args:
-        doc (Document)
-
-    Returns:
-        dict
-    """
+    """Return the fields the chat shows for one document."""
     return {
         "id": doc.id,
         "filename": doc.filename,
@@ -172,16 +115,7 @@ def document_card(doc):
 
 
 def clean_history(history):
-    """Keep only the last messages the frontend sent, in a safe shape.
-
-    Args:
-        history: Anything from the request. A valid one is a list of
-            {"role": "user" or "assistant", "text": str}.
-
-    Returns:
-        list[dict]: At most MAX_HISTORY messages, each text cut to
-            MAX_HISTORY_CHARS.
-    """
+    """Keep only the last messages the frontend sent, in a safe shape."""
     if not isinstance(history, list):
         return []
     clean = []
@@ -196,20 +130,7 @@ def clean_history(history):
 
 
 def build_prompt(message, history, summary, documents):
-    """Build the text sent to the model with the system prompt.
-
-    Everything goes as one JSON object, so the model can tell the
-    project data apart from the user's message.
-
-    Args:
-        message (str): The user's message.
-        history (list[dict]): From clean_history().
-        summary (dict): From CatalogRepository.get_project_summary().
-        documents (list[Document]): From find_documents().
-
-    Returns:
-        str
-    """
+    """Build the text sent to the model with the system prompt."""
     return json.dumps({
         "project": summary,
         "documents": [document_card(doc) for doc in documents],
@@ -219,17 +140,7 @@ def build_prompt(message, history, summary, documents):
 
 
 def parse_reply(answer):
-    """Read the JSON object in the model's answer.
-
-    Models sometimes wrap the JSON in ```json fences or add a sentence
-    before it, so only the part from the first { to the last } is read.
-
-    Args:
-        answer (str or None): The model's raw answer.
-
-    Returns:
-        dict or None: The object, or None if there is no valid one.
-    """
+    """Read the JSON object in the model's answer."""
     if not answer:
         return None
     start = answer.find("{")
@@ -244,18 +155,7 @@ def parse_reply(answer):
 
 
 def make_response(action, reply="", sources=None, notice=None):
-    """Build a chat response in the shape the frontend expects.
-
-    Args:
-        action (str): One of the keys of ACTIONS.
-        reply (str): Text to show.
-        sources (list[dict], optional): Cards of the documents cited.
-        notice (str, optional): Code of a friendly message the
-            frontend shows, like 'invalid_reply'.
-
-    Returns:
-        dict
-    """
+    """Build a chat response in the shape the frontend expects."""
     return {
         "action": action,
         "reply": reply,
@@ -269,26 +169,12 @@ def make_response(action, reply="", sources=None, notice=None):
 
 
 def notice_response(code):
-    """Return a plain 'answer' with a friendly message code.
-
-    Args:
-        code (str): For example 'invalid_reply' or 'no_documents'.
-
-    Returns:
-        dict
-    """
+    """Return a plain 'answer' with a friendly message code."""
     return make_response("answer", notice=code)
 
 
 def clean_reply(data):
-    """Return the model's reply text, cut to MAX_REPLY_CHARS.
-
-    Args:
-        data (dict): The model's JSON object.
-
-    Returns:
-        str: The reply, or '' if it is missing or not text.
-    """
+    """Return the model's reply text, cut to MAX_REPLY_CHARS."""
     reply = data.get("reply")
     if not isinstance(reply, str):
         return ""
@@ -296,15 +182,7 @@ def clean_reply(data):
 
 
 def valid_ids(value, context):
-    """Keep only the ids that belong to a document of the project.
-
-    Args:
-        value: Anything the model sent, usually a list of ids.
-        context (dict): From make_context().
-
-    Returns:
-        list[int]: At most MAX_LISTED ids, without repeats, in order.
-    """
+    """Keep only the ids that belong to a document of the project."""
     if not isinstance(value, list):
         return []
     ids = []
@@ -322,41 +200,17 @@ def valid_ids(value, context):
 
 
 def cards_for(ids, context):
-    """Return the document cards for a list of valid ids.
-
-    Args:
-        ids (list[int])
-        context (dict)
-
-    Returns:
-        list[dict]
-    """
+    """Return the document cards for a list of valid ids."""
     return [document_card(context["documents"][doc_id]) for doc_id in ids]
 
 
 def sources_of(data, context):
-    """Return the cards of the sources the model cited.
-
-    Args:
-        data (dict): The model's JSON object.
-        context (dict)
-
-    Returns:
-        list[dict]
-    """
+    """Return the cards of the sources the model cited."""
     return cards_for(valid_ids(data.get("sources"), context), context)
 
 
 def check_answer(data, context):
-    """Validate the 'answer' action: plain text.
-
-    Args:
-        data (dict): The model's JSON object.
-        context (dict)
-
-    Returns:
-        dict: The response for the frontend.
-    """
+    """Validate the 'answer' action: plain text."""
     reply = clean_reply(data)
     if not reply:
         return notice_response("invalid_reply")
@@ -364,15 +218,7 @@ def check_answer(data, context):
 
 
 def check_show_documents(data, context):
-    """Validate 'show_documents': a list of documents shown as cards.
-
-    Args:
-        data (dict)
-        context (dict)
-
-    Returns:
-        dict
-    """
+    """Validate 'show_documents': a list of documents shown as cards."""
     ids = valid_ids(data.get("document_ids"), context)
     if not ids:
         return notice_response("no_documents")
@@ -383,15 +229,7 @@ def check_show_documents(data, context):
 
 
 def match_value(value, allowed):
-    """Return the allowed value that matches, ignoring capital letters.
-
-    Args:
-        value: What the model sent.
-        allowed (iterable[str]): The valid values.
-
-    Returns:
-        str or None: The value as stored, or None if nothing matches.
-    """
+    """Return the allowed value that matches, ignoring capital letters."""
     if not isinstance(value, str):
         return None
     for item in allowed:
@@ -401,18 +239,7 @@ def match_value(value, allowed):
 
 
 def check_filter_catalog(data, context):
-    """Validate 'filter_catalog': filters the Catalog screen applies.
-
-    Unknown filters are dropped. media_type and status must be valid
-    values, and source must be a source of this project.
-
-    Args:
-        data (dict)
-        context (dict)
-
-    Returns:
-        dict
-    """
+    """Validate 'filter_catalog': filters the Catalog screen applies."""
     sent = data.get("filters")
     if not isinstance(sent, dict):
         sent = {}
@@ -439,18 +266,7 @@ def check_filter_catalog(data, context):
 
 
 def check_summarize_project(data, context):
-    """Validate 'summarize_project': the model's text about the project.
-
-    The numbers come from the database, not from the model, and are
-    sent too, so the frontend can show them.
-
-    Args:
-        data (dict)
-        context (dict)
-
-    Returns:
-        dict
-    """
+    """Validate 'summarize_project': the model's text about the project."""
     reply = clean_reply(data)
     if not reply:
         return notice_response("invalid_reply")
@@ -461,18 +277,7 @@ def check_summarize_project(data, context):
 
 
 def check_propose_rename(data, context):
-    """Validate 'propose_rename'. Nothing is renamed here.
-
-    The new name is cleaned with the naming rules and keeps the file's
-    extension. The frontend shows it with Confirm and Cancel.
-
-    Args:
-        data (dict)
-        context (dict)
-
-    Returns:
-        dict
-    """
+    """Validate 'propose_rename'. Nothing is renamed here."""
     ids = valid_ids([data.get("document_id")], context)
     if not ids:
         return notice_response("rename_not_found")
@@ -505,16 +310,7 @@ ACTIONS = {
 
 
 def make_context(documents, summary):
-    """Collect what the validators need to know about the project.
-
-    Args:
-        documents (list[Document]): Every document of the project.
-        summary (dict): From get_project_summary().
-
-    Returns:
-        dict: {'documents': {id: Document}, 'sources': [str],
-            'summary': dict}
-    """
+    """Collect what the validators need to know about the project."""
     sources = sorted({doc.source for doc in documents if doc.source})
     return {
         "documents": {doc.id: doc for doc in documents},
@@ -524,17 +320,7 @@ def make_context(documents, summary):
 
 
 def run_chat(repo, client, message, history=None):
-    """Answer one chat message. Reads the catalog, never changes it.
-
-    Args:
-        repo (CatalogRepository): The active project's catalog.
-        client (AIProviderClient or None): The project's AI provider.
-        message (str): The user's message.
-        history (list, optional): Earlier messages from the frontend.
-
-    Returns:
-        dict: The response from make_response().
-    """
+    """Answer one chat message. Reads the catalog, never changes it."""
     documents = repo.get_all_documents()
     summary = repo.get_project_summary()
     context = make_context(documents, summary)
@@ -548,7 +334,7 @@ def run_chat(repo, client, message, history=None):
     if data is None:
         return notice_response("invalid_reply")
     action = data.get("action")
-    # A list or a dict cannot be looked up in ACTIONS, so check first.
+    # A list or a dict cannot be looked up in ACTIONS.
     check = ACTIONS.get(action) if isinstance(action, str) else None
     if check is None:
         return notice_response("invalid_reply")

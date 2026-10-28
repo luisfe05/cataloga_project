@@ -1,15 +1,4 @@
-"""Database schema and initialization.
-
-Defines the four tables (documents, activity_log, app_config,
-ai_provider_config) and provides the init_db() function that creates
-them on first run.
-
-Where the database file lives depends on how the app is started:
-- From the code (python main.py): database/catalog.db in the project.
-- From the packaged app (PyInstaller): the system's folder for app data,
-  because files inside the packaged app can't be changed and are
-  replaced on every update.
-"""
+"""Database schema and initialization."""
 
 import os
 import sqlite3
@@ -19,11 +8,7 @@ APP_NAME = "Cataloga"
 
 
 def app_data_folder():
-    """Return the folder where the packaged app keeps its data.
-
-    Returns:
-        str: For example ~/Library/Application Support/Cataloga on macOS.
-    """
+    """Return the folder where the packaged app keeps its data."""
     home = os.path.expanduser("~")
     if sys.platform == "darwin":
         return os.path.join(home, "Library", "Application Support",
@@ -35,13 +20,7 @@ def app_data_folder():
 
 
 def default_db_path():
-    """Return the path of the database file for the way the app runs.
-
-    PyInstaller sets sys.frozen to True inside the packaged app.
-
-    Returns:
-        str: Absolute path to catalog.db.
-    """
+    """Return the path of the database file for the way the app runs."""
     if getattr(sys, "frozen", False):
         folder = app_data_folder()
         os.makedirs(folder, exist_ok=True)
@@ -86,8 +65,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 """
 
-# activity_log columns added after the first release. details keeps
-# extra text, like 'old.pdf → new.pdf' for a rename from the chat.
+# Added after the first release. details holds text like 'a.pdf → b.pdf'.
 ADDED_ACTIVITY_LOG_COLUMNS = {
     "details": "details TEXT",
 }
@@ -103,8 +81,7 @@ CREATE TABLE IF NOT EXISTS app_config (
 );
 """
 
-# app_config columns added after the first release. Databases made
-# before them get them from add_missing_columns().
+# Added after the first release; add_missing_columns() adds them.
 ADDED_APP_CONFIG_COLUMNS = {
     "language": "language TEXT NOT NULL DEFAULT 'en'",
     "naming_template":
@@ -122,36 +99,19 @@ CREATE TABLE IF NOT EXISTS ai_provider_config (
 
 
 def get_connection(db_path=DB_PATH):
-    """Open and return a connection to the SQLite database.
-
-    Args:
-        db_path (str): Path to the database file. Defaults to
-                       database/catalog.db. Tests pass a temporary file.
-
-    Returns:
-        sqlite3.Connection: Connection with row_factory set so rows behave
-                            like dicts.
-    """
+    """Open and return a connection to the SQLite database."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def add_missing_columns(cursor):
-    """Add any app_config or activity_log column an older database lacks.
-
-    CREATE TABLE IF NOT EXISTS does not change a table that already
-    exists, so an older database needs this extra step.
-
-    Args:
-        cursor (sqlite3.Cursor): Cursor on an open connection.
-    """
-    # Table names and column definitions are fixed in this file, never
-    # from the user, so building the SQL with + is safe here.
+    """Add any app_config or activity_log column an older database lacks."""
+    # Safe: table and column names are fixed here, never from the user.
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
              ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS))
     for table, new_columns in added:
-        # PRAGMA table_info lists one row per column; row[1] is its name.
+        # row[1] is the column name.
         columns = [row[1] for row in
                    cursor.execute("PRAGMA table_info(" + table + ")")]
         for name, definition in new_columns.items():
@@ -161,12 +121,7 @@ def add_missing_columns(cursor):
 
 
 def init_db(db_path=DB_PATH):
-    """Create all tables if they don't already exist.
-
-    Args:
-        db_path (str): Path to the database file. Defaults to
-                       database/catalog.db.
-    """
+    """Create all tables if they don't already exist."""
     conn = get_connection(db_path)
     cursor = conn.cursor()
     cursor.execute(CREATE_DOCUMENTS)
