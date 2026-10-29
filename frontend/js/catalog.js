@@ -306,6 +306,10 @@ function addArchiveCells(row, doc) {
         cell.classList.add("more-col");
         row.appendChild(cell);
     });
+    // Where the date came from. Read only, even in Edit Mode.
+    const dateSource = makeCell(doc.date_source
+        ? t(`catalog.date_from_${doc.date_source}`) : "", "nowrap more-col");
+    row.appendChild(dateSource);
 }
 
 /** Filename cell: the name opens the file. In Edit Mode it is plain text, but the icons stay. */
