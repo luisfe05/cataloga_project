@@ -221,8 +221,11 @@ const LANG_ES = {
     "naming.template_help":
         "Usa {date}, {source}, {topic}, {number}, {topic_number} y {original}.",
     "naming.preview": "Vista previa",
-    "naming.media_rule": "Las fotos, el audio y el video usan la fecha del "
-        + "archivo y un número, por ejemplo 2026-07-15_0001.jpg.",
+    "naming.media_rule": "Las fotos se nombran con este método según lo "
+        + "que muestran, y el audio y el video según el título de sus "
+        + "etiquetas. Los archivos sin nada que leer usan su fecha y un "
+        + "número, por ejemplo 2026-07-15_0001.jpg, o undated_0001.jpg si "
+        + "solo se conoce la fecha del disco.",
     "naming.duplicate_rule":
         "Si el nombre ya existe, Cataloga agrega -2, -3 y así.",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
