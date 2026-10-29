@@ -69,6 +69,12 @@ const LANG_ES = {
     "catalog.not_in_list": "{value} (no está en la lista)",
     "catalog.note_duplicate": "Duplicado de {name}",
     "catalog.note_no_category": "La categoría no está en la lista del proyecto",
+    "catalog.note_media": "La lectura de audio y video llega pronto",
+    "catalog.note_media_length":
+        "La lectura de audio y video llega pronto. Duración {length}",
+    "catalog.note_image": "No se pudo leer la imagen",
+    "catalog.note_scan": "No se pudieron leer las páginas escaneadas",
+    "catalog.note_too_big": "El archivo pesa más de 50 MB y no se leyó",
     "catalog.keywords_limit": "Usa hasta 5 palabras clave, separadas por "
         + "comas, de hasta 40 caracteres cada una.",
     "catalog.counterparty_limit":
