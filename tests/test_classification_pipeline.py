@@ -222,15 +222,17 @@ def test_each_method_names_the_file(setup):
 
 
 def test_missing_date_source_and_topic(setup):
-    """Missing date, source, or topic follow the naming rules."""
+    """No date in the text: the file date is used, and the name says so."""
     replies = {"classify": "Documents", "summary": "A letter.",
                "metadata": '{"source": null, "document_date": null, '
                            '"topic": null}'}
     pipeline, ai = setup["build"](replies)
     setup["repo"].save_naming_template("{source}_{date}_{topic}")
-    doc = pipeline.classify_document(
-        make_text_file(setup["drop_zone"], "Carta de Ramón.txt"))
-    assert doc.filename == "undated_carta-de-ramon.txt"
+    path = make_text_file(setup["drop_zone"], "Carta de Ramón.txt")
+    os.utime(path, (JULY_15, JULY_15))
+    doc = pipeline.classify_document(path)
+    assert doc.filename == "2026-07-15_carta-de-ramon.txt"
+    assert doc.date_source == "file"
 
 
 def test_custom_template_with_original(setup):

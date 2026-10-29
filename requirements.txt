@@ -12,5 +12,6 @@ pypdf
 pillow
 pypdfium2
 pillow-heif
+mutagen
 pytest
 pyinstaller

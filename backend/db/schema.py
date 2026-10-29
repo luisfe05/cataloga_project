@@ -63,7 +63,8 @@ CREATE TABLE IF NOT EXISTS documents (
     effective_start   TEXT,
     effective_end     TEXT,
     category          TEXT,
-    subcategory       TEXT
+    subcategory       TEXT,
+    date_source       TEXT
 );
 """
 
@@ -81,6 +82,8 @@ ADDED_DOCUMENTS_COLUMNS = {
     "effective_end": "effective_end TEXT",
     "category": "category TEXT",
     "subcategory": "subcategory TEXT",
+    # Where document_date came from: photo, content, metadata, or file.
+    "date_source": "date_source TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """

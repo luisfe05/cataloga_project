@@ -22,6 +22,7 @@ EXPORT_COLUMNS = (
     ("Media Type", "media_type"),
     ("Source", "source"),
     ("Date", "document_date"),
+    ("Date Source", "date_source"),
     ("Summary", "summary"),
     ("Status", "status"),
     ("Topic", "topic"),
