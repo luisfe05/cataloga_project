@@ -9,6 +9,9 @@ from backend.pipeline.ai_providers.base import AIProviderClient
 
 OLLAMA_BASE_URL = "https://ollama.com/v1"
 
+# Models that accept images. nemotron-3-nano:30b does not.
+VISION_MODELS = ("gemma4:31b",)
+
 # Environment variable (and .env line) for development.
 ENV_KEY_NAME = "OLLAMA_API_KEY"
 
@@ -59,5 +62,22 @@ class OllamaCloudClient(AIProviderClient):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text},
             ],
+        )
+        return response.choices[0].message.content or ""
+
+    @property
+    def supports_images(self):
+        """Say whether the chosen model can look at images."""
+        return self.model in VISION_MODELS
+
+    def send_images(self, prompt, image_uris):
+        """Send a prompt and images (JPEG data URIs) to Ollama Cloud."""
+        client = OpenAI(api_key=self.api_key, base_url=OLLAMA_BASE_URL)
+        content = [{"type": "text", "text": prompt}]
+        for uri in image_uris:
+            content.append({"type": "image_url", "image_url": {"url": uri}})
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": content}],
         )
         return response.choices[0].message.content or ""
