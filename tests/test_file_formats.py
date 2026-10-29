@@ -12,7 +12,7 @@ from pypdf import PdfWriter
 
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import archive_rules, file_readers
+from backend.pipeline import archive_rules, file_metadata, file_readers
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.ai_providers.ollama_cloud import OllamaCloudClient
@@ -286,3 +286,136 @@ def test_big_file_is_not_read(setup, monkeypatch):
     assert doc.review_note == archive_rules.TOO_BIG_NOTE
     assert doc.status == "Manual Review"
     assert ai.text_calls == 0
+
+
+# --- Metadata inside files, and where the date came from ---
+
+def pdf_with_metadata(path, text_page=True):
+    """A one-page PDF with a title, an author and a creation date."""
+    writer = PdfWriter()
+    writer.add_blank_page(width=612, height=792)
+    writer.add_metadata({"/Title": "Pier 9 lease", "/Author": "Ana Ruiz",
+                         "/Subject": "Warehouse lease",
+                         "/Keywords": "lease, pier",
+                         "/CreationDate": "D:20260301090000",
+                         "/Producer": "Canon iR-ADV scanner"})
+    with open(path, "wb") as file:
+        writer.write(file)
+    return str(path)
+
+
+def test_pdf_metadata_is_read(tmp_path):
+    """Title, author, subject, keywords and date come from the PDF."""
+    meta = file_metadata.pdf_metadata(pdf_with_metadata(tmp_path / "a.pdf"))
+    assert meta["title"] == "Pier 9 lease"
+    assert meta["author"] == "Ana Ruiz"
+    assert meta["subject"] == "Warehouse lease"
+    assert meta["keywords"] == "lease, pier"
+    assert meta["created"] == "2026-03-01"
+
+
+def test_pdf_metadata_goes_to_the_ai_and_gives_the_date(setup):
+    """The AI sees the metadata; with no date in the text it is used."""
+    ai = FakeAI(image_answer=json.dumps({"text": "Lease text", "description":
+                                         None}))
+    ai_metadata = json.dumps({"source": "Harbor Law Group", "topic": "Lease",
+                              "document_date": None})
+    seen = []
+
+    def send(system_prompt, text):
+        seen.append(text)
+        if system_prompt == base.SUMMARY_PROMPT:
+            return "A lease."
+        if system_prompt == base.CLASSIFICATION_PROMPT:
+            return "Documents"
+        return ai_metadata
+    ai.send_prompt = send
+    doc = setup["build"](ai).classify_document(
+        pdf_with_metadata(setup["drop"] / "scan.pdf"))
+    assert "Title: Pier 9 lease" in seen[0]
+    assert "Author: Ana Ruiz" in seen[0]
+    assert doc.document_date == "2026-03-01"
+    assert doc.date_source == "metadata"
+
+
+def test_generic_docx_author_is_ignored(tmp_path):
+    """"Microsoft Office User" and "Document1" say nothing, so they go."""
+    path = office_file(tmp_path / "a.docx", {"docProps/core.xml": (
+        '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/'
+        'package/2006/metadata/core-properties" '
+        'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+        'xmlns:dcterms="http://purl.org/dc/terms/"><dc:title>Document1'
+        '</dc:title><dc:creator>Microsoft Office User</dc:creator>'
+        '<dcterms:created>2026-02-14T10:00:00Z</dcterms:created>'
+        '</cp:coreProperties>')})
+    meta = file_metadata.office_metadata(path)
+    assert meta["author"] is None
+    assert meta["title"] is None
+    assert meta["created"] == "2026-02-14"
+
+
+@pytest.mark.parametrize("value", ["Admin", "Untitled 3", "Canon scanner",
+                                   "scan_0047.pdf", "0001"])
+def test_useless_values(value):
+    """Program, scanner, file name and placeholder values are dropped."""
+    assert file_metadata.useful(value, name_like=True) is None
+
+
+def mp3(path, tags=None):
+    """Write a tiny MP3 (silent frames), with ID3 tags if given."""
+    # One MPEG-1 Layer III frame header (128 kbps, 44.1 kHz) and padding.
+    frame = b"\xff\xfb\x90\x00" + b"\0" * 413
+    path.write_bytes(frame * 40)
+    if tags:
+        from mutagen.easyid3 import EasyID3
+        audio = EasyID3()
+        for key, value in tags.items():
+            audio[key] = value
+        audio.save(str(path))
+    return str(path)
+
+
+def test_tagged_mp3_gets_a_name_and_a_source(setup):
+    """A title and a date are enough to name an audio file."""
+    ai = FakeAI()
+    path = mp3(setup["drop"] / "audio 12.mp3",
+               {"title": "Interview with a ferry captain",
+                "artist": "Northside Podcast", "album": "Season 3",
+                "date": "2026-08-01"})
+    doc = setup["build"](ai).classify_document(path)
+    assert doc.media_type == "Audio"
+    assert doc.document_date == "2026-08-01"
+    assert doc.date_source == "metadata"
+    assert doc.summary == "A short summary."
+    assert ai.image_calls == []
+    assert "tower-top" in doc.filename
+
+
+def test_mp3_without_tags_goes_to_manual_review(setup):
+    """No useful metadata: Manual Review, with the file date."""
+    ai = FakeAI()
+    doc = setup["build"](ai).classify_document(
+        mp3(setup["drop"] / "audio 13.mp3"))
+    assert doc.status == "Manual Review"
+    assert doc.review_note.startswith(archive_rules.MEDIA_NOTE)
+    assert doc.date_source == "file"
+    assert ai.text_calls == 0
+
+
+def test_photo_date_comes_first(setup):
+    """For photos, the EXIF date wins over a date in the content."""
+    path = str(setup["drop"] / "p.jpg")
+    exif = Image.Exif()
+    exif[306] = "2025:12:24 18:00:00"
+    Image.new("RGB", (20, 20), (255, 255, 255)).save(path, exif=exif)
+    doc = setup["build"](FakeAI()).classify_document(path)
+    assert doc.document_date == "2025-12-24"
+    assert doc.date_source == "photo"
+
+
+def test_content_date_wins_for_documents(setup):
+    """A date written in the document beats the metadata date."""
+    doc = setup["build"](FakeAI(images=False)).classify_document(
+        docx(setup["drop"] / "a.docx"))
+    assert doc.document_date == "2026-06-11"
+    assert doc.date_source == "content"

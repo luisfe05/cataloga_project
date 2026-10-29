@@ -124,7 +124,8 @@ def test_export_csv(flask_client, repo):
     assert "attachment" in response.headers["Content-Disposition"]
     lines = response.get_data(as_text=True).strip().splitlines()
     assert lines[0] == ("Original Filename,Filename,Media Type,Source,"
-                        "Date,Summary,Status,Topic,Keywords,Category,"
+                        "Date,Date Source,Summary,Status,Topic,Keywords,"
+                        "Category,"
                         "Subcategory,Counterparty,Confidentiality,Owner,"
                         "Effective Start,Effective End,Duplicate Of,"
                         "Review Note,SHA-256")
