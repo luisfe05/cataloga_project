@@ -234,12 +234,64 @@ function drawRename(body, answer) {
     body.appendChild(card);
 }
 
+/** propose_move: "file: current folder → new folder" with Confirm and Cancel. Only Confirm moves. */
+function drawMove(body, answer) {
+    const move = answer.move;
+    const card = chatElement("div", "chat-rename");
+    card.appendChild(chatElement("span", "chat-sources-label",
+        t("chat.move_title", { name: move.filename })));
+    card.appendChild(chatElement("p", "chat-rename-old",
+        move.current_folder ? folderLabel(move.current_folder)
+            : t("catalog.in_drop_zone")));
+    card.appendChild(chatElement("p", "chat-rename-arrow", "↓"));
+    card.appendChild(chatElement("p", "chat-rename-new",
+        folderLabel(move.new_folder)));
+
+    const buttons = chatElement("div", "form-buttons");
+    const confirm = chatElement("button", "primary-button",
+        t("chat.confirm"));
+    confirm.type = "button";
+    const cancel = chatElement("button", "secondary-button",
+        t("chat.cancel"));
+    cancel.type = "button";
+    buttons.append(confirm, cancel);
+    card.appendChild(buttons);
+    const result = chatElement("p", "chat-rename-result");
+    card.appendChild(result);
+
+    const finish = (text) => {
+        buttons.remove();
+        result.textContent = text;
+    };
+    confirm.addEventListener("click", async () => {
+        confirm.disabled = true;
+        cancel.disabled = true;
+        try {
+            await moveDocument(move.document_id, move.new_folder, false);
+            const text = t("catalog.moved",
+                { folder: folderLabel(move.new_folder) });
+            finish(text);
+            rememberMessage("assistant", text);
+            loadCatalog();
+        } catch (error) {
+            confirm.disabled = false;
+            cancel.disabled = false;
+            result.textContent = errorText(error);
+        }
+    });
+    cancel.addEventListener("click", () => {
+        finish(t("chat.rename_cancelled"));
+    });
+    body.appendChild(card);
+}
+
 // One draw function per action. A new action needs one more entry here.
 const ACTION_RENDERERS = {
     show_documents: drawDocuments,
     filter_catalog: drawFilters,
     summarize_project: drawProjectSummary,
     propose_rename: drawRename,
+    propose_move: drawMove,
 };
 
 function drawAnswer(body, answer) {

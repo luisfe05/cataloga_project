@@ -80,9 +80,11 @@ These are its folders, at most two levels:
 Choose the folder where an archivist would file this document, by what
 it is about, not by its file type. Add "folder" with one top folder name
 exactly as written, and "subfolder" with one of its subfolders exactly
-as written (null if that folder has none). If no folder fits, use null
-for both and add "suggested_folder": {{"parent": "<a top folder name, or
-null for a new top folder>", "name": "<new folder name, 1 to 3 words>"}}."""
+as written (null if that folder has none). Never force a document into
+a folder made for something else. If no folder fits, use null for both
+and always add "suggested_folder": {{"parent": "<a top folder name, or
+null for a new top folder>", "name": "<new folder name, 1 to 3 words>"}}.
+Answer with one JSON object only."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
 

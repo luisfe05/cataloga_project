@@ -1218,6 +1218,28 @@ td.edit-error {
     white-space: normal;
 }
 
+/* A tree project has one Folder column instead of Category and Subcategory. */
+.catalog-table.tree-mode .sub-col {
+    display: none;
+}
+
+.catalog-table td.folder-cell {
+    min-width: 180px;
+}
+
+.folder-cell .folder-create {
+    margin-top: var(--spacing-4);
+    padding: 2px var(--spacing-12);
+    font-size: 12px;
+}
+
+.folder-cell .folder-move {
+    display: block;
+    margin-top: var(--spacing-8);
+    max-width: 200px;
+    font-size: 12px;
+}
+
 .catalog-table td.keywords {
     min-width: 160px;
     max-width: 220px;
@@ -1598,6 +1620,71 @@ td.edit-error {
 
 .add-category {
     align-self: flex-start;
+}
+
+/* Folder tree: name, "Inside", and Remove on one line; subfolders indented. */
+.settings-form textarea {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-white);
+    padding: var(--spacing-8) var(--spacing-12);
+    font: inherit;
+    font-size: 15px;
+    resize: vertical;
+    margin-bottom: var(--spacing-12);
+}
+
+.settings-form textarea[readonly] {
+    background-color: var(--color-paper);
+    color: var(--color-dusk);
+}
+
+.folders-new-only {
+    margin-bottom: var(--spacing-8);
+}
+
+.folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    margin: var(--spacing-8) 0 var(--spacing-16);
+}
+
+.folder-list:empty {
+    display: none;
+}
+
+.tree-row {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) 32px;
+    gap: var(--spacing-8);
+    align-items: center;
+}
+
+.tree-row.sub {
+    padding-left: var(--spacing-24);
+    border-left: 2px solid var(--color-line);
+    margin-left: var(--spacing-8);
+}
+
+.tree-row input,
+.tree-row select {
+    margin-bottom: 0;
+}
+
+.tree-row select:disabled {
+    background-color: var(--color-paper);
+    color: var(--color-dusk);
+}
+
+.settings-form .tree-row input.input-error {
+    border-color: var(--color-violet);
+    outline: 2px solid var(--color-violet);
+}
+
+.category-remove:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 /* Save and Cancel line up with the panels, under the right column. */
