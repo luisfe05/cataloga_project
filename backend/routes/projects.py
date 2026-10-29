@@ -136,7 +136,7 @@ def suggest_folders():
         description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH]))
     if not tree:
         return error_response(
-            "suggest_failed",
+            "suggest_folders_failed",
             "The AI provider did not suggest any folders.", 502)
     return jsonify({"folders": tree}), 200
 

@@ -74,6 +74,16 @@ const LANG_ES = {
     "catalog.not_in_list": "{value} (no está en la lista)",
     "catalog.note_duplicate": "Duplicado de {name}",
     "catalog.note_no_category": "La categoría no está en la lista del proyecto",
+    "catalog.note_no_folder": "Ninguna carpeta encaja con este archivo",
+    "catalog.col_folder": "Carpeta",
+    "catalog.filter_folder_all": "Carpeta: todas",
+    "catalog.filter_subfolder_all": "Subcarpeta: todas",
+    "catalog.in_drop_zone": "Drop Zone",
+    "catalog.suggested_folder": "Sugerida: {folder}",
+    "catalog.create_and_move": "Crear carpeta y mover",
+    "catalog.move_to": "Mover a…",
+    "catalog.moving": "Moviendo...",
+    "catalog.moved": "Movido a {folder}",
     "catalog.note_media": "La lectura de audio y video llega pronto",
     "catalog.note_media_length":
         "La lectura de audio y video llega pronto. Duración {length}",
@@ -127,6 +137,7 @@ const LANG_ES = {
     "chat.cancel": "Cancelar",
     "chat.renamed": "Renombrado a {name}",
     "chat.rename_cancelled": "Cancelado. No se cambió nada.",
+    "chat.move_title": "Mover {name} a otra carpeta",
     "chat.summary_total": "Documentos",
     "chat.summary_dates": "Fechas",
     "chat.summary_sources": "Fuentes principales",
@@ -143,6 +154,11 @@ const LANG_ES = {
     "chat.notice_rename_invalid": "Ese nombre no tiene caracteres válidos. "
         + "Usa letras y números.",
     "chat.notice_rename_same": "El archivo ya tiene ese nombre.",
+    "chat.notice_move_unavailable": "Este proyecto ordena los archivos por "
+        + "tipo, así que no se mueven entre carpetas.",
+    "chat.notice_move_invalid": "Esa carpeta no está en este proyecto. "
+        + "Usa una de las carpetas del proyecto.",
+    "chat.notice_move_same": "El archivo ya está en esa carpeta.",
 
     // File links: open, preview, show in Finder
     "files.open": "Abrir archivo",
@@ -251,6 +267,44 @@ const LANG_ES = {
     "categories.rules": "Hasta 10 categorías. Un documento que no encaje en "
         + "ninguna va a Revisión manual. Los documentos conservan su "
         + "categoría si cambias la lista.",
+
+    // Folder tree of a project
+    "folders.title": "Carpetas",
+    "folders.hint": "Cataloga guarda cada documento nuevo en la carpeta que "
+        + "encaja con su contenido. Describe el proyecto y haz clic en "
+        + "Sugerir carpetas; luego edita el árbol antes de crear el proyecto.",
+    "folders.description": "¿De qué trata este proyecto?",
+    "folders.description_placeholder": "Por ejemplo: documental sobre un "
+        + "nadador puertorriqueño que compite en Malta",
+    "folders.suggest": "Sugerir carpetas",
+    "folders.file_types": "Empezar con tipos de archivo",
+    "folders.suggesting": "Pidiendo carpetas a Ollama Cloud...",
+    "folders.suggested": "Edita las carpetas y luego crea el proyecto.",
+    "folders.need_description": "Primero describe el proyecto.",
+    "folders.add": "Agregar carpeta",
+    "folders.remove": "Quitar carpeta",
+    "folders.remove_with_subs": "¿Quitar \"{name}\" y sus subcarpetas?",
+    "folders.has_documents":
+        "Hay {n} documentos en esta carpeta, así que se queda.",
+    "folders.name_placeholder": "Nombre de la carpeta",
+    "folders.inside": "Dentro de",
+    "folders.top_level": "Nivel principal",
+    "folders.unnamed": "(sin nombre)",
+    "folders.rules": "Dos niveles como máximo. Hasta 20 carpetas y 10 "
+        + "subcarpetas en cada una. Las carpetas ya creadas no se pueden "
+        + "renombrar; puedes agregar carpetas y quitar las vacías. Las "
+        + "carpetas quitadas se quedan en el disco.",
+    "folders.err_none": "Agrega al menos una carpeta.",
+    "folders.err_empty": "Cada carpeta necesita un nombre.",
+    "folders.err_long":
+        "\"{name}\" es muy largo. Usa 60 caracteres o menos.",
+    "folders.err_chars": "\"{name}\" tiene un carácter que las carpetas no "
+        + "pueden usar: / \\ : * ? \" < > |",
+    "folders.err_reserved": "\"{name}\" no puede ser nombre de carpeta en "
+        + "Mac o Windows.",
+    "folders.err_twin":
+        "Hay dos carpetas llamadas \"{name}\" en el mismo lugar.",
+    "folders.err_subs": "Una carpeta puede tener 10 subcarpetas como máximo.",
 
     // Account and login
     "auth.setup_title": "Crea tu cuenta",
@@ -361,4 +415,17 @@ const LANG_ES = {
     "error.suggest_failed":
         "El proveedor de IA no sugirió categorías. Inténtalo de nuevo.",
     "error.no_provider": "Primero elige un proveedor de IA en Configuración.",
+    "error.invalid_folders":
+        "El árbol de carpetas no es válido. Revisa los nombres.",
+    "error.invalid_description":
+        "La descripción debe tener 300 caracteres o menos.",
+    "error.folder_not_empty": "No se puede quitar una carpeta con documentos.",
+    "error.unknown_folder": "Esa carpeta no está en este proyecto.",
+    "error.not_tree_project":
+        "Este proyecto ordena los archivos por tipo, así que no se mueven.",
+    "error.use_move": "Usa Mover para cambiar la carpeta de un documento.",
+    "error.no_api_key": "Ollama Cloud todavía no tiene API key. Agrégala en "
+        + "Configuración avanzada, o arma las carpetas a mano.",
+    "error.suggest_folders_failed":
+        "El proveedor de IA no sugirió carpetas. Inténtalo de nuevo.",
 };

@@ -154,6 +154,16 @@ async function createProject(data) {
     return handleResponse(response);
 }
 
+/** POST /projects/folders/suggest: a folder tree from Ollama Cloud. Saves nothing. */
+async function suggestFolders(description) {
+    const response = await apiFetch(`${BASE_URL}/projects/folders/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: description }),
+    });
+    return handleResponse(response);
+}
+
 /** PUT /projects/active - switch to another project. */
 async function setActiveProject(folder) {
     const response = await apiFetch(`${BASE_URL}/projects/active`, {
@@ -245,6 +255,17 @@ async function renameDocument(id, newName) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_name: newName }),
+    });
+    return handleResponse(response);
+}
+
+/** POST /documents/:id/move: move one document to a folder of the tree. */
+async function moveDocument(id, folder, createFolder) {
+    const response = await apiFetch(`${BASE_URL}/documents/${id}/move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder,
+            create_folder: Boolean(createFolder) }),
     });
     return handleResponse(response);
 }
