@@ -215,8 +215,11 @@ const LANG_EN = {
     "naming.template_help":
         "Use {date}, {source}, {topic}, {number}, {topic_number} and {original}.",
     "naming.preview": "Preview",
-    "naming.media_rule": "Photos, audio and video use the file date and a "
-        + "number, for example 2026-07-15_0001.jpg.",
+    "naming.media_rule": "Photos are named with this method from what they "
+        + "show, and audio and video from the title in their tags. Files "
+        + "with nothing to read use their date and a number, for example "
+        + "2026-07-15_0001.jpg, or undated_0001.jpg when only the disk "
+        + "date is known.",
     "naming.duplicate_rule":
         "If a name already exists, Cataloga adds -2, -3 and so on.",
     "naming.changed_note": "Only new files will use this method.",
