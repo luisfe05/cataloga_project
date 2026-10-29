@@ -96,7 +96,7 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | Date and topic (default) | `2026-07-15_oceanman-malta.pdf` |
 | Source, date and topic | `el-nuevo-dia_2026-07-15_oceanman-malta.pdf` |
 | Number and topic | `0001_oceanman-malta.pdf` |
-| Custom | A template with `{date}`, `{source}`, `{topic}`, `{number}`, and `{original}` |
+| Custom | Click the parts in order (Topic, Source, Date, Number, Original) and pick `_` or `-` between them. Number is the 3-digit number per topic. The extension is added on its own |
 
 | Rule | What happens |
 |---|---|
