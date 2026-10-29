@@ -213,6 +213,9 @@ class ClassificationPipeline:
                 has_text = True
                 summary = self.generate_summary(text)
                 metadata = self.extract_metadata(text)
+                # The name must come from what the photo shows.
+                if not metadata["topic"]:
+                    reason = archive_rules.TOPIC_NOTE
             else:
                 reason = archive_rules.IMAGE_NOTE
         elif kind:
@@ -294,7 +297,9 @@ class ClassificationPipeline:
             return ""
         # The summary and metadata prompts then read this like a document.
         if kind == "photo":
-            lines = ["Photo description: " + (description or "")]
+            # Without this, the AI often finds no topic in a photo.
+            lines = ["This is a photo; its topic is what it shows.",
+                     "Photo description: " + (description or "")]
             if found:
                 lines.append("Text in the photo:\n" + found)
         else:
@@ -332,6 +337,10 @@ class ClassificationPipeline:
         # The disk date changes when files are copied, so names say undated.
         name_date = None if date_source == "file" else \
             metadata["document_date"]
+        # Without a topic, a camera or scanner name never becomes one.
+        if has_text and not metadata["topic"] and \
+                archive_rules.is_generic_name(original_filename):
+            has_text = False
         if has_text:
             template = self.db.get_naming_template()
             topic_number = naming.next_topic_number(
@@ -386,6 +395,9 @@ class ClassificationPipeline:
             if isinstance(value, str) and value.strip() and \
                     value.strip().lower() != "null":
                 metadata[field] = value.strip()
+        # A topic like "DSC 0042" is a camera name, not a topic.
+        if archive_rules.is_generic_name(metadata["topic"]):
+            metadata["topic"] = None
         if metadata["topic"]:
             metadata["topic"] = metadata["topic"][
                 :archive_rules.MAX_TOPIC_LENGTH]

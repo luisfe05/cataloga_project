@@ -2,6 +2,8 @@
 
 import hashlib
 import json
+import os
+import re
 import unicodedata
 from datetime import datetime
 
@@ -27,9 +29,26 @@ MEDIA_NOTE = "Audio and video reading is coming soon"
 IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
+TOPIC_NOTE = "No topic could be found in the photo"
+
+# Names that cameras, scanners and phones give files: DSC_0042, IMG_4471,
+# PXL_20260715_103000, scan_0118, Screenshot 2026-07-15 at 10.30.00...
+GENERIC_NAME = re.compile(
+    r"^(dscn?|dscf|img|pxl|mvimg|vid|video|scan|scanned|screenshot|"
+    r"screen shot|captura de pantalla|photo|image|picture|pict|gopr|dji|"
+    r"cimg|wp|sam|p|document|doc|file|untitled|new)[\s_.-]*[\d\s_.:-]*"
+    r"(at[\s\d_.:-]*)?(am|pm)?[\s\d()_.-]*$", re.IGNORECASE)
 
 # Read the file in 1 MB pieces, so big videos never fill the memory.
 HASH_CHUNK_SIZE = 1024 * 1024
+
+
+def is_generic_name(text):
+    """Say whether a name or topic is only a camera, scanner or phone name."""
+    if not text:
+        return True
+    stem = os.path.splitext(str(text).strip())[0]
+    return bool(GENERIC_NAME.match(stem))
 
 
 def sha256_of(path):
