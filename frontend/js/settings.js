@@ -41,6 +41,23 @@ const NAMING_TOKENS = ["date", "source", "topic", "number", "original",
     "topic_number"];
 const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
 
+// Custom name parts, in the order of the buttons. "Number" is the 3-digit number per topic.
+const NAMING_BLOCKS = ["topic", "source", "date", "topic_number", "original"];
+const BLOCK_LABELS = {
+    topic: "naming.block_topic",
+    source: "naming.block_source",
+    date: "naming.block_date",
+    topic_number: "naming.block_number",
+    original: "naming.block_original",
+};
+
+// The Custom parts chosen, in order, and the character between them.
+let customBlocks = [];
+let customSeparator = "_";
+
+// A saved custom template that is not made of parts, like "archivo-{date}".
+let legacyTemplate = "";
+
 // Example values for the live preview.
 const PREVIEW_PARTS = {
     date: "2026-07-15",
@@ -182,12 +199,106 @@ function previewFilename(template) {
     return (name || PREVIEW_PARTS.number) + ".pdf";
 }
 
+/** The Custom template: the parts in braces, joined by the separator. */
+function customTemplate() {
+    if (!customBlocks.length) {
+        return legacyTemplate;
+    }
+    return customBlocks.map((block) => `{${block}}`).join(customSeparator);
+}
+
+/** Read a saved template as parts and a separator, or null if it is not made of parts. */
+function parseBlocks(template) {
+    for (const separator of ["_", "-"]) {
+        const parts = template.split(separator);
+        const blocks = parts.map((part) => {
+            const match = part.match(/^\{([a-z_]+)\}$/);
+            return match ? match[1] : "";
+        });
+        const allBlocks = blocks.every((block) => NAMING_BLOCKS.includes(block));
+        if (allBlocks && new Set(blocks).size === blocks.length) {
+            return { blocks: blocks, separator: separator };
+        }
+    }
+    return null;
+}
+
+/** One chosen part: its name, ← and → to reorder, and × to remove it. */
+function makeChosenBlock(block, index) {
+    const chip = document.createElement("span");
+    chip.className = "naming-chip";
+    const label = document.createElement("span");
+    label.textContent = t(BLOCK_LABELS[block]);
+    const buttons = [
+        ["←", "naming.move_left", index > 0, () => {
+            customBlocks.splice(index - 1, 0, customBlocks.splice(index, 1)[0]);
+        }],
+        ["→", "naming.move_right", index < customBlocks.length - 1, () => {
+            customBlocks.splice(index + 1, 0, customBlocks.splice(index, 1)[0]);
+        }],
+        ["×", "naming.remove_block", true, () => {
+            customBlocks.splice(index, 1);
+        }],
+    ];
+    chip.appendChild(label);
+    buttons.forEach(([text, labelKey, enabled, action]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = text;
+        button.disabled = !enabled;
+        button.setAttribute("aria-label", t(labelKey));
+        button.addEventListener("click", () => {
+            action();
+            renderNamingBlocks();
+        });
+        chip.appendChild(button);
+    });
+    return chip;
+}
+
+/** Draw the part buttons and the chosen parts, then update the preview. */
+function renderNamingBlocks() {
+    const buttons = document.getElementById("naming-blocks");
+    buttons.innerHTML = "";
+    NAMING_BLOCKS.forEach((block) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "pill-button";
+        button.textContent = "+ " + t(BLOCK_LABELS[block]);
+        // Each part is used once.
+        button.disabled = customBlocks.includes(block);
+        button.addEventListener("click", () => {
+            customBlocks.push(block);
+            // Picking a part replaces an old typed template.
+            legacyTemplate = "";
+            renderNamingBlocks();
+        });
+        buttons.appendChild(button);
+    });
+    const chosen = document.getElementById("naming-chosen");
+    chosen.innerHTML = "";
+    customBlocks.forEach((block, index) => {
+        chosen.appendChild(makeChosenBlock(block, index));
+    });
+    if (!customBlocks.length) {
+        const empty = document.createElement("span");
+        empty.className = "hint";
+        empty.textContent = t("naming.chosen_empty");
+        chosen.appendChild(empty);
+    }
+    const legacy = document.getElementById("naming-legacy");
+    legacy.textContent = legacyTemplate
+        ? t("naming.legacy", { template: legacyTemplate }) : "";
+    legacy.classList.toggle("hidden", !legacyTemplate);
+    updateNamingPreview();
+}
+
 function chosenTemplate() {
     const picked = document.querySelector(
         'input[name="naming-method"]:checked');
     const method = picked ? picked.value : "m1";
     if (method === "custom") {
-        return document.getElementById("naming-template").value;
+        return customTemplate();
     }
     return NAMING_METHODS[method];
 }
@@ -201,7 +312,8 @@ function updateNamingPreview() {
         .classList.toggle("hidden", !isCustom);
 
     const template = chosenTemplate();
-    const problem = validateTemplate(template);
+    const problem = isCustom && !template.trim()
+        ? { reason: "no_blocks", token: "" } : validateTemplate(template);
     document.getElementById("naming-error").textContent = problem
         ? t(`naming.err_${problem.reason}`, { token: problem.token }) : "";
     document.getElementById("naming-preview").textContent = problem
@@ -219,9 +331,22 @@ function showSavedTemplate(template) {
     });
     document.querySelector(
         `input[name="naming-method"][value="${method}"]`).checked = true;
-    document.getElementById("naming-template").value =
-        method === "custom" ? template : "";
-    updateNamingPreview();
+    customBlocks = [];
+    customSeparator = "_";
+    legacyTemplate = "";
+    if (method === "custom") {
+        const parsed = parseBlocks(template);
+        if (parsed) {
+            customBlocks = parsed.blocks;
+            customSeparator = parsed.separator;
+        } else {
+            legacyTemplate = template;
+        }
+    }
+    document.querySelector(
+        `input[name="naming-separator"][value="${customSeparator}"]`)
+        .checked = true;
+    renderNamingBlocks();
 }
 
 function showSettingsMessage(text, kind) {
@@ -410,7 +535,8 @@ async function changeLanguage() {
     updateSaveButton();
     updateKeyPlaceholder();
     updateAIStatus();
-    updateNamingPreview();
+    // Redraws the part names in the new language, and the preview.
+    renderNamingBlocks();
     document.getElementById("project-form-title").textContent = t(
         projectMode === "new" ? "project.new_title" : "project.edit_title");
     showSettingsMessage("", "");
@@ -467,7 +593,12 @@ document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
 document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
-document.getElementById("naming-template")
-    .addEventListener("input", updateNamingPreview);
+document.querySelectorAll('input[name="naming-separator"]')
+    .forEach((radio) => {
+        radio.addEventListener("change", () => {
+            customSeparator = radio.value;
+            updateNamingPreview();
+        });
+    });
 
 // startApp() in app.js calls fillProviders() and loadSettings() after the language loads.
