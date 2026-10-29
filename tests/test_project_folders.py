@@ -468,6 +468,8 @@ def test_move_document_to_another_folder(flask_client, tmp_path):
         ("Oceanman Malta", "Prensa")
     assert moved["suggested_folder"] is None
     assert moved["review_note"] is None
+    # Without source, date, and summary it still needs a person.
+    assert moved["status"] == "Manual Review"
     activity = flask_client.get("/dashboard/stats").get_json()[
         "recent_activity"]
     assert activity[0]["action"] == "Moved"
@@ -498,6 +500,45 @@ def test_create_folder_and_move(flask_client, tmp_path):
     assert response.status_code == 200
     assert (folder / "Oceanman Malta" / "Entrevistas" / "a.txt").is_file()
     assert "Entrevistas" in repo.get_folder_tree()[0]["subcategories"]
+
+
+def test_move_classifies_a_file_that_only_needs_a_folder(
+        flask_client, tmp_path):
+    """After Move or Create folder and move, a complete file is Classified."""
+    folder, repo = tree_repo(flask_client, tmp_path)
+    complete = {"status": "Manual Review", "source": "El Nuevo Dia",
+                "document_date": "2024-05-02", "summary": "Una receta.",
+                "review_note": folder_tree.NO_FOLDER_NOTE}
+    doc = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"), **complete)
+    moved = flask_client.post("/documents/{}/move".format(doc.id), json={
+        "folder": "Vida Personal", "create_folder": True}).get_json()
+    assert moved["status"] == "Classified"
+    activity = flask_client.get("/dashboard/stats").get_json()[
+        "recent_activity"]
+    assert activity[0]["action"] == "Moved"
+
+    doc = add_file_doc(repo, str(folder / "Drop Zone" / "b.txt"), **complete)
+    moved = flask_client.post("/documents/{}/move".format(doc.id),
+                              json={"folder": "Contratos"}).get_json()
+    assert moved["status"] == "Classified"
+
+
+def test_move_keeps_other_review_reasons(flask_client, tmp_path):
+    """A missing field or another note keeps the file in Manual Review."""
+    folder, repo = tree_repo(flask_client, tmp_path)
+    no_date = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"),
+                           status="Manual Review", source="El Nuevo Dia",
+                           summary="Una receta.",
+                           review_note=folder_tree.NO_FOLDER_NOTE)
+    other_note = add_file_doc(repo, str(folder / "Drop Zone" / "b.txt"),
+                              status="Manual Review", source="El Nuevo Dia",
+                              document_date="2024-05-02",
+                              summary="Una receta.",
+                              review_note="This file is too big to read")
+    for doc in (no_date, other_note):
+        moved = flask_client.post("/documents/{}/move".format(doc.id),
+                                  json={"folder": "Contratos"}).get_json()
+        assert moved["status"] == "Manual Review"
 
 
 @pytest.mark.parametrize("target", ["../Outside", "Notas?/x", "CON"])

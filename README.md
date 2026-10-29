@@ -80,7 +80,7 @@ With the virtual environment on, run this from the `cataloga` folder:
 |---|---|
 | 1. Create your account | The first time Cataloga opens, choose a username and a password (at least 8 characters). After that, log in |
 | 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree, and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree |
-| 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog |
+| 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog. If the folder was the only thing missing, the file becomes Classified |
 | 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a summary or a source. Turn on Edit Mode to fix a field |
 | 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
 
