@@ -7,7 +7,7 @@ from datetime import datetime
 from pypdf import PdfReader
 
 from backend.models.document import Document
-from backend.pipeline import archive_rules, naming
+from backend.pipeline import archive_rules, file_readers, naming
 
 # Sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
@@ -30,13 +30,16 @@ EXTENSION_MEDIA_TYPES = {
     ".mxf": "Video",
 }
 
-READABLE_EXTENSIONS = (".pdf", ".txt")
+READABLE_EXTENSIONS = (".pdf", ".txt") + file_readers.OFFICE_EXTENSIONS
 
 # Used when a file can't be read or classified.
 FALLBACK_MEDIA_TYPE = "Documents"
 
 # Needed to count as Classified.
 REQUIRED_FIELDS = ("source", "document_date", "summary")
+
+# A photo rarely shows its source or date, so only the summary is needed.
+PHOTO_REQUIRED_FIELDS = ("summary",)
 
 METADATA_PROMPT = """You are helping a researcher catalog an archive.
 From the document text, find:
@@ -76,8 +79,10 @@ def now_timestamp():
 
 
 def extract_text(file_path):
-    """Return the text inside a PDF or .txt file."""
+    """Return the text inside a PDF, .txt, or Office file."""
     extension = os.path.splitext(file_path)[1].lower()
+    if extension in file_readers.OFFICE_EXTENSIONS:
+        return file_readers.office_text(file_path)
     try:
         if extension == ".pdf":
             reader = PdfReader(file_path)
@@ -109,6 +114,13 @@ def parse_json_answer(answer):
     if not isinstance(result, dict):
         return {}
     return result
+
+
+def too_big_to_read(file_path, extension):
+    """Say whether a file that would be opened is over the size limit."""
+    opened = READABLE_EXTENSIONS + file_readers.VISION_EXTENSIONS
+    return (extension in opened and
+            os.path.getsize(file_path) > file_readers.MAX_READ_BYTES)
 
 
 def remove_gone_duplicates(catalog_repo):
@@ -144,11 +156,43 @@ class ClassificationPipeline:
         summary = None
         metadata = self.empty_metadata()
         has_text = False
+        # Why the file needs a person, when it is known before the AI.
+        reason = None
+        required = REQUIRED_FIELDS
+        kind = EXTENSION_MEDIA_TYPES.get(extension)
 
-        if extension in EXTENSION_MEDIA_TYPES:
-            media_type = EXTENSION_MEDIA_TYPES[extension]
+        if too_big_to_read(file_path, extension):
+            media_type = kind
+            reason = archive_rules.TOO_BIG_NOTE
+        elif kind in ("Audio", "Video"):
+            media_type = kind
+            reason = self.media_note(file_path)
+        elif (extension in file_readers.VISION_EXTENSIONS and
+              self.ai_client.supports_images):
+            media_type = "Photos"
+            required = PHOTO_REQUIRED_FIELDS
+            text = self.read_images([file_readers.photo_data_uri(file_path)],
+                                    "photo")
+            if text:
+                has_text = True
+                summary = self.generate_summary(text)
+                metadata = self.extract_metadata(text)
+                if not metadata["document_date"]:
+                    metadata["document_date"] = file_readers.photo_date(
+                        file_path)
+            else:
+                reason = archive_rules.IMAGE_NOTE
+        elif kind:
+            media_type = kind
         elif extension in READABLE_EXTENSIONS:
             text = extract_text(file_path)
+            if (not text and extension == ".pdf" and
+                    self.ai_client.supports_images):
+                # A scanned PDF: its first pages go to the AI as images.
+                text = self.read_images(
+                    file_readers.pdf_page_data_uris(file_path), "scan")
+                if not text:
+                    reason = archive_rules.SCAN_NOTE
             if text:
                 has_text = True
                 media_type = self.ai_client.send_classification_request(text)
@@ -178,13 +222,39 @@ class ClassificationPipeline:
             counterparty=metadata["counterparty"],
             category=metadata["category"],
             subcategory=metadata["subcategory"],
-            review_note=metadata["review_note"],
+            review_note=reason or metadata["review_note"],
             sha256=sha256,
             confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
             owner=self.owner,
         )
-        self.validate_completeness(document)
+        self.validate_completeness(document, required)
         return self.db.add_document(document)
+
+    def media_note(self, file_path):
+        """Return the Manual Review reason for audio and video, with length."""
+        length = file_readers.media_length(file_path)
+        if length:
+            return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
+        return archive_rules.MEDIA_NOTE
+
+    def read_images(self, image_uris, kind):
+        """Ask the AI to read images; return them as text, or ''."""
+        image_uris = [uri for uri in image_uris if uri]
+        result = parse_json_answer(self.ai_client.ask_about_images(image_uris))
+        found = archive_rules.clean_text(result.get("text"), 20000)
+        description = archive_rules.clean_text(result.get("description"), 500)
+        if not found and not description:
+            return ""
+        # The summary and metadata prompts then read this like a document.
+        if kind == "photo":
+            lines = ["Photo description: " + (description or "")]
+            if found:
+                lines.append("Text in the photo:\n" + found)
+        else:
+            lines = ["Text of the scanned pages:\n" + (found or "")]
+            if description:
+                lines.append("What the pages show: " + description)
+        return "\n".join(lines)
 
     def add_duplicate(self, file_path, sha256, original):
         """Record a duplicate in Manual Review. It stays in the Drop Zone."""
@@ -282,9 +352,9 @@ class ClassificationPipeline:
                          "review_note": note})
         return metadata
 
-    def validate_completeness(self, document):
+    def validate_completeness(self, document, required=REQUIRED_FIELDS):
         """Check whether all expected fields were filled in."""
-        missing = [field for field in REQUIRED_FIELDS
+        missing = [field for field in required
                    if not getattr(document, field)]
         if missing:
             document.mark_needs_review(missing)

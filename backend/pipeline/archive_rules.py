@@ -23,6 +23,10 @@ MAX_CATEGORY_LENGTH = 60
 
 DUPLICATE_NOTE = "Duplicate of {}"
 NO_CATEGORY_NOTE = "Category not in the project list"
+MEDIA_NOTE = "Audio and video reading is coming soon"
+IMAGE_NOTE = "Could not read the image"
+SCAN_NOTE = "Could not read the scanned pages"
+TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 
 # Read the file in 1 MB pieces, so big videos never fill the memory.
 HASH_CHUNK_SIZE = 1024 * 1024

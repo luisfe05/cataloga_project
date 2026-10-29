@@ -9,5 +9,8 @@ keyring
 bcrypt
 openpyxl
 pypdf
+pillow
+pypdfium2
+pillow-heif
 pytest
 pyinstaller
