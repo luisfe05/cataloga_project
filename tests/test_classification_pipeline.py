@@ -288,13 +288,26 @@ def test_topic_comes_in_the_metadata_request(setup):
 @pytest.mark.parametrize("answer, expected", [
     ('{"source": "Claridad"}', {"source": "Claridad"}),
     ('```json\n{"source": "Claridad"}\n```', {"source": "Claridad"}),
+    ('Here it is: {"source": "Claridad"} Done.', {"source": "Claridad"}),
     ("not json at all", {}),
     ('["a list"]', {}),
+    ('{"source": broken}', {}),
     (None, {}),
 ])
 def test_parse_json_answer(answer, expected):
     """JSON is read even inside markdown fences; bad answers give {}."""
     assert parse_json_answer(answer) == expected
+
+
+@pytest.mark.parametrize("answer", [
+    '{"source": "Claridad"}\n{"source": "El Mundo"}',
+    '```json\n{"source": "Claridad"}\n```\n```json\n'
+    '{"source": "El Mundo"}\n```',
+    '{"source": broken}\n{"source": "Claridad"}\n{"source": "El Mundo"}',
+])
+def test_parse_json_answer_uses_the_first_valid_block(answer):
+    """With several JSON blocks, the first valid one is read."""
+    assert parse_json_answer(answer) == {"source": "Claridad"}
 
 
 def test_extract_text_reads_txt(tmp_path):

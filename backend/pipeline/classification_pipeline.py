@@ -99,21 +99,25 @@ def extract_text(file_path):
 
 
 def parse_json_answer(answer):
-    """Turn the AI's JSON answer into a dict."""
+    """Turn the AI's JSON answer into a dict.
+
+    Some models send text, markdown fences, or more than one JSON block.
+    The first block that is a valid JSON object is used.
+    """
     if not answer:
         return {}
-    text = answer.strip()
-    if text.startswith("```"):
-        text = text.strip("`")
-        if text.startswith("json"):
-            text = text[4:]
-    try:
-        result = json.loads(text)
-    except json.JSONDecodeError:
-        return {}
-    if not isinstance(result, dict):
-        return {}
-    return result
+    decoder = json.JSONDecoder()
+    start = answer.find("{")
+    while start != -1:
+        try:
+            # raw_decode reads one JSON value and ignores what comes after.
+            result = decoder.raw_decode(answer, start)[0]
+        except json.JSONDecodeError:
+            result = None
+        if isinstance(result, dict):
+            return result
+        start = answer.find("{", start + 1)
+    return {}
 
 
 def missing_note(document, required=REQUIRED_FIELDS):
