@@ -419,3 +419,65 @@ def test_content_date_wins_for_documents(setup):
         docx(setup["drop"] / "a.docx"))
     assert doc.document_date == "2026-06-11"
     assert doc.date_source == "content"
+
+
+# --- Topics never come from camera, scanner or phone names ---
+
+@pytest.mark.parametrize("name", ["DSC_0042.jpg", "IMG_4471.JPG",
+                                  "PXL_20260715_103000123.jpg",
+                                  "scan_0118.pdf",
+                                  "Screenshot 2026-07-15 at 10.30.00 AM.png",
+                                  "Captura de pantalla 2026-07-15.png"])
+def test_generic_camera_names(name):
+    """Names given by cameras, scanners and phones are not topics."""
+    assert archive_rules.is_generic_name(name)
+
+
+@pytest.mark.parametrize("name", ["lease final v2.docx", "budget.xlsx",
+                                  "Photo booth wedding.jpg"])
+def test_real_names_are_not_generic(name):
+    """Names a person wrote are kept."""
+    assert not archive_rules.is_generic_name(name)
+
+
+@pytest.mark.parametrize("topic", [None, "DSC 0042"])
+def test_photo_without_a_useful_topic_goes_to_manual_review(setup, topic):
+    """DSC_0042.jpg with no topic from the AI: no camera name in its name."""
+    ai = FakeAI()
+    ai_metadata = json.dumps({"source": None, "document_date": None,
+                              "topic": topic})
+
+    def send(system_prompt, text):
+        if system_prompt == base.SUMMARY_PROMPT:
+            return "Blue shapes."
+        return ai_metadata
+    ai.send_prompt = send
+    path = str(setup["drop"] / "DSC_0042.jpg")
+    Image.new("RGB", (40, 40), (30, 60, 200)).save(path)
+    doc = setup["build"](ai).classify_document(path)
+    assert doc.status == "Manual Review"
+    assert doc.review_note == archive_rules.TOPIC_NOTE
+    assert doc.topic is None
+    assert "dsc" not in doc.filename.lower()
+    assert doc.filename.startswith("undated_")
+
+
+def test_photo_topic_comes_from_what_it_shows(setup):
+    """The AI is told the topic is what the photo shows, and it is used."""
+    ai = FakeAI()
+    seen = []
+    ai_metadata = json.dumps({"source": None, "document_date": None,
+                              "topic": "Blue shapes"})
+
+    def send(system_prompt, text):
+        seen.append(text)
+        if system_prompt == base.SUMMARY_PROMPT:
+            return "Blue shapes."
+        return ai_metadata
+    ai.send_prompt = send
+    path = str(setup["drop"] / "DSC_0042.jpg")
+    Image.new("RGB", (40, 40), (30, 60, 200)).save(path)
+    doc = setup["build"](ai).classify_document(path)
+    assert "its topic is what it shows" in seen[0]
+    assert doc.status == "Classified"
+    assert doc.filename == "undated_blue-shapes.jpg"
