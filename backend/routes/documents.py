@@ -7,7 +7,8 @@ import os
 from flask import Blueprint, Response, jsonify, request
 
 from backend.pipeline.ai_providers import create_client
-from backend.pipeline.classification_pipeline import ClassificationPipeline
+from backend.pipeline.classification_pipeline import (
+    ClassificationPipeline, needs_nothing)
 from backend.config import projects as project_list
 from backend.pipeline import folder_tree
 from backend.pipeline.file_organizer import FileOrganizer
@@ -260,6 +261,9 @@ def move_document(doc_id):
         # Keep the disk and the catalog in step: put the file back.
         os.rename(new_path, doc.file_path)
         raise
+    # The folder was the last thing missing: the file is now Classified.
+    if doc.status == "Manual Review" and needs_nothing(doc):
+        doc = repo.set_status(doc_id, "Classified")
     return jsonify(doc.to_dict()), 200
 
 

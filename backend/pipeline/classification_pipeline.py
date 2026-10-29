@@ -132,6 +132,15 @@ def parse_json_answer(answer):
     return result
 
 
+def needs_nothing(document):
+    """Say whether a document has every field and no open review note."""
+    if document.review_note or document.duplicate_of:
+        return False
+    required = PHOTO_REQUIRED_FIELDS if document.media_type == "Photos" \
+        else REQUIRED_FIELDS
+    return all(getattr(document, field) for field in required)
+
+
 def with_metadata(text, meta):
     """Put the useful file metadata in front of the text for the AI."""
     lines = file_metadata.metadata_text(meta)
