@@ -7,7 +7,8 @@ from datetime import datetime
 from pypdf import PdfReader
 
 from backend.models.document import Document
-from backend.pipeline import archive_rules, file_metadata, file_readers, naming
+from backend.pipeline import (archive_rules, file_metadata, file_readers,
+                              folder_tree, naming)
 
 # Sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
@@ -69,6 +70,19 @@ Also choose where the document belongs in this list of categories:
 Add "category" with one category name exactly as written, and
 "subcategory" with one of its subcategories (null if it has none).
 If nothing in the list fits, use null for both."""
+
+# Added to METADATA_PROMPT in projects with their own folder tree.
+FOLDER_PROMPT = """
+
+This project is about: {description}
+These are its folders, at most two levels:
+{folders}
+Choose the folder where an archivist would file this document, by what
+it is about, not by its file type. Add "folder" with one top folder name
+exactly as written, and "subfolder" with one of its subfolders exactly
+as written (null if that folder has none). If no folder fits, use null
+for both and add "suggested_folder": {{"parent": "<a top folder name, or
+null for a new top folder>", "name": "<new folder name, 1 to 3 words>"}}."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
 
@@ -161,6 +175,16 @@ class ClassificationPipeline:
         self.file_organizer = file_organizer
         self.owner = owner or None
 
+    def destination(self, file_path, media_type, metadata):
+        """Return the folder a file goes to, and if it found its place."""
+        if not self.db.is_tree_project():
+            return self.file_organizer.folder_for(media_type), True
+        if metadata["category"]:
+            return self.file_organizer.tree_folder(
+                metadata["category"], metadata["subcategory"]), True
+        # No folder fits: the file stays in the Drop Zone for a person.
+        return os.path.dirname(file_path), False
+
     def classify_document(self, file_path):
         """Run the full pipeline on a single file."""
         original_filename = os.path.basename(file_path)
@@ -250,8 +274,9 @@ class ClassificationPipeline:
 
         new_filename = self.build_filename(file_path, has_text, metadata,
                                            date_source)
-        new_path = self.file_organizer.move_and_rename_file(
-            file_path, media_type, new_filename)
+        folder, placed = self.destination(file_path, media_type, metadata)
+        new_path = self.file_organizer.move_to_folder(file_path, folder,
+                                                      new_filename)
 
         document = Document(
             original_filename=original_filename,
@@ -269,6 +294,7 @@ class ClassificationPipeline:
             category=metadata["category"],
             subcategory=metadata["subcategory"],
             review_note=reason or metadata["review_note"],
+            suggested_folder=metadata["suggested_folder"],
             date_source=date_source,
             sha256=sha256,
             confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
@@ -279,6 +305,10 @@ class ClassificationPipeline:
         if kind in ("Audio", "Video") and not document.review_note and \
                 document.status == "Manual Review":
             document.review_note = self.media_note(file_meta.get("length"))
+        if not placed:
+            document.review_note = document.review_note or \
+                folder_tree.NO_FOLDER_NOTE
+            document.mark_needs_review(["folder"])
         return self.db.add_document(document)
 
     def media_note(self, length):
@@ -377,13 +407,17 @@ class ClassificationPipeline:
         """Return the metadata of a file the AI did not read."""
         return {"source": None, "document_date": None, "topic": None,
                 "keywords": [], "counterparty": None, "category": None,
-                "subcategory": None, "review_note": None}
+                "subcategory": None, "review_note": None,
+                "suggested_folder": None}
 
     def extract_metadata(self, text):
         """Ask the AI for the metadata, then check every field it sent."""
         categories = self.db.get_categories()
+        tree_mode = self.db.is_tree_project()
         prompt = METADATA_PROMPT
-        if categories:
+        if tree_mode:
+            prompt += self.folder_prompt(categories)
+        elif categories:
             prompt += CATEGORY_PROMPT.format(categories=json.dumps(
                 categories, ensure_ascii=False))
         result = parse_json_answer(self.ai_client.ask(prompt, text))
@@ -405,12 +439,37 @@ class ClassificationPipeline:
             result.get("keywords"))
         metadata["counterparty"] = archive_rules.clean_text(
             result.get("counterparty"), archive_rules.MAX_COUNTERPARTY_LENGTH)
+        if tree_mode:
+            return self.match_folder(metadata, result, categories)
         category, subcategory, note = archive_rules.match_category(
             categories,
             archive_rules.clean_text(result.get("category"), 200),
             archive_rules.clean_text(result.get("subcategory"), 200))
         metadata.update({"category": category, "subcategory": subcategory,
                          "review_note": note})
+        return metadata
+
+    def folder_prompt(self, tree):
+        """Return the part of the prompt with the project's folder tree."""
+        folders = [{"folder": top["name"], "subfolders": top["subcategories"]}
+                   for top in tree]
+        return FOLDER_PROMPT.format(
+            description=self.db.get_project_description() or "(not given)",
+            folders=json.dumps(folders, ensure_ascii=False))
+
+    def match_folder(self, metadata, result, tree):
+        """Keep the AI's folder if it is in the tree; else a suggestion."""
+        folder, subfolder, note = archive_rules.match_category(
+            tree,
+            archive_rules.clean_text(result.get("folder"), 200),
+            archive_rules.clean_text(result.get("subfolder"), 200))
+        if note:
+            # Half a match (a folder without its subfolder) is no match.
+            metadata["review_note"] = folder_tree.NO_FOLDER_NOTE
+            metadata["suggested_folder"] = folder_tree.clean_suggestion(
+                result.get("suggested_folder"), tree)
+            return metadata
+        metadata.update({"category": folder, "subcategory": subfolder})
         return metadata
 
     def validate_completeness(self, document, required=REQUIRED_FIELDS):

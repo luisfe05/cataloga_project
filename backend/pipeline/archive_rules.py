@@ -23,6 +23,9 @@ MAX_CATEGORIES = 10
 MAX_SUBCATEGORIES = 10
 MAX_CATEGORY_LENGTH = 60
 
+# A folder tree is saved as categories and can have 20 top folders.
+MAX_SAVED_CATEGORIES = 20
+
 DUPLICATE_NOTE = "Duplicate of {}"
 NO_CATEGORY_NOTE = "Category not in the project list"
 MEDIA_NOTE = "Audio and video reading is coming soon"
@@ -221,7 +224,7 @@ def categories_from_text(text):
     if not text:
         return []
     try:
-        return clean_categories(json.loads(text))
+        return clean_categories(json.loads(text), MAX_SAVED_CATEGORIES)
     except ValueError:
         return []
 
