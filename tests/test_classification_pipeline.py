@@ -115,6 +115,27 @@ def test_missing_metadata_sends_to_manual_review(setup):
     assert doc.source is None
     assert doc.document_date == "1970"
     assert doc.status == "Manual Review"
+    assert doc.review_note == "Missing: source"
+
+
+def test_every_manual_review_file_has_a_note(setup):
+    """Like plan_viaje.txt: no source, no summary, and no other reason."""
+    replies = {"classify": "Documents", "summary": "",
+               "metadata": '{"source": null, "document_date": "2025-03",'
+                           ' "topic": "Plan de viaje"}'}
+    pipeline, ai = setup["build"](replies)
+    pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "plan_viaje.txt"))
+    # A photo the provider cannot see is read by no one.
+    ai.supports_images = False
+    photo = setup["drop_zone"] / "IMG_0001.jpg"
+    photo.write_bytes(b"not really a photo")
+    pipeline.classify_document(str(photo))
+    documents = setup["repo"].get_all_documents()
+    # The photo keeps its disk date, so only source and summary are empty.
+    assert [doc.review_note for doc in documents] == [
+        "Missing: source, summary", "Missing: source, summary"]
+    assert all(doc.status == "Manual Review" for doc in documents)
 
 
 def test_invalid_classification_uses_fallback_folder(setup):

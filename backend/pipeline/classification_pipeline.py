@@ -116,6 +116,12 @@ def parse_json_answer(answer):
     return result
 
 
+def missing_note(document, required=REQUIRED_FIELDS):
+    """Return the note that lists the empty required fields."""
+    missing = [field for field in required if not getattr(document, field)]
+    return archive_rules.MISSING_NOTE.format(", ".join(missing))
+
+
 def with_metadata(text, meta):
     """Put the useful file metadata in front of the text for the AI."""
     lines = file_metadata.metadata_text(meta)
@@ -279,6 +285,9 @@ class ClassificationPipeline:
         if kind in ("Audio", "Video") and not document.review_note and \
                 document.status == "Manual Review":
             document.review_note = self.media_note(file_meta.get("length"))
+        # Every file in Manual Review says why.
+        if document.status == "Manual Review" and not document.review_note:
+            document.review_note = missing_note(document, required)
         return self.db.add_document(document)
 
     def media_note(self, length):
