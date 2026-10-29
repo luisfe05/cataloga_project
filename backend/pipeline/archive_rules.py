@@ -30,6 +30,8 @@ IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 TOPIC_NOTE = "No topic could be found in the photo"
+# Fields are listed by their column name: "Missing: source, document_date".
+MISSING_NOTE = "Missing: {}"
 
 # Names that cameras, scanners and phones give files: DSC_0042, IMG_4471,
 # PXL_20260715_103000, scan_0118, Screenshot 2026-07-15 at 10.30.00...

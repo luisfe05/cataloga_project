@@ -80,6 +80,8 @@ const LANG_ES = {
     "catalog.note_image": "No se pudo leer la imagen",
     "catalog.note_scan": "No se pudieron leer las páginas escaneadas",
     "catalog.note_too_big": "El archivo pesa más de 50 MB y no se leyó",
+    "catalog.note_topic": "No se encontró un tema en la foto",
+    "catalog.note_missing": "Falta: {fields}",
     "catalog.keywords_limit": "Usa hasta 5 palabras clave, separadas por "
         + "comas, de hasta 40 caracteres cada una.",
     "catalog.counterparty_limit":
