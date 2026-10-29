@@ -1,12 +1,14 @@
 """CatalogRepository."""
 
 import json
+import os
 from datetime import datetime
 
 from backend.db.schema import get_connection, DB_PATH
 from backend.models.document import (ARCHIVE_FIELDS, Document, LOCKED_FIELDS,
                                      MEDIA_TYPES)
-from backend.pipeline import archive_rules
+from backend.pipeline import archive_rules, folder_tree
+from backend.pipeline.file_organizer import DROP_ZONE_FOLDER
 
 EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
                    "status", "keywords", "counterparty", "confidentiality",
@@ -24,7 +26,7 @@ STATUSES = ("Classified", "Manual Review")
 MAX_SUMMARY_LENGTH = 100
 
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
-                         "categories")
+                         "categories", "folder_mode", "project_description")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -184,6 +186,55 @@ class CatalogRepository:
             conn.commit()
         finally:
             conn.close()
+
+    def move_document(self, doc_id, new_path, folder, subfolder):
+        """Save a document's new folder after a move the user asked for."""
+        doc = self.get_document(doc_id)
+        if doc is None:
+            raise KeyError(doc_id)
+        old_place = folder_tree.folder_text(doc.category, doc.subcategory) \
+            if doc.category else DROP_ZONE_FOLDER
+        details = "{} → {}".format(
+            old_place, folder_tree.folder_text(folder, subfolder))
+
+        conn = get_connection(self.db_path)
+        try:
+            # A file in a folder no longer needs its folder suggestion.
+            conn.execute(
+                "UPDATE documents SET file_path = ?, filename = ?, "
+                "category = ?, subcategory = ?, suggested_folder = NULL, "
+                "review_note = CASE WHEN review_note = ? THEN NULL "
+                "ELSE review_note END WHERE id = ?",
+                (new_path, os.path.basename(new_path), folder, subfolder,
+                 folder_tree.NO_FOLDER_NOTE, doc_id),
+            )
+            self.log_activity(conn, doc_id, "Moved", details)
+            conn.commit()
+        finally:
+            conn.close()
+        return self.get_document(doc_id)
+
+    def count_in_folder(self, folder):
+        """Count the documents in a tree folder or any of its subfolders."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM documents WHERE category = ?",
+                (folder,)).fetchone()
+        finally:
+            conn.close()
+        return row[0]
+
+    def count_in_subfolder(self, folder, subfolder):
+        """Count the documents in one subfolder of the tree."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM documents WHERE category = ? "
+                "AND subcategory = ?", (folder, subfolder)).fetchone()
+        finally:
+            conn.close()
+        return row[0]
 
     def get_topics(self):
         """Return the topic of every cataloged document that has one."""
@@ -412,7 +463,7 @@ class CatalogRepository:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
-                "industry, categories "
+                "industry, categories, folder_mode, project_description "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -497,6 +548,28 @@ class CatalogRepository:
         """Return the project's category list, or [] if it has none."""
         config = self.get_app_config() or {}
         return archive_rules.categories_from_text(config.get("categories"))
+
+    def is_tree_project(self):
+        """Say whether the project files documents in its own folder tree."""
+        config = self.get_app_config() or {}
+        return config.get("folder_mode") == folder_tree.TREE_MODE
+
+    def get_folder_tree(self):
+        """Return the folder tree, or None in a project sorted by type."""
+        if not self.is_tree_project():
+            return None
+        return self.get_categories()
+
+    def save_folder_tree(self, description, tree):
+        """Make this a tree project with its description and folders."""
+        self.save_config_value("folder_mode", folder_tree.TREE_MODE)
+        self.save_config_value("project_description", description)
+        self.save_categories(tree)
+
+    def get_project_description(self):
+        """Return what the project is about, or ''."""
+        config = self.get_app_config() or {}
+        return config.get("project_description") or ""
 
     def next_number(self):
         """Return the number for the next file added to the catalog."""

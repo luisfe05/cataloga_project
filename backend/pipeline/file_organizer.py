@@ -45,17 +45,36 @@ class FileOrganizer:
         os.rename(self.old_inbox_folder(), self.drop_zone_folder())
         return True
 
-    def ensure_archive_structure(self):
-        """Create Drop Zone and the five media-type folders if missing."""
-        os.makedirs(self.drop_zone_folder(), exist_ok=True)
-        for media_type in MEDIA_TYPES:
-            os.makedirs(self.folder_for(media_type), exist_ok=True)
+    def tree_folder(self, folder, subfolder=None):
+        """Return the path of a folder of the project's tree."""
+        path = os.path.join(self.target_directory, folder)
+        if subfolder:
+            path = os.path.join(path, subfolder)
+        return path
 
-    def count_existing_items(self):
+    def ensure_archive_structure(self, tree=None):
+        """Create Drop Zone and the tree, or the five media-type folders."""
+        os.makedirs(self.drop_zone_folder(), exist_ok=True)
+        # Old projects have no tree and keep their media-type folders.
+        if tree is None:
+            for media_type in MEDIA_TYPES:
+                os.makedirs(self.folder_for(media_type), exist_ok=True)
+            return
+        for top in tree:
+            os.makedirs(self.tree_folder(top["name"]), exist_ok=True)
+            for sub in top["subcategories"]:
+                os.makedirs(self.tree_folder(top["name"], sub),
+                            exist_ok=True)
+
+    def count_existing_items(self, tree=None):
         """Count the user's own files and folders in the project folder."""
         if not os.path.isdir(self.target_directory):
             return 0
-        own_folders = set(MEDIA_TYPES) | {DROP_ZONE_FOLDER, CATALOG_FOLDER}
+        own_folders = {DROP_ZONE_FOLDER, CATALOG_FOLDER}
+        if tree is None:
+            own_folders |= set(MEDIA_TYPES)
+        else:
+            own_folders |= {top["name"] for top in tree}
         count = 0
         for name in os.listdir(self.target_directory):
             if name.startswith(".") or name in own_folders:
@@ -75,10 +94,16 @@ class FileOrganizer:
 
     def move_and_rename_file(self, original_path, media_type, new_filename):
         """Move a file into its media-type folder with its new name."""
+        return self.move_to_folder(original_path, self.folder_for(media_type),
+                                   new_filename)
+
+    def move_to_folder(self, original_path, folder, new_filename):
+        """Move a file into a folder of the project with a new name."""
         if not os.path.isfile(original_path):
             raise FileNotFoundError(original_path)
-
-        folder = self.folder_for(media_type)
+        # A file never leaves the project folder.
+        if not self.is_inside_project(folder):
+            raise ValueError("The folder is outside the project.")
         os.makedirs(folder, exist_ok=True)
 
         new_path = os.path.join(folder,
