@@ -155,6 +155,7 @@ const LANG_EN = {
     "chat.notice_rename_same": "The file already has that name.",
     "chat.notice_move_unavailable": "This project sorts files by type, so "
         + "files are not moved between folders.",
+    "chat.notice_rename_unavailable": "This file keeps its name: the project catalogs in place, or other programs look for it by name.",
     "chat.notice_move_invalid": "That folder is not in this project. "
         + "Use one of the project's folders.",
     "chat.notice_move_same": "The file is already in that folder.",
@@ -227,6 +228,8 @@ const LANG_EN = {
     "naming.m4": "Topic, source, date and number",
     "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Custom",
+    "naming.keep": "Keep original names",
+    "naming.keep_example": "the-name-you-gave-it.pdf",
     "naming.preview": "Preview",
     "naming.media_rule": "Photos are named with this method from what they "
         + "show, and audio and video from the title in their tags. Files "
@@ -344,6 +347,12 @@ const LANG_EN = {
     "project.folder_locked": "The project folder can't change, because the "
         + "catalog is saved inside it.",
     "project.create": "Create project",
+    "project.catalog_only": "Catalog only: read and catalog the files where "
+        + "they are. Never move or rename them",
+    "project.catalog_only_hint": "For websites, code, and edits that link "
+        + "their files by path (InDesign, Premiere, After Effects, Final "
+        + "Cut). Cataloga reads, summarizes and catalogs each file in "
+        + "place. There is no folder tree and no Drop Zone.",
     "project.creating":
         "Creating the project and testing the AI connection...",
     "project.created": "Project created. The AI connection works.",
@@ -429,6 +438,10 @@ const LANG_EN = {
     "error.not_tree_project":
         "This project sorts files by type, so files are not moved.",
     "error.use_move": "Use Move to change a document's folder.",
+    "error.catalog_only": "This project catalogs files in place: nothing is "
+        + "moved or renamed.",
+    "error.protected_name": "Other programs look for this file by name, so "
+        + "it keeps it.",
     "error.no_api_key": "Ollama Cloud has no API key yet. Add it in Advanced "
         + "settings, or build the folders by hand.",
     "error.suggest_folders_failed":

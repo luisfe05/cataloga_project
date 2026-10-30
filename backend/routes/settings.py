@@ -50,6 +50,10 @@ def get_settings():
     if status == "ok":
         repo, error = get_active_repo()
         settings.update(AppConfig(repo).get_settings())
+        if repo.is_catalog_project():
+            settings["folder_mode"] = folder_tree.CATALOG_MODE
+            settings["project_description"] = \
+                repo.get_project_description()
         if repo.is_tree_project():
             settings["folder_mode"] = folder_tree.TREE_MODE
             settings["project_description"] = \
@@ -131,11 +135,12 @@ def update_settings():
 
     # Must run before ensure_archive_structure(), or Drop Zone is doubled.
     organizer = FileOrganizer(folder)
-    organizer.migrate_old_inbox()
-    if tree_mode and archive is not None:
-        # New folders are created now; removed ones stay on the disk.
-        repo.save_categories(archive["categories"])
-    organizer.ensure_archive_structure(repo.get_folder_tree())
+    if not repo.is_catalog_project():
+        organizer.migrate_old_inbox()
+        if tree_mode and archive is not None:
+            # New folders are created now; removed ones stay on the disk.
+            repo.save_categories(archive["categories"])
+        organizer.ensure_archive_structure(repo.get_folder_tree())
 
     config.update_settings(values["research_name"], folder)
     projects.rename_project(projects_path(), folder,

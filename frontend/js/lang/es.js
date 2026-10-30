@@ -158,6 +158,7 @@ const LANG_ES = {
     "chat.notice_rename_same": "El archivo ya tiene ese nombre.",
     "chat.notice_move_unavailable": "Este proyecto ordena los archivos por "
         + "tipo, así que no se mueven entre carpetas.",
+    "chat.notice_rename_unavailable": "Este archivo conserva su nombre: el proyecto cataloga en su lugar, u otros programas lo buscan por su nombre.",
     "chat.notice_move_invalid": "Esa carpeta no está en este proyecto. "
         + "Usa una de las carpetas del proyecto.",
     "chat.notice_move_same": "El archivo ya está en esa carpeta.",
@@ -233,6 +234,8 @@ const LANG_ES = {
     "naming.m4": "Tema, fuente, fecha y número",
     "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Personalizado",
+    "naming.keep": "Conservar los nombres originales",
+    "naming.keep_example": "el-nombre-que-le-diste.pdf",
     "naming.preview": "Vista previa",
     "naming.media_rule": "Las fotos se nombran con este método según lo "
         + "que muestran, y el audio y el video según el título de sus "
@@ -357,6 +360,12 @@ const LANG_ES = {
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
         + "porque el catálogo se guarda dentro de ella.",
     "project.create": "Crear proyecto",
+    "project.catalog_only": "Solo catalogar: leer y catalogar los archivos "
+        + "donde están. Nunca moverlos ni renombrarlos",
+    "project.catalog_only_hint": "Para páginas web, código y ediciones que "
+        + "enlazan sus archivos por ruta (InDesign, Premiere, After Effects, "
+        + "Final Cut). Cataloga lee, resume y cataloga cada archivo en su "
+        + "lugar. No hay árbol de carpetas ni Drop Zone.",
     "project.creating":
         "Creando el proyecto y probando la conexión con la IA...",
     "project.created": "Proyecto creado. La conexión con la IA funciona.",
@@ -444,6 +453,10 @@ const LANG_ES = {
     "error.not_tree_project":
         "Este proyecto ordena los archivos por tipo, así que no se mueven.",
     "error.use_move": "Usa Mover para cambiar la carpeta de un documento.",
+    "error.catalog_only": "Este proyecto cataloga los archivos en su lugar: "
+        + "nada se mueve ni se renombra.",
+    "error.protected_name": "Otros programas buscan este archivo por su "
+        + "nombre, así que lo conserva.",
     "error.no_api_key": "Ollama Cloud todavía no tiene API key. Agrégala en "
         + "Configuración avanzada, o arma las carpetas a mano.",
     "error.suggest_folders_failed":
