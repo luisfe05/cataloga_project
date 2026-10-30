@@ -105,7 +105,9 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | No date | `undated` is used |
 | No source | That part is left out |
 | No topic | The original file name is used |
-| Photos, audio, video, and files without text | File date and a number, for example `2026-07-15_0001.jpg` |
+| Photos | Named with the project's method from what the photo shows |
+| Audio and video | Named with the project's method from the title in their tags |
+| Files with nothing to read | Their date and a number, for example `2026-07-15_0001.jpg`. If only the disk date is known, `undated_0001.jpg` |
 | Name already taken | `-2`, `-3`, and so on are added |
 | Rename from the chat | Uses the same cleaning rules, only after you click Confirm |
 
