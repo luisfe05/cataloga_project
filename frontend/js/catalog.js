@@ -195,6 +195,12 @@ function reviewNoteText(note) {
         return length ? t("catalog.note_media_length", { length: length })
             : t("catalog.note_media");
     }
+    // "Low confidence: <the AI's reason>".
+    const lowPrefix = "Low confidence: ";
+    if (note.startsWith(lowPrefix)) {
+        return t("catalog.note_low_confidence")
+            + ": " + note.slice(lowPrefix.length);
+    }
     // "Missing: source, document_date": each field in the user's language.
     const missingPrefix = "Missing: ";
     if (note.startsWith(missingPrefix)) {
@@ -419,6 +425,10 @@ function addArchiveCells(row, doc) {
     const dateSource = makeCell(doc.date_source
         ? t(`catalog.date_from_${doc.date_source}`) : "", "nowrap more-col");
     row.appendChild(dateSource);
+    // Why the AI chose the folder, and how sure it was. Read only.
+    row.appendChild(makeCell(doc.folder_reason || "", "more-col"));
+    row.appendChild(makeCell(doc.confidence
+        ? t(`catalog.confidence_${doc.confidence}`) : "", "nowrap more-col"));
 }
 
 /** Filename cell: the name opens the file. In Edit Mode it is plain text, but the icons stay. */

@@ -7,18 +7,18 @@ import sqlite3
 import pytest
 
 from backend import folder_watcher
-from backend.config import account
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
 from backend.pipeline import archive_rules, chat_assistant, naming
+from backend.pipeline import ai_providers
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import settings as settings_routes
-from tests.conftest import make_project
+from tests.conftest import make_project, card_answer
 
 CATEGORIES = [
     {"name": "Contracts", "subcategories": ["Sponsorship", "Rights"]},
@@ -350,11 +350,9 @@ class RecordingAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.prompts.append(system_prompt)
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Press"
         if system_prompt == base.SUMMARY_PROMPT:
             return "A news story."
-        return self.metadata
+        return card_answer(self.metadata)
 
 
 @pytest.fixture
@@ -392,9 +390,9 @@ def test_new_file_gets_all_archive_fields(pipe):
     assert doc.owner == "luis"
     assert len(doc.sha256) == 64
     assert doc.status == "Classified"
-    # Classification, summary, metadata: no extra AI call.
-    assert len(pipe["ai"].prompts) == 3
-    assert "Contracts" in pipe["ai"].prompts[2]
+    # One request fills the whole card: no extra AI call.
+    assert len(pipe["ai"].prompts) == 1
+    assert "Contracts" in pipe["ai"].prompts[0]
 
 
 def test_second_file_of_a_topic_gets_002(pipe):
@@ -410,7 +408,7 @@ def test_no_categories_leaves_category_empty(pipe):
     assert doc.category is None
     assert doc.review_note is None
     assert doc.status == "Classified"
-    assert "categories" not in pipe["ai"].prompts[2]
+    assert "categories" not in pipe["ai"].prompts[0]
 
 
 def test_category_not_in_list_goes_to_manual_review(pipe):
@@ -499,17 +497,15 @@ def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
     """The scan uses the account's username and drops gone duplicates."""
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: "test-key")
-    monkeypatch.setattr(folder_watcher, "create_client",
-                        lambda name, model: RecordingAI())
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: RecordingAI())
     projects_path = str(tmp_path / "app" / "projects.json")
     repo = make_project(projects_path, tmp_path / "Research")
     repo.set_active_provider("gemini", "gemini-2.5-flash")
-    account.save_account(account.account_path_for(projects_path),
-                         "luis", "password123")
     drop_zone = tmp_path / "Research" / "Drop Zone"
     (drop_zone / "a.txt").write_text("Same")
 
-    first = folder_watcher.scan_once(projects_path)
+    first = folder_watcher.scan_once(projects_path, owner="luis")
     assert first[0].owner == "luis"
     (drop_zone / "copy.txt").write_text("Same")
     duplicate = folder_watcher.scan_once(projects_path)[0]
@@ -568,8 +564,8 @@ class SuggestAI(AIProviderClient):
 ])
 def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
     """Suggest returns a checked list and saves nothing."""
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SuggestAI(answer))
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: SuggestAI(answer))
     active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
@@ -580,8 +576,9 @@ def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
 
 def test_suggest_categories_bad_answer(flask_client, app, monkeypatch):
     """No usable list from the AI gives a clear error."""
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SuggestAI("I cannot help."))
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None:
+                        SuggestAI("I cannot help."))
     active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
