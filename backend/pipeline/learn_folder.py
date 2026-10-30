@@ -102,9 +102,8 @@ def detect_naming(names):
     date_first = sum(1 for s in stems if DATE_FIRST.match(s))
     examples = [name for folder, name in names][:MAX_EXAMPLES]
     if event_numbered * 2 > len(stems):
-        # The event folder's name and a running number: kept as it is
-        # until the event-and-number method exists.
-        template = naming.KEEP_NAMES
+        # The event folder's name and a running number: the event method.
+        template = naming.EVENT_TEMPLATE
         description = ("Each file is named after its event folder and a "
                        "number: Event_Year_N.")
     elif date_first * 2 > len(stems):

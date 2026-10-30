@@ -59,7 +59,7 @@ def test_the_naming_of_the_photo_archive(tmp_path):
     assert result["naming_style"] == "title"
     assert result["keep_accents"] is False
     assert result["event_numbering"] is True
-    assert result["naming_template"] == naming.KEEP_NAMES
+    assert result["naming_template"] == naming.EVENT_TEMPLATE
     assert "event folder and a number" in result["description"]
     assert "Title-Case" in result["description"]
     assert len(result["examples"]) == 3
@@ -154,7 +154,7 @@ def test_learned_tree_creates_a_project_without_touching_folders(
     assert folder_tree.node_at(settings["folder_tree"],
                                "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS")[
         "events"] is True
-    assert settings["naming_template"] == "keep"
+    assert settings["naming_template"] == naming.EVENT_TEMPLATE
     assert settings["naming_style"] == "title"
     visible = sorted(n for n in os.listdir(str(root)) if not n.startswith("."))
     assert visible == ["INVESTIGACION"]
