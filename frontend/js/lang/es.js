@@ -233,9 +233,6 @@ const LANG_ES = {
     "naming.m4": "Tema, fuente, fecha y número",
     "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Personalizado",
-    "naming.template": "Plantilla",
-    "naming.template_help":
-        "Usa {date}, {source}, {topic}, {number}, {topic_number} y {original}.",
     "naming.preview": "Vista previa",
     "naming.media_rule": "Las fotos se nombran con este método según lo "
         + "que muestran, y el audio y el video según el título de sus "
@@ -245,6 +242,24 @@ const LANG_ES = {
     "naming.duplicate_rule":
         "Si el nombre ya existe, Cataloga agrega -2, -3 y así.",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
+    "naming.blocks_add": "Haz clic en las partes en orden",
+    "naming.chosen": "Tu nombre de archivo",
+    "naming.chosen_empty": "Todavía no hay partes. Haz clic en Tema, Fuente, "
+        + "Fecha, Número u Original.",
+    "naming.block_topic": "Tema",
+    "naming.block_source": "Fuente",
+    "naming.block_date": "Fecha",
+    "naming.block_number": "Número",
+    "naming.block_original": "Original",
+    "naming.separator": "Separador",
+    "naming.move_left": "Mover a la izquierda",
+    "naming.move_right": "Mover a la derecha",
+    "naming.remove_block": "Quitar parte",
+    "naming.extension_note": "La extensión (.pdf, .jpg) se agrega sola. "
+        + "Número cuenta los archivos con el mismo tema: 001, 002...",
+    "naming.legacy": "Nombre personalizado guardado: {template}. Haz clic en "
+        + "las partes para reemplazarlo.",
+    "naming.err_no_blocks": "Haz clic en al menos una parte del nombre.",
     "naming.err_empty": "Escribe una plantilla o elige uno de los 4 métodos.",
     "naming.err_no_token": "Agrega al menos uno de estos: {date}, {source}, "
         + "{topic}, {number}, {topic_number} o {original}.",
