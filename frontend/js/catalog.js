@@ -31,6 +31,9 @@ const MORE_COLUMNS = ["counterparty", "confidentiality", "owner",
 // The active project's category list, from GET /settings.
 let projectCategories = [];
 
+// True when the project files documents in its own folder tree.
+let catalogTreeMode = false;
+
 /** Current tab, search, and filters for GET /documents. Empty values are left out. */
 function readFilters() {
     const filters = {
@@ -179,6 +182,9 @@ function reviewNoteText(note) {
     if (note === "Category not in the project list") {
         return t("catalog.note_no_category");
     }
+    if (note === "No folder fits this file") {
+        return t("catalog.note_no_folder");
+    }
     // The backend may add the length: "... coming soon. Duration 1:05".
     const mediaPrefix = "Audio and video reading is coming soon";
     if (note.startsWith(mediaPrefix)) {
@@ -186,8 +192,21 @@ function reviewNoteText(note) {
         return length ? t("catalog.note_media_length", { length: length })
             : t("catalog.note_media");
     }
+    // "Missing: source, document_date": each field in the user's language.
+    const missingPrefix = "Missing: ";
+    if (note.startsWith(missingPrefix)) {
+        const labels = {
+            source: "catalog.col_source",
+            document_date: "catalog.col_date",
+            summary: "catalog.col_summary",
+        };
+        const fields = note.slice(missingPrefix.length).split(", ")
+            .map((field) => labels[field] ? t(labels[field]) : field);
+        return t("catalog.note_missing", { fields: fields.join(", ") });
+    }
     const notes = {
         "Could not read the image": "catalog.note_image",
+        "No topic could be found in the photo": "catalog.note_topic",
         "Could not read the scanned pages": "catalog.note_scan",
         "File is larger than 50 MB, so it was not read": "catalog.note_too_big",
     };
@@ -278,9 +297,93 @@ function subcategoriesOf(categoryName) {
     return category ? category.subcategories : [];
 }
 
+/** "Folder / Subfolder" as the user reads it. */
+function folderLabel(place) {
+    return place.split("/").join(" / ");
+}
+
+/** Every folder a file can go into: "Folder", or "Folder/Subfolder". */
+function allFolderPlaces() {
+    const places = [];
+    projectCategories.forEach((top) => {
+        if (!top.subcategories.length) {
+            places.push(top.name);
+        }
+        top.subcategories.forEach((sub) => places.push(`${top.name}/${sub}`));
+    });
+    return places;
+}
+
+/** Move a document, then show where it went. createFolder adds the folder first. */
+async function moveToFolder(doc, place, createFolder) {
+    showToolbarMessage(t("catalog.moving"), false);
+    try {
+        await moveDocument(doc.id, place, createFolder);
+        showToolbarMessage(t("catalog.moved", { folder: folderLabel(place) }),
+            false);
+    } catch (error) {
+        showToolbarMessage(errorText(error), true);
+    }
+    loadCatalog();
+}
+
+/** Folder cell of a tree project: where the file is, the AI's suggestion, and Move. */
+function makeFolderCell(doc) {
+    const cell = makeCell("", "folder-cell");
+    const current = doc.category
+        ? [doc.category, doc.subcategory].filter(Boolean).join("/") : "";
+    cell.appendChild(document.createElement("span")).textContent = current
+        ? folderLabel(current) : t("catalog.in_drop_zone");
+    // A duplicate stays in the Drop Zone until the user deletes it.
+    if (doc.duplicate_of) {
+        return cell;
+    }
+    if (doc.suggested_folder) {
+        const suggestion = document.createElement("p");
+        suggestion.className = "review-note";
+        suggestion.textContent = t("catalog.suggested_folder",
+            { folder: folderLabel(doc.suggested_folder) });
+        const create = document.createElement("button");
+        create.type = "button";
+        create.className = "pill-button folder-create";
+        create.textContent = t("catalog.create_and_move");
+        create.addEventListener("click", (event) => {
+            event.stopPropagation();
+            moveToFolder(doc, doc.suggested_folder, true);
+        });
+        cell.append(suggestion, create);
+    }
+    const select = document.createElement("select");
+    select.className = "status-select folder-move";
+    select.setAttribute("aria-label", t("catalog.move_to"));
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = t("catalog.move_to");
+    select.appendChild(first);
+    allFolderPlaces().filter((place) => place !== current).forEach((place) => {
+        const option = document.createElement("option");
+        option.value = place;
+        option.textContent = folderLabel(place);
+        select.appendChild(option);
+    });
+    select.addEventListener("click", (event) => event.stopPropagation());
+    select.addEventListener("change", () => {
+        if (select.value) {
+            moveToFolder(doc, select.value, false);
+        }
+    });
+    cell.appendChild(select);
+    return cell;
+}
+
 /** Category, Subcategory, and Keywords: always visible. */
 function addArchiveCells(row, doc) {
-    if (editMode) {
+    if (catalogTreeMode) {
+        // The folder is the file's place, so it only changes with Move.
+        row.appendChild(makeFolderCell(doc));
+        row.appendChild(editMode ? makeEditableCell(doc, "keywords")
+            : makeCell(fieldText(doc, "keywords"), "keywords"));
+    } else if (editMode) {
         row.appendChild(makeSelectCell(doc, "category",
             projectCategories.map((item) => item.name),
             (value) => value || "—"));
@@ -431,7 +534,9 @@ function updateCategoryFilters(allDocuments) {
         ...allDocuments.map((doc) => doc.category).filter(Boolean),
     ])].sort();
     const categorySelect = document.getElementById("filter-category");
-    fillFilter(categorySelect, t("catalog.filter_category_all"), categories);
+    fillFilter(categorySelect, t(catalogTreeMode
+        ? "catalog.filter_folder_all" : "catalog.filter_category_all"),
+    categories);
     // Subcategories of the chosen category, or of every category.
     const chosen = categorySelect.value;
     const subcategories = [...new Set([
@@ -441,7 +546,19 @@ function updateCategoryFilters(allDocuments) {
             .map((doc) => doc.subcategory).filter(Boolean),
     ])].sort();
     fillFilter(document.getElementById("filter-subcategory"),
-        t("catalog.filter_subcategory_all"), subcategories);
+        t(catalogTreeMode ? "catalog.filter_subfolder_all"
+            : "catalog.filter_subcategory_all"), subcategories);
+}
+
+/** A tree project shows one Folder column instead of Category and Subcategory. */
+function showFolderColumns(treeMode) {
+    catalogTreeMode = treeMode;
+    document.getElementById("catalog-table").classList
+        .toggle("tree-mode", treeMode);
+    const header = document.getElementById("col-category");
+    header.dataset.i18n = treeMode ? "catalog.col_folder"
+        : "catalog.col_category";
+    header.textContent = t(header.dataset.i18n);
 }
 
 /** Show or hide the old Inbox warning. It only informs: nothing is moved. */
@@ -486,6 +603,7 @@ async function loadCatalog() {
         // All documents feed the Source list and counter, so they stay complete while filtering.
         const allDocuments = await getDocuments();
         projectCategories = settings.categories || [];
+        showFolderColumns(settings.folder_mode === "tree");
         updateSourceFilter(allDocuments);
         updateCategoryFilters(allDocuments);
         const reviewCount = allDocuments

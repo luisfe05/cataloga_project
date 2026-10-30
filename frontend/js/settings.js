@@ -113,9 +113,12 @@ function setProjectMode(mode) {
         .classList.toggle("hidden", !(isNew && hasProjects));
     document.getElementById("remove-project-section")
         .classList.toggle("hidden", isNew);
-    // Suggest needs the project's AI provider, so categories come after creating it.
+    // New projects get a folder tree; old projects keep their categories.
+    const treeMode = isNew || projectFolderMode === "tree";
     document.getElementById("categories-section")
-        .classList.toggle("hidden", isNew);
+        .classList.toggle("hidden", treeMode);
+    document.getElementById("folders-section")
+        .classList.toggle("hidden", !treeMode);
     updateBrowseButton();
     resetFolderWarning();
 }
@@ -123,6 +126,7 @@ function setProjectMode(mode) {
 /** Empty the form for a new project, which starts with Ollama Cloud. */
 function startNewProject() {
     setProjectMode("new");
+    showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
     document.getElementById("api-key").value = "";
@@ -398,7 +402,11 @@ async function loadSettings() {
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
+        projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
+        if (projectFolderMode === "tree") {
+            showFolderSection(settings, false);
+        }
 
         document.getElementById("api-key").value = "";
         providersWithKey = settings.providers_with_key;
@@ -434,6 +442,13 @@ async function saveSettings(event) {
             document.getElementById("naming-error").textContent, "error");
         return;
     }
+    const isTree = projectMode === "new" || projectFolderMode === "tree";
+    const treeProblem = isTree ? folderTreeProblem() : "";
+    if (treeProblem) {
+        showFoldersMessage(treeProblem, "error");
+        showSettingsMessage(treeProblem, "error");
+        return;
+    }
     const providerData = {
         provider_name: document.getElementById("ai-provider").value,
         model: document.getElementById("ai-model").value,
@@ -454,6 +469,9 @@ async function saveSettings(event) {
                 name: document.getElementById("research-name").value,
                 folder: document.getElementById("target-directory").value,
                 naming_template: chosenTemplate(),
+                description: document.getElementById("project-description")
+                    .value.trim(),
+                folders: readFolderTree(),
                 confirm_folder: folderWarningShown,
             });
             projectCreated = true;
@@ -465,7 +483,8 @@ async function saveSettings(event) {
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
                 industry: document.getElementById("industry").value,
-                categories: readCategories(),
+                // In a tree project the categories are the folders.
+                categories: isTree ? readFolderTree() : readCategories(),
             });
         }
         resetFolderWarning();
