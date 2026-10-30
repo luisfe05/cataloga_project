@@ -36,7 +36,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 | Frontend | HTML, CSS, and plain JavaScript |
 | Backend | Flask REST API on `127.0.0.1:5050` |
 | Database | SQLite, one catalog per project |
-| AI | Ollama Cloud with `gemma4:31b` by default. Gemini, Groq, Claude, xAI, and OpenAI can be chosen in Settings |
+| AI | Ollama Cloud with `gemma4:31b` by default. Gemini, Groq, Claude, xAI, and OpenAI can be chosen in Settings. A fallback provider answers when the main one fails (Claude, when its key is saved). Only Gemini reads audio and video. An optional server URL sends every request through a Cataloga server that holds the keys |
 | API keys | The macOS Keychain, through keyring |
 | Packaging | PyInstaller |
 | Tests | pytest |
@@ -135,8 +135,9 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | GET | `/dashboard/stats` | Yes | Gives the numbers for the dashboard |
 | GET | `/settings` | Yes | Gives the active project's settings and the language |
 | PUT | `/settings` | Yes | Saves the project name, the naming template, the folder tree (new folders only; folders with documents stay), and the language |
-| PUT | `/settings/ai-provider` | Yes | Saves the AI provider, model, and API key |
-| POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
+| PUT | `/settings/ai-provider` | Yes | Saves the provider, model, and API key of one role: `text` (default), `fallback`, or `media` (Gemini only) |
+| DELETE | `/settings/ai-provider/<role>` | Yes | Takes the fallback or media provider away. The key stays in the Keychain |
+| POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider, through the server URL if one is sent |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
 | POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
 | POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. Saves nothing |

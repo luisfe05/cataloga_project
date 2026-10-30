@@ -7,7 +7,7 @@ import time
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
-from backend.pipeline.ai_providers import create_client
+from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
@@ -77,8 +77,8 @@ def scan_once(projects_path, owner=None):
     log_old_inbox_warning(organizer)
     remove_gone_duplicates(repo)
 
-    provider = repo.get_active_provider()
-    if not provider:
+    client = project_client(repo)
+    if client is None:
         return []
 
     files = find_new_files(organizer.drop_zone_folder())
@@ -86,7 +86,7 @@ def scan_once(projects_path, owner=None):
         return []
 
     pipeline = ClassificationPipeline(
-        create_client(provider["provider_name"], provider["model"]),
+        client,
         repo,
         organizer,
         owner=owner,
