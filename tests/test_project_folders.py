@@ -16,7 +16,7 @@ from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import ClassificationPipeline
 from backend.pipeline.file_organizer import MEDIA_TYPES, FileOrganizer
 from backend.routes import projects as project_routes
-from tests.conftest import make_project
+from tests.conftest import make_project, card_answer
 
 METADATA = {"source": "El Nuevo Día", "document_date": "2026-07-15",
             "topic": "Oceanman Malta", "keywords": ["swimming"]}
@@ -33,11 +33,7 @@ class FolderAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.prompts.append(system_prompt)
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Press"
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "A news story."
-        return json.dumps(self.metadata)
+        return card_answer(self.metadata)
 
 
 @pytest.fixture
@@ -81,7 +77,7 @@ def test_old_project_files_go_to_their_media_folder(old_project):
     assert doc.media_type == "Press"
     assert doc.file_path == os.path.join(
         str(old_project["folder"]), "Press",
-        "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt")
+        "oceanman-malta_el-nuevo-dia_2026-07-15.txt")
     assert doc.status == "Classified"
 
 
@@ -112,11 +108,13 @@ def test_old_project_no_category_fit_still_moves_by_type(old_project):
 
 
 def test_old_project_unreadable_file_goes_to_documents(old_project):
-    """A file without text still lands in Documents, as before."""
+    """A file the app cannot open still lands in Documents, cataloged by
+    its name: no format goes to Manual Review for being unknown."""
     path = old_project["drop_zone"] / "notes.xyz"
     path.write_bytes(b"\x00\x01")
     doc = old_project["pipeline"].classify_document(str(path))
-    assert doc.status == "Manual Review"
+    assert doc.status == "Classified"
+    assert doc.media_type == "Documents"
     assert os.path.dirname(doc.file_path) == os.path.join(
         str(old_project["folder"]), "Documents")
 
@@ -184,22 +182,26 @@ def test_check_tree_limits():
             str(n) for n in range(11)]}])
 
 
-def test_parse_tree_answer_keeps_only_two_levels():
-    """A third level, bad names, and twins from the AI are dropped."""
+def test_parse_tree_answer_cleans_the_ai_tree():
+    """Bad names and twins from the AI are dropped; nesting is kept."""
     answer = "```json\n" + json.dumps([
         {"name": "Oceanman Malta", "subfolders": [
-            "Prensa", {"name": "Deep"}, "prensa", "CON"]},
+            "Prensa", {"name": "Deep", "subfolders": ["Deeper"]}, "prensa",
+            "CON"]},
         {"name": "aux"}, {"name": "Oceanman malta"}, "text"]) + "\n```"
-    assert folder_tree.parse_tree_answer(answer) == [
-        {"name": "Oceanman Malta", "subcategories": ["Prensa"]}]
+    tree = folder_tree.parse_tree_answer(answer)
+    assert folder_tree.to_categories(tree) == [
+        {"name": "Oceanman Malta", "subcategories": ["Prensa", "Deep"]}]
+    assert folder_tree.all_places(tree) == ["Oceanman Malta/Prensa",
+                                            "Oceanman Malta/Deep/Deeper"]
     assert folder_tree.parse_tree_answer("I cannot help.") == []
 
 
 def test_find_place():
     """Only a saved folder or subfolder is a place for a file."""
     assert folder_tree.find_place(TREE, "oceanman malta/PRENSA") == \
-        ("Oceanman Malta", "Prensa")
-    assert folder_tree.find_place(TREE, "Contratos") == ("Contratos", None)
+        "Oceanman Malta/Prensa"
+    assert folder_tree.find_place(TREE, "Contratos") == "Contratos"
     # A folder with subfolders only holds files in its subfolders.
     assert folder_tree.find_place(TREE, "Oceanman Malta") is None
     assert folder_tree.find_place(TREE, "../Oceanman Malta/Prensa") is None
@@ -252,7 +254,7 @@ def test_file_goes_to_the_folder_the_ai_picks(tree_project):
         drop(tree_project, "a.txt", "Article"))
     assert doc.file_path == os.path.join(
         str(tree_project["folder"]), "Oceanman Malta", "Prensa",
-        "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt")
+        "oceanman-malta_el-nuevo-dia_2026-07-15.txt")
     assert (doc.category, doc.subcategory) == ("Oceanman Malta", "Prensa")
     assert doc.media_type == "Press"
     assert doc.status == "Classified"
@@ -409,8 +411,9 @@ def test_suggest_folders_uses_ollama_and_saves_nothing(empty_client,
     response = empty_client.post("/projects/folders/suggest", json={
         "description": "Archivo de casos de una oficina legal"})
     assert response.status_code == 200
-    assert response.get_json()["folders"] == [
-        {"name": "Caso 1142", "subcategories": ["Contratos", "Evidencia"]}]
+    folders = response.get_json()["folders"]
+    assert [(f["name"], f["subcategories"]) for f in folders] == [
+        ("Caso 1142", ["Contratos", "Evidencia"])]
     assert used == [("ollama", "gemma4:31b")]
     assert empty_client.get("/projects").get_json()["projects"] == []
 
@@ -469,20 +472,20 @@ def test_move_document_to_another_folder(flask_client, tmp_path):
     assert moved["suggested_folder"] is None
     # Without source, date, and summary it still needs a person.
     assert moved["status"] == "Manual Review"
-    assert moved["review_note"] == "Missing: source, document_date, summary"
+    assert moved["review_note"] == "Missing: summary"
     activity = flask_client.get("/dashboard/stats").get_json()[
         "recent_activity"]
     assert activity[0]["action"] == "Moved"
 
 
 def test_move_keeps_both_files_with_the_same_name(flask_client, tmp_path):
-    """A name already in the folder gets -2."""
+    """A name already in the folder gets _2; the first keeps its name."""
     folder, repo = tree_repo(flask_client, tmp_path)
     add_file_doc(repo, str(folder / "Contratos" / "a.txt"))
     doc = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"))
     moved = flask_client.post("/documents/{}/move".format(doc.id),
                               json={"folder": "Contratos"}).get_json()
-    assert moved["filename"] == "a-2.txt"
+    assert moved["filename"] == "a_2.txt"
 
 
 def test_create_folder_and_move(flask_client, tmp_path):
@@ -526,22 +529,22 @@ def test_move_classifies_a_file_that_only_needs_a_folder(
 def test_move_keeps_other_review_reasons(flask_client, tmp_path):
     """A missing field or another note keeps the file in Manual Review."""
     folder, repo = tree_repo(flask_client, tmp_path)
-    no_date = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"),
-                           status="Manual Review", source="El Nuevo Dia",
-                           summary="Una receta.",
-                           review_note=folder_tree.NO_FOLDER_NOTE)
+    no_summary = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"),
+                              status="Manual Review", source="El Nuevo Dia",
+                              document_date="2024-05-02",
+                              review_note=folder_tree.NO_FOLDER_NOTE)
     other_note = add_file_doc(repo, str(folder / "Drop Zone" / "b.txt"),
                               status="Manual Review", source="El Nuevo Dia",
                               document_date="2024-05-02",
                               summary="Una receta.",
                               review_note="This file is too big to read")
-    for doc in (no_date, other_note):
+    for doc in (no_summary, other_note):
         moved = flask_client.post("/documents/{}/move".format(doc.id),
                                   json={"folder": "Contratos"}).get_json()
         assert moved["status"] == "Manual Review"
     # The folder note is gone, so the empty field becomes the reason.
-    assert flask_client.get("/documents/{}".format(no_date.id)).get_json()[
-        "review_note"] == "Missing: document_date"
+    assert flask_client.get("/documents/{}".format(no_summary.id)).get_json()[
+        "review_note"] == "Missing: summary"
     assert flask_client.get("/documents/{}".format(other_note.id)).get_json()[
         "review_note"] == "This file is too big to read"
 
@@ -615,7 +618,7 @@ def test_settings_removes_only_empty_folders(flask_client, tmp_path):
     response = flask_client.put("/settings", json={
         "research_name": "Doc", "categories": smaller})
     assert response.status_code == 200
-    assert repo.get_folder_tree() == smaller
+    assert folder_tree.to_categories(repo.get_folder_tree()) == smaller
     # The folder on disk is never deleted.
     assert (folder / "Oceanman Malta" / "Fotos del evento").is_dir()
 
