@@ -501,6 +501,8 @@
                                 <p class="hint" data-i18n="settings.ai_hint">Use
                                     another AI provider with your own API key.</p>
 
+                                <h3 data-i18n="settings.ai_text_title">Text and
+                                    images</h3>
                                 <label for="ai-provider"
                                        data-i18n="settings.ai_provider">AI
                                     Provider</label>
@@ -514,6 +516,53 @@
                                 <label for="ai-model"
                                        data-i18n="settings.model">Model</label>
                                 <select id="ai-model"></select>
+
+                                <h3 data-i18n="settings.ai_fallback_title">Fallback
+                                    (optional)</h3>
+                                <p class="hint"
+                                   data-i18n="settings.ai_fallback_hint"></p>
+                                <label for="fallback-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="fallback-provider"></select>
+
+                                <label for="fallback-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="fallback-key"
+                                       autocomplete="off">
+
+                                <label for="fallback-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="fallback-model"></select>
+
+                                <h3 data-i18n="settings.ai_media_title">Audio and
+                                    video</h3>
+                                <p class="hint"
+                                   data-i18n="settings.ai_media_hint"></p>
+                                <label for="media-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="media-provider"></select>
+
+                                <label for="media-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="media-key"
+                                       autocomplete="off">
+
+                                <label for="media-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="media-model"></select>
+
+                                <h3 data-i18n="settings.server_title">Server
+                                    (optional)</h3>
+                                <p class="hint"
+                                   data-i18n="settings.server_hint"></p>
+                                <label for="server-url"
+                                       data-i18n="settings.server_url">Server
+                                    URL</label>
+                                <input type="url" id="server-url"
+                                       placeholder="https://"
+                                       autocomplete="off">
                             </div>
                         </details>
                     </div>
