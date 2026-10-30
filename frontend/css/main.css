@@ -1656,15 +1656,42 @@ td.edit-error {
 
 .tree-row {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) 32px;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto 32px;
     gap: var(--spacing-8);
     align-items: center;
 }
 
+/* Each level steps in by --depth (set by folders.js). */
 .tree-row.sub {
     padding-left: var(--spacing-24);
     border-left: 2px solid var(--color-line);
-    margin-left: var(--spacing-8);
+    margin-left: calc(var(--depth, 1) * var(--spacing-16));
+}
+
+.folder-flags {
+    display: flex;
+    gap: var(--spacing-8);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.folder-flags label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    font-weight: 400;
+}
+
+.folder-flags input {
+    margin: 0;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    margin-top: var(--spacing-8);
 }
 
 .tree-row input,

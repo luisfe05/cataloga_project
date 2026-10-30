@@ -184,22 +184,26 @@ def test_check_tree_limits():
             str(n) for n in range(11)]}])
 
 
-def test_parse_tree_answer_keeps_only_two_levels():
-    """A third level, bad names, and twins from the AI are dropped."""
+def test_parse_tree_answer_cleans_the_ai_tree():
+    """Bad names and twins from the AI are dropped; nesting is kept."""
     answer = "```json\n" + json.dumps([
         {"name": "Oceanman Malta", "subfolders": [
-            "Prensa", {"name": "Deep"}, "prensa", "CON"]},
+            "Prensa", {"name": "Deep", "subfolders": ["Deeper"]}, "prensa",
+            "CON"]},
         {"name": "aux"}, {"name": "Oceanman malta"}, "text"]) + "\n```"
-    assert folder_tree.parse_tree_answer(answer) == [
-        {"name": "Oceanman Malta", "subcategories": ["Prensa"]}]
+    tree = folder_tree.parse_tree_answer(answer)
+    assert folder_tree.to_categories(tree) == [
+        {"name": "Oceanman Malta", "subcategories": ["Prensa", "Deep"]}]
+    assert folder_tree.all_places(tree) == ["Oceanman Malta/Prensa",
+                                            "Oceanman Malta/Deep/Deeper"]
     assert folder_tree.parse_tree_answer("I cannot help.") == []
 
 
 def test_find_place():
     """Only a saved folder or subfolder is a place for a file."""
     assert folder_tree.find_place(TREE, "oceanman malta/PRENSA") == \
-        ("Oceanman Malta", "Prensa")
-    assert folder_tree.find_place(TREE, "Contratos") == ("Contratos", None)
+        "Oceanman Malta/Prensa"
+    assert folder_tree.find_place(TREE, "Contratos") == "Contratos"
     # A folder with subfolders only holds files in its subfolders.
     assert folder_tree.find_place(TREE, "Oceanman Malta") is None
     assert folder_tree.find_place(TREE, "../Oceanman Malta/Prensa") is None
@@ -409,8 +413,9 @@ def test_suggest_folders_uses_ollama_and_saves_nothing(empty_client,
     response = empty_client.post("/projects/folders/suggest", json={
         "description": "Archivo de casos de una oficina legal"})
     assert response.status_code == 200
-    assert response.get_json()["folders"] == [
-        {"name": "Caso 1142", "subcategories": ["Contratos", "Evidencia"]}]
+    folders = response.get_json()["folders"]
+    assert [(f["name"], f["subcategories"]) for f in folders] == [
+        ("Caso 1142", ["Contratos", "Evidencia"])]
     assert used == [("ollama", "gemma4:31b")]
     assert empty_client.get("/projects").get_json()["projects"] == []
 
@@ -615,7 +620,7 @@ def test_settings_removes_only_empty_folders(flask_client, tmp_path):
     response = flask_client.put("/settings", json={
         "research_name": "Doc", "categories": smaller})
     assert response.status_code == 200
-    assert repo.get_folder_tree() == smaller
+    assert folder_tree.to_categories(repo.get_folder_tree()) == smaller
     # The folder on disk is never deleted.
     assert (folder / "Oceanman Malta" / "Fotos del evento").is_dir()
 
