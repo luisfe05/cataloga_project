@@ -576,6 +576,15 @@ class CatalogRepository:
         config = self.get_app_config() or {}
         return config.get("folder_mode") == folder_tree.TREE_MODE
 
+    def is_catalog_project(self):
+        """Say whether the project never moves or renames its files."""
+        config = self.get_app_config() or {}
+        return config.get("folder_mode") == folder_tree.CATALOG_MODE
+
+    def can_move_files(self):
+        """Say whether files may be moved or renamed in this project."""
+        return not self.is_catalog_project()
+
     def get_folder_tree(self):
         """Return the folder tree, or None in a project sorted by type."""
         if not self.is_tree_project():

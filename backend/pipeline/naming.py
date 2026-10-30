@@ -22,6 +22,20 @@ NEW_PROJECT_TEMPLATE = METHOD_TEMPLATES[3]
 # Files without text always use this: 2026-07-15_0001.jpg
 NO_TEXT_TEMPLATE = "{date}_{number}"
 
+# Saved as the template of a project that never renames its files.
+KEEP_NAMES = "keep"
+
+# Other programs look for these by name: never renamed, in any mode.
+PROTECTED_NAMES = ("index.html", "index.htm", ".gitignore", "package.json",
+                   "package-lock.json", "favicon.ico", "robots.txt",
+                   "sitemap.xml", ".htaccess", "makefile", "dockerfile",
+                   "requirements.txt", "pyproject.toml", "composer.json",
+                   "gemfile", "cargo.toml", "go.mod", "license",
+                   "license.txt", "license.md")
+PROTECTED_PREFIXES = ("readme",)
+PROTECTED_SUFFIXES = (".config.js", ".config.ts", ".config.json", ".lock",
+                      ".plist")
+
 TOKENS = ("date", "source", "topic", "number", "original", "topic_number")
 
 # Not allowed in file names on macOS or Windows.
@@ -94,8 +108,17 @@ def next_topic_number(topic, saved_topics):
     return sum(1 for saved in saved_topics if slugify(saved) == slug) + 1
 
 
+def is_protected(filename):
+    """Say whether a file is one other programs expect by name."""
+    name = os.path.basename(str(filename or "")).lower()
+    return (name in PROTECTED_NAMES or name.startswith(PROTECTED_PREFIXES)
+            or name.endswith(PROTECTED_SUFFIXES))
+
+
 def validate_template(template):
     """Check a template before it is saved."""
+    if template == KEEP_NAMES:
+        return None
     if not isinstance(template, str) or not template.strip():
         return {"reason": "empty", "token": ""}
     for found in TOKEN_PATTERN.findall(template):

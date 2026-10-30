@@ -33,6 +33,14 @@ IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 TOPIC_NOTE = "No topic could be found in the photo"
+SECRET_NOTE = "Possible secret, not read"
+
+# Files that may hold keys or passwords: never read, never sent anywhere.
+SECRET_NAMES = (".env", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
+SECRET_PREFIXES = (".env.", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
+                   "credentials")
+SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".keychain",
+                   ".keychain-db", ".jks", ".kdbx")
 # Fields are listed by their column name: "Missing: source, document_date".
 MISSING_NOTE = "Missing: {}"
 
@@ -46,6 +54,13 @@ GENERIC_NAME = re.compile(
 
 # Read the file in 1 MB pieces, so big videos never fill the memory.
 HASH_CHUNK_SIZE = 1024 * 1024
+
+
+def is_secret(filename):
+    """Say whether a file looks like it holds keys or passwords."""
+    name = os.path.basename(str(filename or "")).lower()
+    return (name in SECRET_NAMES or name.startswith(SECRET_PREFIXES)
+            or name.endswith(SECRET_SUFFIXES))
 
 
 def is_generic_name(text):

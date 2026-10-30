@@ -1845,6 +1845,17 @@ td.edit-error {
     accent-color: var(--color-violet);
 }
 
+.catalog-only-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-8);
+    margin-top: var(--spacing-12);
+}
+
+.catalog-only-row input {
+    margin-top: 4px;
+}
+
 .naming-custom .hint {
     margin: 0 0 var(--spacing-16);
 }

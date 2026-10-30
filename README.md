@@ -16,6 +16,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Catalog only | A project mode for websites, code, and edits that link their files by path (InDesign, Premiere, After Effects, Final Cut). Cataloga reads, summarizes and catalogs each file where it is. Nothing is moved or renamed, there is no folder tree and no Drop Zone. Reading the whole folder in place comes with the in-place scanner |
 | Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
@@ -98,6 +99,7 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | Source, date and topic | `el-nuevo-dia_2026-07-15_oceanman-malta.pdf` |
 | Number and topic | `0001_oceanman-malta.pdf` |
 | Custom | Click the parts in order (Topic, Source, Date, Number, Original) and pick `_` or `-` between them. Number is the 3-digit number per topic. The extension is added on its own |
+| Keep original names | Files are classified and moved, but never renamed |
 
 | Rule | What happens |
 |---|---|
@@ -109,6 +111,8 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | Audio and video | Named with the project's method from the title in their tags |
 | Files with nothing to read | Their date and a number, for example `2026-07-15_0001.jpg`. If only the disk date is known, `undated_0001.jpg` |
 | Name already taken | `-2`, `-3`, and so on are added |
+| Protected names | `index.html`, `README*`, `.gitignore`, `package.json`, `favicon.ico`, `robots.txt`, `sitemap.xml`, config files and lock files are never renamed, in any mode |
+| Secrets | `.env`, `*.pem`, `*.key`, `id_rsa*`, `credentials*`, `*.p12`, `*.pfx`, `*.keychain` are never read and never sent to the AI. They are cataloged by name only, in Manual Review with the note "Possible secret, not read" |
 | Rename from the chat | Uses the same cleaning rules, only after you click Confirm |
 
 ## API endpoints
@@ -137,6 +141,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | PUT | `/settings/ai-provider` | Yes | Saves the AI provider, model, and API key |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
+| POST | `/projects` with `catalog_only` | Yes | Creates a Catalog only project: no folders are created, names are kept, Move and Rename answer `409 catalog_only` |
 | POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
 | POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. Saves nothing |
 | PUT | `/projects/active` | Yes | Switches the active project |
