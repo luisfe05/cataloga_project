@@ -26,7 +26,8 @@ STATUSES = ("Classified", "Manual Review")
 MAX_SUMMARY_LENGTH = 100
 
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
-                         "categories", "folder_mode", "project_description")
+                         "categories", "folder_mode", "project_description",
+                         "stamp_date_order")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -485,7 +486,8 @@ class CatalogRepository:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
-                "industry, categories, folder_mode, project_description "
+                "industry, categories, folder_mode, project_description, "
+                "stamp_date_order "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -587,6 +589,13 @@ class CatalogRepository:
         self.save_config_value("folder_mode", folder_tree.TREE_MODE)
         self.save_config_value("project_description", description)
         self.save_categories(tree)
+
+    def stamp_date_order(self):
+        """Return 'month' or 'day': how a photo's date stamp reads."""
+        config = self.get_app_config() or {}
+        order = config.get("stamp_date_order")
+        return order if order in archive_rules.STAMP_ORDERS \
+            else archive_rules.DEFAULT_STAMP_ORDER
 
     def get_project_description(self):
         """Return what the project is about, or ''."""

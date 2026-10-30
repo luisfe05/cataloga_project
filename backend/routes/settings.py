@@ -39,6 +39,7 @@ def get_settings():
         "research_name": "",
         "target_directory": folder,
         "naming_template": naming.DEFAULT_TEMPLATE,
+        "stamp_date_order": archive_rules.DEFAULT_STAMP_ORDER,
         "industry": "",
         "categories": [],
         "folder_mode": folder_tree.MEDIA_MODE,
@@ -105,6 +106,10 @@ def update_settings():
     if values is None:
         return error_response("missing_field",
                               "research_name is required.", 400)
+    if "stamp_date_order" in body and \
+            body["stamp_date_order"] not in archive_rules.STAMP_ORDERS:
+        return error_response("invalid_stamp_order",
+                              "stamp_date_order must be month or day.", 400)
     if "naming_template" in body:
         problem = naming.validate_template(body["naming_template"])
         if problem:
@@ -142,6 +147,8 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if "stamp_date_order" in body:
+        repo.save_config_value("stamp_date_order", body["stamp_date_order"])
     if archive is not None and not tree_mode:
         config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:

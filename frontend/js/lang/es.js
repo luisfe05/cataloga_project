@@ -71,6 +71,8 @@ const LANG_ES = {
     "catalog.date_from_content": "Contenido",
     "catalog.date_from_metadata": "Metadata del archivo",
     "catalog.date_from_file": "Fecha del archivo",
+    "catalog.date_from_photo_stamp": "Sello en la foto",
+    "catalog.date_from_name": "Nombre del archivo o carpeta",
     "catalog.not_in_list": "{value} (no está en la lista)",
     "catalog.note_duplicate": "Duplicado de {name}",
     "catalog.note_no_category": "La categoría no está en la lista del proyecto",
@@ -234,6 +236,12 @@ const LANG_ES = {
     "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Personalizado",
     "naming.preview": "Vista previa",
+    "naming.stamp_order": "Fechas impresas en las fotos",
+    "naming.stamp_month": "Mes primero (11 13 '97)",
+    "naming.stamp_day": "Día primero (13 11 97)",
+    "naming.photo_date_rule": "La fecha de una foto sale de la fecha impresa "
+        + "o escrita en ella, luego del EXIF de una cámara (el de un escáner "
+        + "es el día del escaneo), y luego de un año en su nombre o carpeta.",
     "naming.media_rule": "Las fotos se nombran con este método según lo "
         + "que muestran, y el audio y el video según el título de sus "
         + "etiquetas. Los archivos sin nada que leer usan su fecha y un "

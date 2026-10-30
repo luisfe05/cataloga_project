@@ -22,11 +22,25 @@ except ImportError:
 OFFICE_EXTENSIONS = (".docx", ".xlsx", ".pptx")
 
 # Photos the AI can look at.
-VISION_EXTENSIONS = (".jpg", ".jpeg", ".png", ".heic")
+VISION_EXTENSIONS = (".jpg", ".jpeg", ".png", ".heic", ".tif", ".tiff",
+                     ".gif", ".bmp", ".webp")
 
 # Longest side of an image sent to the AI, to save time and quota.
 MAX_IMAGE_SIDE = 1600
 JPEG_QUALITY = 85
+
+# The corners of a photo, enlarged, so a small printed date can be read.
+CORNER_FRACTION = 0.25
+CORNER_SIDE = 800
+
+# A 1200 dpi scan has over 30 million pixels; Pillow's default refuses
+# anything past 89 million as a bomb. Scans of a page at 1200 dpi fit.
+Image.MAX_IMAGE_PIXELS = 200 * 1000 * 1000
+
+# EXIF software of scanners: their dates are the day of the scan.
+SCANNER_WORDS = ("scan", "epson", "canon", "hp ", "brother", "fujitsu",
+                 "vuescan", "silverfast", "image capture", "adobe",
+                 "photoshop", "lightroom", "gimp")
 
 # Only the first pages of a scanned PDF are read.
 MAX_SCANNED_PAGES = 3
@@ -154,16 +168,66 @@ def photo_data_uri(file_path):
         return None
 
 
+def open_photo(file_path, rotation=0):
+    """Open a photo as RGB, turned by rotation degrees clockwise, or None."""
+    try:
+        with Image.open(file_path) as image:
+            image = ImageOps.exif_transpose(image)
+            image.load()
+    except (OSError, ValueError, Image.DecompressionBombError):
+        return None
+    if rotation in (90, 180, 270):
+        # Pillow turns counterclockwise, so the angle is reversed.
+        image = image.rotate(-rotation, expand=True)
+    return image
+
+
+def corner_crops(image):
+    """Return the four corners of a photo, enlarged, as JPEG data URIs."""
+    width, height = image.size
+    w = max(1, int(width * CORNER_FRACTION))
+    h = max(1, int(height * CORNER_FRACTION))
+    boxes = [(0, 0, w, h), (width - w, 0, width, h),
+             (0, height - h, w, height), (width - w, height - h, width,
+                                          height)]
+    uris = []
+    for box in boxes:
+        corner = image.crop(box)
+        # Enlarge a small corner; a huge one is shrunk by image_data_uri.
+        if max(corner.size) < CORNER_SIDE:
+            scale = CORNER_SIDE / max(corner.size)
+            corner = corner.resize((max(1, int(corner.width * scale)),
+                                    max(1, int(corner.height * scale))))
+        uris.append(image_data_uri(corner))
+    return uris
+
+
+def photo_views(file_path, rotation=0):
+    """Return the photo and its four corners for the AI, or []."""
+    image = open_photo(file_path, rotation)
+    if image is None:
+        return []
+    return [image_data_uri(image)] + corner_crops(image)
+
+
 def photo_date(file_path):
-    """Return the date a photo was taken (from its EXIF), or None."""
+    """Return the date a camera wrote in a photo's EXIF, or None.
+
+    A scanner also writes EXIF dates, but those are the day of the scan,
+    so they only count when a camera make or model is there too.
+    """
     try:
         with Image.open(file_path) as image:
             exif = image.getexif()
-            # 36867 is DateTimeOriginal (in the Exif block), 306 is DateTime.
-            taken = exif.get_ifd(0x8769).get(36867) or exif.get(306)
+            make = str(exif.get(271) or "") + " " + str(exif.get(272) or "")
+            software = str(exif.get(305) or "").lower()
+            # 36867 is DateTimeOriginal, in the Exif block.
+            taken = exif.get_ifd(0x8769).get(36867)
     except (OSError, ValueError, Image.DecompressionBombError):
         return None
-    if not taken:
+    if not taken or not make.strip():
+        return None
+    if any(word in software for word in SCANNER_WORDS):
         return None
     # EXIF writes dates as 2026:07:15 10:30:00.
     match = re.match(r"(\d{4}):(\d{2}):(\d{2})", str(taken))
