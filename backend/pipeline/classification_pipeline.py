@@ -34,6 +34,10 @@ EXTENSION_MEDIA_TYPES = {
 
 READABLE_EXTENSIONS = (".pdf", ".txt") + file_readers.OFFICE_EXTENSIONS
 
+# Opened whole, so the 50 MB limit applies to them.
+OPENED_EXTENSIONS = (READABLE_EXTENSIONS + file_readers.DESIGN_EXTENSIONS +
+                     file_readers.ARCHIVE_EXTENSIONS)
+
 # Used when a file can't be read or classified.
 FALLBACK_MEDIA_TYPE = "Documents"
 
@@ -185,6 +189,11 @@ def needs_nothing(document):
     return all(getattr(document, field) for field in REQUIRED_FIELDS)
 
 
+# Sent as the content of a file the app cannot open: the card still
+# gets the name, the folder, the neighbors and the metadata.
+UNREAD_TEXT = "The file itself could not be read; use only the facts above."
+
+
 def cut_summary(text):
     """Keep a summary under the limit, cut at a whole word."""
     text = archive_rules.clean_text(text, 1000) or ""
@@ -266,7 +275,7 @@ def too_big_to_read(file_path, extension):
     Photos are not counted: a 98 MB scan is shrunk before it is sent, so
     the limit applies to what goes to the AI, not to the file.
     """
-    return (extension in READABLE_EXTENSIONS and
+    return (extension in OPENED_EXTENSIONS and
             os.path.getsize(file_path) > file_readers.MAX_READ_BYTES)
 
 
@@ -366,6 +375,26 @@ class ClassificationPipeline:
                     file_readers.pdf_page_data_uris(file_path), "scan")
                 if not content:
                     reason = archive_rules.SCAN_NOTE
+        elif extension in file_readers.DESIGN_EXTENSIONS:
+            # A design file: its picture when there is one, else its XMP.
+            media_type = FALLBACK_MEDIA_TYPE
+            file_meta = file_readers.design_metadata(file_path)
+            if self.ai_client.supports_images:
+                content = self.read_images(
+                    file_readers.design_views(file_path), "photo")
+            content = content or UNREAD_TEXT
+        elif extension in file_readers.ARCHIVE_EXTENSIONS:
+            # A zip: the list of what it holds, never unpacked.
+            media_type = FALLBACK_MEDIA_TYPE
+            content = file_readers.zip_listing(file_path) or UNREAD_TEXT
+        elif file_readers.is_text_file(file_path):
+            # Text or code of any kind, known by its bytes, not its name.
+            content = file_readers.text_extract(file_path)
+        else:
+            # Unknown format: the name, the folder and the neighbors still
+            # say something. Never Manual Review only for the format.
+            media_type = FALLBACK_MEDIA_TYPE
+            content = UNREAD_TEXT
 
         has_text = bool(content)
         if content:
