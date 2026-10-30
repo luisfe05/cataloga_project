@@ -136,6 +136,13 @@ async function suggestSheet(folder) {
     return handleResponse(response);
 }
 
+/** DELETE /settings/ai-provider/<role>: take the fallback or media provider away. */
+async function deleteAIProvider(role) {
+    const response = await apiFetch(`${BASE_URL}/settings/ai-provider/${role}`,
+        { method: "DELETE" });
+    return handleResponse(response);
+}
+
 /** POST /settings/ai-provider/test */
 async function testAIProvider(data) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/test`, {
@@ -196,15 +203,15 @@ async function removeProject(folder) {
 
 // --- Account and session ---
 
-/** GET /auth/status: does the account exist, and the language. No token needed. */
+/** GET /auth/status: is there any account, and the language. No token needed. */
 async function getAuthStatus() {
     const response = await apiFetch(`${BASE_URL}/auth/status`);
     return handleResponse(response);
 }
 
-/** POST /auth/setup - create the account, then remember the token. */
-async function setupAccount(username, password) {
-    const response = await apiFetch(`${BASE_URL}/auth/setup`, {
+/** POST /auth/register - create an account, then remember the token. */
+async function registerAccount(username, password) {
+    const response = await apiFetch(`${BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username, password: password }),

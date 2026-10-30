@@ -13,23 +13,29 @@
         <img class="auth-logo" src="assets/logo-vertical-paper.svg"
              alt="Cataloga">
 
-        <form class="settings-form auth-form hidden" id="setup-form">
-            <h2 data-i18n="auth.setup_title">Create your account</h2>
-            <p class="hint" data-i18n="auth.setup_hint"></p>
-            <label for="setup-username"
+        <form class="settings-form auth-form hidden" id="register-form">
+            <h2 data-i18n="auth.register_title">Create an account</h2>
+            <p class="hint" data-i18n="auth.register_hint"></p>
+            <label for="register-username"
                    data-i18n="auth.username">Username</label>
-            <input type="text" id="setup-username" autocomplete="username">
-            <label for="setup-password"
+            <input type="text" id="register-username"
+                   autocomplete="username">
+            <label for="register-password"
                    data-i18n="auth.password">Password</label>
-            <input type="password" id="setup-password"
+            <input type="password" id="register-password"
                    autocomplete="new-password">
-            <label for="setup-confirm"
+            <label for="register-confirm"
                    data-i18n="auth.confirm_password">Confirm password</label>
-            <input type="password" id="setup-confirm"
+            <input type="password" id="register-confirm"
                    autocomplete="new-password">
             <button type="submit" class="primary-button"
                     data-i18n="auth.create_account">Create account</button>
-            <p class="form-message error" id="setup-message"></p>
+            <p class="form-message error" id="register-message"></p>
+            <p class="auth-links">
+                <button type="button" class="auth-link" id="show-login-link"
+                        data-i18n="auth.have_account">I already have an
+                    account</button>
+            </p>
         </form>
 
         <form class="settings-form auth-form hidden" id="login-form">
@@ -44,6 +50,16 @@
             <button type="submit" class="primary-button"
                     data-i18n="auth.log_in">Log in</button>
             <p class="form-message error" id="login-message"></p>
+            <p class="auth-links">
+                <button type="button" class="auth-link"
+                        id="show-register-link"
+                        data-i18n="auth.need_account">Create an account</button>
+                <button type="button" class="auth-link" id="forgot-link"
+                        data-i18n="auth.forgot">Forgot your password?</button>
+            </p>
+            <!-- There is no email, so there is no way to recover it. -->
+            <p class="hint auth-forgot hidden" id="forgot-hint"
+               data-i18n="auth.forgot_hint"></p>
         </form>
     </section>
 
@@ -226,6 +242,11 @@
                                 data-i18n="catalog.col_effective_end">Effective end</th>
                             <th class="more-col"
                                 data-i18n="catalog.col_date_from">Date from</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_folder_reason">Why this
+                                folder</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_confidence">Confidence</th>
                             <th data-i18n="catalog.col_status">Status</th>
                         </tr>
                     </thead>
@@ -506,6 +527,8 @@
                                 <p class="hint" data-i18n="settings.ai_hint">Use
                                     another AI provider with your own API key.</p>
 
+                                <h3 data-i18n="settings.ai_text_title">Text and
+                                    images</h3>
                                 <label for="ai-provider"
                                        data-i18n="settings.ai_provider">AI
                                     Provider</label>
@@ -519,6 +542,53 @@
                                 <label for="ai-model"
                                        data-i18n="settings.model">Model</label>
                                 <select id="ai-model"></select>
+
+                                <h3 data-i18n="settings.ai_fallback_title">Fallback
+                                    (optional)</h3>
+                                <p class="hint"
+                                   data-i18n="settings.ai_fallback_hint"></p>
+                                <label for="fallback-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="fallback-provider"></select>
+
+                                <label for="fallback-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="fallback-key"
+                                       autocomplete="off">
+
+                                <label for="fallback-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="fallback-model"></select>
+
+                                <h3 data-i18n="settings.ai_media_title">Audio and
+                                    video</h3>
+                                <p class="hint"
+                                   data-i18n="settings.ai_media_hint"></p>
+                                <label for="media-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="media-provider"></select>
+
+                                <label for="media-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="media-key"
+                                       autocomplete="off">
+
+                                <label for="media-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="media-model"></select>
+
+                                <h3 data-i18n="settings.server_title">Server
+                                    (optional)</h3>
+                                <p class="hint"
+                                   data-i18n="settings.server_hint"></p>
+                                <label for="server-url"
+                                       data-i18n="settings.server_url">Server
+                                    URL</label>
+                                <input type="url" id="server-url"
+                                       placeholder="https://"
+                                       autocomplete="off">
                             </div>
                         </details>
                     </div>
