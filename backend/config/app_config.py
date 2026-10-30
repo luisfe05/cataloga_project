@@ -24,6 +24,8 @@ class AppConfig:
             "target_directory": config.get("target_directory", ""),
             "naming_template": config.get("naming_template",
                                           naming.DEFAULT_TEMPLATE),
+            "naming_style": self.db.get_naming_style(),
+            "keep_accents": self.db.keep_accents(),
             "industry": config.get("industry") or "",
             "categories": archive_rules.categories_from_text(
                 config.get("categories")),

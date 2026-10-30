@@ -240,27 +240,33 @@ const LANG_EN = {
     "naming.hint": "Choose how Cataloga names new files. Files already in "
         + "the catalog keep their names.",
     "naming.m1": "Date and topic",
-    "naming.m1_example": "2026-07-15_oceanman-malta.pdf",
+    "naming.m1_example": "date_topic-name.pdf",
     "naming.m2": "Source, date and topic",
-    "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
+    "naming.m2_example": "source-name_date_topic-name.pdf",
     "naming.m3": "Number and topic",
-    "naming.m3_example": "0001_oceanman-malta.pdf",
-    "naming.m4": "Topic, source, date and number",
-    "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
+    "naming.m3_example": "0001_topic-name.pdf",
+    "naming.m4": "Topic, source and date",
+    "naming.m4_example": "topic-name_source-name_date.pdf",
     "naming.custom": "Custom",
     "naming.preview": "Preview",
     "naming.media_rule": "Photos are named with this method from what they "
         + "show, and audio and video from the title in their tags. Files "
         + "with nothing to read use their date and a number, for example "
-        + "2026-07-15_0001.jpg, or undated_0001.jpg when only the disk "
-        + "date is known.",
-    "naming.duplicate_rule":
-        "If a name already exists, Cataloga adds -2, -3 and so on.",
+        + "2026-07-15_0001.jpg, or only the number when no date is known.",
+    "naming.duplicate_rule": "Without a reliable date the name has no date "
+        + "part. If a name already exists, the new file gets _2, _3 and so "
+        + "on; the first one keeps its name.",
+    "naming.version_rule": "A version mark in the original name (v01, v02) "
+        + "stays at the end of the new name.",
+    "naming.path_rule": "Names are shortened so the full path stays under "
+        + "240 characters, the Windows limit.",
+    "naming.style": "Style",
+    "naming.keep_accents": "Keep accents (Día, not Dia)",
     "naming.changed_note": "Only new files will use this method.",
     "naming.blocks_add": "Click the parts in order",
     "naming.chosen": "Your file name",
-    "naming.chosen_empty": "No parts yet. Click Topic, Source, Date, Number "
-        + "or Original above.",
+    "naming.chosen_empty": "No parts yet. Click Topic, Source, Date or "
+        + "Original above.",
     "naming.block_topic": "Topic",
     "naming.block_source": "Source",
     "naming.block_date": "Date",
@@ -271,7 +277,7 @@ const LANG_EN = {
     "naming.move_right": "Move right",
     "naming.remove_block": "Remove part",
     "naming.extension_note": "The extension (.pdf, .jpg) is added on its own. "
-        + "Number counts the files with the same topic: 001, 002...",
+        + "A number is added only when the name already exists.",
     "naming.legacy": "Saved custom name: {template}. Click parts to replace it.",
     "naming.err_no_blocks": "Click at least one part for the file name.",
     "naming.err_empty": "Write a template, or choose one of the 4 methods.",

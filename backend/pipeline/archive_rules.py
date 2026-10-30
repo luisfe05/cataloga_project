@@ -34,6 +34,7 @@ IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 TOPIC_NOTE = "No topic could be found in the photo"
+TOO_LONG_NOTE = "Path too long for Windows (over 240 characters)"
 # Fields are listed by their column name: "Missing: source, document_date".
 MISSING_NOTE = "Missing: {}"
 

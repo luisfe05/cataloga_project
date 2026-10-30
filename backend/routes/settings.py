@@ -43,6 +43,8 @@ def get_settings():
         "research_name": "",
         "target_directory": folder,
         "naming_template": naming.DEFAULT_TEMPLATE,
+        "naming_style": naming.DEFAULT_STYLE,
+        "keep_accents": False,
         "industry": "",
         "categories": [],
         "folder_mode": folder_tree.MEDIA_MODE,
@@ -108,6 +110,9 @@ def update_settings():
     if values is None:
         return error_response("missing_field",
                               "research_name is required.", 400)
+    if "naming_style" in body and body["naming_style"] not in naming.STYLES:
+        return error_response("invalid_style",
+                              "naming_style must be lower or title.", 400)
     if "project_sheet" in body:
         body["project_sheet"] = project_sheet.clean_sheet(
             body["project_sheet"])
@@ -162,6 +167,11 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if "naming_style" in body:
+        repo.save_config_value("naming_style", body["naming_style"])
+    if "keep_accents" in body:
+        repo.save_config_value("keep_accents",
+                               1 if body["keep_accents"] else 0)
     if "project_sheet" in body:
         repo.save_config_value("project_sheet", body["project_sheet"])
     if "server_url" in body:

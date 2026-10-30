@@ -131,7 +131,7 @@ def test_create_first_project(empty_client, tmp_path):
     assert empty_client.get("/documents").get_json() == []
     # New projects start with method 4.
     assert empty_client.get("/settings").get_json()["naming_template"] \
-        == "{topic}_{source}_{date}_{topic_number}"
+        == "{topic}_{source}_{date}"
 
 
 def test_create_project_missing_fields(flask_client):
