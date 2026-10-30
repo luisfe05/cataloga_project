@@ -59,11 +59,15 @@ def test_no_text_template():
         "2026-07-15_0001.jpg"
 
 
-def test_missing_date_is_undated():
-    """No date (or something that is not a date) gives 'undated'."""
-    assert naming.build_parts("a.pdf", 1)["date"] == "undated"
+def test_missing_date_leaves_the_date_out():
+    """No date (or something that is not a date) gives no date part."""
+    assert naming.build_parts("a.pdf", 1)["date"] == ""
     assert naming.build_parts("a.pdf", 1,
-                              document_date="sometime")["date"] == "undated"
+                              document_date="sometime")["date"] == ""
+    parts = naming.build_parts("a.pdf", 1, topic="Carta")
+    assert naming.make_filename("{date}_{topic}", parts, ".pdf") == "carta.pdf"
+    assert naming.make_filename(naming.NO_TEXT_TEMPLATE, parts, ".jpg") == \
+        "0001.jpg"
     assert naming.build_parts("a.pdf", 1,
                               document_date="1964-10")["date"] == "1964-10"
 

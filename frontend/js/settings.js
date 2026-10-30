@@ -8,7 +8,8 @@ const AI_PROVIDERS = {
     },
     gemini: {
         label: "Google Gemini",
-        models: ["gemini-2.5-flash", "gemini-2.5-flash-lite"],
+        models: ["gemini-3.5-flash-lite", "gemini-2.5-flash",
+            "gemini-2.5-flash-lite"],
     },
     groq: {
         label: "Groq",
@@ -17,7 +18,7 @@ const AI_PROVIDERS = {
     },
     claude: {
         label: "Anthropic Claude",
-        models: ["claude-haiku-5-5", "claude-sonnet-5-5"],
+        models: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-haiku-5-5"],
     },
     xai: {
         label: "xAI Grok",
@@ -29,12 +30,28 @@ const AI_PROVIDERS = {
     },
 };
 
+// One row of the AI Provider section per role; the backend saves them by role.
+const PROVIDER_ROWS = {
+    text: { provider: "ai-provider", model: "ai-model", key: "api-key" },
+    fallback: { provider: "fallback-provider", model: "fallback-model",
+        key: "fallback-key" },
+    media: { provider: "media-provider", model: "media-model",
+        key: "media-key" },
+};
+
+// What each row can choose. "" is "None"; only Gemini reads audio and video.
+const ROW_PROVIDERS = {
+    text: Object.keys(AI_PROVIDERS),
+    fallback: ["", ...Object.keys(AI_PROVIDERS)],
+    media: ["", "gemini"],
+};
+
 const NAMING_METHODS = {
     keep: "keep",
     m1: "{date}_{topic}",
     m2: "{source}_{date}_{topic}",
     m3: "{number}_{topic}",
-    m4: "{topic}_{source}_{date}_{topic_number}",
+    m4: "{topic}_{source}_{date}",
 };
 
 // Parts a template can use, and characters a file name cannot have.
@@ -42,8 +59,8 @@ const NAMING_TOKENS = ["date", "source", "topic", "number", "original",
     "topic_number"];
 const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
 
-// Custom name parts, in the order of the buttons. "Number" is the 3-digit number per topic.
-const NAMING_BLOCKS = ["topic", "source", "date", "topic_number", "original"];
+// Custom name parts, in the order of the buttons. A number is added only when a name repeats.
+const NAMING_BLOCKS = ["topic", "source", "date", "original"];
 const BLOCK_LABELS = {
     topic: "naming.block_topic",
     source: "naming.block_source",
@@ -59,15 +76,33 @@ let customSeparator = "_";
 // A saved custom template that is not made of parts, like "archivo-{date}".
 let legacyTemplate = "";
 
-// Example values for the live preview.
+// Generic values for the live preview, not real data.
 const PREVIEW_PARTS = {
-    date: "2026-07-15",
-    source: "el-nuevo-dia",
-    topic: "oceanman-malta",
+    date: "date",
+    source: "source-name",
+    topic: "topic-name",
     number: "0001",
-    original: "scan-0042",
+    original: "original-name",
     topic_number: "001",
 };
+
+function readNamingStyle() {
+    const picked = document.querySelector('input[name="naming-style"]:checked');
+    return picked ? picked.value : "lower";
+}
+
+function readKeepAccents() {
+    return document.getElementById("keep-accents").checked;
+}
+
+/** "topic-name" as the chosen style writes it: "Topic-Name" for Title-Case. */
+function styledPart(text) {
+    if (readNamingStyle() !== "title") {
+        return text;
+    }
+    return text.split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join("-");
+}
 
 // True after the folder warning, so the next click confirms it.
 let folderWarningShown = false;
@@ -156,42 +191,106 @@ function startNewProject() {
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
-    document.getElementById("api-key").value = "";
+    document.getElementById("folder-advice").classList.add("hidden");
+    document.getElementById("project-sheet").value = "";
+    showSheetMessage("", "");
     document.getElementById("catalog-only").checked = false;
     applyCatalogOnly();
-    // New projects start with method 4.
+    // New projects start with method 4, lowercase, no accents.
     showSavedTemplate(NAMING_METHODS.m4);
+    document.querySelector('input[name="naming-style"][value="lower"]')
+        .checked = true;
+    document.getElementById("keep-accents").checked = false;
     showCategories("", []);
-    showProvider("ollama", "");
+    showProvider("text", "ollama", "");
+    showProvider("fallback", "", "");
+    showProvider("media", "", "");
+    document.getElementById("server-url").value = "";
     showSettingsMessage("", "");
 }
 
-function chosenProviderHasKey() {
-    const provider = document.getElementById("ai-provider").value;
+function rowField(role, name) {
+    return document.getElementById(PROVIDER_ROWS[role][name]);
+}
+
+function rowProvider(role) {
+    return rowField(role, "provider").value;
+}
+
+function providerHasKey(provider) {
     return providersWithKey.includes(provider);
 }
 
-function updateKeyPlaceholder() {
-    document.getElementById("api-key").placeholder = chosenProviderHasKey()
+function updateKeyPlaceholder(role) {
+    const provider = rowProvider(role);
+    const field = rowField(role, "key");
+    field.disabled = !provider;
+    field.placeholder = providerHasKey(provider)
         ? t("settings.api_key_saved") : t("settings.api_key_placeholder");
 }
 
+/** The line under the title: the main provider, and the fallback if any. */
 function updateAIStatus() {
-    const provider = document.getElementById("ai-provider").value;
-    const model = document.getElementById("ai-model").value;
-    const vars = { provider: AI_PROVIDERS[provider].label, model: model };
-    document.getElementById("ai-status").textContent = chosenProviderHasKey()
+    const provider = rowProvider("text");
+    const vars = { provider: AI_PROVIDERS[provider].label,
+        model: rowField("text", "model").value };
+    let text = providerHasKey(provider)
         ? t("settings.ai_using", vars) : t("settings.ai_needs_key", vars);
+    const fallback = rowProvider("fallback");
+    if (fallback) {
+        text += " " + t("settings.ai_using_fallback", {
+            provider: AI_PROVIDERS[fallback].label,
+            model: rowField("fallback", "model").value });
+    }
+    document.getElementById("ai-status").textContent = text;
 }
 
-/** Show a provider. Advanced settings opens only if it needs a key or is not Ollama. */
-function showProvider(provider, model) {
-    document.getElementById("ai-provider").value = provider;
-    fillModels(model);
-    document.getElementById("ai-advanced").open =
-        provider !== "ollama" || !chosenProviderHasKey();
-    updateKeyPlaceholder();
+/** Show a row's provider. Advanced settings opens only if the main one needs a key. */
+function showProvider(role, provider, model) {
+    rowField(role, "provider").value = provider;
+    rowField(role, "key").value = "";
+    fillModels(role, model);
+    if (role === "text") {
+        document.getElementById("ai-advanced").open =
+            provider !== "ollama" || !providerHasKey(provider);
+    }
+    updateKeyPlaceholder(role);
     updateAIStatus();
+}
+
+/** Read the three rows. A row with no provider chosen is null. */
+function readProviderRows() {
+    const rows = {};
+    Object.keys(PROVIDER_ROWS).forEach((role) => {
+        const provider = rowProvider(role);
+        rows[role] = provider ? {
+            role: role,
+            provider_name: provider,
+            model: rowField(role, "model").value,
+            api_key: rowField(role, "key").value.trim(),
+        } : null;
+    });
+    return rows;
+}
+
+function readServerUrl() {
+    return document.getElementById("server-url").value.trim();
+}
+
+/** Test and save each row. An empty optional row is cleared in the backend. */
+async function saveProviderRows(rows) {
+    const serverUrl = readServerUrl();
+    for (const role of Object.keys(PROVIDER_ROWS)) {
+        const data = rows[role];
+        if (!data) {
+            if (role !== "text") {
+                await deleteAIProvider(role);
+            }
+            continue;
+        }
+        await testAIProvider({ ...data, server_url: serverUrl });
+        await updateAIProvider(data);
+    }
 }
 
 function resetFolderWarning() {
@@ -231,7 +330,9 @@ function previewFilename(template) {
     }
     let name = template;
     NAMING_TOKENS.forEach((token) => {
-        name = name.split(`{${token}}`).join(PREVIEW_PARTS[token]);
+        const part = ["topic", "source", "original"].includes(token)
+            ? styledPart(PREVIEW_PARTS[token]) : PREVIEW_PARTS[token];
+        name = name.split(`{${token}}`).join(part);
     });
     name = name.replace(/_{2,}/g, "_").replace(/-{2,}/g, "-")
         .replace(/^[_\-. ]+|[_\-. ]+$/g, "");
@@ -388,34 +489,91 @@ function showSavedTemplate(template) {
     renderNamingBlocks();
 }
 
+/** After a folder is chosen for a new project, say what it looks like. */
+async function adviseOnFolder() {
+    const advice = document.getElementById("folder-advice");
+    const folder = document.getElementById("target-directory").value.trim();
+    advice.classList.add("hidden");
+    if (projectMode !== "new" || !folder) {
+        return;
+    }
+    try {
+        const result = await inspectFolder(folder);
+        if (result.catalog_only_recommended) {
+            advice.textContent = t("project.linked_advice",
+                { markers: result.markers.slice(0, 4).join(", ") });
+            advice.className = "form-message";
+            advice.classList.remove("hidden");
+            // The box is ticked, not forced: the user can untick it.
+            document.getElementById("catalog-only").checked = true;
+            applyCatalogOnly();
+        }
+    } catch (error) {
+        // A folder that does not exist yet gets no advice.
+    }
+}
+
+function showSheetMessage(text, kind) {
+    const message = document.getElementById("sheet-message");
+    message.textContent = text;
+    message.className = "form-message " + kind;
+}
+
+/** Ask the AI for the sheet of the chosen folder; the user edits it before Save. */
+async function suggestProjectSheet() {
+    const folder = document.getElementById("target-directory").value.trim();
+    if (!folder) {
+        showSheetMessage(t("sheet.need_folder"), "error");
+        return;
+    }
+    const button = document.getElementById("suggest-sheet");
+    button.disabled = true;
+    showSheetMessage(t("sheet.suggesting"), "");
+    try {
+        const result = await suggestSheet(folder);
+        document.getElementById("project-sheet").value = result.sheet;
+        showSheetMessage(t("sheet.suggested"), "success");
+    } catch (error) {
+        showSheetMessage(errorText(error), "error");
+    } finally {
+        button.disabled = false;
+    }
+}
+
 function showSettingsMessage(text, kind) {
     const message = document.getElementById("settings-message");
     message.textContent = text;
     message.className = "form-message " + kind;
 }
 
-function fillModels(chosenModel) {
-    const provider = document.getElementById("ai-provider").value;
-    const select = document.getElementById("ai-model");
+function fillModels(role, chosenModel) {
+    const provider = rowProvider(role);
+    const select = rowField(role, "model");
     select.innerHTML = "";
-    AI_PROVIDERS[provider].models.forEach((model) => {
+    select.disabled = !provider;
+    const models = provider ? AI_PROVIDERS[provider].models : [];
+    models.forEach((model) => {
         const option = document.createElement("option");
         option.value = model;
         option.textContent = model;
         select.appendChild(option);
     });
-    if (AI_PROVIDERS[provider].models.includes(chosenModel)) {
+    if (models.includes(chosenModel)) {
         select.value = chosenModel;
     }
 }
 
 function fillProviders() {
-    const select = document.getElementById("ai-provider");
-    Object.keys(AI_PROVIDERS).forEach((name) => {
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = AI_PROVIDERS[name].label;
-        select.appendChild(option);
+    Object.keys(PROVIDER_ROWS).forEach((role) => {
+        const select = rowField(role, "provider");
+        select.innerHTML = "";
+        ROW_PROVIDERS[role].forEach((name) => {
+            const option = document.createElement("option");
+            option.value = name;
+            option.textContent = name ? AI_PROVIDERS[name].label
+                : t("settings.ai_none");
+            select.appendChild(option);
+        });
     });
 }
 
@@ -434,21 +592,34 @@ async function loadSettings() {
         document.getElementById("target-directory").value =
             settings.target_directory;
 
+        document.getElementById("project-sheet").value =
+            settings.project_sheet || "";
+        showSheetMessage("", "");
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
+        document.querySelector(`input[name="naming-style"][value="${
+            settings.naming_style || "lower"}"]`).checked = true;
+        document.getElementById("keep-accents").checked =
+            Boolean(settings.keep_accents);
+        updateNamingPreview();
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
         if (projectFolderMode === "tree") {
             showFolderSection(settings, false);
         }
 
-        document.getElementById("api-key").value = "";
         providersWithKey = settings.providers_with_key;
         // A project with no provider saved yet gets Ollama Cloud.
         const provider = settings.active_provider in AI_PROVIDERS
             ? settings.active_provider : "ollama";
-        showProvider(provider, settings.active_model);
+        showProvider("text", provider, settings.active_model);
+        showProvider("fallback", settings.fallback_provider || "",
+            settings.fallback_model);
+        showProvider("media", settings.media_provider || "",
+            settings.media_model);
+        document.getElementById("server-url").value =
+            settings.server_url || "";
 
         // With no project yet, the form starts as "New project".
         if (hasProjects) {
@@ -486,11 +657,7 @@ async function saveSettings(event) {
         showSettingsMessage(treeProblem, "error");
         return;
     }
-    const providerData = {
-        provider_name: document.getElementById("ai-provider").value,
-        model: document.getElementById("ai-model").value,
-        api_key: document.getElementById("api-key").value.trim(),
-    };
+    const providerRows = readProviderRows();
 
     const isNew = projectMode === "new";
     // True once a new project exists, even if the AI test fails later.
@@ -506,11 +673,17 @@ async function saveSettings(event) {
                 name: document.getElementById("research-name").value,
                 folder: document.getElementById("target-directory").value,
                 naming_template: chosenTemplate(),
+                naming_style: readNamingStyle(),
+                keep_accents: readKeepAccents(),
                 description: document.getElementById("project-description")
+                    .value.trim(),
+                project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 folders: readFolderTree(),
                 catalog_only: document.getElementById("catalog-only").checked,
+                numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,
+                server_url: readServerUrl(),
             });
             projectCreated = true;
             doneMessage = t(created.opened_existing
@@ -520,14 +693,21 @@ async function saveSettings(event) {
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
+                naming_style: readNamingStyle(),
+                keep_accents: readKeepAccents(),
+                project_sheet: document.getElementById("project-sheet")
+                    .value.trim(),
                 industry: document.getElementById("industry").value,
-                // In a tree project the categories are the folders.
-                categories: isTree ? readFolderTree() : readCategories(),
+                // In a tree project the folders are the tree.
+                ...(isTree
+                    ? { folder_tree: readFolderTree(),
+                        numbered_folders: readNumberedFolders() }
+                    : { categories: readCategories() }),
+                server_url: readServerUrl(),
             });
         }
         resetFolderWarning();
-        await testAIProvider(providerData);
-        await updateAIProvider(providerData);
+        await saveProviderRows(providerRows);
         await refreshAfterProjectChange();
         showSettingsMessage(doneMessage, "success");
     } catch (error) {
@@ -581,6 +761,7 @@ async function browseFolder() {
     const folder = await window.pywebview.api.choose_folder();
     if (folder) {
         document.getElementById("target-directory").value = folder;
+        adviseOnFolder();
         resetFolderWarning();
     }
 }
@@ -633,25 +814,32 @@ document.getElementById("remove-project-cancel")
     .addEventListener("click", () => {
         document.getElementById("remove-project-dialog").close();
     });
-document.getElementById("ai-provider")
-    .addEventListener("change", () => {
-        fillModels("");
-        updateKeyPlaceholder();
+Object.keys(PROVIDER_ROWS).forEach((role) => {
+    rowField(role, "provider").addEventListener("change", () => {
+        fillModels(role, "");
+        updateKeyPlaceholder(role);
         updateAIStatus();
     });
-document.getElementById("ai-model")
-    .addEventListener("change", updateAIStatus);
+    rowField(role, "model").addEventListener("change", updateAIStatus);
+});
 // A different folder needs its own warning.
 document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
+document.getElementById("target-directory")
+    .addEventListener("change", adviseOnFolder);
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
+document.getElementById("suggest-sheet")
+    .addEventListener("click", suggestProjectSheet);
 document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
 document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
 document.getElementById("catalog-only")
     .addEventListener("change", applyCatalogOnly);
+document.querySelectorAll('input[name="naming-style"]').forEach((radio) => {
+    radio.addEventListener("change", updateNamingPreview);
+});
 document.querySelectorAll('input[name="naming-separator"]')
     .forEach((radio) => {
         radio.addEventListener("change", () => {
