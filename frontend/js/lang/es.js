@@ -71,6 +71,13 @@ const LANG_ES = {
     "catalog.date_from_content": "Contenido",
     "catalog.date_from_metadata": "Metadata del archivo",
     "catalog.date_from_file": "Fecha del archivo",
+    "catalog.date_from_name": "Nombre del archivo",
+    "catalog.col_folder_reason": "Por qué esta carpeta",
+    "catalog.col_confidence": "Confianza",
+    "catalog.confidence_high": "Alta",
+    "catalog.confidence_medium": "Media",
+    "catalog.confidence_low": "Baja",
+    "catalog.note_low_confidence": "Confianza baja",
     "catalog.not_in_list": "{value} (no está en la lista)",
     "catalog.note_duplicate": "Duplicado de {name}",
     "catalog.note_no_category": "La categoría no está en la lista del proyecto",
@@ -190,8 +197,24 @@ const LANG_ES = {
     "settings.ai_needs_key": "{provider} necesita una clave de API. "
         + "Agrégala en Configuración avanzada.",
     "settings.advanced": "Configuración avanzada",
-    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tu clave "
-        + "de API se guarda en el Llavero de macOS.",
+    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tus claves "
+        + "de API se guardan en el Llavero de macOS.",
+    "settings.ai_text_title": "Texto e imágenes",
+    "settings.ai_fallback_title": "Respaldo (opcional)",
+    "settings.ai_fallback_hint": "Responde cuando el proveedor principal "
+        + "falla o no puede leer un archivo. Con una clave de Claude "
+        + "guardada, Claude es el respaldo a menos que elijas otro.",
+    "settings.ai_media_title": "Audio y video",
+    "settings.ai_media_hint": "Solo Google Gemini lee audio y video. Las "
+        + "claves pagadas de Gemini no se usan para entrenar modelos. Las "
+        + "gratuitas sí.",
+    "settings.ai_none": "Ninguno",
+    "settings.ai_using_fallback": "Respaldo: {provider} ({model}).",
+    "settings.server_title": "Servidor (opcional)",
+    "settings.server_hint": "Un servidor de Cataloga que guarda las claves "
+        + "de API. Déjalo vacío para llamar a los proveedores desde esta "
+        + "computadora.",
+    "settings.server_url": "URL del servidor",
     "settings.ai_provider": "Proveedor de IA",
     "settings.api_key": "Clave de API",
     "settings.api_key_placeholder": "Pega tu clave de API",
@@ -226,13 +249,13 @@ const LANG_ES = {
     "naming.hint": "Elige cómo Cataloga nombra los archivos nuevos. Los "
         + "archivos que ya están en el catálogo conservan su nombre.",
     "naming.m1": "Fecha y tema",
-    "naming.m1_example": "2026-07-15_oceanman-malta.pdf",
+    "naming.m1_example": "fecha_nombre-del-tema.pdf",
     "naming.m2": "Fuente, fecha y tema",
-    "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
+    "naming.m2_example": "nombre-de-la-fuente_fecha_nombre-del-tema.pdf",
     "naming.m3": "Número y tema",
-    "naming.m3_example": "0001_oceanman-malta.pdf",
-    "naming.m4": "Tema, fuente, fecha y número",
-    "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
+    "naming.m3_example": "0001_nombre-del-tema.pdf",
+    "naming.m4": "Tema, fuente y fecha",
+    "naming.m4_example": "nombre-del-tema_nombre-de-la-fuente_fecha.pdf",
     "naming.custom": "Personalizado",
     "naming.keep": "Conservar los nombres originales",
     "naming.keep_example": "el-nombre-que-le-diste.pdf",
@@ -240,15 +263,22 @@ const LANG_ES = {
     "naming.media_rule": "Las fotos se nombran con este método según lo "
         + "que muestran, y el audio y el video según el título de sus "
         + "etiquetas. Los archivos sin nada que leer usan su fecha y un "
-        + "número, por ejemplo 2026-07-15_0001.jpg, o undated_0001.jpg si "
-        + "solo se conoce la fecha del disco.",
-    "naming.duplicate_rule":
-        "Si el nombre ya existe, Cataloga agrega -2, -3 y así.",
+        + "número, por ejemplo 2026-07-15_0001.jpg, o solo el número si no "
+        + "se conoce la fecha.",
+    "naming.duplicate_rule": "Sin una fecha confiable el nombre no lleva "
+        + "fecha. Si el nombre ya existe, el archivo nuevo recibe _2, _3 y "
+        + "así; el primero conserva su nombre.",
+    "naming.version_rule": "Una marca de versión del nombre original (v01, "
+        + "v02) se conserva al final del nombre nuevo.",
+    "naming.path_rule": "Los nombres se acortan para que la ruta completa "
+        + "no pase de 240 caracteres, el límite de Windows.",
+    "naming.style": "Estilo",
+    "naming.keep_accents": "Conservar acentos (Día, no Dia)",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
     "naming.blocks_add": "Haz clic en las partes en orden",
     "naming.chosen": "Tu nombre de archivo",
     "naming.chosen_empty": "Todavía no hay partes. Haz clic en Tema, Fuente, "
-        + "Fecha, Número u Original.",
+        + "Fecha u Original.",
     "naming.block_topic": "Tema",
     "naming.block_source": "Fuente",
     "naming.block_date": "Fecha",
@@ -258,8 +288,8 @@ const LANG_ES = {
     "naming.move_left": "Mover a la izquierda",
     "naming.move_right": "Mover a la derecha",
     "naming.remove_block": "Quitar parte",
-    "naming.extension_note": "La extensión (.pdf, .jpg) se agrega sola. "
-        + "Número cuenta los archivos con el mismo tema: 001, 002...",
+    "naming.extension_note": "La extensión (.pdf, .jpg) se agrega sola. Solo "
+        + "se añade un número cuando el nombre ya existe.",
     "naming.legacy": "Nombre personalizado guardado: {template}. Haz clic en "
         + "las partes para reemplazarlo.",
     "naming.err_no_blocks": "Haz clic en al menos una parte del nombre.",
@@ -292,6 +322,18 @@ const LANG_ES = {
         + "categoría si cambias la lista.",
 
     // Folder tree of a project
+    "sheet.title": "Sobre este proyecto",
+    "sheet.hint": "Una ficha corta de qué trabajo es. Cataloga la lee "
+        + "antes de cada archivo, para que la clasificación entienda el "
+        + "trabajo. Escríbela, o deja que la IA la escriba a partir de una "
+        + "muestra de la carpeta, y luego edítala.",
+    "sheet.label": "Ficha del proyecto",
+    "sheet.placeholder": "Trabajo: ...\nIndustria: ...\nPartes: ...\n"
+        + "Tipos de archivo: ...\nEstilo de nombres: ...",
+    "sheet.suggest": "Escríbela por mí",
+    "sheet.need_folder": "Elige primero la carpeta del proyecto.",
+    "sheet.suggesting": "Leyendo una muestra de la carpeta...",
+    "sheet.suggested": "Edita la ficha si quieres y luego pulsa Guardar.",
     "folders.title": "Carpetas",
     "folders.hint": "Cataloga guarda cada documento nuevo en la carpeta que "
         + "encaja con su contenido. Describe el proyecto y haz clic en "
@@ -313,10 +355,11 @@ const LANG_ES = {
     "folders.inside": "Dentro de",
     "folders.top_level": "Nivel principal",
     "folders.unnamed": "(sin nombre)",
-    "folders.rules": "Dos niveles como máximo. Hasta 20 carpetas y 10 "
-        + "subcarpetas en cada una. Las carpetas ya creadas no se pueden "
-        + "renombrar; puedes agregar carpetas y quitar las vacías. Las "
-        + "carpetas quitadas se quedan en el disco.",
+    "folders.rules": "Hasta seis niveles, 20 carpetas principales y 10 "
+        + "subcarpetas en cada una. Las carpetas ya creadas no se renombran; "
+        + "puedes agregar carpetas y quitar las vacías. Las que quitas siguen "
+        + "en el disco. Una carpeta con subcarpetas solo guarda archivos en "
+        + "ellas.",
     "folders.err_none": "Agrega al menos una carpeta.",
     "folders.err_empty": "Cada carpeta necesita un nombre.",
     "folders.err_long":
@@ -327,13 +370,25 @@ const LANG_ES = {
         + "Mac o Windows.",
     "folders.err_twin":
         "Hay dos carpetas llamadas \"{name}\" en el mismo lugar.",
+    "folders.flag_events": "Eventos",
+    "folders.flag_events_hint": "Guarda una carpeta por evento, llamada "
+        + "Evento_Año. Cataloga puede proponer carpetas de evento aquí.",
+    "folders.flag_fallback": "Descarte",
+    "folders.flag_fallback_hint": "Los archivos que no encajan en ninguna "
+        + "otra carpeta van aquí en vez de a Revisión manual.",
+    "folders.flag_auto": "Sin preguntar",
+    "folders.flag_auto_hint": "Los archivos nuevos que van aquí se archivan "
+        + "sin preguntar (proyectos sin Drop Zone).",
+    "folders.numbered": "Numerar carpetas nuevas (01_, 02_)",
+    "folders.err_depth": "Las carpetas pueden tener seis niveles como máximo.",
     "folders.err_subs": "Una carpeta puede tener 10 subcarpetas como máximo.",
 
     // Account and login
-    "auth.setup_title": "Crea tu cuenta",
-    "auth.setup_hint": "Esta cuenta protege Cataloga en esta computadora. "
-        + "No cifra tus archivos. Guarda la contraseña en un lugar "
-        + "seguro: no hay forma de recuperarla.",
+    "auth.register_title": "Crear una cuenta",
+    "auth.register_hint": "Cada cuenta en esta computadora tiene su propia "
+        + "lista de proyectos y sus ajustes. Los catálogos se quedan dentro "
+        + "de cada carpeta de proyecto. Una contraseña perdida no se puede "
+        + "recuperar.",
     "auth.login_title": "Iniciar sesión",
     "auth.username": "Usuario",
     "auth.password": "Contraseña",
@@ -342,8 +397,15 @@ const LANG_ES = {
     "auth.log_in": "Iniciar sesión",
     "auth.log_out": "Cerrar sesión",
     "auth.password_mismatch": "Las contraseñas no coinciden.",
+    "auth.need_account": "Crear una cuenta",
+    "auth.have_account": "Ya tengo una cuenta",
+    "auth.forgot": "¿Olvidaste tu contraseña?",
+    "auth.forgot_hint": "Las contraseñas no se pueden recuperar: Cataloga "
+        + "no usa correo. Tus proyectos y archivos siguen intactos en sus "
+        + "carpetas. Crea una cuenta nueva para seguir trabajando.",
     "account.title": "Cuenta",
-    "account.hint": "Una sola cuenta para toda la app y todos los proyectos.",
+    "account.hint": "Cada cuenta en esta computadora tiene sus propios "
+        + "proyectos y ajustes.",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
     "account.new_password": "Contraseña nueva",
@@ -366,6 +428,10 @@ const LANG_ES = {
         + "enlazan sus archivos por ruta (InDesign, Premiere, After Effects, "
         + "Final Cut). Cataloga lee, resume y cataloga cada archivo en su "
         + "lugar. No hay árbol de carpetas ni Drop Zone.",
+    "project.linked_advice": "Esta carpeta parece una página web o un "
+        + "proyecto enlazado ({markers}). Mover o renombrar sus archivos "
+        + "lo rompería. Catalog only, que llega pronto, mantendrá todos los "
+        + "enlaces funcionando.",
     "project.creating":
         "Creando el proyecto y probando la conexión con la IA...",
     "project.created": "Proyecto creado. La conexión con la IA funciona.",
@@ -412,6 +478,9 @@ const LANG_ES = {
         + "pongas en su carpeta Drop Zone. Haz clic en Guardar de todos "
         + "modos para usar esta carpeta.",
     "error.unsupported_provider": "Ese proveedor de IA no es compatible.",
+    "error.invalid_role": "Ese rol de proveedor no existe.",
+    "error.invalid_server_url": "La URL del servidor debe empezar con "
+        + "http:// o https://.",
     "error.unsupported_format": "Solo se puede exportar en CSV.",
     "error.keyring_failed": "No se pudo guardar la clave de API en el "
         + "Llavero de macOS. Abre Acceso a Llaveros, revisa que el llavero "
@@ -433,8 +502,9 @@ const LANG_ES = {
         "La contraseña debe tener al menos 8 caracteres.",
     "error.password_too_long": "La contraseña es demasiado larga. Usa 72 "
         + "caracteres o menos (menos si tiene acentos o símbolos).",
-    "error.account_exists": "La cuenta ya existe. Inicia sesión.",
-    "error.no_account": "Primero crea la cuenta.",
+    "error.username_taken": "Ese usuario ya existe.",
+    "error.invalid_username": "Usa de 3 a 30 letras, números, puntos, "
+        + "guiones bajos o guiones.",
     "error.generic": "Algo salió mal. Inténtalo de nuevo.",
     "error.invalid_name": "El nombre nuevo no tiene caracteres válidos.",
     "error.file_missing": "El archivo no está o está fuera de la carpeta del "
@@ -446,6 +516,8 @@ const LANG_ES = {
     "error.no_provider": "Primero elige un proveedor de IA en Configuración.",
     "error.invalid_folders":
         "El árbol de carpetas no es válido. Revisa los nombres.",
+    "error.invalid_sheet": "La ficha del proyecto es demasiado larga. Usa "
+        + "1,500 caracteres o menos.",
     "error.invalid_description":
         "La descripción debe tener 300 caracteres o menos.",
     "error.folder_not_empty": "No se puede quitar una carpeta con documentos.",

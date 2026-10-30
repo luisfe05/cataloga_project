@@ -340,7 +340,7 @@ def check_propose_move(data, context):
     place = folder_tree.find_place(tree, data.get("folder"))
     if place is None:
         return notice_response("move_invalid")
-    if (doc.category, doc.subcategory) == place:
+    if doc.folder_path == place:
         return notice_response("move_same")
 
     response = make_response("propose_move", clean_reply(data),
@@ -348,9 +348,8 @@ def check_propose_move(data, context):
     response["move"] = {
         "document_id": doc.id,
         "filename": doc.filename,
-        "current_folder": folder_tree.folder_text(
-            doc.category, doc.subcategory) if doc.category else "",
-        "new_folder": folder_tree.folder_text(*place),
+        "current_folder": doc.folder_path or "",
+        "new_folder": place,
     }
     return response
 
