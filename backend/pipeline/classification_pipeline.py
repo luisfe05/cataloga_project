@@ -9,6 +9,7 @@ from pypdf import PdfReader
 from backend.models.document import Document
 from backend.pipeline import (archive_rules, file_metadata, file_readers,
                               folder_tree, naming)
+from backend.pipeline.ai_providers import base
 
 # Sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
@@ -40,57 +41,91 @@ OPENED_EXTENSIONS = (READABLE_EXTENSIONS + file_readers.DESIGN_EXTENSIONS +
 # Used when a file can't be read or classified.
 FALLBACK_MEDIA_TYPE = "Documents"
 
-# Needed to count as Classified.
-REQUIRED_FIELDS = ("source", "document_date", "summary")
+# Needed to count as Classified: a summary means the file was read. A
+# missing source or date never sends a file to Manual Review by itself.
+REQUIRED_FIELDS = ("summary",)
 
-# A photo rarely shows its source or date, so only the summary is needed.
-PHOTO_REQUIRED_FIELDS = ("summary",)
+# How sure the AI was of the folder. Low sends the file to Manual Review.
+CONFIDENCE_LEVELS = ("high", "medium", "low")
 
-METADATA_PROMPT = """You are helping a researcher catalog an archive.
-From the document text, find:
-- source: who published or created the document (a newspaper, magazine,
+# How many files of the same folder the AI sees as context.
+MAX_NEIGHBORS = 10
+
+# One request per file: the card below, plus the folder part.
+FILE_PROMPT = """You are the archivist of a research project. You read one
+file at a time and fill its catalog card.
+
+Rules:
+- A meaningful file name (an event, a year, a contract name, a title) is
+  strong evidence for the topic, the date and the folder. Names that a
+  camera, a scanner or a phone gave (DSC_0042, IMG_4471, PXL_2026...,
+  scan_0118, Screenshot...) say nothing: ignore them.
+- If the name and the content disagree, follow the content and say so
+  in name_hint_conflict.
+- A missing date never changes the folder and never makes the file
+  incomplete.
+- Use null for anything the file does not say. Do not guess.
+
+Find:
+- media_type: Press (a newspaper or magazine article, press clipping or
+  press release) or Documents (any other written document). When the
+  file says its media type is fixed, keep it.
+- summary: one factual sentence under 100 characters, in the file's
+  language: what it is, who or what it is about, key dates or places.
+- source: who published or created the file (a newspaper, magazine,
   organization, or person).
-- document_date: the date written on the document itself, as YYYY-MM-DD.
-  If only the year and month are known use YYYY-MM, if only the year is
-  known use YYYY.
-- topic: the main subject of the document in 2 to 4 words, in the
-  document's language. It is used in the file name.
+- document_date: the date written on the file itself, as YYYY-MM-DD,
+  YYYY-MM, or YYYY, with the precision the file gives.
+- topic: the main subject in 2 to 4 words, in the file's language. It
+  is used in the file name.
 - keywords: 3 to 5 short keywords for searching, each under 40
-  characters, in the document's language.
-- counterparty: the other person or organization the document is with
-  or addressed to (for example the other side of a contract or letter).
-
-Use null for anything the text does not say. Do not guess.
+  characters, in the file's language.
+- counterparty: the other person or organization the file is with or
+  addressed to (the other side of a contract or letter).
+- confidence: high, medium, or low. Low when two places fit equally or
+  the content is unclear.
+- name_hint_conflict: one short line when the name and the content
+  disagree, else null.
 
 Respond with ONLY a JSON object in this exact format:
-{"source": "...", "document_date": "...", "topic": "...",
- "keywords": ["...", "...", "..."], "counterparty": "..."}"""
+{"media_type": "...", "summary": "...", "source": "...",
+ "document_date": "...", "topic": "...", "keywords": ["...", "..."],
+ "counterparty": "...", "confidence": "...", "name_hint_conflict": null"""
 
-# Added to METADATA_PROMPT when the project has a category list.
-CATEGORY_PROMPT = """
+# Closes FILE_PROMPT when the project has no categories and no tree.
+NO_PLACE_PROMPT = """}"""
 
-Also choose where the document belongs in this list of categories:
+# Added to FILE_PROMPT when the project has a category list.
+CATEGORY_PROMPT = """,
+ "category": "...", "subcategory": "...", "folder_reason": "..."}}
+
+Also choose where the file belongs in this list of categories:
 {categories}
-Add "category" with one category name exactly as written, and
-"subcategory" with one of its subcategories (null if it has none).
-If nothing in the list fits, use null for both."""
+"category" is one category name exactly as written, "subcategory" one
+of its subcategories (null if it has none). If nothing in the list fits,
+use null for both. "folder_reason" is one line on why."""
 
-# Added to METADATA_PROMPT in projects with their own folder tree.
-FOLDER_PROMPT = """
+# Added to FILE_PROMPT in projects with their own folder tree.
+FOLDER_PROMPT = """,
+ "folder": "<a path from the list>", "folder_reason": "...",
+ "suggested_folder": null}}
 
 This project is about: {description}
-These are its folders, at most two levels:
+These are the folders a file can go into, as paths from the project:
 {folders}
 Choose the folder where an archivist would file this document, by what
-it is about, not by its file type. Add "folder" with one top folder name
-exactly as written, and "subfolder" with one of its subfolders exactly
-as written (null if that folder has none). Never force a document into
-a folder made for something else. If no folder fits, use null for both
-and always add "suggested_folder": {{"parent": "<a top folder name, or
-null for a new top folder>", "name": "<new folder name, 1 to 3 words>"}}.
+it is about, not by its file type. Add "folder" with one path exactly
+as written. Never force a document into a folder made for something
+else. "folder_reason" is one line on why this folder. If no folder
+fits, use null and always add "suggested_folder": {{"parent": "<an
+existing folder path, or null for a new top folder>", "name": "<new
+folder name, 1 to 3 words>"}}.
 Answer with one JSON object only."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
+
+# Goes before the metadata prompt when the project has a sheet.
+SHEET_PREFIX = "Project sheet (what this work is):\n"
 
 
 def now_timestamp():
@@ -140,70 +175,107 @@ def parse_json_answer(answer):
     return {}
 
 
-def missing_note(document, required=REQUIRED_FIELDS):
+def missing_note(document):
     """Return the note that lists the empty required fields."""
-    missing = [field for field in required if not getattr(document, field)]
+    missing = [field for field in REQUIRED_FIELDS
+               if not getattr(document, field)]
     return archive_rules.MISSING_NOTE.format(", ".join(missing))
-
-
-def required_fields(document):
-    """Return the fields a document needs to count as Classified."""
-    if document.media_type == "Photos":
-        return PHOTO_REQUIRED_FIELDS
-    return REQUIRED_FIELDS
 
 
 def needs_nothing(document):
     """Say whether a document has every field and no open review note."""
     if document.review_note or document.duplicate_of:
         return False
-    return all(getattr(document, field)
-               for field in required_fields(document))
+    return all(getattr(document, field) for field in REQUIRED_FIELDS)
 
 
-def name_context(file_path):
-    """What is known of a file the app cannot open: its name and place."""
-    folder = os.path.basename(os.path.dirname(file_path))
+# Sent as the content of a file the app cannot open: the card still
+# gets the name, the folder, the neighbors and the metadata.
+UNREAD_TEXT = "The file itself could not be read; use only the facts above."
+
+
+def cut_summary(text):
+    """Keep a summary under the limit, cut at a whole word."""
+    text = archive_rules.clean_text(text, 1000) or ""
+    if len(text) > archive_rules.MAX_SUMMARY_LENGTH:
+        text = text[:archive_rules.MAX_SUMMARY_LENGTH - 3].rsplit(
+            " ", 1)[0] + "..."
+    return text
+
+
+def neighbors_of(file_path):
+    """Return the names of the other visible files in the same folder."""
+    folder = os.path.dirname(file_path)
     try:
-        neighbors = sorted(n for n in os.listdir(os.path.dirname(file_path))
-                           if not n.startswith(".") and
-                           n != os.path.basename(file_path))[:10]
+        names = sorted(os.listdir(folder))
     except OSError:
-        neighbors = []
-    lines = ["File name: " + os.path.basename(file_path),
-             "Type: " + (os.path.splitext(file_path)[1].lower() or "(none)"),
+        return []
+    names = [n for n in names if not n.startswith(".") and
+             n != os.path.basename(file_path) and
+             os.path.isfile(os.path.join(folder, n))]
+    return names[:MAX_NEIGHBORS]
+
+
+def file_context(file_path, project_folder, media_type, meta, content):
+    """Write everything the AI gets about one file, content last."""
+    name = os.path.basename(file_path)
+    folder = os.path.relpath(os.path.dirname(file_path), project_folder) \
+        if project_folder else os.path.basename(os.path.dirname(file_path))
+    lines = ["File name: " + name,
+             "Type: " + (os.path.splitext(name)[1].lower() or "(none)"),
              "Folder: " + folder]
+    if media_type:
+        lines.append("Media type: {} (fixed)".format(media_type))
+    else:
+        lines.append("Media type: decide between Press and Documents")
+    hints = archive_rules.name_hints(name)
+    if hints["generic"]:
+        lines.append("The file name is a camera, scanner or phone name.")
+    else:
+        found = ["words: " + hints["words"]]
+        if hints["year"]:
+            found.append("year " + hints["year"])
+        if hints["version"]:
+            found.append("version " + hints["version"])
+        lines.append("Name hints: " + "; ".join(found))
+    neighbors = neighbors_of(file_path)
     if neighbors:
         lines.append("Other files in that folder: " + ", ".join(neighbors))
-    lines.append("The file itself could not be read; use only these facts.")
+    metadata = file_metadata.metadata_text(meta) if meta else ""
+    if metadata:
+        lines.append("File metadata:\n" + metadata)
+    lines.append("Content:\n" + (content or "(nothing could be read)"))
     return "\n".join(lines)
 
 
-def with_metadata(text, meta):
-    """Put the useful file metadata in front of the text for the AI."""
-    lines = file_metadata.metadata_text(meta)
-    if not lines:
-        return text
-    return ("File metadata (saved by whoever made the file; if it disagrees "
-            "with the document text, the text is right):\n" + lines +
-            "\n\nDocument text:\n" + text)
+def choose_date(content_date, file_path, taken=None, meta_date=None,
+                name_year=None, stamp=None):
+    """Pick the date and say where it came from, in order of trust.
 
-
-def choose_date(content_date, file_path, taken=None, meta_date=None):
-    """Pick the date and say where it came from, in order of trust."""
+    A date printed or written on a photo comes first, then the date a
+    camera wrote, then the content, the file's own metadata, a year in
+    the file name or its folders, and last the disk date.
+    """
+    if stamp:
+        return stamp, "photo stamp"
     if taken:
         return taken, "photo"
     if content_date:
         return content_date, "content"
     if meta_date:
         return meta_date, "metadata"
+    if name_year:
+        return name_year, "name"
     return naming.file_date(file_path), "file"
 
 
 def too_big_to_read(file_path, extension):
-    """Say whether a file that would be opened is over the size limit."""
-    opened = OPENED_EXTENSIONS + file_readers.VISION_EXTENSIONS
-    return (extension in opened and
+    """Say whether a file that would be opened is over the size limit.
+
+    Photos are not counted: a 98 MB scan is shrunk before it is sent, so
+    the limit applies to what goes to the AI, not to the file.
+    """
+    return (extension in OPENED_EXTENSIONS and
             os.path.getsize(file_path) > file_readers.MAX_READ_BYTES)
 
 
@@ -217,20 +289,29 @@ def remove_gone_duplicates(catalog_repo):
 class ClassificationPipeline:
     """Runs the classify-summarize-organize-catalog flow."""
 
-    def __init__(self, ai_client, catalog_repo, file_organizer, owner=None):
-        """Set up the pipeline; owner is the account's username."""
+    def __init__(self, ai_client, catalog_repo, file_organizer, owner=None,
+                 in_place=False):
+        """Set up the pipeline; owner is the account's username.
+
+        With in_place, files are cataloged where they are: the folder and
+        the name the pipeline chooses are saved as proposals.
+        """
         self.ai_client = ai_client
         self.db = catalog_repo
         self.file_organizer = file_organizer
         self.owner = owner or None
+        self.in_place = in_place
 
     def destination(self, file_path, media_type, metadata):
         """Return the folder a file goes to, and if it found its place."""
+        # Catalog only: the file is already where it belongs.
+        if self.db.is_catalog_project():
+            return os.path.dirname(file_path), True
         if not self.db.is_tree_project():
             return self.file_organizer.folder_for(media_type), True
-        if metadata["category"]:
+        if metadata["folder_path"]:
             return self.file_organizer.tree_folder(
-                metadata["category"], metadata["subcategory"]), True
+                metadata["folder_path"]), True
         # No folder fits: the file stays in the Drop Zone for a person.
         return os.path.dirname(file_path), False
 
@@ -240,6 +321,10 @@ class ClassificationPipeline:
         date_added = now_timestamp()
         extension = os.path.splitext(file_path)[1].lower()
 
+        # A file that may hold keys is never read and never sent anywhere.
+        if archive_rules.is_secret(original_filename):
+            return self.add_unread(file_path, archive_rules.SECRET_NOTE)
+
         # Hash first: a duplicate never reaches the AI.
         sha256 = archive_rules.sha256_of(file_path)
         original = self.db.find_by_sha256(sha256)
@@ -247,16 +332,17 @@ class ClassificationPipeline:
             return self.add_duplicate(file_path, sha256, original)
 
         media_type = None
-        summary = None
         metadata = self.empty_metadata()
-        has_text = False
+        # What the AI reads: text, what a photo shows, or a file's tags.
+        content = ""
         # Why the file needs a person, when it is known before the AI.
         reason = None
-        required = REQUIRED_FIELDS
         kind = EXTENSION_MEDIA_TYPES.get(extension)
         # Metadata saved inside the file, and the date a photo was taken.
         file_meta = {}
         taken = None
+        # A date printed or written on a photo.
+        stamp = None
 
         if too_big_to_read(file_path, extension):
             media_type = kind
@@ -266,30 +352,14 @@ class ClassificationPipeline:
             file_meta = file_metadata.media_metadata(file_path)
             # Not listened to yet, but a title is enough to name it.
             if file_meta["title"]:
-                text = ("Metadata of an " if kind == "Audio" else
-                        "Metadata of a ") + kind.lower() + (
-                    " file. It was not listened to; use only these facts:\n"
-                    + file_metadata.metadata_text(file_meta))
-                has_text = True
-                summary = self.generate_summary(text)
-                metadata = self.extract_metadata(text)
-                # The date of a recording comes from its tags, below.
-                metadata["document_date"] = None
+                content = ("This {} file was not listened to; use only its "
+                           "tags above.").format(kind.lower())
         elif (extension in file_readers.VISION_EXTENSIONS and
               self.ai_client.supports_images):
             media_type = "Photos"
-            required = PHOTO_REQUIRED_FIELDS
             taken = file_readers.photo_date(file_path)
-            text = self.read_images([file_readers.photo_data_uri(file_path)],
-                                    "photo")
-            if text:
-                has_text = True
-                summary = self.generate_summary(text)
-                metadata = self.extract_metadata(text)
-                # The name must come from what the photo shows.
-                if not metadata["topic"]:
-                    reason = archive_rules.TOPIC_NOTE
-            else:
+            content, stamp = self.read_photo(file_path)
+            if not content:
                 reason = archive_rules.IMAGE_NOTE
         elif kind:
             media_type = kind
@@ -297,68 +367,92 @@ class ClassificationPipeline:
                 taken = file_readers.photo_date(file_path)
         elif extension in READABLE_EXTENSIONS:
             file_meta = file_metadata.document_metadata(file_path)
-            text = extract_text(file_path)
-            if (not text and extension == ".pdf" and
+            content = extract_text(file_path)
+            if (not content and extension == ".pdf" and
                     self.ai_client.supports_images):
                 # A scanned PDF: its first pages go to the AI as images.
-                text = self.read_images(
+                content = self.read_images(
                     file_readers.pdf_page_data_uris(file_path), "scan")
-                if not text:
+                if not content:
                     reason = archive_rules.SCAN_NOTE
-            if text:
-                has_text = True
-                text = with_metadata(text, file_meta)
-                media_type = self.ai_client.send_classification_request(text)
-                summary = self.generate_summary(text)
-                metadata = self.extract_metadata(text)
         elif extension in file_readers.DESIGN_EXTENSIONS:
             # A design file: its picture when there is one, else its XMP.
+            media_type = FALLBACK_MEDIA_TYPE
             file_meta = file_readers.design_metadata(file_path)
-            text = ""
             if self.ai_client.supports_images:
-                text = self.read_images(file_readers.design_views(file_path),
-                                        "photo")
-            if not text:
-                text = name_context(file_path)
-                if file_meta:
-                    text = with_metadata(text, file_meta)
-            has_text = True
-            summary = self.generate_summary(text)
-            metadata = self.extract_metadata(text)
+                content = self.read_images(
+                    file_readers.design_views(file_path), "photo")
+            content = content or UNREAD_TEXT
         elif extension in file_readers.ARCHIVE_EXTENSIONS:
             # A zip: the list of what it holds, never unpacked.
-            text = file_readers.zip_listing(file_path) or \
-                name_context(file_path)
-            has_text = True
-            summary = self.generate_summary(text)
-            metadata = self.extract_metadata(text)
+            media_type = FALLBACK_MEDIA_TYPE
+            content = file_readers.zip_listing(file_path) or UNREAD_TEXT
         elif file_readers.is_text_file(file_path):
             # Text or code of any kind, known by its bytes, not its name.
-            text = file_readers.text_extract(file_path)
-            has_text = True
-            summary = self.generate_summary(text)
-            metadata = self.extract_metadata(text)
+            content = file_readers.text_extract(file_path)
         else:
             # Unknown format: the name, the folder and the neighbors still
             # say something. Never Manual Review only for the format.
-            text = name_context(file_path)
-            summary = self.generate_summary(text)
-            metadata = self.extract_metadata(text)
+            media_type = FALLBACK_MEDIA_TYPE
+            content = UNREAD_TEXT
+
+        has_text = bool(content)
+        if content:
+            # One request: the card, the folder and why, and how sure.
+            metadata = self.read_card(file_path, media_type, file_meta,
+                                      content)
+            if media_type is None:
+                media_type = metadata["media_type"]
+            if kind in ("Audio", "Video"):
+                # The date of a recording comes from its tags, below.
+                metadata["document_date"] = None
+            # The name of a photo must come from what the photo shows.
+            if media_type == "Photos" and not metadata["topic"]:
+                reason = archive_rules.TOPIC_NOTE
+            if metadata["confidence"] == "low" and not reason:
+                reason = archive_rules.LOW_CONFIDENCE_NOTE + ": " + (
+                    metadata["folder_reason"] or metadata["summary"] or "")
 
         # Empty fields send the document to Manual Review below.
         if media_type is None:
             media_type = FALLBACK_MEDIA_TYPE
+        # Read in place, a file with no folder is simply not proposed one.
+        if self.in_place and \
+                metadata["review_note"] == folder_tree.NO_FOLDER_NOTE:
+            metadata["review_note"] = None
 
         date, date_source = choose_date(
             metadata["document_date"], file_path, taken,
-            file_meta.get("date") or file_meta.get("created"))
+            file_meta.get("date") or file_meta.get("created"),
+            archive_rules.year_in_path(file_path), stamp)
         metadata["document_date"] = date
 
-        new_filename = self.build_filename(file_path, has_text, metadata,
-                                           date_source)
         folder, placed = self.destination(file_path, media_type, metadata)
-        new_path = self.file_organizer.move_to_folder(file_path, folder,
-                                                      new_filename)
+        new_filename = self.build_filename(file_path, has_text, metadata,
+                                           date_source, folder)
+        proposed_folder = proposed_name = None
+        if self.db.is_catalog_project():
+            new_path = file_path
+        elif self.in_place:
+            # Nothing moves: what would happen is kept for the plan.
+            new_path = file_path
+            place = self.file_organizer.place_of(folder)
+            if place != self.file_organizer.place_of(
+                    os.path.dirname(file_path)):
+                proposed_folder = place
+            if new_filename and new_filename != original_filename:
+                proposed_name = new_filename
+        elif new_filename is None:
+            # Even a short name would not fit: a person must choose.
+            reason = reason or archive_rules.TOO_LONG_NOTE
+            metadata["suggested_folder"] = metadata["suggested_folder"] or \
+                self.file_organizer.place_of(folder)
+            metadata.update({"category": None, "subcategory": None})
+            placed = False
+            new_path = file_path
+        else:
+            new_path = self.file_organizer.move_to_folder(
+                file_path, folder, new_filename)
 
         document = Document(
             original_filename=original_filename,
@@ -368,39 +462,82 @@ class ClassificationPipeline:
             date_added=date_added,
             source=metadata["source"],
             document_date=metadata["document_date"],
-            summary=summary or None,
+            summary=metadata["summary"] or None,
             date_classified=now_timestamp(),
             topic=metadata["topic"],
             keywords=metadata["keywords"],
             counterparty=metadata["counterparty"],
             category=metadata["category"],
             subcategory=metadata["subcategory"],
+            folder_path=metadata["folder_path"],
             review_note=reason or metadata["review_note"],
             suggested_folder=metadata["suggested_folder"],
+            proposed_folder=proposed_folder,
+            proposed_name=proposed_name,
+            folder_reason=metadata["folder_reason"],
+            confidence=metadata["confidence"],
+            original_path=self.relative_path(file_path),
             date_source=date_source,
             sha256=sha256,
             confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
             owner=self.owner,
         )
-        self.validate_completeness(document, required)
+        self.validate_completeness(document)
         # Audio or video that still needs a person says why.
         if kind in ("Audio", "Video") and not document.review_note and \
                 document.status == "Manual Review":
             document.review_note = self.media_note(file_meta.get("length"))
-        if not placed:
+        if not placed and not self.in_place:
             document.review_note = document.review_note or \
                 folder_tree.NO_FOLDER_NOTE
             document.mark_needs_review(["folder"])
         # Every file in Manual Review says why.
         if document.status == "Manual Review" and not document.review_note:
-            document.review_note = missing_note(document, required)
+            document.review_note = missing_note(document)
         return self.db.add_document(document)
+
+    def relative_path(self, file_path):
+        """Return where a file was first seen, relative to the project."""
+        folder = self.file_organizer.target_directory
+        try:
+            return os.path.relpath(file_path, folder)
+        except ValueError:
+            # Another drive on Windows has no relative path.
+            return file_path
 
     def media_note(self, length):
         """Return the Manual Review reason for audio and video, with length."""
         if length:
             return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
         return archive_rules.MEDIA_NOTE
+
+    def read_photo(self, file_path):
+        """Send a photo and its corners; return (text, stamp date)."""
+        views = file_readers.photo_views(file_path)
+        result = parse_json_answer(self.ai_client.ask_about_images(
+            views, base.PHOTO_PROMPT))
+        rotation = result.get("rotation")
+        if rotation in (90, 180, 270):
+            # A scan lying on its side: turn the copy and look again.
+            turned = file_readers.photo_views(file_path, rotation)
+            again = parse_json_answer(self.ai_client.ask_about_images(
+                turned, base.PHOTO_PROMPT))
+            if again:
+                result = again
+        order = self.db.stamp_date_order()
+        stamp = archive_rules.stamp_date(result.get("printed_date"), order) \
+            or archive_rules.stamp_date(result.get("handwritten_date"),
+                                        order)
+        found = archive_rules.clean_text(result.get("text"), 20000)
+        description = archive_rules.clean_text(result.get("description"), 500)
+        if not found and not description:
+            return "", stamp
+        # The summary and metadata prompts then read this like a document.
+        lines = ["This is a photo; its topic is what it shows.",
+                 "Photo description: " + (description or "")]
+        if found:
+            lines.append("Text in the photo:\n" + found)
+        return "\n".join(lines), stamp
 
     def read_images(self, image_uris, kind):
         """Ask the AI to read images; return them as text, or ''."""
@@ -423,6 +560,24 @@ class ClassificationPipeline:
                 lines.append("What the pages show: " + description)
         return "\n".join(lines)
 
+    def add_unread(self, file_path, note):
+        """Record a file by its name only, in Manual Review, where it is."""
+        name = os.path.basename(file_path)
+        extension = os.path.splitext(name)[1].lower()
+        document = Document(
+            original_filename=name,
+            filename=name,
+            media_type=EXTENSION_MEDIA_TYPES.get(extension,
+                                                 FALLBACK_MEDIA_TYPE),
+            file_path=file_path,
+            date_added=now_timestamp(),
+            status="Manual Review",
+            review_note=note,
+            confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
+            owner=self.owner,
+        )
+        return self.db.add_document(document)
+
     def add_duplicate(self, file_path, sha256, original):
         """Record a duplicate in Manual Review. It stays in the Drop Zone."""
         name = os.path.basename(file_path)
@@ -444,12 +599,19 @@ class ClassificationPipeline:
         )
         return self.db.add_document(document)
 
-    def build_filename(self, file_path, has_text, metadata, date_source):
-        """Build the new file name with the project's naming method."""
+    def build_filename(self, file_path, has_text, metadata, date_source,
+                       folder):
+        """Build the new file name, short enough for its folder, or None."""
         original_filename = os.path.basename(file_path)
         extension = os.path.splitext(file_path)[1]
+        # Keep original names, and names other programs look for.
+        if self.db.get_naming_template() == naming.KEEP_NAMES or \
+                naming.is_protected(original_filename):
+            return original_filename
         number = self.db.next_number()
-        # The disk date changes when files are copied, so names say undated.
+        style = self.db.get_naming_style()
+        keep_accents = self.db.keep_accents()
+        # The disk date changes when files are copied, so it is left out.
         name_date = None if date_source == "file" else \
             metadata["document_date"]
         # Without a topic, a camera or scanner name never becomes one.
@@ -465,16 +627,14 @@ class ClassificationPipeline:
                 document_date=name_date,
                 source=metadata["source"],
                 topic=metadata["topic"],
-                topic_number=topic_number)
+                topic_number=topic_number,
+                style=style, keep_accents=keep_accents)
         else:
             template = naming.NO_TEXT_TEMPLATE
             parts = naming.build_parts(original_filename, number,
-                                       document_date=name_date)
-        return naming.make_filename(template, parts, extension)
-
-    def generate_summary(self, text):
-        """Request a content summary from the AI provider."""
-        return self.ai_client.send_summary_request(text)
+                                       document_date=name_date,
+                                       style=style, keep_accents=keep_accents)
+        return naming.fit_path(folder, template, parts, extension)
 
     def regenerate_summary(self, document):
         """Write a new summary that uses the source and date the user typed."""
@@ -489,23 +649,35 @@ class ClassificationPipeline:
         return self.db.update_document(document.id, {"summary": summary})
 
     def empty_metadata(self):
-        """Return the metadata of a file the AI did not read."""
-        return {"source": None, "document_date": None, "topic": None,
-                "keywords": [], "counterparty": None, "category": None,
-                "subcategory": None, "review_note": None,
-                "suggested_folder": None}
+        """Return the card of a file the AI did not read."""
+        return {"media_type": None, "summary": None, "source": None,
+                "document_date": None, "topic": None, "keywords": [],
+                "counterparty": None, "category": None,
+                "subcategory": None, "folder_path": None,
+                "review_note": None, "suggested_folder": None,
+                "folder_reason": None, "confidence": None}
 
-    def extract_metadata(self, text):
-        """Ask the AI for the metadata, then check every field it sent."""
-        categories = self.db.get_categories()
+    def card_prompt(self):
+        """Return the system prompt: the sheet, the card, and the places."""
+        categories = self.db.get_folder_tree() if self.db.is_tree_project() \
+            else self.db.get_categories()
+        prompt = self.sheet_prompt() + FILE_PROMPT
+        if self.db.is_tree_project():
+            return prompt + self.folder_prompt(categories)
+        if categories:
+            return prompt + CATEGORY_PROMPT.format(
+                categories=json.dumps(categories, ensure_ascii=False))
+        return prompt + NO_PLACE_PROMPT
+
+    def read_card(self, file_path, media_type, file_meta, content):
+        """Ask the AI for the whole card in one request, then check it."""
         tree_mode = self.db.is_tree_project()
-        prompt = METADATA_PROMPT
-        if tree_mode:
-            prompt += self.folder_prompt(categories)
-        elif categories:
-            prompt += CATEGORY_PROMPT.format(categories=json.dumps(
-                categories, ensure_ascii=False))
-        result = parse_json_answer(self.ai_client.ask(prompt, text))
+        categories = self.db.get_folder_tree() if tree_mode \
+            else self.db.get_categories()
+        text = file_context(file_path, self.file_organizer.target_directory,
+                            media_type, file_meta, content)
+        result = parse_json_answer(self.ai_client.ask(self.card_prompt(),
+                                                      text))
 
         metadata = self.empty_metadata()
         for field in METADATA_FIELDS:
@@ -520,10 +692,26 @@ class ClassificationPipeline:
         if metadata["topic"]:
             metadata["topic"] = metadata["topic"][
                 :archive_rules.MAX_TOPIC_LENGTH]
+        metadata["summary"] = cut_summary(result.get("summary")) or None
+        kind = archive_rules.clean_text(result.get("media_type"), 20) or ""
+        metadata["media_type"] = kind.strip(" .\"'").title() \
+            if kind.strip(" .\"'").lower() in ("press", "documents") \
+            else FALLBACK_MEDIA_TYPE
         metadata["keywords"] = archive_rules.clean_keywords(
             result.get("keywords"))
         metadata["counterparty"] = archive_rules.clean_text(
             result.get("counterparty"), archive_rules.MAX_COUNTERPARTY_LENGTH)
+        confidence = (archive_rules.clean_text(result.get("confidence"), 20)
+                      or "").lower()
+        metadata["confidence"] = confidence \
+            if confidence in CONFIDENCE_LEVELS else "medium"
+        reason = archive_rules.clean_text(result.get("folder_reason"), 300)
+        conflict = archive_rules.clean_text(result.get("name_hint_conflict"),
+                                            300)
+        if conflict:
+            reason = ((reason + " ") if reason else "") + \
+                "Name and content disagree: " + conflict
+        metadata["folder_reason"] = reason
         if tree_mode:
             return self.match_folder(metadata, result, categories)
         category, subcategory, note = archive_rules.match_category(
@@ -531,35 +719,51 @@ class ClassificationPipeline:
             archive_rules.clean_text(result.get("category"), 200),
             archive_rules.clean_text(result.get("subcategory"), 200))
         metadata.update({"category": category, "subcategory": subcategory,
+                         "folder_path": folder_tree.folder_text(
+                             category, subcategory) if category else None,
                          "review_note": note})
         return metadata
 
+    def sheet_prompt(self):
+        """Return the project sheet as the first part of the prompt, or ''."""
+        sheet = self.db.get_project_sheet()
+        if not sheet:
+            return ""
+        return SHEET_PREFIX + sheet + "\n\n"
+
     def folder_prompt(self, tree):
-        """Return the part of the prompt with the project's folder tree."""
-        folders = [{"folder": top["name"], "subfolders": top["subcategories"]}
-                   for top in tree]
+        """Return the part of the prompt with the project's folder paths."""
         return FOLDER_PROMPT.format(
             description=self.db.get_project_description() or "(not given)",
-            folders=json.dumps(folders, ensure_ascii=False))
+            folders=json.dumps(folder_tree.all_places(tree),
+                               ensure_ascii=False))
 
     def match_folder(self, metadata, result, tree):
-        """Keep the AI's folder if it is in the tree; else a suggestion."""
-        folder, subfolder, note = archive_rules.match_category(
-            tree,
-            archive_rules.clean_text(result.get("folder"), 200),
-            archive_rules.clean_text(result.get("subfolder"), 200))
-        if note:
-            # Half a match (a folder without its subfolder) is no match.
-            metadata["review_note"] = folder_tree.NO_FOLDER_NOTE
-            metadata["suggested_folder"] = folder_tree.clean_suggestion(
-                result.get("suggested_folder"), tree)
-            return metadata
-        metadata.update({"category": folder, "subcategory": subfolder})
+        """Keep the AI's folder if it is in the tree; else the catch-all."""
+        folder = archive_rules.clean_text(result.get("folder"), 400) or ""
+        subfolder = archive_rules.clean_text(result.get("subfolder"), 200)
+        # Older answers send the subfolder apart.
+        if subfolder:
+            folder = folder_tree.join_path([folder, subfolder])
+        place = folder_tree.find_place(tree, folder)
+        if place is None:
+            place = folder_tree.fallback_place(tree)
+            if place is None:
+                metadata["review_note"] = folder_tree.NO_FOLDER_NOTE
+                metadata["suggested_folder"] = folder_tree.clean_suggestion(
+                    result.get("suggested_folder"), tree)
+                return metadata
+            # What fits nowhere goes to the catch-all, as a Classified file.
+            metadata["review_note"] = None
+            metadata["folder_reason"] = folder_tree.CATCH_ALL_REASON
+        category, subcategory = folder_tree.first_two(place)
+        metadata.update({"category": category, "subcategory": subcategory,
+                         "folder_path": place})
         return metadata
 
-    def validate_completeness(self, document, required=REQUIRED_FIELDS):
+    def validate_completeness(self, document):
         """Check whether all expected fields were filled in."""
-        missing = [field for field in required
+        missing = [field for field in REQUIRED_FIELDS
                    if not getattr(document, field)]
         if missing:
             document.mark_needs_review(missing)

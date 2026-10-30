@@ -15,6 +15,7 @@ MAX_KEYWORDS = 5
 MAX_KEYWORD_LENGTH = 40
 MAX_COUNTERPARTY_LENGTH = 100
 MAX_TOPIC_LENGTH = 60
+MAX_SUMMARY_LENGTH = 100
 MAX_OWNER_LENGTH = 100
 MAX_INDUSTRY_LENGTH = 100
 
@@ -33,6 +34,15 @@ IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 TOPIC_NOTE = "No topic could be found in the photo"
+TOO_LONG_NOTE = "Path too long for Windows (over 240 characters)"
+SECRET_NOTE = "Possible secret, not read"
+
+# Files that may hold keys or passwords: never read, never sent anywhere.
+SECRET_NAMES = (".env", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
+SECRET_PREFIXES = (".env.", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
+                   "credentials")
+SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".keychain",
+                   ".keychain-db", ".jks", ".kdbx")
 # Fields are listed by their column name: "Missing: source, document_date".
 MISSING_NOTE = "Missing: {}"
 
@@ -44,8 +54,38 @@ GENERIC_NAME = re.compile(
     r"cimg|wp|sam|p|document|doc|file|untitled|new)[\s_.-]*[\d\s_.:-]*"
     r"(at[\s\d_.:-]*)?(am|pm)?[\s\d()_.-]*$", re.IGNORECASE)
 
+# A year in a file name or a folder name: _1997, Trialo-Isla-Verde_1998.
+PATH_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
+
+# How a date stamp reads: month first (11 13 '97, as cameras print) or
+# day first (13 11 97).
+STAMP_ORDERS = ("month", "day")
+DEFAULT_STAMP_ORDER = "month"
+
+MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+          "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+          "ene": 1, "abr": 4, "ago": 8, "dic": 12}
+
+# A year like 1997 or 2026 inside a file name.
+NAME_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
+
+# A version mark at the end of a name: v01, v2, draft-3, borrador_2.
+NAME_VERSION = re.compile(
+    r"(?<![a-z0-9])(v\d{1,3}|draft[-_ ]?\d+|borrador[-_ ]?\d+)(?![a-z0-9])",
+    re.IGNORECASE)
+
+# What the AI says when it is not sure, before its own reason.
+LOW_CONFIDENCE_NOTE = "Low confidence"
+
 # Read the file in 1 MB pieces, so big videos never fill the memory.
 HASH_CHUNK_SIZE = 1024 * 1024
+
+
+def is_secret(filename):
+    """Say whether a file looks like it holds keys or passwords."""
+    name = os.path.basename(str(filename or "")).lower()
+    return (name in SECRET_NAMES or name.startswith(SECRET_PREFIXES)
+            or name.endswith(SECRET_SUFFIXES))
 
 
 def is_generic_name(text):
@@ -54,6 +94,84 @@ def is_generic_name(text):
         return True
     stem = os.path.splitext(str(text).strip())[0]
     return bool(GENERIC_NAME.match(stem))
+
+
+def year_in_path(path):
+    """Return a year written in the file name or its folders, or None."""
+    parts = [os.path.basename(path)] + os.path.dirname(path).split(os.sep)
+    for part in parts:
+        found = PATH_YEAR.search(part)
+        if found:
+            return found.group(1)
+    return None
+
+
+def full_year(two_or_four):
+    """Turn '97 into 1997 and 07 into 2007; a four-digit year stays."""
+    value = int(two_or_four)
+    if len(two_or_four) == 4:
+        return value
+    return 1900 + value if value > 30 else 2000 + value
+
+
+def stamp_date(text, order=DEFAULT_STAMP_ORDER):
+    """Read a date printed or written on a photo, like 11 13 '97, or None.
+
+    Returns YYYY-MM-DD, YYYY-MM or YYYY, with the precision the stamp has.
+    """
+    if not isinstance(text, str) or not text.strip():
+        return None
+    text = text.strip().lower().replace("'", "").replace("’", "")
+    # 1997-11-13 or 1997/11/13: the year goes first, no doubt possible.
+    found = re.search(r"\b((?:18|19|20)\d{2})[-/. ](\d{1,2})[-/. ](\d{1,2})\b",
+                      text)
+    if found:
+        return "{}-{:02d}-{:02d}".format(found.group(1), int(found.group(2)),
+                                         int(found.group(3)))
+    # 13 nov 97, nov 13 1997, noviembre de 1997.
+    found = re.search(r"(?:(\d{1,2})\s*)?([a-z]{3})[a-z]*\.?\s*(?:de\s*)?"
+                      r"(\d{1,2}(?=\D)\s*)?(\d{2,4})\b", text)
+    if found and found.group(2) in MONTHS:
+        day = found.group(1) or found.group(3)
+        year = full_year(found.group(4))
+        month = MONTHS[found.group(2)]
+        if day:
+            return "{}-{:02d}-{:02d}".format(year, month, int(day))
+        return "{}-{:02d}".format(year, month)
+    # 11 13 97, 11/13/97, 13.11.1997: two numbers and a year.
+    found = re.search(r"\b(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{2}|\d{4})\b",
+                      text)
+    if found:
+        first, second = int(found.group(1)), int(found.group(2))
+        year = full_year(found.group(3))
+        month, day = (first, second) if order == "month" else (second, first)
+        # 13 can only be a day, whatever the order says.
+        if month > 12 and day <= 12:
+            month, day = day, month
+        if 1 <= month <= 12 and 1 <= day <= 31:
+            return "{}-{:02d}-{:02d}".format(year, month, day)
+    # 11 97 or 11/1997: a month and a year.
+    found = re.search(r"\b(\d{1,2})[-/. ](\d{2}|\d{4})\b", text)
+    if found and 1 <= int(found.group(1)) <= 12:
+        return "{}-{:02d}".format(full_year(found.group(2)),
+                                  int(found.group(1)))
+    found = re.search(r"\b((?:18|19|20)\d{2})\b", text)
+    if found:
+        return found.group(1)
+    return None
+
+
+def name_hints(filename):
+    """Say what a file name tells on its own: words, a year, a version."""
+    stem = os.path.splitext(os.path.basename(str(filename or "")))[0]
+    if is_generic_name(stem):
+        return {"generic": True, "words": "", "year": None, "version": None}
+    year = NAME_YEAR.search(stem)
+    version = NAME_VERSION.search(stem)
+    words = re.sub(r"[_\-.]+", " ", stem).strip()
+    return {"generic": False, "words": " ".join(words.split()),
+            "year": year.group(1) if year else None,
+            "version": version.group(1) if version else None}
 
 
 def sha256_of(path):

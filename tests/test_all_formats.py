@@ -47,8 +47,8 @@ def test_code_is_cataloged_by_content(setup):
     assert doc.status == "Classified"
     assert doc.summary == "A short summary."
     assert doc.media_type == "Documents"
-    # Code is a document: the summary and the metadata, no type request.
-    assert ai.text_calls == 2
+    # One request fills the card.
+    assert ai.text_calls == 1
 
 
 def test_zip_listing_never_unpacks(tmp_path):

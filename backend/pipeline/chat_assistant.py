@@ -7,6 +7,7 @@ import unicodedata
 
 from backend.models.document import MEDIA_TYPES
 from backend.pipeline import folder_tree
+from backend.pipeline import naming
 from backend.pipeline.naming import clean_new_name
 
 MAX_CONTEXT_DOCUMENTS = 30
@@ -307,6 +308,9 @@ def check_propose_rename(data, context):
     if not ids:
         return notice_response("rename_not_found")
     doc = context["documents"][ids[0]]
+    if not context.get("can_rename", True) or \
+            naming.is_protected(doc.filename):
+        return notice_response("rename_unavailable")
     extension = os.path.splitext(doc.filename)[1]
     new_name = clean_new_name(data.get("new_name"), extension)
     if not new_name:
@@ -336,7 +340,7 @@ def check_propose_move(data, context):
     place = folder_tree.find_place(tree, data.get("folder"))
     if place is None:
         return notice_response("move_invalid")
-    if (doc.category, doc.subcategory) == place:
+    if doc.folder_path == place:
         return notice_response("move_same")
 
     response = make_response("propose_move", clean_reply(data),
@@ -344,9 +348,8 @@ def check_propose_move(data, context):
     response["move"] = {
         "document_id": doc.id,
         "filename": doc.filename,
-        "current_folder": folder_tree.folder_text(
-            doc.category, doc.subcategory) if doc.category else "",
-        "new_folder": folder_tree.folder_text(*place),
+        "current_folder": doc.folder_path or "",
+        "new_folder": place,
     }
     return response
 
@@ -362,7 +365,7 @@ ACTIONS = {
 }
 
 
-def make_context(documents, summary, tree=None):
+def make_context(documents, summary, tree=None, can_rename=True):
     """Collect what the validators need to know about the project."""
     sources = sorted({doc.source for doc in documents if doc.source})
     return {
@@ -370,6 +373,7 @@ def make_context(documents, summary, tree=None):
         "sources": sources,
         "summary": summary,
         "tree": tree,
+        "can_rename": can_rename,
     }
 
 
@@ -378,7 +382,8 @@ def run_chat(repo, client, message, history=None):
     documents = repo.get_all_documents()
     summary = repo.get_project_summary()
     tree = repo.get_folder_tree()
-    context = make_context(documents, summary, tree)
+    context = make_context(documents, summary, tree,
+                           can_rename=repo.can_move_files())
     prompt = build_prompt(message, clean_history(history), summary,
                           find_documents(documents, message), tree)
     system_prompt = SYSTEM_PROMPT if tree is None else \
