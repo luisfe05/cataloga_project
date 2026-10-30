@@ -96,6 +96,8 @@ const LANG_ES = {
     "catalog.filter_subfolder_all": "Subcarpeta: todas",
     "catalog.in_drop_zone": "Drop Zone",
     "catalog.suggested_folder": "Sugerida: {folder}",
+    "catalog.proposed": "Propuesto: {folder} / {name}",
+    "catalog.same_folder": "misma carpeta",
     "catalog.create_and_move": "Crear carpeta y mover",
     "catalog.move_to": "Mover a…",
     "catalog.moving": "Moviendo...",
