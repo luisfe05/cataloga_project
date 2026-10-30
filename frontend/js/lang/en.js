@@ -346,6 +346,12 @@ const LANG_EN = {
         + "Puerto Rican swimmer who competes in Malta",
     "folders.suggest": "Suggest folders",
     "folders.file_types": "Start from file types",
+    "folders.learn": "Learn from my folder",
+    "folders.need_folder": "Choose the project folder first.",
+    "folders.learning": "Reading the folder as it is...",
+    "folders.learned": "{folders} folders and {files} files read. "
+        + "{description} For example: {examples}. Edit anything, then "
+        + "create the project: nothing on the disk changes.",
     "folders.suggesting": "Asking Ollama Cloud for folders...",
     "folders.suggested": "Edit the folders, then create the project.",
     "folders.need_description": "Describe the project first.",
@@ -515,6 +521,7 @@ const LANG_EN = {
     "error.suggest_failed":
         "The AI provider did not suggest categories. Try again.",
     "error.no_provider": "Choose an AI provider in Settings first.",
+    "error.nothing_to_learn": "This folder has no subfolders to learn from.",
     "error.invalid_folders": "The folder tree is not valid. Check the names.",
     "error.invalid_sheet": "The project sheet is too long. Use 1,500 "
         + "characters or fewer.",
