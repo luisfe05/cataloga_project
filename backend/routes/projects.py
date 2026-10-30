@@ -109,6 +109,10 @@ def create_project():
     new_repo = CatalogRepository(db_path)
     new_repo.save_app_config(name, folder)
     new_repo.save_naming_template(template)
+    if body.get("naming_style") in naming.STYLES:
+        new_repo.save_config_value("naming_style", body["naming_style"])
+    if body.get("keep_accents") is True:
+        new_repo.save_config_value("keep_accents", 1)
     new_repo.save_folder_tree(description, tree)
     # Ollama Cloud works without typing a key.
     new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)

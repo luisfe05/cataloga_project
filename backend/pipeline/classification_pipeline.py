@@ -299,11 +299,20 @@ class ClassificationPipeline:
             file_meta.get("date") or file_meta.get("created"))
         metadata["document_date"] = date
 
-        new_filename = self.build_filename(file_path, has_text, metadata,
-                                           date_source)
         folder, placed = self.destination(file_path, media_type, metadata)
-        new_path = self.file_organizer.move_to_folder(file_path, folder,
-                                                      new_filename)
+        new_filename = self.build_filename(file_path, has_text, metadata,
+                                           date_source, folder)
+        if new_filename is None:
+            # Even a short name would not fit: a person must choose.
+            reason = reason or archive_rules.TOO_LONG_NOTE
+            metadata["suggested_folder"] = metadata["suggested_folder"] or \
+                self.file_organizer.place_of(folder)
+            metadata.update({"category": None, "subcategory": None})
+            placed = False
+            new_path = file_path
+        else:
+            new_path = self.file_organizer.move_to_folder(
+                file_path, folder, new_filename)
 
         document = Document(
             original_filename=original_filename,
@@ -389,12 +398,15 @@ class ClassificationPipeline:
         )
         return self.db.add_document(document)
 
-    def build_filename(self, file_path, has_text, metadata, date_source):
-        """Build the new file name with the project's naming method."""
+    def build_filename(self, file_path, has_text, metadata, date_source,
+                       folder):
+        """Build the new file name, short enough for its folder, or None."""
         original_filename = os.path.basename(file_path)
         extension = os.path.splitext(file_path)[1]
         number = self.db.next_number()
-        # The disk date changes when files are copied, so names say undated.
+        style = self.db.get_naming_style()
+        keep_accents = self.db.keep_accents()
+        # The disk date changes when files are copied, so it is left out.
         name_date = None if date_source == "file" else \
             metadata["document_date"]
         # Without a topic, a camera or scanner name never becomes one.
@@ -410,12 +422,14 @@ class ClassificationPipeline:
                 document_date=name_date,
                 source=metadata["source"],
                 topic=metadata["topic"],
-                topic_number=topic_number)
+                topic_number=topic_number,
+                style=style, keep_accents=keep_accents)
         else:
             template = naming.NO_TEXT_TEMPLATE
             parts = naming.build_parts(original_filename, number,
-                                       document_date=name_date)
-        return naming.make_filename(template, parts, extension)
+                                       document_date=name_date,
+                                       style=style, keep_accents=keep_accents)
+        return naming.fit_path(folder, template, parts, extension)
 
     def generate_summary(self, text):
         """Request a content summary from the AI provider."""

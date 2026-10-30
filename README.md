@@ -94,21 +94,25 @@ Choose the method in Settings. Files already in the catalog keep their names.
 
 | Method | Example |
 |---|---|
-| Date and topic (default) | `2026-07-15_oceanman-malta.pdf` |
-| Source, date and topic | `el-nuevo-dia_2026-07-15_oceanman-malta.pdf` |
-| Number and topic | `0001_oceanman-malta.pdf` |
-| Custom | Click the parts in order (Topic, Source, Date, Number, Original) and pick `_` or `-` between them. Number is the 3-digit number per topic. The extension is added on its own |
+| Date and topic | `date_topic-name.pdf` |
+| Source, date and topic | `source-name_date_topic-name.pdf` |
+| Number and topic | `0001_topic-name.pdf` |
+| Topic, source and date | `topic-name_source-name_date.pdf` (new projects start here) |
+| Custom | Click the parts in order (Topic, Source, Date, Original) and pick `_` or `-` between them. The extension is added on its own |
+| Style | `topic-name` (lowercase) or `Topic-Name` (Title-Case), per project. Accents are dropped (`Dia`) unless Keep accents is on (`Día`) |
 
 | Rule | What happens |
 |---|---|
 | Topic | The AI gives a short topic in the same request as the source and date |
-| No date | `undated` is used |
+| No date | The name has no date part; the catalog shows the date empty |
 | No source | That part is left out |
 | No topic | The original file name is used |
 | Photos | Named with the project's method from what the photo shows |
 | Audio and video | Named with the project's method from the title in their tags |
 | Files with nothing to read | Their date and a number, for example `2026-07-15_0001.jpg`. If only the disk date is known, `undated_0001.jpg` |
-| Name already taken | `-2`, `-3`, and so on are added |
+| Name already taken | The new file gets `_2`, `_3`, and so on; the first one keeps its name |
+| Versions | A version mark in the original name (`v01`, `draft-3`) stays at the end of the new name |
+| Long paths | The topic, then the source, are shortened a word at a time so the full path stays under 240 characters (the Windows limit). If it still cannot fit, the file stays put, in Manual Review |
 | Rename from the chat | Uses the same cleaning rules, only after you click Confirm |
 
 ## API endpoints

@@ -81,7 +81,7 @@ def test_old_project_files_go_to_their_media_folder(old_project):
     assert doc.media_type == "Press"
     assert doc.file_path == os.path.join(
         str(old_project["folder"]), "Press",
-        "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt")
+        "oceanman-malta_el-nuevo-dia_2026-07-15.txt")
     assert doc.status == "Classified"
 
 
@@ -252,7 +252,7 @@ def test_file_goes_to_the_folder_the_ai_picks(tree_project):
         drop(tree_project, "a.txt", "Article"))
     assert doc.file_path == os.path.join(
         str(tree_project["folder"]), "Oceanman Malta", "Prensa",
-        "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt")
+        "oceanman-malta_el-nuevo-dia_2026-07-15.txt")
     assert (doc.category, doc.subcategory) == ("Oceanman Malta", "Prensa")
     assert doc.media_type == "Press"
     assert doc.status == "Classified"
@@ -476,13 +476,13 @@ def test_move_document_to_another_folder(flask_client, tmp_path):
 
 
 def test_move_keeps_both_files_with_the_same_name(flask_client, tmp_path):
-    """A name already in the folder gets -2."""
+    """A name already in the folder gets _2; the first keeps its name."""
     folder, repo = tree_repo(flask_client, tmp_path)
     add_file_doc(repo, str(folder / "Contratos" / "a.txt"))
     doc = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"))
     moved = flask_client.post("/documents/{}/move".format(doc.id),
                               json={"folder": "Contratos"}).get_json()
-    assert moved["filename"] == "a-2.txt"
+    assert moved["filename"] == "a_2.txt"
 
 
 def test_create_folder_and_move(flask_client, tmp_path):

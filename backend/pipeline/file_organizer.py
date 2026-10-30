@@ -88,7 +88,7 @@ class FileOrganizer:
         candidate = filename
         number = 2
         while os.path.exists(os.path.join(folder, candidate)):
-            candidate = "{}-{}{}".format(base, number, extension)
+            candidate = "{}_{}{}".format(base, number, extension)
             number += 1
         return candidate
 
@@ -112,6 +112,11 @@ class FileOrganizer:
         # shutil.move works across drives, where a rename would fail.
         shutil.move(original_path, new_path)
         return new_path
+
+    def place_of(self, folder):
+        """Return a folder of the project as 'A/B', or '' for the root."""
+        relative = os.path.relpath(folder, self.target_directory)
+        return "" if relative == "." else relative.replace(os.sep, "/")
 
     def is_inside_project(self, path):
         """Return True if a path is inside the project folder."""
