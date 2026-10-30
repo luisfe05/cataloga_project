@@ -65,7 +65,10 @@ CREATE TABLE IF NOT EXISTS documents (
     category          TEXT,
     subcategory       TEXT,
     date_source       TEXT,
-    suggested_folder  TEXT
+    suggested_folder  TEXT,
+    folder_reason     TEXT,
+    confidence        TEXT,
+    original_path     TEXT
 );
 """
 
@@ -87,6 +90,12 @@ ADDED_DOCUMENTS_COLUMNS = {
     "date_source": "date_source TEXT",
     # A folder the AI would create, as 'Folder/Subfolder'.
     "suggested_folder": "suggested_folder TEXT",
+    # One line from the AI on why the file went to its folder.
+    "folder_reason": "folder_reason TEXT",
+    # high, medium or low; low sends the file to Manual Review.
+    "confidence": "confidence TEXT",
+    # Where the file was first seen, relative to the project folder.
+    "original_path": "original_path TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """

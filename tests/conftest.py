@@ -1,5 +1,6 @@
 """pytest fixtures shared across all test modules."""
 
+import json
 import os
 
 import pytest
@@ -16,6 +17,24 @@ from backend.pipeline.file_organizer import FileOrganizer
 # Session token and username the logged-in test clients use.
 TEST_TOKEN = "test-token"
 TEST_USER = "test"
+
+
+def card_answer(metadata=None, media_type="Press", summary="A news story."):
+    """The JSON a fake AI answers the one request per file with.
+
+    metadata is the old metadata JSON (text or dict); media type and
+    summary, which used to be separate requests, are added to it.
+    """
+    card = {"media_type": media_type, "summary": summary,
+            "confidence": "high"}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except ValueError:
+            # A broken answer stays broken, like the real thing.
+            return metadata
+    card.update(metadata or {})
+    return json.dumps(card)
 
 
 def logged_in_client(app, username=TEST_USER):

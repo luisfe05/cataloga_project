@@ -8,7 +8,7 @@ from flask import Blueprint, Response, jsonify, request
 
 from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
-    ClassificationPipeline, missing_note, needs_nothing, required_fields)
+    ClassificationPipeline, missing_note, needs_nothing)
 from backend.config import projects as project_list
 from backend.pipeline import folder_tree
 from backend.pipeline.file_organizer import FileOrganizer
@@ -39,6 +39,9 @@ EXPORT_COLUMNS = (
     ("Duplicate Of", "duplicate_of"),
     ("Review Note", "review_note"),
     ("Suggested Folder", "suggested_folder"),
+    ("Why This Folder", "folder_reason"),
+    ("Confidence", "confidence"),
+    ("Original Path", "original_path"),
     ("SHA-256", "sha256"),
 )
 
@@ -267,8 +270,7 @@ def move_document(doc_id):
             doc = repo.set_status(doc_id, "Classified")
         elif not doc.review_note:
             # Move cleared the folder note; the empty fields explain the rest.
-            doc = repo.set_review_note(
-                doc_id, missing_note(doc, required_fields(doc)))
+            doc = repo.set_review_note(doc_id, missing_note(doc))
     return jsonify(doc.to_dict()), 200
 
 
