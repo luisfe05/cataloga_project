@@ -4,6 +4,8 @@ import os
 import shutil
 import subprocess
 
+from backend.pipeline import folder_tree
+
 MEDIA_TYPES = ("Press", "Audio", "Video", "Photos", "Documents")
 
 DROP_ZONE_FOLDER = "Drop Zone"
@@ -45,12 +47,12 @@ class FileOrganizer:
         os.rename(self.old_inbox_folder(), self.drop_zone_folder())
         return True
 
-    def tree_folder(self, folder, subfolder=None):
-        """Return the path of a folder of the project's tree."""
-        path = os.path.join(self.target_directory, folder)
+    def tree_folder(self, place, subfolder=None):
+        """Return the disk path of a folder of the tree ('A/B/C')."""
+        parts = [part for part in str(place).split("/") if part]
         if subfolder:
-            path = os.path.join(path, subfolder)
-        return path
+            parts.append(subfolder)
+        return os.path.join(self.target_directory, *parts)
 
     def ensure_archive_structure(self, tree=None):
         """Create Drop Zone and the tree, or the five media-type folders."""
@@ -60,11 +62,14 @@ class FileOrganizer:
             for media_type in MEDIA_TYPES:
                 os.makedirs(self.folder_for(media_type), exist_ok=True)
             return
-        for top in tree:
-            os.makedirs(self.tree_folder(top["name"]), exist_ok=True)
-            for sub in top["subcategories"]:
-                os.makedirs(self.tree_folder(top["name"], sub),
-                            exist_ok=True)
+        self.make_tree_folders(tree, "")
+
+    def make_tree_folders(self, nodes, parent):
+        """Create every folder of the tree, at any depth."""
+        for node in nodes:
+            place = parent + "/" + node["name"] if parent else node["name"]
+            os.makedirs(self.tree_folder(place), exist_ok=True)
+            self.make_tree_folders(folder_tree.children_of(node), place)
 
     def count_existing_items(self, tree=None):
         """Count the user's own files and folders in the project folder."""
@@ -88,7 +93,7 @@ class FileOrganizer:
         candidate = filename
         number = 2
         while os.path.exists(os.path.join(folder, candidate)):
-            candidate = "{}-{}{}".format(base, number, extension)
+            candidate = "{}_{}{}".format(base, number, extension)
             number += 1
         return candidate
 

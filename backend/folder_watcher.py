@@ -5,9 +5,9 @@ import os
 import threading
 import time
 
-from backend.config import account, projects
+from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
-from backend.pipeline.ai_providers import create_client
+from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
@@ -63,7 +63,7 @@ def log_old_inbox_warning(organizer):
         warned_folders.add(folder)
 
 
-def scan_once(projects_path):
+def scan_once(projects_path, owner=None):
     """Check the active project's Drop Zone one time."""
     folder = projects.active_folder(projects_path)
     # No project, or its folder is missing (like an unplugged drive).
@@ -80,38 +80,46 @@ def scan_once(projects_path):
     log_old_inbox_warning(organizer)
     remove_gone_duplicates(repo)
 
-    provider = repo.get_active_provider()
-    if not provider:
+    client = project_client(repo)
+    if client is None:
         return []
 
     files = find_new_files(organizer.drop_zone_folder())
     if not files:
         return []
 
-    saved_account = account.load_account(
-        account.account_path_for(projects_path))
     pipeline = ClassificationPipeline(
-        create_client(provider["provider_name"], provider["model"]),
+        client,
         repo,
         organizer,
-        owner=saved_account["username"] if saved_account else None,
+        owner=owner,
     )
     return pipeline.process_batch(files)
 
 
-def watch_forever(projects_path):
-    """Run scan_once() every CHECK_INTERVAL seconds, forever."""
+def scan_for_session(app):
+    """Scan the Drop Zone of the logged-in account's active project."""
+    username = app.config.get("SESSION_USER")
+    # Nobody is logged in: there is no project list to read.
+    if not username:
+        return []
+    projects_path = app.config["ACCOUNTS"].projects_path(username)
+    return scan_once(projects_path, owner=username)
+
+
+def watch_forever(app):
+    """Run scan_for_session() every CHECK_INTERVAL seconds, forever."""
     while True:
         try:
-            scan_once(projects_path)
+            scan_for_session(app)
         except Exception:
             pass
         time.sleep(CHECK_INTERVAL)
 
 
-def start_watcher(projects_path):
+def start_watcher(app):
     """Start the watcher in a background thread."""
-    thread = threading.Thread(target=watch_forever, args=(projects_path,),
+    thread = threading.Thread(target=watch_forever, args=(app,),
                               daemon=True)
     thread.start()
     return thread

@@ -18,6 +18,7 @@ from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.ai_providers.ollama_cloud import OllamaCloudClient
 from backend.pipeline.classification_pipeline import ClassificationPipeline
 from backend.pipeline.file_organizer import FileOrganizer
+from tests.conftest import card_answer
 
 METADATA = json.dumps({"source": "Harbor Business Journal",
                        "document_date": "2026-06-11", "topic": "Tower top",
@@ -43,11 +44,7 @@ class FakeAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.text_calls += 1
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Documents"
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "A short summary."
-        return METADATA
+        return card_answer(METADATA, "Documents", "A short summary.")
 
     def send_images(self, prompt, image_uris):
         self.image_calls.append(image_uris)
@@ -144,7 +141,7 @@ def test_docx_is_cataloged_like_a_pdf(setup):
     assert doc.status == "Classified"
     assert doc.summary == "A short summary."
     assert doc.filename.endswith(".docx")
-    assert ai.text_calls == 3
+    assert ai.text_calls == 1
 
 
 # --- Photos ---
@@ -198,7 +195,8 @@ def test_photo_date_from_exif(tmp_path):
     """The date the photo was taken comes from its EXIF data."""
     path = str(tmp_path / "p.jpg")
     exif = Image.Exif()
-    exif[306] = "2026:07:15 10:30:00"
+    exif[271] = "Canon"
+    exif.get_ifd(0x8769)[36867] = "2026:07:15 10:30:00"
     Image.new("RGB", (10, 10)).save(path, exif=exif)
     assert file_readers.photo_date(path) == "2026-07-15"
 
@@ -324,11 +322,7 @@ def test_pdf_metadata_goes_to_the_ai_and_gives_the_date(setup):
 
     def send(system_prompt, text):
         seen.append(text)
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "A lease."
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Documents"
-        return ai_metadata
+        return card_answer(ai_metadata, "Documents", "A lease.")
     ai.send_prompt = send
     doc = setup["build"](ai).classify_document(
         pdf_with_metadata(setup["drop"] / "scan.pdf"))
@@ -406,7 +400,8 @@ def test_photo_date_comes_first(setup):
     """For photos, the EXIF date wins over a date in the content."""
     path = str(setup["drop"] / "p.jpg")
     exif = Image.Exif()
-    exif[306] = "2025:12:24 18:00:00"
+    exif[271] = "Canon"
+    exif.get_ifd(0x8769)[36867] = "2025:12:24 18:00:00"
     Image.new("RGB", (20, 20), (255, 255, 255)).save(path, exif=exif)
     doc = setup["build"](FakeAI()).classify_document(path)
     assert doc.document_date == "2025-12-24"
@@ -448,9 +443,7 @@ def test_photo_without_a_useful_topic_goes_to_manual_review(setup, topic):
                               "topic": topic})
 
     def send(system_prompt, text):
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "Blue shapes."
-        return ai_metadata
+        return card_answer(ai_metadata, "Photos", "Blue shapes.")
     ai.send_prompt = send
     path = str(setup["drop"] / "DSC_0042.jpg")
     Image.new("RGB", (40, 40), (30, 60, 200)).save(path)
@@ -459,7 +452,7 @@ def test_photo_without_a_useful_topic_goes_to_manual_review(setup, topic):
     assert doc.review_note == archive_rules.TOPIC_NOTE
     assert doc.topic is None
     assert "dsc" not in doc.filename.lower()
-    assert doc.filename.startswith("undated_")
+    assert doc.filename[:4].isdigit()
 
 
 def test_photo_topic_comes_from_what_it_shows(setup):
@@ -471,13 +464,11 @@ def test_photo_topic_comes_from_what_it_shows(setup):
 
     def send(system_prompt, text):
         seen.append(text)
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "Blue shapes."
-        return ai_metadata
+        return card_answer(ai_metadata, "Photos", "Blue shapes.")
     ai.send_prompt = send
     path = str(setup["drop"] / "DSC_0042.jpg")
     Image.new("RGB", (40, 40), (30, 60, 200)).save(path)
     doc = setup["build"](ai).classify_document(path)
     assert "its topic is what it shows" in seen[0]
     assert doc.status == "Classified"
-    assert doc.filename == "undated_blue-shapes.jpg"
+    assert doc.filename == "blue-shapes.jpg"
