@@ -179,6 +179,21 @@ function reviewNoteText(note) {
     if (note === "Category not in the project list") {
         return t("catalog.note_no_category");
     }
+    // The backend may add the length: "... coming soon. Duration 1:05".
+    const mediaPrefix = "Audio and video reading is coming soon";
+    if (note.startsWith(mediaPrefix)) {
+        const length = note.split("Duration ")[1];
+        return length ? t("catalog.note_media_length", { length: length })
+            : t("catalog.note_media");
+    }
+    const notes = {
+        "Could not read the image": "catalog.note_image",
+        "Could not read the scanned pages": "catalog.note_scan",
+        "File is larger than 50 MB, so it was not read": "catalog.note_too_big",
+    };
+    if (notes[note]) {
+        return t(notes[note]);
+    }
     return note;
 }
 
@@ -291,6 +306,10 @@ function addArchiveCells(row, doc) {
         cell.classList.add("more-col");
         row.appendChild(cell);
     });
+    // Where the date came from. Read only, even in Edit Mode.
+    const dateSource = makeCell(doc.date_source
+        ? t(`catalog.date_from_${doc.date_source}`) : "", "nowrap more-col");
+    row.appendChild(dateSource);
 }
 
 /** Filename cell: the name opens the file. In Edit Mode it is plain text, but the icons stay. */
