@@ -265,6 +265,9 @@ const LANG_ES = {
     "naming.m3_example": "0001_nombre-del-tema.pdf",
     "naming.m4": "Tema, fuente y fecha",
     "naming.m4_example": "nombre-del-tema_nombre-de-la-fuente_fecha.pdf",
+    "naming.m5": "Evento y año, más un número",
+    "naming.m5_example": "Nombre-Del-Evento_1998_1.jpg (el archivo toma el "
+        + "nombre de su carpeta de evento)",
     "naming.custom": "Personalizado",
     "naming.keep": "Conservar los nombres originales",
     "naming.keep_example": "el-nombre-que-le-diste.pdf",

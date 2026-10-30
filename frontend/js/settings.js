@@ -52,11 +52,12 @@ const NAMING_METHODS = {
     m2: "{source}_{date}_{topic}",
     m3: "{number}_{topic}",
     m4: "{topic}_{source}_{date}",
+    m5: "{event}_{n}",
 };
 
 // Parts a template can use, and characters a file name cannot have.
 const NAMING_TOKENS = ["date", "source", "topic", "number", "original",
-    "topic_number"];
+    "topic_number", "event", "n"];
 const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
 
 // Custom name parts, in the order of the buttons. A number is added only when a name repeats.
@@ -84,6 +85,8 @@ const PREVIEW_PARTS = {
     number: "0001",
     original: "original-name",
     topic_number: "001",
+    event: "Event-Name_1998",
+    n: "1",
 };
 
 function readNamingStyle() {
