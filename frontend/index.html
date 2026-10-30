@@ -384,12 +384,23 @@
                             </label>
                         </div>
 
+                        <!-- Custom: parts added in order by clicking, no braces to type (settings.js). -->
                         <div class="naming-custom hidden" id="naming-custom">
-                            <label for="naming-template"
-                                   data-i18n="naming.template">Template</label>
-                            <input type="text" id="naming-template"
-                                   autocomplete="off" spellcheck="false">
-                            <p class="hint" data-i18n="naming.template_help"></p>
+                            <span class="field-label" data-i18n="naming.blocks_add">Click the
+                                parts in order</span>
+                            <div class="naming-blocks" id="naming-blocks"></div>
+                            <span class="field-label" data-i18n="naming.chosen">Your file
+                                name</span>
+                            <div class="naming-chosen" id="naming-chosen"></div>
+                            <p class="hint hidden" id="naming-legacy"></p>
+                            <div class="naming-separator">
+                                <span data-i18n="naming.separator">Separator</span>
+                                <label><input type="radio" name="naming-separator"
+                                              value="_" checked> <code>_</code></label>
+                                <label><input type="radio" name="naming-separator"
+                                              value="-"> <code>-</code></label>
+                            </div>
+                            <p class="hint" data-i18n="naming.extension_note"></p>
                         </div>
 
                         <p class="naming-preview">

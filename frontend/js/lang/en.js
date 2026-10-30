@@ -227,9 +227,6 @@ const LANG_EN = {
     "naming.m4": "Topic, source, date and number",
     "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Custom",
-    "naming.template": "Template",
-    "naming.template_help":
-        "Use {date}, {source}, {topic}, {number}, {topic_number} and {original}.",
     "naming.preview": "Preview",
     "naming.media_rule": "Photos are named with this method from what they "
         + "show, and audio and video from the title in their tags. Files "
@@ -239,6 +236,23 @@ const LANG_EN = {
     "naming.duplicate_rule":
         "If a name already exists, Cataloga adds -2, -3 and so on.",
     "naming.changed_note": "Only new files will use this method.",
+    "naming.blocks_add": "Click the parts in order",
+    "naming.chosen": "Your file name",
+    "naming.chosen_empty": "No parts yet. Click Topic, Source, Date, Number "
+        + "or Original above.",
+    "naming.block_topic": "Topic",
+    "naming.block_source": "Source",
+    "naming.block_date": "Date",
+    "naming.block_number": "Number",
+    "naming.block_original": "Original",
+    "naming.separator": "Separator",
+    "naming.move_left": "Move left",
+    "naming.move_right": "Move right",
+    "naming.remove_block": "Remove part",
+    "naming.extension_note": "The extension (.pdf, .jpg) is added on its own. "
+        + "Number counts the files with the same topic: 001, 002...",
+    "naming.legacy": "Saved custom name: {template}. Click parts to replace it.",
+    "naming.err_no_blocks": "Click at least one part for the file name.",
     "naming.err_empty": "Write a template, or choose one of the 4 methods.",
     "naming.err_no_token": "Add at least one of {date}, {source}, {topic}, "
         + "{number}, {topic_number} or {original}.",

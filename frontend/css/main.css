@@ -1770,8 +1770,83 @@ td.edit-error {
     flex-direction: column;
 }
 
+.naming-custom .field-label {
+    margin-bottom: var(--spacing-8);
+    font-size: 13px;
+    color: var(--color-dusk);
+}
+
+/* Custom name: part buttons, then the chosen parts as chips. */
+.naming-blocks,
+.naming-chosen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-16);
+}
+
+.naming-blocks .pill-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.naming-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4) var(--spacing-8) var(--spacing-4) var(--spacing-12);
+    border: 1.5px solid var(--color-violet);
+    border-radius: var(--radius-full);
+    color: var(--color-violet);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.naming-chip button {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: none;
+    color: var(--color-dusk);
+    cursor: pointer;
+}
+
+.naming-chip button:hover:not(:disabled) {
+    background: var(--color-paper);
+    color: var(--color-violet);
+}
+
+.naming-chip button:disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
+.naming-separator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-16);
+    margin-bottom: var(--spacing-8);
+    font-size: 14px;
+}
+
+.settings-form .naming-separator label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    margin: 0;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.settings-form .naming-separator input {
+    height: auto;
+    margin: 0;
+    accent-color: var(--color-violet);
+}
+
 .naming-custom .hint {
-    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
+    margin: 0 0 var(--spacing-16);
 }
 
 .naming-preview {
