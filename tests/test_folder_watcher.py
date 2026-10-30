@@ -14,6 +14,7 @@ from backend.folder_watcher import (OLD_INBOX_WARNING, find_new_files,
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.file_organizer import FileOrganizer
+from tests.conftest import card_answer
 
 
 class FakeAI(AIProviderClient):
@@ -24,11 +25,8 @@ class FakeAI(AIProviderClient):
         self.retry_delay = 0
 
     def send_prompt(self, system_prompt, text):
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Press"
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "A summary."
-        return '{"source": "Claridad", "document_date": "1980"}'
+        return card_answer('{"source": "Claridad", "document_date": "1980"}',
+                           summary="A summary.")
 
 
 @pytest.fixture(autouse=True)
