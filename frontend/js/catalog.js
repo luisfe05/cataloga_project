@@ -188,8 +188,8 @@ function reviewNoteText(note) {
     if (note === "No folder fits this file") {
         return t("catalog.note_no_folder");
     }
-    // The backend may add the length: "... coming soon. Duration 1:05".
-    const mediaPrefix = "Audio and video reading is coming soon";
+    // The backend may add the length: "... Settings. Duration 1:05".
+    const mediaPrefix = "Audio and video need a Gemini key in Settings";
     if (note.startsWith(mediaPrefix)) {
         const length = note.split("Duration ")[1];
         return length ? t("catalog.note_media_length", { length: length })

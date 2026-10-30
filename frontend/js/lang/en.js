@@ -99,9 +99,9 @@ const LANG_EN = {
     "catalog.move_to": "Move to…",
     "catalog.moving": "Moving...",
     "catalog.moved": "Moved to {folder}",
-    "catalog.note_media": "Audio and video reading is coming soon",
+    "catalog.note_media": "Audio and video need a Gemini key in Settings",
     "catalog.note_media_length":
-        "Audio and video reading is coming soon. Length {length}",
+        "Audio and video need a Gemini key in Settings. Length {length}",
     "catalog.note_image": "Could not read the image",
     "catalog.note_scan": "Could not read the scanned pages",
     "catalog.note_too_big": "File is larger than 50 MB, so it was not read",
