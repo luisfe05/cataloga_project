@@ -187,7 +187,21 @@ const LANG_EN = {
         + "Advanced settings.",
     "settings.advanced": "Advanced settings",
     "settings.ai_hint": "Choose another AI provider or model. Your API "
-        + "key is saved in the macOS Keychain.",
+        + "keys are saved in the macOS Keychain.",
+    "settings.ai_text_title": "Text and images",
+    "settings.ai_fallback_title": "Fallback (optional)",
+    "settings.ai_fallback_hint": "Answers when the main provider fails or "
+        + "cannot read a file. With a Claude key saved, Claude is the "
+        + "fallback unless you choose another.",
+    "settings.ai_media_title": "Audio and video",
+    "settings.ai_media_hint": "Only Google Gemini reads audio and video. "
+        + "Paid Gemini keys are not used to train models. Free keys are.",
+    "settings.ai_none": "None",
+    "settings.ai_using_fallback": "Fallback: {provider} ({model}).",
+    "settings.server_title": "Server (optional)",
+    "settings.server_hint": "A Cataloga server that holds the API keys. "
+        + "Leave it empty to call the providers from this computer.",
+    "settings.server_url": "Server URL",
     "settings.ai_provider": "AI Provider",
     "settings.api_key": "API Key",
     "settings.api_key_placeholder": "Paste your API key",
@@ -398,6 +412,9 @@ const LANG_EN = {
         + "Drop Zone folder are cataloged. Click Save anyway to use this "
         + "folder.",
     "error.unsupported_provider": "That AI provider is not supported.",
+    "error.invalid_role": "That provider role does not exist.",
+    "error.invalid_server_url": "The server URL must start with http:// "
+        + "or https://.",
     "error.unsupported_format": "Only CSV export is supported.",
     "error.keyring_failed": "The API key could not be saved in the macOS "
         + "Keychain. Open Keychain Access, make sure the login keychain "

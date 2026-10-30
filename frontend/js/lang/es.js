@@ -189,8 +189,24 @@ const LANG_ES = {
     "settings.ai_needs_key": "{provider} necesita una clave de API. "
         + "Agrégala en Configuración avanzada.",
     "settings.advanced": "Configuración avanzada",
-    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tu clave "
-        + "de API se guarda en el Llavero de macOS.",
+    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tus claves "
+        + "de API se guardan en el Llavero de macOS.",
+    "settings.ai_text_title": "Texto e imágenes",
+    "settings.ai_fallback_title": "Respaldo (opcional)",
+    "settings.ai_fallback_hint": "Responde cuando el proveedor principal "
+        + "falla o no puede leer un archivo. Con una clave de Claude "
+        + "guardada, Claude es el respaldo a menos que elijas otro.",
+    "settings.ai_media_title": "Audio y video",
+    "settings.ai_media_hint": "Solo Google Gemini lee audio y video. Las "
+        + "claves pagadas de Gemini no se usan para entrenar modelos. Las "
+        + "gratuitas sí.",
+    "settings.ai_none": "Ninguno",
+    "settings.ai_using_fallback": "Respaldo: {provider} ({model}).",
+    "settings.server_title": "Servidor (opcional)",
+    "settings.server_hint": "Un servidor de Cataloga que guarda las claves "
+        + "de API. Déjalo vacío para llamar a los proveedores desde esta "
+        + "computadora.",
+    "settings.server_url": "URL del servidor",
     "settings.ai_provider": "Proveedor de IA",
     "settings.api_key": "Clave de API",
     "settings.api_key_placeholder": "Pega tu clave de API",
@@ -411,6 +427,9 @@ const LANG_ES = {
         + "pongas en su carpeta Drop Zone. Haz clic en Guardar de todos "
         + "modos para usar esta carpeta.",
     "error.unsupported_provider": "Ese proveedor de IA no es compatible.",
+    "error.invalid_role": "Ese rol de proveedor no existe.",
+    "error.invalid_server_url": "La URL del servidor debe empezar con "
+        + "http:// o https://.",
     "error.unsupported_format": "Solo se puede exportar en CSV.",
     "error.keyring_failed": "No se pudo guardar la clave de API en el "
         + "Llavero de macOS. Abre Acceso a Llaveros, revisa que el llavero "

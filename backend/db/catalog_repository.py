@@ -26,7 +26,8 @@ STATUSES = ("Classified", "Manual Review")
 MAX_SUMMARY_LENGTH = 100
 
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
-                         "categories", "folder_mode", "project_description")
+                         "categories", "folder_mode", "project_description",
+                         "server_url")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -485,7 +486,8 @@ class CatalogRepository:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
-                "industry, categories, folder_mode, project_description "
+                "industry, categories, folder_mode, project_description, "
+                "server_url "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -603,13 +605,13 @@ class CatalogRepository:
             conn.close()
         return (row["highest"] or 0) + 1
 
-    def get_active_provider(self):
-        """Return the active AI provider and model, or None if unset."""
+    def get_provider(self, role):
+        """Return the provider and model of a role, or None if unset."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
                 "SELECT provider_name, model FROM ai_provider_config "
-                "WHERE is_active = 1 LIMIT 1"
+                "WHERE role = ? LIMIT 1", (role,)
             ).fetchone()
         finally:
             conn.close()
@@ -617,27 +619,41 @@ class CatalogRepository:
             return None
         return dict(row)
 
-    def set_active_provider(self, provider_name, model):
-        """Make one provider the active one and store its model."""
+    def set_provider(self, role, provider_name, model):
+        """Give a role one provider and model, replacing the old row."""
         conn = get_connection(self.db_path)
         try:
-            conn.execute("UPDATE ai_provider_config SET is_active = 0")
-            row = conn.execute(
-                "SELECT id FROM ai_provider_config WHERE provider_name = ?",
-                (provider_name,),
-            ).fetchone()
-            if row is None:
-                conn.execute(
-                    "INSERT INTO ai_provider_config (provider_name, model, "
-                    "is_active) VALUES (?, ?, 1)",
-                    (provider_name, model),
-                )
-            else:
-                conn.execute(
-                    "UPDATE ai_provider_config SET model = ?, is_active = 1 "
-                    "WHERE id = ?",
-                    (model, row["id"]),
-                )
+            conn.execute("DELETE FROM ai_provider_config WHERE role = ?",
+                         (role,))
+            # is_active stays 1 on the text row for older code and backups.
+            conn.execute(
+                "INSERT INTO ai_provider_config (provider_name, model, "
+                "is_active, role) VALUES (?, ?, ?, ?)",
+                (provider_name, model, 1 if role == "text" else 0, role),
+            )
             conn.commit()
         finally:
             conn.close()
+
+    def clear_provider(self, role):
+        """Remove the provider of a role (a fallback or media provider)."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("DELETE FROM ai_provider_config WHERE role = ?",
+                         (role,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_active_provider(self):
+        """Return the text provider and model, or None if unset."""
+        return self.get_provider("text")
+
+    def set_active_provider(self, provider_name, model):
+        """Make one provider the text provider and store its model."""
+        self.set_provider("text", provider_name, model)
+
+    def get_server_url(self):
+        """Return the relay server URL, or None to call the providers."""
+        config = self.get_app_config() or {}
+        return config.get("server_url") or None

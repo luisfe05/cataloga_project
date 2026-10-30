@@ -11,6 +11,7 @@ from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.folder_watcher import (OLD_INBOX_WARNING, find_new_files,
                                     old_inbox_has_files, scan_once)
+from backend.pipeline import ai_providers
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.file_organizer import FileOrganizer
@@ -36,8 +37,8 @@ def fake_ai(monkeypatch):
     """Use FakeAI instead of a real provider, with a test key."""
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: "test-key")
-    monkeypatch.setattr(folder_watcher, "create_client",
-                        lambda name, model: FakeAI())
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: FakeAI())
 
 
 def make_catalog(folder):
