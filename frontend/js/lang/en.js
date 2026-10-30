@@ -95,6 +95,8 @@ const LANG_EN = {
     "catalog.filter_subfolder_all": "Subfolder: All",
     "catalog.in_drop_zone": "Drop Zone",
     "catalog.suggested_folder": "Suggested: {folder}",
+    "catalog.proposed": "Proposed: {folder} / {name}",
+    "catalog.same_folder": "same folder",
     "catalog.create_and_move": "Create folder and move",
     "catalog.move_to": "Move to…",
     "catalog.moving": "Moving...",
