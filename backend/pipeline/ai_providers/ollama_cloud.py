@@ -47,15 +47,16 @@ def read_development_key():
 class OllamaCloudClient(AIProviderClient):
     """Ollama Cloud implementation using the OpenAI-compatible API."""
 
-    def __init__(self, model="gemma4:31b"):
+    def __init__(self, model="gemma4:31b", base_url=None):
         """Initialize with the Ollama provider name and chosen model."""
-        super().__init__(provider_name="ollama", model=model)
+        super().__init__(provider_name="ollama", model=model,
+                         base_url=base_url or OLLAMA_BASE_URL)
         if not self.api_key:
             self.api_key = read_development_key()
 
     def send_prompt(self, system_prompt, text):
         """Send one request to Ollama Cloud and return its answer."""
-        client = OpenAI(api_key=self.api_key, base_url=OLLAMA_BASE_URL)
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         response = client.chat.completions.create(
             model=self.model,
             messages=[
@@ -72,7 +73,7 @@ class OllamaCloudClient(AIProviderClient):
 
     def send_images(self, prompt, image_uris):
         """Send a prompt and images (JPEG data URIs) to Ollama Cloud."""
-        client = OpenAI(api_key=self.api_key, base_url=OLLAMA_BASE_URL)
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         content = [{"type": "text", "text": prompt}]
         for uri in image_uris:
             content.append({"type": "image_url", "image_url": {"url": uri}})

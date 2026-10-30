@@ -7,18 +7,18 @@ import sqlite3
 import pytest
 
 from backend import folder_watcher
-from backend.config import account
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
 from backend.pipeline import archive_rules, chat_assistant, naming
+from backend.pipeline import ai_providers
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import settings as settings_routes
-from tests.conftest import make_project
+from tests.conftest import make_project, card_answer
 
 CATEGORIES = [
     {"name": "Contracts", "subcategories": ["Sponsorship", "Rights"]},
@@ -91,7 +91,8 @@ def test_old_catalog_gets_new_columns_and_keeps_rows(tmp_path):
 
 
 def test_the_tables_of_a_catalog(tmp_path):
-    """The four tables of the report, plus the corrections (PR 14)."""
+    """The four tables of the report, plus the scan index and the
+    corrections (PRs 9 and 14)."""
     path = str(tmp_path / "new.db")
     init_db(path)
     conn = sqlite3.connect(path)
@@ -100,7 +101,7 @@ def test_the_tables_of_a_catalog(tmp_path):
         "AND name != 'sqlite_sequence'")}
     conn.close()
     assert names == {"documents", "activity_log", "app_config",
-                     "ai_provider_config", "corrections"}
+                     "ai_provider_config", "scan_index", "corrections"}
 
 
 # --- Saving and reading the new fields ---
@@ -287,21 +288,21 @@ def test_match_category_without_a_list():
 # --- Naming method 4 ---
 
 def test_method_4_name():
-    """Method 4: topic, source, date, and the topic's own number."""
+    """Method 4: topic, source and date; a number only when a name repeats."""
     parts = naming.build_parts("scan.pdf", 7, document_date="2026-07-15",
                                source="El Nuevo Día",
                                topic="Oceanman Malta", topic_number=1)
     assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
                                 ".pdf") == \
-        "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf"
+        "oceanman-malta_el-nuevo-dia_2026-07-15.pdf"
 
 
 def test_method_4_without_source_or_date():
-    """No source leaves that part out; no date gives 'undated'."""
+    """No source and no date leave those parts out."""
     parts = naming.build_parts("scan.pdf", 7, topic="Oceanman Malta",
                                topic_number=12)
     assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
-                                ".pdf") == "oceanman-malta_undated_012.pdf"
+                                ".pdf") == "oceanman-malta.pdf"
 
 
 def test_topic_number_goes_to_4_digits():
@@ -325,8 +326,7 @@ def test_topic_number_token_in_custom_template():
 def test_old_projects_keep_method_1_as_fallback():
     """Only new projects get method 4; the fallback stays method 1."""
     assert naming.DEFAULT_TEMPLATE == "{date}_{topic}"
-    assert naming.NEW_PROJECT_TEMPLATE == \
-        "{topic}_{source}_{date}_{topic_number}"
+    assert naming.NEW_PROJECT_TEMPLATE == "{topic}_{source}_{date}"
 
 
 # --- Pipeline ---
@@ -350,11 +350,9 @@ class RecordingAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.prompts.append(system_prompt)
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Press"
         if system_prompt == base.SUMMARY_PROMPT:
             return "A news story."
-        return self.metadata
+        return card_answer(self.metadata)
 
 
 @pytest.fixture
@@ -384,7 +382,7 @@ def test_new_file_gets_all_archive_fields(pipe):
     pipe["repo"].save_categories(CATEGORIES)
     doc = pipe["pipeline"].classify_document(
         drop(pipe, "a.txt", "Contract text"))
-    assert doc.filename == "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt"
+    assert doc.filename == "oceanman-malta_el-nuevo-dia_2026-07-15.txt"
     assert doc.keywords == ["swimming", "Malta", "x" * 40, "a", "b"]
     assert doc.counterparty == "Jurutungo Films"
     assert (doc.category, doc.subcategory) == ("Contracts", "Rights")
@@ -392,16 +390,16 @@ def test_new_file_gets_all_archive_fields(pipe):
     assert doc.owner == "luis"
     assert len(doc.sha256) == 64
     assert doc.status == "Classified"
-    # Classification, summary, metadata: no extra AI call.
-    assert len(pipe["ai"].prompts) == 3
-    assert "Contracts" in pipe["ai"].prompts[2]
+    # One request fills the whole card: no extra AI call.
+    assert len(pipe["ai"].prompts) == 1
+    assert "Contracts" in pipe["ai"].prompts[0]
 
 
 def test_second_file_of_a_topic_gets_002(pipe):
     """The topic number counts files with the same topic."""
     pipe["pipeline"].classify_document(drop(pipe, "a.txt", "One"))
     second = pipe["pipeline"].classify_document(drop(pipe, "b.txt", "Two"))
-    assert second.filename.endswith("_002.txt")
+    assert second.filename.endswith("_2.txt")
 
 
 def test_no_categories_leaves_category_empty(pipe):
@@ -410,7 +408,7 @@ def test_no_categories_leaves_category_empty(pipe):
     assert doc.category is None
     assert doc.review_note is None
     assert doc.status == "Classified"
-    assert "categories" not in pipe["ai"].prompts[2]
+    assert "categories" not in pipe["ai"].prompts[0]
 
 
 def test_category_not_in_list_goes_to_manual_review(pipe):
@@ -499,17 +497,15 @@ def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
     """The scan uses the account's username and drops gone duplicates."""
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: "test-key")
-    monkeypatch.setattr(folder_watcher, "create_client",
-                        lambda name, model: RecordingAI())
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: RecordingAI())
     projects_path = str(tmp_path / "app" / "projects.json")
     repo = make_project(projects_path, tmp_path / "Research")
     repo.set_active_provider("gemini", "gemini-2.5-flash")
-    account.save_account(account.account_path_for(projects_path),
-                         "luis", "password123")
     drop_zone = tmp_path / "Research" / "Drop Zone"
     (drop_zone / "a.txt").write_text("Same")
 
-    first = folder_watcher.scan_once(projects_path)
+    first = folder_watcher.scan_once(projects_path, owner="luis")
     assert first[0].owner == "luis"
     (drop_zone / "copy.txt").write_text("Same")
     duplicate = folder_watcher.scan_once(projects_path)[0]
@@ -568,8 +564,8 @@ class SuggestAI(AIProviderClient):
 ])
 def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
     """Suggest returns a checked list and saves nothing."""
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SuggestAI(answer))
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: SuggestAI(answer))
     active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
@@ -580,8 +576,9 @@ def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
 
 def test_suggest_categories_bad_answer(flask_client, app, monkeypatch):
     """No usable list from the AI gives a clear error."""
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SuggestAI("I cannot help."))
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None:
+                        SuggestAI("I cannot help."))
     active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
