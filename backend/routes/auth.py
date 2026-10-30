@@ -6,14 +6,14 @@ import time
 
 from flask import Blueprint, current_app, jsonify, request
 
-from backend.config import account
-from backend.config import projects
-from backend.routes import error_response, projects_path
+from backend.config import account, projects
+from backend.config.accounts import username_problem
+from backend.routes import error_response, session_user
 
 auth_bp = Blueprint("auth", __name__)
 
 # The app needs these before login.
-PUBLIC_PATHS = ("/auth/status", "/auth/setup", "/auth/login")
+PUBLIC_PATHS = ("/auth/status", "/auth/register", "/auth/login")
 
 MAX_FAILED_ATTEMPTS = 5
 LOCK_SECONDS = 30
@@ -24,15 +24,17 @@ def now():
     return time.time()
 
 
-def account_path():
-    """Return the path of account.json, saved by create_app()."""
-    return current_app.config["ACCOUNT_PATH"]
+def store():
+    """Return the AccountStore saved by create_app()."""
+    return current_app.config["ACCOUNTS"]
 
 
-def start_session():
+def start_session(username):
     """Start the only session, replacing any older token."""
     token = secrets.token_urlsafe(32)
     current_app.config["SESSION_TOKEN"] = token
+    current_app.config["SESSION_USER"] = username
+    store().remember_last(username)
     return token
 
 
@@ -56,29 +58,40 @@ def require_login():
     return error_response("unauthorized", "Log in to use Cataloga.", 401)
 
 
-def seconds_locked():
-    """Return how many seconds are left before a new try is allowed."""
-    left = current_app.config.get("LOCKED_UNTIL", 0) - now()
-    return max(0, math.ceil(left))
+def attempt_key(username):
+    """Wrong passwords are counted per username, whatever its case."""
+    return (username or "").strip().lower()
 
 
-def locked_response():
+def seconds_locked(username):
+    """Return how many seconds are left before this username may try."""
+    until = current_app.config["LOCKED_UNTIL"].get(attempt_key(username), 0)
+    return max(0, math.ceil(until - now()))
+
+
+def locked_response(username):
     """Build the 429 answer for a try during the wait."""
-    wait = seconds_locked()
+    wait = seconds_locked(username)
     return error_response(
         "too_many_attempts",
         "Too many wrong passwords. Try again in {} seconds.".format(wait),
         429, extra={"retry_after": wait})
 
 
-def record_failure():
+def record_failure(username):
     """Count one wrong password. The 5th in a row starts the wait."""
-    failures = current_app.config.get("FAILED_ATTEMPTS", 0) + 1
+    key = attempt_key(username)
+    failures = current_app.config["FAILED_ATTEMPTS"].get(key, 0) + 1
     if failures >= MAX_FAILED_ATTEMPTS:
-        current_app.config["LOCKED_UNTIL"] = now() + LOCK_SECONDS
+        current_app.config["LOCKED_UNTIL"][key] = now() + LOCK_SECONDS
         failures = 0
-    current_app.config["FAILED_ATTEMPTS"] = failures
+    current_app.config["FAILED_ATTEMPTS"][key] = failures
     return failures == 0
+
+
+def clear_failures(username):
+    """A right password starts the count again."""
+    current_app.config["FAILED_ATTEMPTS"].pop(attempt_key(username), None)
 
 
 def read_credentials(body):
@@ -94,64 +107,77 @@ def read_credentials(body):
 
 @auth_bp.route("/auth/status", methods=["GET"])
 def auth_status():
-    """Say which screen to show first, and in which language."""
+    """Say whether any account exists, and the last account's language."""
+    last = store().last_username()
+    language = projects.DEFAULT_LANGUAGE
+    if last:
+        language = projects.load_projects(
+            store().projects_path(last))["language"]
     return jsonify({
-        "account_exists": account.account_exists(account_path()),
-        "language": projects.load_projects(projects_path())["language"],
+        "account_exists": bool(store().usernames()),
+        "language": language,
     }), 200
 
 
-@auth_bp.route("/auth/setup", methods=["POST"])
-def setup_account():
-    """Create the app's account. Only works while there is none."""
-    if account.account_exists(account_path()):
-        return error_response("account_exists",
-                              "The account already exists.", 409)
+@auth_bp.route("/auth/register", methods=["POST"])
+def register_account():
+    """Create an account on this computer and log it in."""
     username, password = read_credentials(request.get_json(silent=True))
     if not username or not password:
         return error_response("missing_field",
                               "username and password are required.", 400)
+    if username_problem(username):
+        return error_response(
+            "invalid_username",
+            "Use 3 to 30 letters, digits, dots, underscores or hyphens.", 400)
     problem = account.password_problem(password)
     if problem:
         return error_response(problem, "The password does not follow "
                               "the rules.", 400)
-    account.save_account(account_path(), username, password)
-    return jsonify({"token": start_session(), "username": username}), 201
+    try:
+        store().create(username, password)
+    except ValueError:
+        return error_response("username_taken",
+                              "That username is taken.", 409)
+    return jsonify({"token": start_session(username),
+                    "username": username}), 201
 
 
 @auth_bp.route("/auth/login", methods=["POST"])
 def login():
     """Check the username and password and start a session."""
-    if seconds_locked():
-        return locked_response()
-    if not account.account_exists(account_path()):
-        return error_response("no_account",
-                              "Create the account first.", 409)
     username, password = read_credentials(request.get_json(silent=True))
+    if seconds_locked(username):
+        return locked_response(username)
     if not username or not password:
         return error_response("missing_field",
                               "username and password are required.", 400)
-    if not account.check_login(account_path(), username, password):
-        if record_failure():
-            return locked_response()
+    # An unknown username gets the same answer as a wrong password.
+    if not store().check_password(username, password):
+        if record_failure(username):
+            return locked_response(username)
         return error_response("wrong_login",
                               "The username or password is wrong.", 401)
-    current_app.config["FAILED_ATTEMPTS"] = 0
-    return jsonify({"token": start_session(), "username": username}), 200
+    clear_failures(username)
+    # The session uses the username as it was written when it was created.
+    saved = store().find(username)["username"]
+    return jsonify({"token": start_session(saved), "username": saved}), 200
 
 
 @auth_bp.route("/auth/logout", methods=["POST"])
 def logout():
     """End the session. The old token stops working."""
     current_app.config["SESSION_TOKEN"] = None
+    current_app.config["SESSION_USER"] = None
     return jsonify({"logged_out": True}), 200
 
 
 @auth_bp.route("/auth/password", methods=["POST"])
 def update_password():
     """Change the password. The current session stays open."""
-    if seconds_locked():
-        return locked_response()
+    username = session_user()
+    if seconds_locked(username):
+        return locked_response(username)
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
         body = {}
@@ -162,16 +188,16 @@ def update_password():
         return error_response(
             "missing_field",
             "current_password and new_password are required.", 400)
-    if not account.check_password(account_path(), current):
-        if record_failure():
-            return locked_response()
+    if not store().check_password(username, current):
+        if record_failure(username):
+            return locked_response(username)
         # 400, not 401: a 401 would send the screen back to the login.
         return error_response("wrong_password",
                               "The current password is wrong.", 400)
-    current_app.config["FAILED_ATTEMPTS"] = 0
+    clear_failures(username)
     problem = account.password_problem(new)
     if problem:
         return error_response(problem, "The new password does not "
                               "follow the rules.", 400)
-    account.change_password(account_path(), new)
+    store().change_password(username, new)
     return jsonify({"changed": True}), 200

@@ -7,14 +7,16 @@ import pytest
 
 from backend.app import create_app
 from backend.config import account, projects
+from backend.config.accounts import AccountStore
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.pipeline.ai_providers import base, ollama_cloud
 from backend.pipeline.file_organizer import FileOrganizer
 
 
-# Session token the logged-in test clients send.
+# Session token and username the logged-in test clients use.
 TEST_TOKEN = "test-token"
+TEST_USER = "test"
 
 
 def card_answer(metadata=None, media_type="Press", summary="A news story."):
@@ -35,9 +37,10 @@ def card_answer(metadata=None, media_type="Press", summary="A news story."):
     return json.dumps(card)
 
 
-def logged_in_client(app):
+def logged_in_client(app, username=TEST_USER):
     """Return a test client that sends a valid session token."""
     app.config["SESSION_TOKEN"] = TEST_TOKEN
+    app.config["SESSION_USER"] = username
     client = app.test_client()
     client.environ_base["HTTP_AUTHORIZATION"] = "Bearer " + TEST_TOKEN
     return client
@@ -73,17 +76,23 @@ def fast_bcrypt(monkeypatch):
 
 
 @pytest.fixture
-def projects_path(tmp_path):
-    """Path of a project list in a temporary app data folder."""
-    return str(tmp_path / "app_data" / "projects.json")
+def data_folder(tmp_path):
+    """A temporary app data folder: accounts.json and users/ go here."""
+    return str(tmp_path / "app_data")
 
 
 @pytest.fixture
-def app(tmp_path, projects_path):
+def projects_path(data_folder):
+    """Path of the test account's project list."""
+    return AccountStore(data_folder).projects_path(TEST_USER)
+
+
+@pytest.fixture
+def app(tmp_path, data_folder, projects_path):
     """Return a Flask app with one active project, "Research"."""
     folder = tmp_path / "Research"
     make_project(projects_path, folder)
-    app = create_app(projects_path=projects_path,
+    app = create_app(data_folder=data_folder,
                      old_db_path=str(tmp_path / "no_old.db"))
     app.config["TESTING"] = True
     app.config["PROJECT_FOLDER"] = str(folder)
@@ -98,9 +107,9 @@ def flask_client(app):
 
 
 @pytest.fixture
-def empty_client(tmp_path, projects_path):
+def empty_client(tmp_path, data_folder):
     """Return a logged-in test client for an app with no projects yet."""
-    app = create_app(projects_path=projects_path,
+    app = create_app(data_folder=data_folder,
                      old_db_path=str(tmp_path / "no_old.db"))
     app.config["TESTING"] = True
     with logged_in_client(app) as client:

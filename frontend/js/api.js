@@ -186,15 +186,15 @@ async function removeProject(folder) {
 
 // --- Account and session ---
 
-/** GET /auth/status: does the account exist, and the language. No token needed. */
+/** GET /auth/status: is there any account, and the language. No token needed. */
 async function getAuthStatus() {
     const response = await apiFetch(`${BASE_URL}/auth/status`);
     return handleResponse(response);
 }
 
-/** POST /auth/setup - create the account, then remember the token. */
-async function setupAccount(username, password) {
-    const response = await apiFetch(`${BASE_URL}/auth/setup`, {
+/** POST /auth/register - create an account, then remember the token. */
+async function registerAccount(username, password) {
+    const response = await apiFetch(`${BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: username, password: password }),

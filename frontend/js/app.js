@@ -121,7 +121,7 @@ document.getElementById("project-list").addEventListener("click", (event) => {
     }
 });
 
-/** Load the saved language, then show the setup or login screen. */
+/** Load the saved language, then show the login or the register screen. */
 async function startApp() {
     let status = null;
     try {
@@ -131,8 +131,9 @@ async function startApp() {
     }
     setLanguage(status ? status.language : "en");
     fillProviders();
+    // The first person on this computer has no account to log in with.
     if (status && !status.account_exists) {
-        showSetupScreen();
+        showRegisterScreen();
         return;
     }
     showLoginScreen();
