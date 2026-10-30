@@ -7,11 +7,13 @@ from flask import Blueprint, jsonify, request
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import conventions, folder_tree, naming
+from backend.pipeline import (conventions, folder_tree, naming,
+                              project_sheet)
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            create_client)
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import error_response, project_status, projects_path
+from backend.routes.settings import clean_server_url
 
 projects_bp = Blueprint("projects", __name__)
 
@@ -110,8 +112,14 @@ def create_project():
     new_repo.save_app_config(name, folder)
     new_repo.save_naming_template(template)
     new_repo.save_folder_tree(description, tree)
+    sheet = project_sheet.clean_sheet(body.get("project_sheet"))
+    if sheet:
+        new_repo.save_config_value("project_sheet", sheet)
     # Ollama Cloud works without typing a key.
     new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)
+    server_url = clean_server_url(body.get("server_url"))
+    if server_url:
+        new_repo.save_config_value("server_url", server_url)
     projects.add_project(projects_path(), name, folder)
     return jsonify({"name": name, "folder": folder,
                     "opened_existing": False}), 201

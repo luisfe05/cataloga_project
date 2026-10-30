@@ -10,8 +10,11 @@ from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import DB_PATH, init_db
 from backend.pipeline.file_organizer import CATALOG_FOLDER
 
-# The project list sits next to the old single database.
-PROJECTS_PATH = os.path.join(os.path.dirname(DB_PATH), "projects.json")
+# The app data folder: accounts.json, users/, and the old single database.
+DATA_FOLDER = os.path.dirname(DB_PATH)
+
+# The project list of the versions with one account per computer.
+PROJECTS_FILE = "projects.json"
 
 CATALOG_FILE = "catalog.db"
 
