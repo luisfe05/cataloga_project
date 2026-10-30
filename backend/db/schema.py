@@ -65,7 +65,11 @@ CREATE TABLE IF NOT EXISTS documents (
     category          TEXT,
     subcategory       TEXT,
     date_source       TEXT,
-    suggested_folder  TEXT
+    suggested_folder  TEXT,
+    folder_reason     TEXT,
+    confidence        TEXT,
+    original_path     TEXT,
+    folder_path       TEXT
 );
 """
 
@@ -87,6 +91,15 @@ ADDED_DOCUMENTS_COLUMNS = {
     "date_source": "date_source TEXT",
     # A folder the AI would create, as 'Folder/Subfolder'.
     "suggested_folder": "suggested_folder TEXT",
+    # One line from the AI on why the file went to its folder.
+    "folder_reason": "folder_reason TEXT",
+    # high, medium or low; low sends the file to Manual Review.
+    "confidence": "confidence TEXT",
+    # Where the file was first seen, relative to the project folder.
+    "original_path": "original_path TEXT",
+    # The file's folder in the tree, as 'A/B/C'. category and subcategory
+    # keep its first two levels.
+    "folder_path": "folder_path TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -116,6 +129,12 @@ CREATE TABLE IF NOT EXISTS app_config (
     categories              TEXT,
     folder_mode             TEXT,
     project_description     TEXT,
+    folder_tree             TEXT,
+    numbered_folders        INTEGER,
+    project_sheet           TEXT,
+    server_url              TEXT,
+    naming_style            TEXT,
+    keep_accents            INTEGER,
     stamp_date_order        TEXT
 );
 """
@@ -131,6 +150,18 @@ ADDED_APP_CONFIG_COLUMNS = {
     # 'tree' for projects with their own folders; empty in old projects.
     "folder_mode": "folder_mode TEXT",
     "project_description": "project_description TEXT",
+    # What the work is, written by the AI from a sample and edited by hand.
+    "project_sheet": "project_sheet TEXT",
+    # A relay server that holds the API keys; empty means the providers.
+    "server_url": "server_url TEXT",
+    # The whole tree as JSON (any depth); categories keeps two levels.
+    "folder_tree": "folder_tree TEXT",
+    # 1 when new folders get a 01_ prefix.
+    "numbered_folders": "numbered_folders INTEGER",
+    # How file names look: 'lower' (topic-name) or 'title' (Topic-Name).
+    "naming_style": "naming_style TEXT",
+    # 1 keeps accents in file names (Día); empty or 0 drops them (Dia).
+    "keep_accents": "keep_accents INTEGER",
     # How a date stamped on a photo reads: 'month' first or 'day' first.
     "stamp_date_order": "stamp_date_order TEXT",
 }
@@ -140,9 +171,17 @@ CREATE TABLE IF NOT EXISTS ai_provider_config (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_name TEXT    NOT NULL,
     model         TEXT    NOT NULL,
-    is_active     INTEGER NOT NULL DEFAULT 0
+    is_active     INTEGER NOT NULL DEFAULT 0,
+    role          TEXT
 );
 """
+
+# Added with the provider roles. 'text' is the main provider (the old
+# is_active row), 'fallback' answers when it fails, 'media' reads audio
+# and video.
+ADDED_AI_PROVIDER_COLUMNS = {
+    "role": "role TEXT",
+}
 
 
 def get_connection(db_path=DB_PATH):
@@ -157,7 +196,8 @@ def add_missing_columns(cursor):
     # Safe: table and column names are fixed here, never from the user.
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
              ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS),
-             ("documents", ADDED_DOCUMENTS_COLUMNS))
+             ("documents", ADDED_DOCUMENTS_COLUMNS),
+             ("ai_provider_config", ADDED_AI_PROVIDER_COLUMNS))
     for table, new_columns in added:
         # row[1] is the column name.
         columns = [row[1] for row in
@@ -177,5 +217,13 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
     add_missing_columns(cursor)
+    # The provider a project used before the roles is its text provider.
+    cursor.execute("UPDATE ai_provider_config SET role = 'text' "
+                   "WHERE is_active = 1 AND role IS NULL")
+    # Rows from before folder_path: the path is the two old columns.
+    cursor.execute("UPDATE documents SET folder_path = CASE WHEN "
+                   "subcategory IS NOT NULL THEN category || '/' || "
+                   "subcategory ELSE category END WHERE folder_path IS "
+                   "NULL AND category IS NOT NULL")
     conn.commit()
     conn.close()

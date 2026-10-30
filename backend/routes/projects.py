@@ -7,11 +7,13 @@ from flask import Blueprint, jsonify, request
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import archive_rules, folder_tree, naming
+from backend.pipeline import (archive_rules, conventions, folder_tree,
+                              naming, project_sheet)
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            create_client)
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import error_response, project_status, projects_path
+from backend.routes.settings import clean_server_url
 
 projects_bp = Blueprint("projects", __name__)
 
@@ -88,13 +90,20 @@ def create_project():
         return jsonify({"name": name, "folder": folder,
                         "opened_existing": True}), 201
 
-    # Every new project files documents in its own folder tree.
-    try:
-        tree = folder_tree.check_tree(body.get("folders"))
-    except ValueError as error:
-        return error_response("invalid_folders", str(error), 400)
+    catalog_only = body.get("catalog_only") is True
+    tree = []
+    if not catalog_only:
+        # Every new project files documents in its own folder tree.
+        try:
+            tree = folder_tree.check_tree(body.get("folders"))
+        except ValueError as error:
+            return error_response("invalid_folders", str(error), 400)
+    numbered = body.get("numbered_folders") is True
+    if numbered:
+        tree = folder_tree.number_new(tree, [])
 
-    existing = organizer.count_existing_items(tree)
+    # Catalog only reads the folder as it is: its files are expected.
+    existing = 0 if catalog_only else organizer.count_existing_items(tree)
     if existing and body.get("confirm_folder") is not True:
         return error_response(
             "folder_not_empty",
@@ -103,18 +112,38 @@ def create_project():
             "Click Save anyway to use this folder.".format(existing), 409,
             extra={"count": existing})
 
-    organizer.ensure_archive_structure(tree)
+    if not catalog_only:
+        organizer.ensure_archive_structure(tree)
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     init_db(db_path)
     new_repo = CatalogRepository(db_path)
     new_repo.save_app_config(name, folder)
-    new_repo.save_naming_template(template)
+    if catalog_only:
+        # Nothing moves, nothing is renamed, and there is no Drop Zone yet:
+        # reading the folder in place comes with the in-place scanner.
+        new_repo.save_naming_template(naming.KEEP_NAMES)
+        new_repo.save_config_value("folder_mode", folder_tree.CATALOG_MODE)
+        new_repo.save_config_value("project_description", description)
+    else:
+        new_repo.save_naming_template(template)
+        if body.get("naming_style") in naming.STYLES:
+            new_repo.save_config_value("naming_style", body["naming_style"])
+        if body.get("keep_accents") is True:
+            new_repo.save_config_value("keep_accents", 1)
+        new_repo.save_folder_tree(description, tree)
+        if numbered:
+            new_repo.save_config_value("numbered_folders", 1)
+    sheet = project_sheet.clean_sheet(body.get("project_sheet"))
+    if sheet:
+        new_repo.save_config_value("project_sheet", sheet)
     if body.get("stamp_date_order") in archive_rules.STAMP_ORDERS:
         new_repo.save_config_value("stamp_date_order",
                                    body["stamp_date_order"])
-    new_repo.save_folder_tree(description, tree)
     # Ollama Cloud works without typing a key.
     new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)
+    server_url = clean_server_url(body.get("server_url"))
+    if server_url:
+        new_repo.save_config_value("server_url", server_url)
     projects.add_project(projects_path(), name, folder)
     return jsonify({"name": name, "folder": folder,
                     "opened_existing": False}), 201
@@ -135,13 +164,31 @@ def suggest_folders():
         return error_response(
             "no_api_key", "Ollama Cloud has no API key yet. Add one in "
             "Advanced settings, or build the folders by hand.", 400)
+    # The industry, when known, brings the folders that field always has.
+    industry = body.get("industry") if isinstance(body.get("industry"),
+                                                  str) else ""
     tree = folder_tree.parse_tree_answer(client.send_folders_request(
-        description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH]))
+        description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH],
+        conventions.folder_hints(industry)))
     if not tree:
         return error_response(
             "suggest_folders_failed",
             "The AI provider did not suggest any folders.", 502)
     return jsonify({"folders": tree}), 200
+
+
+@projects_bp.route("/projects/folders/inspect", methods=["POST"])
+def inspect_folder():
+    """Say whether a folder looks like a website or a linked project."""
+    body = request.get_json(silent=True)
+    folder = body.get("folder") if isinstance(body, dict) else None
+    if not isinstance(folder, str) or not folder.strip():
+        return error_response("missing_field", "folder is required.", 400)
+    folder = projects.normalize_folder(folder)
+    if not os.path.isdir(folder):
+        return error_response("invalid_directory",
+                              "The folder does not exist: " + folder, 400)
+    return jsonify(conventions.inspect_folder(folder)), 200
 
 
 @projects_bp.route("/projects", methods=["DELETE"])

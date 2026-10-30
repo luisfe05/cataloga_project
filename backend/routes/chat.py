@@ -2,7 +2,7 @@
 
 from flask import Blueprint, jsonify, request
 
-from backend.pipeline.ai_providers import create_client
+from backend.pipeline.ai_providers import project_client
 from backend.pipeline.chat_assistant import run_chat
 from backend.routes import error_response, get_active_repo
 
@@ -23,9 +23,6 @@ def chat():
     repo, error = get_active_repo()
     if error:
         return error
-    provider = repo.get_active_provider()
-    client = None
-    if provider:
-        client = create_client(provider["provider_name"], provider["model"])
+    client = project_client(repo)
     return jsonify(run_chat(repo, client, message.strip(),
                             body.get("history"))), 200
