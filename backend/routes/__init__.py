@@ -17,9 +17,14 @@ def error_response(code, message, status, extra=None):
     return jsonify({"error": error}), status
 
 
+def session_user():
+    """Return the username of the open session, or ''."""
+    return current_app.config.get("SESSION_USER") or ""
+
+
 def projects_path():
-    """Return the path of the project list this app uses."""
-    return current_app.config["PROJECTS_PATH"]
+    """Return the path of the logged-in account's project list."""
+    return current_app.config["ACCOUNTS"].projects_path(session_user())
 
 
 def project_status(folder):

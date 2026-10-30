@@ -3,7 +3,7 @@
 from flask import Blueprint, current_app, jsonify, request
 from keyring.errors import KeyringError
 
-from backend.config import account, projects
+from backend.config import projects
 from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
@@ -11,7 +11,7 @@ from backend.pipeline.ai_providers.base import save_api_key
 from backend.pipeline import archive_rules, folder_tree, naming
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import (error_response, get_active_repo,
-                            project_status, projects_path)
+                            project_status, projects_path, session_user)
 
 settings_bp = Blueprint("settings", __name__)
 
@@ -62,9 +62,7 @@ def get_settings():
     settings["old_inbox_has_files"] = (
         status == "ok" and old_inbox_has_files(FileOrganizer(folder)))
     settings["providers_with_key"] = providers_with_key()
-    saved_account = account.load_account(current_app.config["ACCOUNT_PATH"])
-    settings["username"] = saved_account["username"] if saved_account \
-        else ""
+    settings["username"] = session_user()
     return jsonify(settings), 200
 
 
