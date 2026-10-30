@@ -6,6 +6,7 @@ import re
 import unicodedata
 
 from backend.models.document import MEDIA_TYPES
+from backend.pipeline import folder_tree
 from backend.pipeline.naming import clean_new_name
 
 MAX_CONTEXT_DOCUMENTS = 30
@@ -68,6 +69,17 @@ Rules:
   content of a file: only its name, type, date, source, summary,
   keywords, category, subcategory and counterparty.
 - For a search by keyword, use "filter_catalog" with "text".
+"""
+
+# Added to SYSTEM_PROMPT only in projects with their own folder tree.
+MOVE_PROMPT = """
+This project files documents in its own folders ("folders"), so there
+is one more action:
+6. {"action": "propose_move", "reply": "...", "document_id": id,
+    "folder": "...", "sources": [id]}
+   Propose moving ONE document to another folder. "folder" is one entry
+   of "folders", exactly as written. The user must confirm it, so never
+   say the file was moved.
 """
 
 
@@ -138,14 +150,17 @@ def clean_history(history):
     return clean
 
 
-def build_prompt(message, history, summary, documents):
+def build_prompt(message, history, summary, documents, tree=None):
     """Build the text sent to the model with the system prompt."""
-    return json.dumps({
+    data = {
         "project": summary,
         "documents": [document_card(doc) for doc in documents],
         "conversation": history,
         "message": message[:MAX_MESSAGE_CHARS],
-    }, ensure_ascii=False)
+    }
+    if tree is not None:
+        data["folders"] = folder_tree.all_places(tree)
+    return json.dumps(data, ensure_ascii=False)
 
 
 def parse_reply(answer):
@@ -173,6 +188,7 @@ def make_response(action, reply="", sources=None, notice=None):
         "documents": [],
         "filters": {},
         "rename": None,
+        "move": None,
         "project": None,
     }
 
@@ -308,6 +324,33 @@ def check_propose_rename(data, context):
     return response
 
 
+def check_propose_move(data, context):
+    """Validate 'propose_move'. Nothing is moved here."""
+    tree = context["tree"]
+    if tree is None:
+        return notice_response("move_unavailable")
+    ids = valid_ids([data.get("document_id")], context)
+    if not ids:
+        return notice_response("rename_not_found")
+    doc = context["documents"][ids[0]]
+    place = folder_tree.find_place(tree, data.get("folder"))
+    if place is None:
+        return notice_response("move_invalid")
+    if (doc.category, doc.subcategory) == place:
+        return notice_response("move_same")
+
+    response = make_response("propose_move", clean_reply(data),
+                             [document_card(doc)])
+    response["move"] = {
+        "document_id": doc.id,
+        "filename": doc.filename,
+        "current_folder": folder_tree.folder_text(
+            doc.category, doc.subcategory) if doc.category else "",
+        "new_folder": folder_tree.folder_text(*place),
+    }
+    return response
+
+
 # The fixed list of actions the model may choose from.
 ACTIONS = {
     "answer": check_answer,
@@ -315,16 +358,18 @@ ACTIONS = {
     "filter_catalog": check_filter_catalog,
     "summarize_project": check_summarize_project,
     "propose_rename": check_propose_rename,
+    "propose_move": check_propose_move,
 }
 
 
-def make_context(documents, summary):
+def make_context(documents, summary, tree=None):
     """Collect what the validators need to know about the project."""
     sources = sorted({doc.source for doc in documents if doc.source})
     return {
         "documents": {doc.id: doc for doc in documents},
         "sources": sources,
         "summary": summary,
+        "tree": tree,
     }
 
 
@@ -332,11 +377,14 @@ def run_chat(repo, client, message, history=None):
     """Answer one chat message. Reads the catalog, never changes it."""
     documents = repo.get_all_documents()
     summary = repo.get_project_summary()
-    context = make_context(documents, summary)
+    tree = repo.get_folder_tree()
+    context = make_context(documents, summary, tree)
     prompt = build_prompt(message, clean_history(history), summary,
-                          find_documents(documents, message))
+                          find_documents(documents, message), tree)
+    system_prompt = SYSTEM_PROMPT if tree is None else \
+        SYSTEM_PROMPT + MOVE_PROMPT
 
-    answer = client.ask(SYSTEM_PROMPT, prompt) if client else None
+    answer = client.ask(system_prompt, prompt) if client else None
     if answer is None:
         return notice_response("ai_unavailable")
     data = parse_reply(answer)

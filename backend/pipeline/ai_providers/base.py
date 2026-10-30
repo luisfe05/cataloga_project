@@ -59,6 +59,23 @@ Respond with ONLY a JSON list in this exact format:
 [{"name": "...", "subcategories": ["...", "..."]}]"""
 
 
+FOLDERS_PROMPT = """You are an archivist setting up the folders of a new
+research project. The user describes the project in one or two sentences.
+Propose the folder tree an archivist would use for this kind of project:
+4 to 10 top folders, each with 0 to 6 subfolders, never deeper.
+First decide the industry or field of the project (a documentary, a legal
+case, a book, a scientific study). Include the folders an archive in that
+field always has (for a documentary: Press, Interviews, Documents), and
+add folders for the project's own subject. Use the project's own names
+(an event, a case number, an episode) when the description gives them.
+Sort by what the files are about, not only by file type.
+Short readable names (1 to 4 words) in the same language as the
+description, with no dates unless they are part of a name.
+
+Respond with ONLY a JSON list in this exact format:
+[{"name": "...", "subfolders": ["...", "..."]}]"""
+
+
 def save_api_key(provider_name, api_key):
     """Save a provider's API key in the OS keyring."""
     keyring.set_password(KEYRING_SERVICE, provider_name, api_key)
@@ -147,6 +164,10 @@ class AIProviderClient:
     def send_categories_request(self, industry):
         """Ask the AI for a category list for an industry. Saves nothing."""
         return self.ask(CATEGORIES_PROMPT, industry)
+
+    def send_folders_request(self, description):
+        """Ask the AI for a folder tree for a project. Saves nothing."""
+        return self.ask(FOLDERS_PROMPT, description)
 
     def test_connection(self):
         """Check that the API key and model work with a small test call."""

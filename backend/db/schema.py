@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS documents (
     effective_end     TEXT,
     category          TEXT,
     subcategory       TEXT,
-    date_source       TEXT
+    date_source       TEXT,
+    suggested_folder  TEXT
 );
 """
 
@@ -84,6 +85,8 @@ ADDED_DOCUMENTS_COLUMNS = {
     "subcategory": "subcategory TEXT",
     # Where document_date came from: photo, content, metadata, or file.
     "date_source": "date_source TEXT",
+    # A folder the AI would create, as 'Folder/Subfolder'.
+    "suggested_folder": "suggested_folder TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -110,7 +113,9 @@ CREATE TABLE IF NOT EXISTS app_config (
     language                TEXT    NOT NULL DEFAULT 'en',
     naming_template         TEXT    NOT NULL DEFAULT '{date}_{topic}',
     industry                TEXT,
-    categories              TEXT
+    categories              TEXT,
+    folder_mode             TEXT,
+    project_description     TEXT
 );
 """
 
@@ -122,6 +127,9 @@ ADDED_APP_CONFIG_COLUMNS = {
     # categories is a JSON list of {"name": ..., "subcategories": [...]}.
     "industry": "industry TEXT",
     "categories": "categories TEXT",
+    # 'tree' for projects with their own folders; empty in old projects.
+    "folder_mode": "folder_mode TEXT",
+    "project_description": "project_description TEXT",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """
