@@ -7,7 +7,7 @@ from datetime import datetime
 from backend.db.schema import get_connection, DB_PATH
 from backend.models.document import (ARCHIVE_FIELDS, Document, LOCKED_FIELDS,
                                      MEDIA_TYPES)
-from backend.pipeline import archive_rules, folder_tree
+from backend.pipeline import archive_rules, folder_tree, naming
 from backend.pipeline.file_organizer import DROP_ZONE_FOLDER
 
 EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
@@ -26,7 +26,8 @@ STATUSES = ("Classified", "Manual Review")
 MAX_SUMMARY_LENGTH = 100
 
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
-                         "categories", "folder_mode", "project_description")
+                         "categories", "folder_mode", "project_description",
+                         "naming_style", "keep_accents")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -485,7 +486,8 @@ class CatalogRepository:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
-                "industry, categories, folder_mode, project_description "
+                "industry, categories, folder_mode, project_description, "
+                "naming_style, keep_accents "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -587,6 +589,17 @@ class CatalogRepository:
         self.save_config_value("folder_mode", folder_tree.TREE_MODE)
         self.save_config_value("project_description", description)
         self.save_categories(tree)
+
+    def get_naming_style(self):
+        """Return 'lower' or 'title'."""
+        config = self.get_app_config() or {}
+        style = config.get("naming_style")
+        return style if style in naming.STYLES else naming.DEFAULT_STYLE
+
+    def keep_accents(self):
+        """Say whether file names keep their accents."""
+        config = self.get_app_config() or {}
+        return bool(config.get("keep_accents"))
 
     def get_project_description(self):
         """Return what the project is about, or ''."""

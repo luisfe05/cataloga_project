@@ -459,7 +459,7 @@ def test_photo_without_a_useful_topic_goes_to_manual_review(setup, topic):
     assert doc.review_note == archive_rules.TOPIC_NOTE
     assert doc.topic is None
     assert "dsc" not in doc.filename.lower()
-    assert doc.filename.startswith("undated_")
+    assert doc.filename[:4].isdigit()
 
 
 def test_photo_topic_comes_from_what_it_shows(setup):
@@ -480,4 +480,4 @@ def test_photo_topic_comes_from_what_it_shows(setup):
     doc = setup["build"](ai).classify_document(path)
     assert "its topic is what it shows" in seen[0]
     assert doc.status == "Classified"
-    assert doc.filename == "undated_blue-shapes.jpg"
+    assert doc.filename == "blue-shapes.jpg"

@@ -403,6 +403,20 @@
                             <p class="hint" data-i18n="naming.extension_note"></p>
                         </div>
 
+                        <div class="naming-separator naming-style">
+                            <span data-i18n="naming.style">Style</span>
+                            <label><input type="radio" name="naming-style"
+                                          value="lower" checked>
+                                <code>topic-name</code></label>
+                            <label><input type="radio" name="naming-style"
+                                          value="title">
+                                <code>Topic-Name</code></label>
+                        </div>
+                        <label class="naming-accents">
+                            <input type="checkbox" id="keep-accents">
+                            <span data-i18n="naming.keep_accents">Keep accents
+                                (Día, not Dia)</span>
+                        </label>
                         <p class="naming-preview">
                             <span data-i18n="naming.preview">Preview</span>:
                             <code id="naming-preview"></code>
@@ -411,6 +425,8 @@
                         <ul class="naming-rules">
                             <li data-i18n="naming.media_rule"></li>
                             <li data-i18n="naming.duplicate_rule"></li>
+                            <li data-i18n="naming.version_rule"></li>
+                            <li data-i18n="naming.path_rule"></li>
                             <li data-i18n="naming.changed_note"></li>
                         </ul>
                     </div>

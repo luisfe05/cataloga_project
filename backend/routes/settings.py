@@ -39,6 +39,8 @@ def get_settings():
         "research_name": "",
         "target_directory": folder,
         "naming_template": naming.DEFAULT_TEMPLATE,
+        "naming_style": naming.DEFAULT_STYLE,
+        "keep_accents": False,
         "industry": "",
         "categories": [],
         "folder_mode": folder_tree.MEDIA_MODE,
@@ -105,6 +107,9 @@ def update_settings():
     if values is None:
         return error_response("missing_field",
                               "research_name is required.", 400)
+    if "naming_style" in body and body["naming_style"] not in naming.STYLES:
+        return error_response("invalid_style",
+                              "naming_style must be lower or title.", 400)
     if "naming_template" in body:
         problem = naming.validate_template(body["naming_template"])
         if problem:
@@ -142,6 +147,11 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if "naming_style" in body:
+        repo.save_config_value("naming_style", body["naming_style"])
+    if "keep_accents" in body:
+        repo.save_config_value("keep_accents",
+                               1 if body["keep_accents"] else 0)
     if archive is not None and not tree_mode:
         config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:

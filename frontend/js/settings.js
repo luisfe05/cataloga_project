@@ -33,7 +33,7 @@ const NAMING_METHODS = {
     m1: "{date}_{topic}",
     m2: "{source}_{date}_{topic}",
     m3: "{number}_{topic}",
-    m4: "{topic}_{source}_{date}_{topic_number}",
+    m4: "{topic}_{source}_{date}",
 };
 
 // Parts a template can use, and characters a file name cannot have.
@@ -41,8 +41,8 @@ const NAMING_TOKENS = ["date", "source", "topic", "number", "original",
     "topic_number"];
 const FORBIDDEN_CHARACTERS = '/\\:*?"<>|';
 
-// Custom name parts, in the order of the buttons. "Number" is the 3-digit number per topic.
-const NAMING_BLOCKS = ["topic", "source", "date", "topic_number", "original"];
+// Custom name parts, in the order of the buttons. A number is added only when a name repeats.
+const NAMING_BLOCKS = ["topic", "source", "date", "original"];
 const BLOCK_LABELS = {
     topic: "naming.block_topic",
     source: "naming.block_source",
@@ -58,15 +58,33 @@ let customSeparator = "_";
 // A saved custom template that is not made of parts, like "archivo-{date}".
 let legacyTemplate = "";
 
-// Example values for the live preview.
+// Generic values for the live preview, not real data.
 const PREVIEW_PARTS = {
-    date: "2026-07-15",
-    source: "el-nuevo-dia",
-    topic: "oceanman-malta",
+    date: "date",
+    source: "source-name",
+    topic: "topic-name",
     number: "0001",
-    original: "scan-0042",
+    original: "original-name",
     topic_number: "001",
 };
+
+function readNamingStyle() {
+    const picked = document.querySelector('input[name="naming-style"]:checked');
+    return picked ? picked.value : "lower";
+}
+
+function readKeepAccents() {
+    return document.getElementById("keep-accents").checked;
+}
+
+/** "topic-name" as the chosen style writes it: "Topic-Name" for Title-Case. */
+function styledPart(text) {
+    if (readNamingStyle() !== "title") {
+        return text;
+    }
+    return text.split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join("-");
+}
 
 // True after the folder warning, so the next click confirms it.
 let folderWarningShown = false;
@@ -130,8 +148,11 @@ function startNewProject() {
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
     document.getElementById("api-key").value = "";
-    // New projects start with method 4.
+    // New projects start with method 4, lowercase, no accents.
     showSavedTemplate(NAMING_METHODS.m4);
+    document.querySelector('input[name="naming-style"][value="lower"]')
+        .checked = true;
+    document.getElementById("keep-accents").checked = false;
     showCategories("", []);
     showProvider("ollama", "");
     showSettingsMessage("", "");
@@ -196,7 +217,9 @@ function validateTemplate(template) {
 function previewFilename(template) {
     let name = template;
     NAMING_TOKENS.forEach((token) => {
-        name = name.split(`{${token}}`).join(PREVIEW_PARTS[token]);
+        const part = ["topic", "source", "original"].includes(token)
+            ? styledPart(PREVIEW_PARTS[token]) : PREVIEW_PARTS[token];
+        name = name.split(`{${token}}`).join(part);
     });
     name = name.replace(/_{2,}/g, "_").replace(/-{2,}/g, "-")
         .replace(/^[_\-. ]+|[_\-. ]+$/g, "");
@@ -402,6 +425,11 @@ async function loadSettings() {
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
+        document.querySelector(`input[name="naming-style"][value="${
+            settings.naming_style || "lower"}"]`).checked = true;
+        document.getElementById("keep-accents").checked =
+            Boolean(settings.keep_accents);
+        updateNamingPreview();
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
         if (projectFolderMode === "tree") {
@@ -469,6 +497,8 @@ async function saveSettings(event) {
                 name: document.getElementById("research-name").value,
                 folder: document.getElementById("target-directory").value,
                 naming_template: chosenTemplate(),
+                naming_style: readNamingStyle(),
+                keep_accents: readKeepAccents(),
                 description: document.getElementById("project-description")
                     .value.trim(),
                 folders: readFolderTree(),
@@ -482,6 +512,8 @@ async function saveSettings(event) {
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
+                naming_style: readNamingStyle(),
+                keep_accents: readKeepAccents(),
                 industry: document.getElementById("industry").value,
                 // In a tree project the categories are the folders.
                 categories: isTree ? readFolderTree() : readCategories(),
@@ -612,6 +644,9 @@ document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
 document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
+document.querySelectorAll('input[name="naming-style"]').forEach((radio) => {
+    radio.addEventListener("change", updateNamingPreview);
+});
 document.querySelectorAll('input[name="naming-separator"]')
     .forEach((radio) => {
         radio.addEventListener("change", () => {

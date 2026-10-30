@@ -142,7 +142,7 @@ def test_rename_duplicate_name_gets_a_number(flask_client, project):
     response = flask_client.post(
         "/documents/{}/rename".format(docs[0].id),
         json={"new_name": "results"})
-    assert response.get_json()["filename"] == "results-2.pdf"
+    assert response.get_json()["filename"] == "results_2.pdf"
 
 
 def test_rename_cleans_symbols_and_keeps_extension(flask_client, project):

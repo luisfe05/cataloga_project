@@ -287,21 +287,21 @@ def test_match_category_without_a_list():
 # --- Naming method 4 ---
 
 def test_method_4_name():
-    """Method 4: topic, source, date, and the topic's own number."""
+    """Method 4: topic, source and date; a number only when a name repeats."""
     parts = naming.build_parts("scan.pdf", 7, document_date="2026-07-15",
                                source="El Nuevo Día",
                                topic="Oceanman Malta", topic_number=1)
     assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
                                 ".pdf") == \
-        "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf"
+        "oceanman-malta_el-nuevo-dia_2026-07-15.pdf"
 
 
 def test_method_4_without_source_or_date():
-    """No source leaves that part out; no date gives 'undated'."""
+    """No source and no date leave those parts out."""
     parts = naming.build_parts("scan.pdf", 7, topic="Oceanman Malta",
                                topic_number=12)
     assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
-                                ".pdf") == "oceanman-malta_undated_012.pdf"
+                                ".pdf") == "oceanman-malta.pdf"
 
 
 def test_topic_number_goes_to_4_digits():
@@ -325,8 +325,7 @@ def test_topic_number_token_in_custom_template():
 def test_old_projects_keep_method_1_as_fallback():
     """Only new projects get method 4; the fallback stays method 1."""
     assert naming.DEFAULT_TEMPLATE == "{date}_{topic}"
-    assert naming.NEW_PROJECT_TEMPLATE == \
-        "{topic}_{source}_{date}_{topic_number}"
+    assert naming.NEW_PROJECT_TEMPLATE == "{topic}_{source}_{date}"
 
 
 # --- Pipeline ---
@@ -384,7 +383,7 @@ def test_new_file_gets_all_archive_fields(pipe):
     pipe["repo"].save_categories(CATEGORIES)
     doc = pipe["pipeline"].classify_document(
         drop(pipe, "a.txt", "Contract text"))
-    assert doc.filename == "oceanman-malta_el-nuevo-dia_2026-07-15_001.txt"
+    assert doc.filename == "oceanman-malta_el-nuevo-dia_2026-07-15.txt"
     assert doc.keywords == ["swimming", "Malta", "x" * 40, "a", "b"]
     assert doc.counterparty == "Jurutungo Films"
     assert (doc.category, doc.subcategory) == ("Contracts", "Rights")
@@ -401,7 +400,7 @@ def test_second_file_of_a_topic_gets_002(pipe):
     """The topic number counts files with the same topic."""
     pipe["pipeline"].classify_document(drop(pipe, "a.txt", "One"))
     second = pipe["pipeline"].classify_document(drop(pipe, "b.txt", "Two"))
-    assert second.filename.endswith("_002.txt")
+    assert second.filename.endswith("_2.txt")
 
 
 def test_no_categories_leaves_category_empty(pipe):
