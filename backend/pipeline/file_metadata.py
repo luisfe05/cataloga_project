@@ -145,6 +145,11 @@ def media_comment(file_path):
     return None
 
 
+# Easy names for the ID3 frames a .wav can carry.
+ID3_FRAMES = {"title": "TIT2", "artist": "TPE1", "album": "TALB",
+              "date": "TDRC"}
+
+
 def media_metadata(file_path):
     """Return the title, artist, album, date, comment and length."""
     try:
@@ -153,6 +158,10 @@ def media_metadata(file_path):
         # mutagen raises its own errors for files it cannot parse.
         audio = None
     tags = audio.tags if audio is not None and audio.tags else {}
+    # A .wav keeps raw ID3 frames even with easy=True; name them.
+    if tags and "TIT2" in tags or tags and "TPE1" in tags:
+        tags = {name: [str(frame)] for name, key in ID3_FRAMES.items()
+                if key in tags for frame in [tags[key]]}
     length = None
     if audio is not None and getattr(audio.info, "length", 0):
         seconds = int(audio.info.length + 0.5)

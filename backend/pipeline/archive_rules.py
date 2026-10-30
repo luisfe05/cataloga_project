@@ -29,7 +29,10 @@ MAX_SAVED_CATEGORIES = 20
 
 DUPLICATE_NOTE = "Duplicate of {}"
 NO_CATEGORY_NOTE = "Category not in the project list"
-MEDIA_NOTE = "Audio and video reading is coming soon"
+MEDIA_NOTE = "Audio and video need a Gemini key in Settings"
+MEDIA_BIG_NOTE = "Over 100 MB and ffmpeg is not installed, so only the " \
+    "tags were read"
+MEDIA_FAILED_NOTE = "Could not listen to the recording"
 IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"

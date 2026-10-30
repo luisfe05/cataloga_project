@@ -102,9 +102,9 @@ const LANG_ES = {
     "catalog.move_to": "Mover a…",
     "catalog.moving": "Moviendo...",
     "catalog.moved": "Movido a {folder}",
-    "catalog.note_media": "La lectura de audio y video llega pronto",
+    "catalog.note_media": "Audio y video necesitan una key de Gemini en Settings",
     "catalog.note_media_length":
-        "La lectura de audio y video llega pronto. Duración {length}",
+        "Audio y video necesitan una key de Gemini en Settings. Duración {length}",
     "catalog.note_image": "No se pudo leer la imagen",
     "catalog.note_scan": "No se pudieron leer las páginas escaneadas",
     "catalog.note_too_big": "El archivo pesa más de 50 MB y no se leyó",

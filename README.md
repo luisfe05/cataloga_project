@@ -122,7 +122,7 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | No source | That part is left out |
 | No topic | The original file name is used |
 | Photos | Named with the project's method from what the photo shows |
-| Audio and video | Named with the project's method from the title in their tags |
+| Audio and video | With a Gemini key in Settings, the first two minutes are listened to or watched and the name comes from that. Without one, from the title in their tags |
 | Files with nothing to read | Their date and a number, for example `2026-07-15_0001.jpg`. If only the disk date is known, `undated_0001.jpg` |
 | Name already taken | The new file gets `_2`, `_3`, and so on; the first one keeps its name |
 | Versions | A version mark in the original name (`v01`, `draft-3`) stays at the end of the new name |
