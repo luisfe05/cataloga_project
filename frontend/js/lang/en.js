@@ -315,10 +315,10 @@ const LANG_EN = {
     "folders.err_subs": "A folder can have 10 subfolders at most.",
 
     // Account and login
-    "auth.setup_title": "Create your account",
-    "auth.setup_hint": "This account protects Cataloga on this computer. "
-        + "It does not encrypt your files. Keep the password somewhere "
-        + "safe: there is no way to recover it.",
+    "auth.register_title": "Create an account",
+    "auth.register_hint": "Each account on this computer has its own "
+        + "project list and settings. Catalogs stay inside each project "
+        + "folder. There is no way to recover a lost password.",
     "auth.login_title": "Log in",
     "auth.username": "Username",
     "auth.password": "Password",
@@ -327,8 +327,15 @@ const LANG_EN = {
     "auth.log_in": "Log in",
     "auth.log_out": "Log out",
     "auth.password_mismatch": "The passwords do not match.",
+    "auth.need_account": "Create an account",
+    "auth.have_account": "I already have an account",
+    "auth.forgot": "Forgot your password?",
+    "auth.forgot_hint": "Passwords cannot be recovered: Cataloga has no "
+        + "email. Your projects and files stay intact in their folders. "
+        + "Create a new account to keep working.",
     "account.title": "Account",
-    "account.hint": "One account for the whole app, for every project.",
+    "account.hint": "Each account on this computer has its own projects "
+        + "and settings.",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
     "account.new_password": "New password",
@@ -411,8 +418,9 @@ const LANG_EN = {
         "The password must have at least 8 characters.",
     "error.password_too_long": "The password is too long. Use 72 "
         + "characters or fewer (fewer with accents or symbols).",
-    "error.account_exists": "The account already exists. Log in instead.",
-    "error.no_account": "Create the account first.",
+    "error.username_taken": "That username is taken.",
+    "error.invalid_username": "Use 3 to 30 letters, digits, dots, "
+        + "underscores or hyphens.",
     "error.generic": "Something went wrong. Try again.",
     "error.invalid_name": "The new name has no valid characters.",
     "error.file_missing": "The file is missing or outside the project folder.",
