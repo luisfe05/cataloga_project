@@ -21,6 +21,19 @@ except ImportError:
 
 OFFICE_EXTENSIONS = (".docx", ".xlsx", ".pptx")
 
+# Design files: what can be shown of them is a picture or their XMP data.
+DESIGN_EXTENSIONS = (".psd", ".ai", ".indd", ".idml", ".sketch")
+
+# Compressed files: only the list of what is inside, never unpacked.
+ARCHIVE_EXTENSIONS = (".zip",)
+
+# How much of a text or code file is read: the start is enough.
+TEXT_SAMPLE_BYTES = 8 * 1024
+TEXT_EXTRACT_CHARS = 20000
+
+# How many names of a zip are listed.
+MAX_ARCHIVE_NAMES = 50
+
 # Photos the AI can look at.
 VISION_EXTENSIONS = (".jpg", ".jpeg", ".png", ".heic")
 
@@ -129,6 +142,125 @@ def office_text(file_path):
     except (zipfile.BadZipFile, ElementTree.ParseError, KeyError, OSError,
             ValueError):
         return ""
+
+
+def is_text_file(file_path):
+    """Say whether a file is text or code, by its bytes, not its name."""
+    try:
+        with open(file_path, "rb") as file:
+            sample = file.read(TEXT_SAMPLE_BYTES)
+    except OSError:
+        return False
+    if not sample or b"\x00" in sample:
+        return False
+    try:
+        sample.decode("utf-8")
+        return True
+    except UnicodeDecodeError:
+        # Latin-1 decodes anything, so only mostly-printable bytes count.
+        printable = sum(32 <= b < 127 or b in (9, 10, 13) or b >= 160
+                        for b in sample)
+        return printable / len(sample) > 0.9
+
+
+def text_extract(file_path, limit=TEXT_EXTRACT_CHARS):
+    """Return the start of a text or code file."""
+    try:
+        with open(file_path, "rb") as file:
+            data = file.read(limit * 4)
+    except OSError:
+        return ""
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        text = data.decode("latin-1")
+    return text[:limit].strip()
+
+
+def zip_listing(file_path):
+    """Return what a zip holds as lines, without unpacking anything."""
+    try:
+        with zipfile.ZipFile(file_path) as archive:
+            infos = [i for i in archive.infolist() if not i.is_dir()]
+    except (zipfile.BadZipFile, OSError):
+        return ""
+    names = [i.filename for i in infos
+             if not os.path.basename(i.filename).startswith(".")]
+    total = sum(i.file_size for i in infos)
+    header = "Compressed file with {} files ({:.1f} MB unpacked). " \
+        "It was not unpacked. It holds:"
+    lines = [header.format(len(names), total / 1e6)]
+    lines += names[:MAX_ARCHIVE_NAMES]
+    if len(names) > MAX_ARCHIVE_NAMES:
+        lines.append("... and {} more".format(len(names) -
+                                              MAX_ARCHIVE_NAMES))
+    return "\n".join(lines)
+
+
+def xmp_fields(data):
+    """Read the title and creator from XMP metadata found in bytes."""
+    text = data.decode("latin-1", errors="replace")
+    fields = {}
+    for key, tag in (("title", "dc:title"), ("author", "dc:creator"),
+                     ("subject", "dc:description")):
+        found = re.search(r"<{0}>.*?<rdf:li[^>]*>(.*?)</rdf:li>".format(tag),
+                          text, re.DOTALL)
+        if found and found.group(1).strip():
+            fields[key] = re.sub(r"\s+", " ", found.group(1)).strip()[:200]
+    return fields
+
+
+def xmp_thumbnail(data):
+    """Return the JPEG thumbnail an InDesign or Illustrator file carries."""
+    text = data.decode("latin-1", errors="replace")
+    found = re.search(r"<xapGImg:image>([A-Za-z0-9+/=\s]+)</xapGImg:image>",
+                      text)
+    if not found:
+        found = re.search(
+            r"<xmpGImg:image>([A-Za-z0-9+/=\s]+)</xmpGImg:image>", text)
+    if not found:
+        return None
+    try:
+        return Image.open(io.BytesIO(base64.b64decode(
+            re.sub(r"\s+", "", found.group(1)))))
+    except (OSError, ValueError):
+        return None
+
+
+def design_views(file_path):
+    """Return a picture of a design file as a data URI, in a list, or []."""
+    extension = os.path.splitext(file_path)[1].lower()
+    try:
+        if extension == ".psd":
+            # Pillow opens the flattened picture Photoshop keeps inside.
+            with Image.open(file_path) as image:
+                return [image_data_uri(image)]
+        if extension == ".ai":
+            # Modern Illustrator files are PDFs inside: their first page.
+            return pdf_page_data_uris(file_path)[:1]
+        if extension == ".sketch":
+            with zipfile.ZipFile(file_path) as archive:
+                with archive.open("previews/preview.png") as preview:
+                    return [image_data_uri(Image.open(io.BytesIO(
+                        preview.read())))]
+        if extension in (".indd", ".idml"):
+            with open(file_path, "rb") as file:
+                data = file.read(4 * 1024 * 1024)
+            thumbnail = xmp_thumbnail(data)
+            return [image_data_uri(thumbnail)] if thumbnail else []
+    except (OSError, ValueError, KeyError, zipfile.BadZipFile,
+            Image.DecompressionBombError):
+        return []
+    return []
+
+
+def design_metadata(file_path):
+    """Return the XMP title, author and subject of a design file."""
+    try:
+        with open(file_path, "rb") as file:
+            return xmp_fields(file.read(4 * 1024 * 1024))
+    except OSError:
+        return {}
 
 
 def image_data_uri(image):

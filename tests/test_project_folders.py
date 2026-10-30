@@ -112,11 +112,13 @@ def test_old_project_no_category_fit_still_moves_by_type(old_project):
 
 
 def test_old_project_unreadable_file_goes_to_documents(old_project):
-    """A file without text still lands in Documents, as before."""
+    """A file the app cannot open still lands in Documents, cataloged by
+    its name: no format goes to Manual Review for being unknown."""
     path = old_project["drop_zone"] / "notes.xyz"
     path.write_bytes(b"\x00\x01")
     doc = old_project["pipeline"].classify_document(str(path))
-    assert doc.status == "Manual Review"
+    assert doc.status == "Classified"
+    assert doc.media_type == "Documents"
     assert os.path.dirname(doc.file_path) == os.path.join(
         str(old_project["folder"]), "Documents")
 
