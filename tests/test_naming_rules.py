@@ -55,21 +55,21 @@ def test_version_stays_at_the_end_of_the_new_name():
         "informe-v02.docx"
 
 
-def test_fit_path_shortens_the_topic_then_the_source(tmp_path):
+def test_fit_path_shortens_the_topic_then_the_source():
     """A long topic is cut a word at a time until the path fits."""
-    folder = str(tmp_path / ("x" * 100))
+    # Only lengths matter here, so the folder does not need to exist.
+    folder = "/" + "x" * 180
     parts = naming.build_parts("a.pdf", 1, document_date="2026-07-15",
                                topic="one two three four five six seven",
                                source="some long source name")
     name = naming.fit_path(folder, "{topic}_{source}_{date}", parts, ".pdf")
-    assert name is not None
+    assert name == "one-two-three-four_some-long-source-name_2026-07-15.pdf"
     assert len(os.path.join(folder, name)) <= naming.MAX_PATH_LENGTH
-    assert name.endswith("_2026-07-15.pdf")
-    # The topic went first; whatever is left of it still starts the name.
-    assert name.startswith("one") or not name.startswith("some")
-
-    impossible = str(tmp_path / ("x" * 250))
-    assert naming.fit_path(impossible, "{topic}", parts, ".pdf") is None
+    # When the topic is gone, the source goes next.
+    name = naming.fit_path("/" + "x" * 205, "{topic}_{source}_{date}",
+                           parts, ".pdf")
+    assert name == "some-long-source_2026-07-15.pdf"
+    assert naming.fit_path("/" + "x" * 250, "{topic}", parts, ".pdf") is None
 
 
 # --- In the pipeline ---
