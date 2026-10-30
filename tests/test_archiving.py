@@ -90,8 +90,8 @@ def test_old_catalog_gets_new_columns_and_keeps_rows(tmp_path):
     assert len(repo.get_all_documents()) == 1
 
 
-def test_still_four_tables(tmp_path):
-    """The archiving fields are columns, not new tables."""
+def test_the_tables_of_a_catalog(tmp_path):
+    """The four tables of the report, plus the corrections (PR 14)."""
     path = str(tmp_path / "new.db")
     init_db(path)
     conn = sqlite3.connect(path)
@@ -100,7 +100,7 @@ def test_still_four_tables(tmp_path):
         "AND name != 'sqlite_sequence'")}
     conn.close()
     assert names == {"documents", "activity_log", "app_config",
-                     "ai_provider_config"}
+                     "ai_provider_config", "corrections"}
 
 
 # --- Saving and reading the new fields ---

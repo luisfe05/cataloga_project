@@ -88,6 +88,16 @@ Answer with one JSON object only."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
 
+# How many of the user's moves the AI reads before filing a document.
+MAX_CORRECTIONS = 10
+
+# Added after FOLDER_PROMPT when the user has moved files by hand.
+CORRECTIONS_PROMPT = """
+
+The researcher moved these files by hand, newest first. Learn from them
+where this kind of file belongs:
+{corrections}"""
+
 
 def now_timestamp():
     """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00."""
@@ -483,9 +493,23 @@ class ClassificationPipeline:
         """Return the part of the prompt with the project's folder tree."""
         folders = [{"folder": top["name"], "subfolders": top["subcategories"]}
                    for top in tree]
-        return FOLDER_PROMPT.format(
+        prompt = FOLDER_PROMPT.format(
             description=self.db.get_project_description() or "(not given)",
             folders=json.dumps(folders, ensure_ascii=False))
+        return prompt + self.corrections_prompt()
+
+    def corrections_prompt(self):
+        """Return the user's latest moves as lines for the AI, or ''."""
+        lines = []
+        for move in self.db.recent_corrections(MAX_CORRECTIONS):
+            about = " (about: {})".format(move["summary"]) \
+                if move["summary"] else ""
+            lines.append("- \"{}\"{} went from {} to {}".format(
+                move["original_filename"], about,
+                move["from_folder"] or "the Drop Zone", move["to_folder"]))
+        if not lines:
+            return ""
+        return CORRECTIONS_PROMPT.format(corrections="\n".join(lines))
 
     def match_folder(self, metadata, result, tree):
         """Keep the AI's folder if it is in the tree; else a suggestion."""
