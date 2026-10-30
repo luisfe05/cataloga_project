@@ -20,7 +20,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
 | Several projects | Each project has its own folder and its own catalog. Switch between them from the sidebar |
-| Login | One local account protects the app. The password is saved only as a bcrypt hash |
+| Login | Accounts on this computer. Each account has its own project list and settings. Passwords are saved only as bcrypt hashes |
 | Chatbot | Ask Cataloga finds documents, filters the catalog, summarizes the project, and proposes new file names or a move to another folder. A file is only renamed or moved after you click Confirm |
 | Open, preview, and Finder | Click a file name to open it, the eye icon (or the space bar) to preview it with Quick Look, and the folder icon to show it in Finder |
 | English and Spanish | The interface is in English by default. Spanish (Latin America) can be chosen in Settings |
@@ -51,7 +51,7 @@ Run these commands from the `cataloga` folder.
 | 3. Install the packages | `pip install -r requirements.txt` |
 | 4. Start the app | `python main.py` |
 
-The app opens in its own window. When it runs from source, it keeps its data (the project list and the account) in the `database/` folder.
+The app opens in its own window. When it runs from source, it keeps its data (the accounts and each account's project list) in the `database/` folder.
 
 To use Ollama Cloud, the app needs an API key. Save it once in the Keychain with the command below. It asks for the key without showing it.
 
@@ -72,19 +72,19 @@ With the virtual environment on, run this from the `cataloga` folder:
 | Item | Where |
 |---|---|
 | The app | `dist/Cataloga.app` |
-| Its data (project list and account) | `~/Library/Application Support/Cataloga/` |
+| Its data (accounts and project lists) | `~/Library/Application Support/Cataloga/` |
 
 ## How to use
 
 | Step | What to do |
 |---|---|
-| 1. Create your account | The first time Cataloga opens, choose a username and a password (at least 8 characters). After that, log in |
+| 1. Create an account | Choose a username (3 to 30 letters, digits, dots, underscores or hyphens) and a password (at least 8 characters). Each person on the computer can have their own account, with their own projects. After that, log in |
 | 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree, and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree |
 | 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog. If the folder was the only thing missing, the file becomes Classified |
 | 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a summary or a source. Turn on Edit Mode to fix a field |
 | 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
 
-If you forget your password, close Cataloga and delete `account.json` from the data folder (`~/Library/Application Support/Cataloga/` for the Mac app, `database/` when running from source). Then open Cataloga and create a new account. Your projects and their files are not touched.
+Cataloga has no email, so a lost password cannot be recovered. Create a new account and add your project folders to it again: the projects and their files are not touched, because each catalog lives inside its project folder. Accounts made with an older version keep working after the update.
 
 To take a project out of the list, open Settings and click Remove project. Its folder, files, and catalog are never deleted, so you can add the same folder again later.
 
@@ -117,9 +117,9 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 
 | Method | Path | Login | What it does |
 |---|---|---|---|
-| GET | `/auth/status` | No | Says whether the account exists, and the app language |
-| POST | `/auth/setup` | No | Creates the account (only once) and logs in |
-| POST | `/auth/login` | No | Logs in. After 5 wrong passwords in a row, waits 30 seconds |
+| GET | `/auth/status` | No | Says whether any account exists, and the language of the last account that logged in |
+| POST | `/auth/register` | No | Creates an account and logs in. A taken username gives `409 username_taken` |
+| POST | `/auth/login` | No | Logs in. After 5 wrong passwords in a row for one account, that account waits 30 seconds |
 | POST | `/auth/logout` | Yes | Ends the session |
 | POST | `/auth/password` | Yes | Changes the password. The session stays open |
 | GET | `/documents` | Yes | Lists and searches the documents, with optional filters |
@@ -153,7 +153,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | `assets/` | The app icon |
 | `backend/app.py` | Creates the Flask app and registers the routes |
 | `backend/folder_watcher.py` | Checks the active project's Drop Zone every few seconds |
-| `backend/config/` | The project list, the account, and the app settings |
+| `backend/config/` | The accounts, each account's project list, and the app settings |
 | `backend/db/` | The database schema and CatalogRepository, which does every database read and write |
 | `backend/models/` | The Document class, one row of the worksheet |
 | `backend/pipeline/` | ClassificationPipeline, FileOrganizer, file naming, the chat assistant, and the AI provider clients |

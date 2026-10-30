@@ -932,6 +932,29 @@ td.editable {
     margin-top: var(--spacing-8);
 }
 
+/* Links under the form: "Create an account", "Forgot your password?". */
+.auth-links {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-16);
+}
+
+.auth-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-violet);
+    font: inherit;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.auth-forgot {
+    margin-top: var(--spacing-12);
+}
+
 /* ======== Catalog ======== */
 
 /* Catalog header: title on the left, progress on the right */

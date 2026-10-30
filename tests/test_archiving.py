@@ -7,7 +7,6 @@ import sqlite3
 import pytest
 
 from backend import folder_watcher
-from backend.config import account
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
@@ -505,12 +504,10 @@ def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
     projects_path = str(tmp_path / "app" / "projects.json")
     repo = make_project(projects_path, tmp_path / "Research")
     repo.set_active_provider("gemini", "gemini-2.5-flash")
-    account.save_account(account.account_path_for(projects_path),
-                         "luis", "password123")
     drop_zone = tmp_path / "Research" / "Drop Zone"
     (drop_zone / "a.txt").write_text("Same")
 
-    first = folder_watcher.scan_once(projects_path)
+    first = folder_watcher.scan_once(projects_path, owner="luis")
     assert first[0].owner == "luis"
     (drop_zone / "copy.txt").write_text("Same")
     duplicate = folder_watcher.scan_once(projects_path)[0]
