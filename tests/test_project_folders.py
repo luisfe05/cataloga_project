@@ -467,9 +467,9 @@ def test_move_document_to_another_folder(flask_client, tmp_path):
     assert (moved["category"], moved["subcategory"]) == \
         ("Oceanman Malta", "Prensa")
     assert moved["suggested_folder"] is None
-    assert moved["review_note"] is None
     # Without source, date, and summary it still needs a person.
     assert moved["status"] == "Manual Review"
+    assert moved["review_note"] == "Missing: source, document_date, summary"
     activity = flask_client.get("/dashboard/stats").get_json()[
         "recent_activity"]
     assert activity[0]["action"] == "Moved"
@@ -539,6 +539,11 @@ def test_move_keeps_other_review_reasons(flask_client, tmp_path):
         moved = flask_client.post("/documents/{}/move".format(doc.id),
                                   json={"folder": "Contratos"}).get_json()
         assert moved["status"] == "Manual Review"
+    # The folder note is gone, so the empty field becomes the reason.
+    assert flask_client.get("/documents/{}".format(no_date.id)).get_json()[
+        "review_note"] == "Missing: document_date"
+    assert flask_client.get("/documents/{}".format(other_note.id)).get_json()[
+        "review_note"] == "This file is too big to read"
 
 
 @pytest.mark.parametrize("target", ["../Outside", "Notas?/x", "CON"])
