@@ -69,7 +69,9 @@ CREATE TABLE IF NOT EXISTS documents (
     folder_reason     TEXT,
     confidence        TEXT,
     original_path     TEXT,
-    folder_path       TEXT
+    folder_path       TEXT,
+    proposed_folder   TEXT,
+    proposed_name     TEXT
 );
 """
 
@@ -100,6 +102,9 @@ ADDED_DOCUMENTS_COLUMNS = {
     # The file's folder in the tree, as 'A/B/C'. category and subcategory
     # keep its first two levels.
     "folder_path": "folder_path TEXT",
+    # What the pipeline would do to a file read in place (the plan).
+    "proposed_folder": "proposed_folder TEXT",
+    "proposed_name": "proposed_name TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -166,6 +171,18 @@ ADDED_APP_CONFIG_COLUMNS = {
     "stamp_date_order": "stamp_date_order TEXT",
 }
 
+# What was read in place, and how it looked: a file with the same size
+# and date is not read again.
+CREATE_SCAN_INDEX = """
+CREATE TABLE IF NOT EXISTS scan_index (
+    path        TEXT    PRIMARY KEY,
+    size        INTEGER NOT NULL,
+    mtime       INTEGER NOT NULL,
+    document_id INTEGER,
+    seen_at     TEXT    NOT NULL
+);
+"""
+
 CREATE_AI_PROVIDER_CONFIG = """
 CREATE TABLE IF NOT EXISTS ai_provider_config (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -216,6 +233,7 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_ACTIVITY_LOG)
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
+    cursor.execute(CREATE_SCAN_INDEX)
     add_missing_columns(cursor)
     # The provider a project used before the roles is its text provider.
     cursor.execute("UPDATE ai_provider_config SET role = 'text' "

@@ -66,7 +66,8 @@ def get_settings():
                 repo.get_project_description()
         settings["project_sheet"] = repo.get_project_sheet()
         if repo.is_tree_project():
-            settings["folder_mode"] = folder_tree.TREE_MODE
+            # 'tree' with a Drop Zone, or 'place' when read where it is.
+            settings["folder_mode"] = repo.folder_mode()
             settings["project_description"] = \
                 repo.get_project_description()
             settings["folder_tree"] = repo.get_folder_tree()

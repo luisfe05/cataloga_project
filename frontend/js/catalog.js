@@ -601,6 +601,38 @@ function renderProgress(classified, review) {
         `${percent}%`);
 }
 
+// Polls GET /scan while the project folder is being read.
+let scanTimer = null;
+
+/** Show how far the reading is; keep asking while it runs. */
+async function renderScan(settings) {
+    const box = document.getElementById("scan-status");
+    if (!["place", "catalog"].includes(settings.folder_mode)) {
+        box.classList.add("hidden");
+        return;
+    }
+    let scan;
+    try {
+        scan = await getScan();
+    } catch (error) {
+        return;
+    }
+    const active = ["running", "paused"].includes(scan.status);
+    box.classList.toggle("hidden", !active && scan.status !== "done");
+    document.getElementById("scan-text").textContent = t(
+        `scan.${scan.status}`, { done: scan.done, total: scan.total,
+            file: scan.current });
+    document.getElementById("scan-pause")
+        .classList.toggle("hidden", scan.status !== "running");
+    document.getElementById("scan-resume")
+        .classList.toggle("hidden", scan.status !== "paused");
+    clearTimeout(scanTimer);
+    if (active) {
+        // New rows appear as the scan goes: refresh the table too.
+        scanTimer = setTimeout(loadCatalog, 5000);
+    }
+}
+
 async function loadCatalog() {
     try {
         const settings = await getSettings();
@@ -622,7 +654,8 @@ async function loadCatalog() {
         const allDocuments = await getDocuments();
         projectCategories = settings.categories || [];
         projectTree = settings.folder_tree || [];
-        showFolderColumns(settings.folder_mode === "tree");
+        showFolderColumns(["tree", "place"].includes(settings.folder_mode));
+        renderScan(settings);
         updateSourceFilter(allDocuments);
         updateCategoryFilters(allDocuments);
         const reviewCount = allDocuments
@@ -778,4 +811,13 @@ document.addEventListener("keydown", (event) => {
     // Otherwise the space bar also scrolls the page.
     event.preventDefault();
     runFileAction(selectedDocumentId, "preview");
+});
+
+document.getElementById("scan-pause").addEventListener("click", async () => {
+    await controlScan("pause");
+    loadCatalog();
+});
+document.getElementById("scan-resume").addEventListener("click", async () => {
+    await controlScan("resume");
+    loadCatalog();
 });

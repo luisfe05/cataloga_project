@@ -185,6 +185,8 @@ class CatalogRepository:
         try:
             conn.execute("DELETE FROM activity_log WHERE document_id = ?",
                          (doc_id,))
+            conn.execute("DELETE FROM scan_index WHERE document_id = ?",
+                         (doc_id,))
             conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
             conn.commit()
         finally:
@@ -593,10 +595,53 @@ class CatalogRepository:
         config = self.get_app_config() or {}
         return archive_rules.categories_from_text(config.get("categories"))
 
+    def folder_mode(self):
+        """Return the project's folder mode: media, tree, or place."""
+        config = self.get_app_config() or {}
+        return config.get("folder_mode") or folder_tree.MEDIA_MODE
+
     def is_tree_project(self):
         """Say whether the project files documents in its own folder tree."""
-        config = self.get_app_config() or {}
-        return config.get("folder_mode") == folder_tree.TREE_MODE
+        return self.folder_mode() in (folder_tree.TREE_MODE,
+                                      folder_tree.PLACE_MODE)
+
+    def reads_in_place(self):
+        """Say whether the project is read where it is, with no Drop Zone."""
+        return self.folder_mode() in (folder_tree.PLACE_MODE,
+                                      folder_tree.CATALOG_MODE)
+
+    def index_get(self, path):
+        """Return what the scan index knows about a path, or None."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT path, size, mtime, document_id FROM scan_index "
+                "WHERE path = ?", (path,)).fetchone()
+        finally:
+            conn.close()
+        return dict(row) if row else None
+
+    def index_put(self, path, size, mtime, document_id):
+        """Remember that a file was read, and how it looked."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO scan_index (path, size, mtime, "
+                "document_id, seen_at) VALUES (?, ?, ?, ?, ?)",
+                (path, size, mtime, document_id,
+                 datetime.now().isoformat(timespec="seconds")))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def index_count(self):
+        """Count the files the scan has read."""
+        conn = get_connection(self.db_path)
+        try:
+            return conn.execute("SELECT COUNT(*) FROM scan_index"
+                                ).fetchone()[0]
+        finally:
+            conn.close()
 
     def is_catalog_project(self):
         """Say whether the project never moves or renames its files."""

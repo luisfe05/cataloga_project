@@ -126,6 +126,19 @@ async function updateAIProvider(data) {
     return handleResponse(response);
 }
 
+/** GET /scan: how far the reading of the project folder is. */
+async function getScan() {
+    const response = await apiFetch(`${BASE_URL}/scan`);
+    return handleResponse(response);
+}
+
+/** POST /scan/start, /scan/pause, /scan/resume */
+async function controlScan(action) {
+    const response = await apiFetch(`${BASE_URL}/scan/${action}`,
+        { method: "POST" });
+    return handleResponse(response);
+}
+
 /** POST /settings/sheet/suggest: the AI writes the sheet from a sample. Saves nothing. */
 async function suggestSheet(folder) {
     const response = await apiFetch(`${BASE_URL}/settings/sheet/suggest`, {

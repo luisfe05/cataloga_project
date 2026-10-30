@@ -13,6 +13,7 @@ from backend.routes.chat import chat_bp
 from backend.routes.dashboard import dashboard_bp
 from backend.routes.documents import documents_bp
 from backend.routes.projects import projects_bp
+from backend.routes.scan import scan_bp
 from backend.routes.settings import settings_bp
 
 
@@ -32,6 +33,7 @@ def create_app(data_folder=projects.DATA_FOLDER, old_db_path=DB_PATH):
     app.register_blueprint(settings_bp)
     app.register_blueprint(projects_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(scan_bp)
 
     store = AccountStore(data_folder)
     app.config["ACCOUNTS"] = store

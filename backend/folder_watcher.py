@@ -70,6 +70,9 @@ def scan_once(projects_path, owner=None):
     if not folder or not os.path.isfile(projects.catalog_path(folder)):
         return []
     repo = CatalogRepository(projects.catalog_path(folder))
+    # A project read in place has no Drop Zone to watch (yet).
+    if repo.reads_in_place():
+        return []
 
     # Only a project's own Inbox is migrated: Cataloga made it.
     organizer = FileOrganizer(folder)
