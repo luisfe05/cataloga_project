@@ -50,6 +50,14 @@ const LANG_ES = {
         + "{path}. Aparecerán aquí cuando se clasifiquen.",
     "catalog.no_match": "Ningún archivo coincide con tu búsqueda.",
     "catalog.progress": "Progreso del catálogo",
+    "scan.running": "Leyendo {done} de {total} archivos: {file}",
+    "scan.paused": "En pausa en {done} de {total} archivos.",
+    "scan.done": "Se leyeron los {total} archivos. Nada se movió ni se "
+        + "renombró.",
+    "scan.idle": "",
+    "scan.stopped": "La lectura se detuvo en {done} de {total} archivos.",
+    "scan.pause": "Pausar",
+    "scan.resume": "Continuar",
     "catalog.progress_percent": "{n}% clasificado",
     "catalog.load_failed": "No se pudo cargar el catálogo: {message}",
     "catalog.backend_down": "el servidor de la app no responde.",
@@ -357,6 +365,13 @@ const LANG_ES = {
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
         + "porque el catálogo se guarda dentro de ella.",
     "project.create": "Crear proyecto",
+    "project.mode_place": "Leer la carpeta en su lugar",
+    "project.mode_place_hint": "Cada archivo se lee donde está, con sus "
+        + "subcarpetas. Nada se mueve ni se renombra hasta que apruebes un "
+        + "plan",
+    "project.mode_tree": "Drop Zone",
+    "project.mode_tree_hint": "Cataloga crea las carpetas ahora y archiva lo "
+        + "que dejes en Drop Zone",
     "project.creating":
         "Creando el proyecto y probando la conexión con la IA...",
     "project.created": "Proyecto creado. La conexión con la IA funciona.",

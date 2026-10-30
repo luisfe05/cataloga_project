@@ -50,6 +50,13 @@ const LANG_EN = {
         + "and they will appear here once they are classified.",
     "catalog.no_match": "No files match your search.",
     "catalog.progress": "Catalog progress",
+    "scan.running": "Reading {done} of {total} files: {file}",
+    "scan.paused": "Paused at {done} of {total} files.",
+    "scan.done": "All {total} files were read. Nothing was moved or renamed.",
+    "scan.idle": "",
+    "scan.stopped": "Reading stopped at {done} of {total} files.",
+    "scan.pause": "Pause",
+    "scan.resume": "Resume",
     "catalog.progress_percent": "{n}% classified",
     "catalog.load_failed": "Could not load the catalog: {message}",
     "catalog.backend_down": "the app's backend is not responding.",
@@ -344,6 +351,12 @@ const LANG_EN = {
     "project.folder_locked": "The project folder can't change, because the "
         + "catalog is saved inside it.",
     "project.create": "Create project",
+    "project.mode_place": "Read the folder in place",
+    "project.mode_place_hint": "Every file is read where it is, subfolders "
+        + "included. Nothing moves or renames until you approve a plan",
+    "project.mode_tree": "Drop Zone",
+    "project.mode_tree_hint": "Cataloga creates the folders now and files "
+        + "what you drop into Drop Zone",
     "project.creating":
         "Creating the project and testing the AI connection...",
     "project.created": "Project created. The AI connection works.",

@@ -218,6 +218,8 @@ function showFolderSection(settings, isNew) {
     document.querySelectorAll(".folders-new-only").forEach((element) => {
         element.classList.toggle("hidden", !isNew);
     });
+    document.getElementById("mode-options").classList.toggle("hidden",
+        !isNew);
     showFolderTree(isNew ? [] : settings.categories,
         isNew ? {} : settings.folder_counts, !isNew);
     showFoldersMessage("", "");

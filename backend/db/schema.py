@@ -65,7 +65,9 @@ CREATE TABLE IF NOT EXISTS documents (
     category          TEXT,
     subcategory       TEXT,
     date_source       TEXT,
-    suggested_folder  TEXT
+    suggested_folder  TEXT,
+    proposed_folder   TEXT,
+    proposed_name     TEXT
 );
 """
 
@@ -87,6 +89,9 @@ ADDED_DOCUMENTS_COLUMNS = {
     "date_source": "date_source TEXT",
     # A folder the AI would create, as 'Folder/Subfolder'.
     "suggested_folder": "suggested_folder TEXT",
+    # What the pipeline would do to a file read in place (the plan).
+    "proposed_folder": "proposed_folder TEXT",
+    "proposed_name": "proposed_name TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -132,6 +137,18 @@ ADDED_APP_CONFIG_COLUMNS = {
     "project_description": "project_description TEXT",
 }
 
+# What was read in place, and how it looked: a file with the same size
+# and date is not read again.
+CREATE_SCAN_INDEX = """
+CREATE TABLE IF NOT EXISTS scan_index (
+    path        TEXT    PRIMARY KEY,
+    size        INTEGER NOT NULL,
+    mtime       INTEGER NOT NULL,
+    document_id INTEGER,
+    seen_at     TEXT    NOT NULL
+);
+"""
+
 CREATE_AI_PROVIDER_CONFIG = """
 CREATE TABLE IF NOT EXISTS ai_provider_config (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,6 +190,7 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_ACTIVITY_LOG)
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
+    cursor.execute(CREATE_SCAN_INDEX)
     add_missing_columns(cursor)
     conn.commit()
     conn.close()

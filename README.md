@@ -16,6 +16,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Read the folder in place | New projects start without a Drop Zone: Cataloga reads every file where it is, subfolders included, and catalogs it without moving or renaming. The Catalog shows how far the reading is, with Pause and Resume. A file that did not change is never read twice. Hidden files, `.git`, `node_modules`, `.cataloga` and links are never read. What Cataloga would do with each file (its folder and its name) is kept for the organization plan, which comes next. Drop Zone stays as a choice for new projects, and older projects keep it |
 | Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
@@ -137,6 +138,8 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | PUT | `/settings/ai-provider` | Yes | Saves the AI provider, model, and API key |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
+| GET | `/scan` | Yes | How far the reading of the project folder is: status, files done and total, the current file |
+| POST | `/scan/start`, `/scan/pause`, `/scan/resume` | Yes | Reads the active project's folder in place, holds it, or lets it go on |
 | POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
 | POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. Saves nothing |
 | PUT | `/projects/active` | Yes | Switches the active project |
