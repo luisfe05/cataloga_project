@@ -195,6 +195,16 @@ async function suggestFolders(description, industry) {
     return handleResponse(response);
 }
 
+/** POST /projects/folders/learn: the tree and the naming of a folder already organized. */
+async function learnFolder(folder) {
+    const response = await apiFetch(`${BASE_URL}/projects/folders/learn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
+    });
+    return handleResponse(response);
+}
+
 /** POST /projects/folders/inspect: does the folder look like a website or a linked project? */
 async function inspectFolder(folder) {
     const response = await apiFetch(`${BASE_URL}/projects/folders/inspect`, {
