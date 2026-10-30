@@ -17,6 +17,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
 | Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
+| Industry conventions | A built-in list of how each field organizes its archive (legal, construction, web and code, film and video, photo archive, documentary, library, general): typical folders, a naming pattern, and rules. The folder suggestion uses it. When a new project's folder looks like a website or a linked edit, Settings says so |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
 | Several projects | Each project has its own folder and its own catalog. Switch between them from the sidebar |
@@ -138,7 +139,8 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
 | POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
-| POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. Saves nothing |
+| POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. With `industry`, the request lists the folders that field usually has. Saves nothing |
+| POST | `/projects/folders/inspect` | Yes | Says whether a folder looks like a website or a linked project (index.html, package.json, .git, .prproj, .indd...). Saves nothing |
 | PUT | `/projects/active` | Yes | Switches the active project |
 | DELETE | `/projects` | Yes | Takes a project out of the list. Never deletes its folder or files |
 | POST | `/chat` | Yes | Answers a chat message with one action from a fixed list. Never changes anything |
