@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS app_config (
     categories              TEXT,
     folder_mode             TEXT,
     project_description     TEXT,
+    project_sheet           TEXT,
     server_url              TEXT
 );
 """
@@ -140,6 +141,8 @@ ADDED_APP_CONFIG_COLUMNS = {
     # 'tree' for projects with their own folders; empty in old projects.
     "folder_mode": "folder_mode TEXT",
     "project_description": "project_description TEXT",
+    # What the work is, written by the AI from a sample and edited by hand.
+    "project_sheet": "project_sheet TEXT",
     # A relay server that holds the API keys; empty means the providers.
     "server_url": "server_url TEXT",
 }

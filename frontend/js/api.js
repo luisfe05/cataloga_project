@@ -126,6 +126,16 @@ async function updateAIProvider(data) {
     return handleResponse(response);
 }
 
+/** POST /settings/sheet/suggest: the AI writes the sheet from a sample. Saves nothing. */
+async function suggestSheet(folder) {
+    const response = await apiFetch(`${BASE_URL}/settings/sheet/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
+    });
+    return handleResponse(response);
+}
+
 /** DELETE /settings/ai-provider/<role>: take the fallback or media provider away. */
 async function deleteAIProvider(role) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/${role}`,

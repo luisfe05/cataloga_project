@@ -27,7 +27,7 @@ MAX_SUMMARY_LENGTH = 100
 
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
                          "categories", "folder_mode", "project_description",
-                         "server_url")
+                         "project_sheet", "server_url")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -487,7 +487,7 @@ class CatalogRepository:
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
                 "industry, categories, folder_mode, project_description, "
-                "server_url "
+                "project_sheet, server_url "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -589,6 +589,11 @@ class CatalogRepository:
         self.save_config_value("folder_mode", folder_tree.TREE_MODE)
         self.save_config_value("project_description", description)
         self.save_categories(tree)
+
+    def get_project_sheet(self):
+        """Return the project sheet, or ''."""
+        config = self.get_app_config() or {}
+        return config.get("project_sheet") or ""
 
     def get_project_description(self):
         """Return what the project is about, or ''."""

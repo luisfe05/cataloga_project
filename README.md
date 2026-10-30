@@ -17,6 +17,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
 | Automatic classification | One AI request per file fills its whole card: media type, summary, source, date, topic, keywords, the folder of the tree that fits its content, one line on why (the Why this folder column), and how sure the AI was. The AI sees the file name, its folder, the other files next to it, the file's own metadata, and an extract of the content. A meaningful name counts as evidence; camera and scanner names are ignored; when name and content disagree, the content wins and the card says so. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before the folder trees keep their five media-type folders |
+| Project sheet | A short text of what the work is (Settings > About this project). Write it, or click Write it for me: the AI reads a sample of the folder (its structure, some file names, a few extracts) and writes it. Cataloga reads the sheet before every file, so the classification understands the work |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document |
 | Manual Review | Only these send a file to Manual Review: it could not be read, the AI had low confidence, no folder fits, it is a duplicate, or (later) its path is too long. A missing source or date never does; the catalog just shows the field empty |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
@@ -135,6 +136,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | GET | `/dashboard/stats` | Yes | Gives the numbers for the dashboard |
 | GET | `/settings` | Yes | Gives the active project's settings and the language |
 | PUT | `/settings` | Yes | Saves the project name, the naming template, the folder tree (new folders only; folders with documents stay), and the language |
+| POST | `/settings/sheet/suggest` | Yes | Asks the AI to write the project sheet from a sample of a folder (the active project's, or `folder`). Saves nothing |
 | PUT | `/settings/ai-provider` | Yes | Saves the provider, model, and API key of one role: `text` (default), `fallback`, or `media` (Gemini only) |
 | DELETE | `/settings/ai-provider/<role>` | Yes | Takes the fallback or media provider away. The key stays in the Keychain |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider, through the server URL if one is sent |
