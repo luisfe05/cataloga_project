@@ -12,6 +12,9 @@ from backend.db.schema import init_db
 from backend.models.document import Document
 from tests.conftest import logged_in_client, make_project
 
+# Every new project needs at least one folder.
+FOLDERS = [{"name": "Press", "subcategories": []}]
+
 
 def assert_error(response, status, code):
     """Check the shared error shape: status code and error code."""
@@ -67,7 +70,7 @@ def test_create_project(flask_client, app, tmp_path):
     folder = tmp_path / "Second"
     folder.mkdir()
     response = flask_client.post("/projects", json={
-        "name": "Second", "folder": str(folder),
+        "name": "Second", "folder": str(folder), "folders": FOLDERS,
         "naming_template": "{number}_{topic}"})
 
     assert response.status_code == 201
@@ -91,7 +94,8 @@ def test_create_project_starts_with_ollama_cloud(flask_client, app,
     folder = tmp_path / "Second"
     folder.mkdir()
     flask_client.post("/projects", json={"name": "Second",
-                                         "folder": str(folder)})
+                                         "folder": str(folder),
+                                         "folders": FOLDERS})
     settings = flask_client.get("/settings").get_json()
     assert settings["active_provider"] == "ollama"
     assert settings["active_model"] == "gemma4:31b"
@@ -108,7 +112,8 @@ def test_projects_keep_separate_catalogs(flask_client, app, tmp_path):
     folder = tmp_path / "Second"
     folder.mkdir()
     flask_client.post("/projects", json={"name": "Second",
-                                         "folder": str(folder)})
+                                         "folder": str(folder),
+                                         "folders": FOLDERS})
     assert flask_client.get("/documents").get_json() == []
 
     flask_client.put("/projects/active",
@@ -121,7 +126,7 @@ def test_create_first_project(empty_client, tmp_path):
     folder = tmp_path / "First"
     folder.mkdir()
     response = empty_client.post("/projects", json={
-        "name": "First", "folder": str(folder)})
+        "name": "First", "folder": str(folder), "folders": FOLDERS})
     assert response.status_code == 201
     assert empty_client.get("/documents").get_json() == []
     # New projects start with method 4.
@@ -166,7 +171,7 @@ def test_create_project_warns_about_user_files(flask_client, tmp_path):
     folder.mkdir()
     (folder / "poster.png").write_text("x")
     (folder / "notes.txt").write_text("x")
-    body = {"name": "X", "folder": str(folder)}
+    body = {"name": "X", "folder": str(folder), "folders": FOLDERS}
 
     first = flask_client.post("/projects", json=body)
     assert_error(first, 409, "folder_not_empty")
@@ -185,7 +190,8 @@ def test_create_project_in_a_new_folder_never_renames_its_inbox(
     (folder / "Inbox").mkdir(parents=True)
     (folder / "Inbox" / "mail.eml").write_text("x")
     flask_client.post("/projects", json={
-        "name": "A", "folder": str(folder), "confirm_folder": True})
+        "name": "A", "folder": str(folder), "folders": FOLDERS,
+        "confirm_folder": True})
     assert (folder / "Inbox" / "mail.eml").is_file()
     assert (folder / "Drop Zone").is_dir()
 

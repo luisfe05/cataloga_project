@@ -8,7 +8,7 @@ from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
 from backend.pipeline.ai_providers.base import save_api_key
-from backend.pipeline import archive_rules, naming
+from backend.pipeline import archive_rules, folder_tree, naming
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import (error_response, get_active_repo,
                             project_status, projects_path)
@@ -41,12 +41,20 @@ def get_settings():
         "naming_template": naming.DEFAULT_TEMPLATE,
         "industry": "",
         "categories": [],
+        "folder_mode": folder_tree.MEDIA_MODE,
+        "project_description": "",
+        "folder_counts": {},
         "active_provider": None,
         "active_model": None,
     }
     if status == "ok":
         repo, error = get_active_repo()
         settings.update(AppConfig(repo).get_settings())
+        if repo.is_tree_project():
+            settings["folder_mode"] = folder_tree.TREE_MODE
+            settings["project_description"] = \
+                repo.get_project_description()
+            settings["folder_counts"] = folder_counts(repo)
         # The list is the source of truth for where the project is.
         settings["target_directory"] = folder
     settings["language"] = data["language"]
@@ -58,6 +66,17 @@ def get_settings():
     settings["username"] = saved_account["username"] if saved_account \
         else ""
     return jsonify(settings), 200
+
+
+def folder_counts(repo):
+    """Count the documents in every folder of the tree."""
+    counts = {}
+    for top in repo.get_categories():
+        counts[top["name"]] = repo.count_in_folder(top["name"])
+        for sub in top["subcategories"]:
+            counts[folder_tree.folder_text(top["name"], sub)] = \
+                repo.count_in_subfolder(top["name"], sub)
+    return counts
 
 
 def providers_with_key():
@@ -94,27 +113,36 @@ def update_settings():
                 "The naming template is not valid: " + problem["reason"],
                 400, extra=problem)
 
-    archive = read_archive_settings(body)
-    if isinstance(archive, str):
-        return error_response("invalid_categories", archive, 400)
-
     repo, error = get_active_repo()
     if error:
         return error
+    tree_mode = repo.is_tree_project()
+    if tree_mode:
+        archive = read_folder_tree(body, repo)
+    else:
+        archive = read_archive_settings(body)
+    if isinstance(archive, tuple):
+        return error_response(archive[0], archive[1], archive[2])
+    if isinstance(archive, str):
+        return error_response("invalid_categories", archive, 400)
+
     folder = projects.active_folder(projects_path())
     config = AppConfig(repo)
 
     # Must run before ensure_archive_structure(), or Drop Zone is doubled.
     organizer = FileOrganizer(folder)
     organizer.migrate_old_inbox()
-    organizer.ensure_archive_structure()
+    if tree_mode and archive is not None:
+        # New folders are created now; removed ones stay on the disk.
+        repo.save_categories(archive["categories"])
+    organizer.ensure_archive_structure(repo.get_folder_tree())
 
     config.update_settings(values["research_name"], folder)
     projects.rename_project(projects_path(), folder,
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
-    if archive is not None:
+    if archive is not None and not tree_mode:
         config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:
         projects.set_language(projects_path(), body["language"])
@@ -135,6 +163,38 @@ def read_archive_settings(body):
     except ValueError as error:
         return str(error)
     return {"industry": industry.strip(), "categories": categories}
+
+
+def read_folder_tree(body, repo):
+    """Return the checked tree, or (code, message, status) if it is wrong."""
+    if "categories" not in body:
+        return None
+    try:
+        tree = folder_tree.check_tree(body["categories"])
+    except ValueError as error:
+        return ("invalid_folders", str(error), 400)
+    # A folder that holds documents can never leave the tree.
+    tops = [top["name"] for top in tree]
+    subs = [folder_tree.folder_text(top["name"], sub)
+            for top in tree for sub in top["subcategories"]]
+    for top in repo.get_categories():
+        if not folder_in(top["name"], tops) and \
+                repo.count_in_folder(top["name"]):
+            return ("folder_not_empty", "This folder has documents: " +
+                    top["name"], 409)
+        for sub in top["subcategories"]:
+            place = folder_tree.folder_text(top["name"], sub)
+            if not folder_in(place, subs) and \
+                    repo.count_in_subfolder(top["name"], sub):
+                return ("folder_not_empty",
+                        "This folder has documents: " + place, 409)
+    return {"categories": tree}
+
+
+def folder_in(place, places):
+    """Say whether a folder is in a list, ignoring case and accents."""
+    return archive_rules.fold(place) in [archive_rules.fold(p)
+                                         for p in places]
 
 
 @settings_bp.route("/settings/categories/suggest", methods=["POST"])

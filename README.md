@@ -15,12 +15,13 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 | Feature | What it does |
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
-| Automatic classification | The AI sorts each file into one of five folders: Press, Documents, Photos, Audio, or Video |
+| Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
 | Several projects | Each project has its own folder and its own catalog. Switch between them from the sidebar |
 | Login | One local account protects the app. The password is saved only as a bcrypt hash |
-| Chatbot | Ask Cataloga finds documents, filters the catalog, summarizes the project, and proposes new file names. A file is only renamed after you click Confirm |
+| Chatbot | Ask Cataloga finds documents, filters the catalog, summarizes the project, and proposes new file names or a move to another folder. A file is only renamed or moved after you click Confirm |
 | Open, preview, and Finder | Click a file name to open it, the eye icon (or the space bar) to preview it with Quick Look, and the folder icon to show it in Finder |
 | English and Spanish | The interface is in English by default. Spanish (Latin America) can be chosen in Settings |
 | Dashboard | Counts of classified documents and documents that need review, a breakdown by media type, and the latest activity |
@@ -78,8 +79,8 @@ With the virtual environment on, run this from the `cataloga` folder:
 | Step | What to do |
 |---|---|
 | 1. Create your account | The first time Cataloga opens, choose a username and a password (at least 8 characters). After that, log in |
-| 2. Create a project | In Settings, type a name and pick a folder. Cataloga creates a Drop Zone folder and the five media-type folders inside it |
-| 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder |
+| 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree, and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree |
+| 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog. If the folder was the only thing missing, the file becomes Classified |
 | 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a summary or a source. Turn on Edit Mode to fix a field |
 | 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
 
@@ -104,7 +105,9 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | No date | `undated` is used |
 | No source | That part is left out |
 | No topic | The original file name is used |
-| Photos, audio, video, and files without text | File date and a number, for example `2026-07-15_0001.jpg` |
+| Photos | Named with the project's method from what the photo shows |
+| Audio and video | Named with the project's method from the title in their tags |
+| Files with nothing to read | Their date and a number, for example `2026-07-15_0001.jpg`. If only the disk date is known, `undated_0001.jpg` |
 | Name already taken | `-2`, `-3`, and so on are added |
 | Rename from the chat | Uses the same cleaning rules, only after you click Confirm |
 
@@ -124,16 +127,18 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | GET | `/documents/<id>` | Yes | Gets one document |
 | PATCH | `/documents/<id>` | Yes | Edits the source, date, summary, media type, or status |
 | POST | `/documents/<id>/rename` | Yes | Renames one file, only after the user confirms in the chat |
+| POST | `/documents/<id>/move` | Yes | Moves one file to another folder of the project's tree. Creates the folder only when asked |
 | POST | `/documents/<id>/open` | Yes | Opens the file with its default app |
 | POST | `/documents/<id>/reveal` | Yes | Shows the file in Finder, selected |
 | POST | `/documents/<id>/preview` | Yes | Opens a Quick Look preview of the file |
 | GET | `/dashboard/stats` | Yes | Gives the numbers for the dashboard |
 | GET | `/settings` | Yes | Gives the active project's settings and the language |
-| PUT | `/settings` | Yes | Saves the project name, the naming template, and the language |
+| PUT | `/settings` | Yes | Saves the project name, the naming template, the folder tree (new folders only; folders with documents stay), and the language |
 | PUT | `/settings/ai-provider` | Yes | Saves the AI provider, model, and API key |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
-| POST | `/projects` | Yes | Creates a project, or opens a folder that already has a catalog |
+| POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
+| POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. Saves nothing |
 | PUT | `/projects/active` | Yes | Switches the active project |
 | DELETE | `/projects` | Yes | Takes a project out of the list. Never deletes its folder or files |
 | POST | `/chat` | Yes | Answers a chat message with one action from a fixed list. Never changes anything |
