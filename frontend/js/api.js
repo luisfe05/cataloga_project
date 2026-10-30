@@ -126,6 +126,13 @@ async function updateAIProvider(data) {
     return handleResponse(response);
 }
 
+/** DELETE /settings/ai-provider/<role>: take the fallback or media provider away. */
+async function deleteAIProvider(role) {
+    const response = await apiFetch(`${BASE_URL}/settings/ai-provider/${role}`,
+        { method: "DELETE" });
+    return handleResponse(response);
+}
+
 /** POST /settings/ai-provider/test */
 async function testAIProvider(data) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/test`, {

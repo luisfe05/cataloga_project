@@ -6,7 +6,7 @@ import os
 
 from flask import Blueprint, Response, jsonify, request
 
-from backend.pipeline.ai_providers import create_client
+from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, missing_note, needs_nothing, required_fields)
 from backend.config import projects as project_list
@@ -52,11 +52,11 @@ def summary_should_update(fields):
 def regenerate_summary(repo, doc):
     """Ask the active AI provider for a new summary of one document."""
     config = repo.get_app_config()
-    provider = repo.get_active_provider()
-    if not config or not provider:
+    client = project_client(repo)
+    if not config or client is None:
         return doc
     pipeline = ClassificationPipeline(
-        create_client(provider["provider_name"], provider["model"]),
+        client,
         repo,
         FileOrganizer(config["target_directory"]),
     )

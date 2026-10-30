@@ -1723,6 +1723,13 @@ td.edit-error {
     flex-direction: column;
 }
 
+/* One heading per provider role inside Advanced settings. */
+.advanced-fields h3 {
+    margin-top: var(--spacing-16);
+    margin-bottom: var(--spacing-8);
+    font-size: 1rem;
+}
+
 /* File names section in Settings: each method is a selectable row. */
 .naming-options {
     display: flex;
