@@ -54,6 +54,18 @@ GENERIC_NAME = re.compile(
     r"cimg|wp|sam|p|document|doc|file|untitled|new)[\s_.-]*[\d\s_.:-]*"
     r"(at[\s\d_.:-]*)?(am|pm)?[\s\d()_.-]*$", re.IGNORECASE)
 
+# A year in a file name or a folder name: _1997, Trialo-Isla-Verde_1998.
+PATH_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
+
+# How a date stamp reads: month first (11 13 '97, as cameras print) or
+# day first (13 11 97).
+STAMP_ORDERS = ("month", "day")
+DEFAULT_STAMP_ORDER = "month"
+
+MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+          "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+          "ene": 1, "abr": 4, "ago": 8, "dic": 12}
+
 # A year like 1997 or 2026 inside a file name.
 NAME_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
 
@@ -82,6 +94,71 @@ def is_generic_name(text):
         return True
     stem = os.path.splitext(str(text).strip())[0]
     return bool(GENERIC_NAME.match(stem))
+
+
+def year_in_path(path):
+    """Return a year written in the file name or its folders, or None."""
+    parts = [os.path.basename(path)] + os.path.dirname(path).split(os.sep)
+    for part in parts:
+        found = PATH_YEAR.search(part)
+        if found:
+            return found.group(1)
+    return None
+
+
+def full_year(two_or_four):
+    """Turn '97 into 1997 and 07 into 2007; a four-digit year stays."""
+    value = int(two_or_four)
+    if len(two_or_four) == 4:
+        return value
+    return 1900 + value if value > 30 else 2000 + value
+
+
+def stamp_date(text, order=DEFAULT_STAMP_ORDER):
+    """Read a date printed or written on a photo, like 11 13 '97, or None.
+
+    Returns YYYY-MM-DD, YYYY-MM or YYYY, with the precision the stamp has.
+    """
+    if not isinstance(text, str) or not text.strip():
+        return None
+    text = text.strip().lower().replace("'", "").replace("’", "")
+    # 1997-11-13 or 1997/11/13: the year goes first, no doubt possible.
+    found = re.search(r"\b((?:18|19|20)\d{2})[-/. ](\d{1,2})[-/. ](\d{1,2})\b",
+                      text)
+    if found:
+        return "{}-{:02d}-{:02d}".format(found.group(1), int(found.group(2)),
+                                         int(found.group(3)))
+    # 13 nov 97, nov 13 1997, noviembre de 1997.
+    found = re.search(r"(?:(\d{1,2})\s*)?([a-z]{3})[a-z]*\.?\s*(?:de\s*)?"
+                      r"(\d{1,2}(?=\D)\s*)?(\d{2,4})\b", text)
+    if found and found.group(2) in MONTHS:
+        day = found.group(1) or found.group(3)
+        year = full_year(found.group(4))
+        month = MONTHS[found.group(2)]
+        if day:
+            return "{}-{:02d}-{:02d}".format(year, month, int(day))
+        return "{}-{:02d}".format(year, month)
+    # 11 13 97, 11/13/97, 13.11.1997: two numbers and a year.
+    found = re.search(r"\b(\d{1,2})[-/. ](\d{1,2})[-/. ](\d{2}|\d{4})\b",
+                      text)
+    if found:
+        first, second = int(found.group(1)), int(found.group(2))
+        year = full_year(found.group(3))
+        month, day = (first, second) if order == "month" else (second, first)
+        # 13 can only be a day, whatever the order says.
+        if month > 12 and day <= 12:
+            month, day = day, month
+        if 1 <= month <= 12 and 1 <= day <= 31:
+            return "{}-{:02d}-{:02d}".format(year, month, day)
+    # 11 97 or 11/1997: a month and a year.
+    found = re.search(r"\b(\d{1,2})[-/. ](\d{2}|\d{4})\b", text)
+    if found and 1 <= int(found.group(1)) <= 12:
+        return "{}-{:02d}".format(full_year(found.group(2)),
+                                  int(found.group(1)))
+    found = re.search(r"\b((?:18|19|20)\d{2})\b", text)
+    if found:
+        return found.group(1)
+    return None
 
 
 def name_hints(filename):

@@ -71,7 +71,8 @@ const LANG_ES = {
     "catalog.date_from_content": "Contenido",
     "catalog.date_from_metadata": "Metadata del archivo",
     "catalog.date_from_file": "Fecha del archivo",
-    "catalog.date_from_name": "Nombre del archivo",
+    "catalog.date_from_photo_stamp": "Sello en la foto",
+    "catalog.date_from_name": "Nombre del archivo o carpeta",
     "catalog.col_folder_reason": "Por qué esta carpeta",
     "catalog.col_confidence": "Confianza",
     "catalog.confidence_high": "Alta",
@@ -260,6 +261,12 @@ const LANG_ES = {
     "naming.keep": "Conservar los nombres originales",
     "naming.keep_example": "el-nombre-que-le-diste.pdf",
     "naming.preview": "Vista previa",
+    "naming.stamp_order": "Fechas impresas en las fotos",
+    "naming.stamp_month": "Mes primero (11 13 '97)",
+    "naming.stamp_day": "Día primero (13 11 97)",
+    "naming.photo_date_rule": "La fecha de una foto sale de la fecha impresa "
+        + "o escrita en ella, luego del EXIF de una cámara (el de un escáner "
+        + "es el día del escaneo), y luego de un año en su nombre o carpeta.",
     "naming.media_rule": "Las fotos se nombran con este método según lo "
         + "que muestran, y el audio y el video según el título de sus "
         + "etiquetas. Los archivos sin nada que leer usan su fecha y un "

@@ -9,6 +9,7 @@ from pypdf import PdfReader
 from backend.models.document import Document
 from backend.pipeline import (archive_rules, file_metadata, file_readers,
                               folder_tree, naming)
+from backend.pipeline.ai_providers import base
 
 # Sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
@@ -239,8 +240,15 @@ def file_context(file_path, project_folder, media_type, meta, content):
 
 
 def choose_date(content_date, file_path, taken=None, meta_date=None,
-                name_year=None):
-    """Pick the date and say where it came from, in order of trust."""
+                name_year=None, stamp=None):
+    """Pick the date and say where it came from, in order of trust.
+
+    A date printed or written on a photo comes first, then the date a
+    camera wrote, then the content, the file's own metadata, a year in
+    the file name or its folders, and last the disk date.
+    """
+    if stamp:
+        return stamp, "photo stamp"
     if taken:
         return taken, "photo"
     if content_date:
@@ -253,9 +261,12 @@ def choose_date(content_date, file_path, taken=None, meta_date=None,
 
 
 def too_big_to_read(file_path, extension):
-    """Say whether a file that would be opened is over the size limit."""
-    opened = READABLE_EXTENSIONS + file_readers.VISION_EXTENSIONS
-    return (extension in opened and
+    """Say whether a file that would be opened is over the size limit.
+
+    Photos are not counted: a 98 MB scan is shrunk before it is sent, so
+    the limit applies to what goes to the AI, not to the file.
+    """
+    return (extension in READABLE_EXTENSIONS and
             os.path.getsize(file_path) > file_readers.MAX_READ_BYTES)
 
 
@@ -315,6 +326,8 @@ class ClassificationPipeline:
         # Metadata saved inside the file, and the date a photo was taken.
         file_meta = {}
         taken = None
+        # A date printed or written on a photo.
+        stamp = None
 
         if too_big_to_read(file_path, extension):
             media_type = kind
@@ -330,8 +343,7 @@ class ClassificationPipeline:
               self.ai_client.supports_images):
             media_type = "Photos"
             taken = file_readers.photo_date(file_path)
-            content = self.read_images(
-                [file_readers.photo_data_uri(file_path)], "photo")
+            content, stamp = self.read_photo(file_path)
             if not content:
                 reason = archive_rules.IMAGE_NOTE
         elif kind:
@@ -373,7 +385,7 @@ class ClassificationPipeline:
         date, date_source = choose_date(
             metadata["document_date"], file_path, taken,
             file_meta.get("date") or file_meta.get("created"),
-            archive_rules.name_hints(original_filename)["year"])
+            archive_rules.year_in_path(file_path), stamp)
         metadata["document_date"] = date
 
         folder, placed = self.destination(file_path, media_type, metadata)
@@ -447,6 +459,34 @@ class ClassificationPipeline:
         if length:
             return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
         return archive_rules.MEDIA_NOTE
+
+    def read_photo(self, file_path):
+        """Send a photo and its corners; return (text, stamp date)."""
+        views = file_readers.photo_views(file_path)
+        result = parse_json_answer(self.ai_client.ask_about_images(
+            views, base.PHOTO_PROMPT))
+        rotation = result.get("rotation")
+        if rotation in (90, 180, 270):
+            # A scan lying on its side: turn the copy and look again.
+            turned = file_readers.photo_views(file_path, rotation)
+            again = parse_json_answer(self.ai_client.ask_about_images(
+                turned, base.PHOTO_PROMPT))
+            if again:
+                result = again
+        order = self.db.stamp_date_order()
+        stamp = archive_rules.stamp_date(result.get("printed_date"), order) \
+            or archive_rules.stamp_date(result.get("handwritten_date"),
+                                        order)
+        found = archive_rules.clean_text(result.get("text"), 20000)
+        description = archive_rules.clean_text(result.get("description"), 500)
+        if not found and not description:
+            return "", stamp
+        # The summary and metadata prompts then read this like a document.
+        lines = ["This is a photo; its topic is what it shows.",
+                 "Photo description: " + (description or "")]
+        if found:
+            lines.append("Text in the photo:\n" + found)
+        return "\n".join(lines), stamp
 
     def read_images(self, image_uris, kind):
         """Ask the AI to read images; return them as text, or ''."""

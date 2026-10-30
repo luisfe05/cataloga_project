@@ -26,6 +26,7 @@ class AppConfig:
                                           naming.DEFAULT_TEMPLATE),
             "naming_style": self.db.get_naming_style(),
             "keep_accents": self.db.keep_accents(),
+            "stamp_date_order": self.db.stamp_date_order(),
             "industry": config.get("industry") or "",
             "categories": archive_rules.categories_from_text(
                 config.get("categories")),
