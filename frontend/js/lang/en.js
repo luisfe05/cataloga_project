@@ -256,6 +256,9 @@ const LANG_EN = {
     "naming.m3_example": "0001_topic-name.pdf",
     "naming.m4": "Topic, source and date",
     "naming.m4_example": "topic-name_source-name_date.pdf",
+    "naming.m5": "Event and year, plus a number",
+    "naming.m5_example": "Event-Name_1998_1.jpg (the file takes the name of its "
+        + "event folder)",
     "naming.custom": "Custom",
     "naming.keep": "Keep original names",
     "naming.keep_example": "the-name-you-gave-it.pdf",
@@ -363,7 +366,8 @@ const LANG_EN = {
         + "on the disk. A folder with subfolders only holds files in them.",
     "folders.flag_events": "Events",
     "folders.flag_events_hint": "Holds one folder per event, named "
-        + "Event_Year. Cataloga may propose new event folders here.",
+        + "Event_Year. Cataloga proposes new event folders here, and only "
+        + "here, and files in them take the event's name plus a number.",
     "folders.flag_fallback": "Catch-all",
     "folders.flag_fallback_hint": "Files that fit nowhere else go here "
         + "instead of Manual Review.",
