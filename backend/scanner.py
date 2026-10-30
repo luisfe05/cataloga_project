@@ -10,6 +10,7 @@ import threading
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
+from backend.pipeline import folder_tree
 from backend.pipeline.ai_providers import (create_client,
                                            ready_media_client)
 from backend.pipeline.classification_pipeline import ClassificationPipeline
@@ -135,6 +136,99 @@ def scan_folder(job, folder, repo, client, owner=None):
         job.done += 1
     job.current = ""
     job.status = "done"
+
+
+def read_new_files(folder, repo, client, owner=None):
+    """Read the new or changed files of a folder in place, without a job.
+
+    The watcher calls this every few seconds; the index makes it cheap.
+    """
+    pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
+                                      owner=owner, in_place=True,
+                                      media_client=ready_media_client(repo))
+    documents = []
+    for path in find_files(folder):
+        try:
+            stamp = file_stamp(path)
+            known = repo.index_get(path)
+            if known and (known["size"], known["mtime"]) == stamp:
+                continue
+            if known:
+                repo.delete_document(known["document_id"])
+            document = pipeline.classify_document(path)
+            repo.index_put(path, stamp[0], stamp[1], document.id)
+            documents.append(document)
+        except Exception as error:
+            logger.warning("could not read %s: %s", path, error)
+    return documents
+
+
+def events_folder_of(tree, path):
+    """Return the Events folder a path sits in, or None."""
+    parts = folder_tree.split_path(path)
+    if len(parts) < 2:
+        return None
+    parent = folder_tree.join_path(parts[:-1])
+    node = folder_tree.node_at(tree, parent)
+    if node is not None and node.get("events"):
+        return parent
+    return None
+
+
+def auto_apply_place(repo, doc):
+    """Return the proposed folder if the user marked it No asking, or None."""
+    if not doc.proposed_folder or not repo.is_tree_project():
+        return None
+    tree = repo.get_folder_tree() or []
+    # The folder itself, or an Events folder it is proposed inside of.
+    for path in (doc.proposed_folder,
+                 events_folder_of(tree, doc.proposed_folder)):
+        node = folder_tree.node_at(tree, path) if path else None
+        if node is not None and node.get("auto_apply"):
+            return doc.proposed_folder
+    return None
+
+
+def apply_proposal(repo, organizer, doc):
+    """Move and rename a file as proposed; the folder is created if needed."""
+    place = doc.proposed_folder or folder_tree.join_path(
+        folder_tree.split_path(doc.folder_path or ""))
+    tree = repo.get_folder_tree() or []
+    if doc.proposed_folder and folder_tree.find_place(
+            tree, doc.proposed_folder) is None:
+        # A new event folder: the tree gains it, then the disk.
+        tree = folder_tree.add_place(tree, doc.proposed_folder)
+        repo.save_tree(tree)
+    target = organizer.tree_folder(place) if place else \
+        os.path.dirname(doc.file_path)
+    name = doc.proposed_name or doc.filename
+    old_path = doc.file_path
+    new_path = organizer.move_to_folder(old_path, target, name)
+    stamp = file_stamp(new_path)
+    repo.clear_proposals(doc.id)
+    repo.index_replace(old_path, new_path, stamp[0], stamp[1], doc.id)
+    logger.info("Moved %s to %s", doc.filename, new_path)
+    return repo.move_document(doc.id, new_path,
+                              folder_tree.canonical_path(tree, place)
+                              if place else (doc.folder_path or ""))
+
+
+def watch_once(folder, repo, client, owner=None):
+    """Read what is new in an in-place project and apply the marked moves."""
+    documents = read_new_files(folder, repo, client, owner)
+    if repo.is_catalog_project():
+        return documents
+    organizer = FileOrganizer(folder)
+    applied = []
+    for doc in documents:
+        if auto_apply_place(repo, doc):
+            try:
+                applied.append(apply_proposal(repo, organizer, doc))
+            except Exception as error:
+                logger.warning("could not file %s: %s", doc.filename, error)
+        else:
+            applied.append(doc)
+    return applied
 
 
 def start_scan(app, projects_path, owner=None):

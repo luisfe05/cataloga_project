@@ -48,7 +48,11 @@ PROTECTED_PREFIXES = ("readme",)
 PROTECTED_SUFFIXES = (".config.js", ".config.ts", ".config.json", ".lock",
                       ".plist")
 
-TOKENS = ("date", "source", "topic", "number", "original", "topic_number")
+TOKENS = ("date", "source", "topic", "number", "original", "topic_number",
+          "event", "n")
+
+# Method 5: the event folder's name and a running number: Event_Year_1.
+EVENT_TEMPLATE = "{event}_{n}"
 
 # Not allowed in file names on macOS or Windows.
 FORBIDDEN_CHARACTERS = '/\\:*?"<>|'
@@ -114,9 +118,30 @@ def file_date(path):
         "%Y-%m-%d")
 
 
+def next_event_number(folder, event):
+    """Return the next number for Event_N in a folder, counted on the disk.
+
+    Files that never passed through Cataloga count too, so a folder with
+    13 photos gives 14.
+    """
+    highest = 0
+    pattern = re.compile(r"^" + re.escape(event) + r"[_-](\d+)(?:[._-]|$)",
+                         re.IGNORECASE)
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        names = []
+    for name in names:
+        found = pattern.match(os.path.splitext(name)[0])
+        if found:
+            highest = max(highest, int(found.group(1)))
+    return highest + 1
+
+
 def build_parts(original_filename, number, document_date=None,
                 source=None, topic=None, topic_number=1,
-                style=DEFAULT_STYLE, keep_accents=False):
+                style=DEFAULT_STYLE, keep_accents=False, event=None,
+                event_number=None):
     """Prepare the value of every template part."""
     original = slugify(os.path.splitext(original_filename)[0],
                        style=style, keep_accents=keep_accents)
@@ -131,6 +156,10 @@ def build_parts(original_filename, number, document_date=None,
         "original": original or "untitled",
         # Kept at the end of the new name, so v01 and v02 stay apart.
         "version": version_of(original_filename),
+        # The event folder's own name, as it is on the disk, and its count.
+        "event": "".join(c for c in (event or "")
+                         if c not in FORBIDDEN_CHARACTERS).strip(),
+        "n": str(event_number) if event_number else "",
     }
 
 
