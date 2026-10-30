@@ -225,6 +225,17 @@ class CatalogRepository:
             conn.close()
         return self.get_document(doc_id)
 
+    def set_review_note(self, doc_id, note):
+        """Change only the review note, as part of an action already logged."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE documents SET review_note = ? WHERE id = ?",
+                         (note, doc_id))
+            conn.commit()
+        finally:
+            conn.close()
+        return self.get_document(doc_id)
+
     def count_in_folder(self, folder):
         """Count the documents in a tree folder or any of its subfolders."""
         conn = get_connection(self.db_path)

@@ -142,13 +142,19 @@ def missing_note(document, required=REQUIRED_FIELDS):
     return archive_rules.MISSING_NOTE.format(", ".join(missing))
 
 
+def required_fields(document):
+    """Return the fields a document needs to count as Classified."""
+    if document.media_type == "Photos":
+        return PHOTO_REQUIRED_FIELDS
+    return REQUIRED_FIELDS
+
+
 def needs_nothing(document):
     """Say whether a document has every field and no open review note."""
     if document.review_note or document.duplicate_of:
         return False
-    required = PHOTO_REQUIRED_FIELDS if document.media_type == "Photos" \
-        else REQUIRED_FIELDS
-    return all(getattr(document, field) for field in required)
+    return all(getattr(document, field)
+               for field in required_fields(document))
 
 
 def with_metadata(text, meta):
