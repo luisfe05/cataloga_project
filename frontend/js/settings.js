@@ -146,6 +146,8 @@ function startNewProject() {
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
+    document.getElementById("project-sheet").value = "";
+    showSheetMessage("", "");
     // New projects start with method 4.
     showSavedTemplate(NAMING_METHODS.m4);
     showCategories("", []);
@@ -428,6 +430,33 @@ function showSavedTemplate(template) {
     renderNamingBlocks();
 }
 
+function showSheetMessage(text, kind) {
+    const message = document.getElementById("sheet-message");
+    message.textContent = text;
+    message.className = "form-message " + kind;
+}
+
+/** Ask the AI for the sheet of the chosen folder; the user edits it before Save. */
+async function suggestProjectSheet() {
+    const folder = document.getElementById("target-directory").value.trim();
+    if (!folder) {
+        showSheetMessage(t("sheet.need_folder"), "error");
+        return;
+    }
+    const button = document.getElementById("suggest-sheet");
+    button.disabled = true;
+    showSheetMessage(t("sheet.suggesting"), "");
+    try {
+        const result = await suggestSheet(folder);
+        document.getElementById("project-sheet").value = result.sheet;
+        showSheetMessage(t("sheet.suggested"), "success");
+    } catch (error) {
+        showSheetMessage(errorText(error), "error");
+    } finally {
+        button.disabled = false;
+    }
+}
+
 function showSettingsMessage(text, kind) {
     const message = document.getElementById("settings-message");
     message.textContent = text;
@@ -480,6 +509,9 @@ async function loadSettings() {
         document.getElementById("target-directory").value =
             settings.target_directory;
 
+        document.getElementById("project-sheet").value =
+            settings.project_sheet || "";
+        showSheetMessage("", "");
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
@@ -553,6 +585,8 @@ async function saveSettings(event) {
                 naming_template: chosenTemplate(),
                 description: document.getElementById("project-description")
                     .value.trim(),
+                project_sheet: document.getElementById("project-sheet")
+                    .value.trim(),
                 folders: readFolderTree(),
                 confirm_folder: folderWarningShown,
                 server_url: readServerUrl(),
@@ -565,6 +599,8 @@ async function saveSettings(event) {
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
+                project_sheet: document.getElementById("project-sheet")
+                    .value.trim(),
                 industry: document.getElementById("industry").value,
                 // In a tree project the categories are the folders.
                 categories: isTree ? readFolderTree() : readCategories(),
@@ -691,6 +727,8 @@ document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
+document.getElementById("suggest-sheet")
+    .addEventListener("click", suggestProjectSheet);
 document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
 document.getElementById("naming-options")

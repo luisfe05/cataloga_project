@@ -120,6 +120,9 @@ Answer with one JSON object only."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
 
+# Goes before the metadata prompt when the project has a sheet.
+SHEET_PREFIX = "Project sheet (what this work is):\n"
+
 
 def now_timestamp():
     """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00."""
@@ -519,14 +522,15 @@ class ClassificationPipeline:
                 "confidence": None}
 
     def card_prompt(self):
-        """Return the system prompt: the card, plus the project's places."""
+        """Return the system prompt: the sheet, the card, and the places."""
         categories = self.db.get_categories()
+        prompt = self.sheet_prompt() + FILE_PROMPT
         if self.db.is_tree_project():
-            return FILE_PROMPT + self.folder_prompt(categories)
+            return prompt + self.folder_prompt(categories)
         if categories:
-            return FILE_PROMPT + CATEGORY_PROMPT.format(
+            return prompt + CATEGORY_PROMPT.format(
                 categories=json.dumps(categories, ensure_ascii=False))
-        return FILE_PROMPT + NO_PLACE_PROMPT
+        return prompt + NO_PLACE_PROMPT
 
     def read_card(self, file_path, media_type, file_meta, content):
         """Ask the AI for the whole card in one request, then check it."""
@@ -579,6 +583,13 @@ class ClassificationPipeline:
         metadata.update({"category": category, "subcategory": subcategory,
                          "review_note": note})
         return metadata
+
+    def sheet_prompt(self):
+        """Return the project sheet as the first part of the prompt, or ''."""
+        sheet = self.db.get_project_sheet()
+        if not sheet:
+            return ""
+        return SHEET_PREFIX + sheet + "\n\n"
 
     def folder_prompt(self, tree):
         """Return the part of the prompt with the project's folder tree."""

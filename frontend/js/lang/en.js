@@ -302,6 +302,18 @@ const LANG_EN = {
         + "the list.",
 
     // Folder tree of a project
+    "sheet.title": "About this project",
+    "sheet.hint": "A short sheet of what this work is. Cataloga reads it "
+        + "before every file, so the classification understands the work. "
+        + "Write it, or let the AI write it from a sample of the folder, "
+        + "then edit it.",
+    "sheet.label": "Project sheet",
+    "sheet.placeholder": "Work: ...\nIndustry: ...\nParts: ...\nFile "
+        + "types: ...\nNaming style: ...",
+    "sheet.suggest": "Write it for me",
+    "sheet.need_folder": "Choose the project folder first.",
+    "sheet.suggesting": "Reading a sample of the folder...",
+    "sheet.suggested": "Edit the sheet if you like, then click Save.",
     "folders.title": "Folders",
     "folders.hint": "Cataloga files each new document in the folder that "
         + "fits its content. Describe the project and click Suggest folders, "
@@ -454,6 +466,8 @@ const LANG_EN = {
         "The AI provider did not suggest categories. Try again.",
     "error.no_provider": "Choose an AI provider in Settings first.",
     "error.invalid_folders": "The folder tree is not valid. Check the names.",
+    "error.invalid_sheet": "The project sheet is too long. Use 1,500 "
+        + "characters or fewer.",
     "error.invalid_description":
         "The description must be 300 characters or fewer.",
     "error.folder_not_empty": "A folder with documents can't be removed.",
