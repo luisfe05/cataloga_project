@@ -128,7 +128,8 @@ def test_export_csv(flask_client, repo):
                         "Category,"
                         "Subcategory,Counterparty,Confidentiality,Owner,"
                         "Effective Start,Effective End,Duplicate Of,"
-                        "Review Note,Suggested Folder,SHA-256")
+                        "Review Note,Suggested Folder,Why This Folder,"
+                        "Confidence,Original Path,SHA-256")
     assert "D_001.pdf" in lines[1]
 
 
@@ -174,10 +175,13 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "target_directory": app.config["PROJECT_FOLDER"],
         "language": "en", "naming_template": "{date}_{topic}",
         "active_provider": None, "active_model": None,
+        "fallback_provider": None, "fallback_model": None,
+        "media_provider": None, "media_model": None, "server_url": "",
         "old_inbox_has_files": False, "project_status": "ok",
-        "providers_with_key": [], "username": "",
+        "providers_with_key": [], "username": "test",
         "industry": "", "categories": [],
         "folder_mode": "media", "project_description": "",
+        "project_sheet": "",
         "folder_counts": {},
     }
 
