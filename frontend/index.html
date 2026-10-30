@@ -13,23 +13,29 @@
         <img class="auth-logo" src="assets/logo-vertical-paper.svg"
              alt="Cataloga">
 
-        <form class="settings-form auth-form hidden" id="setup-form">
-            <h2 data-i18n="auth.setup_title">Create your account</h2>
-            <p class="hint" data-i18n="auth.setup_hint"></p>
-            <label for="setup-username"
+        <form class="settings-form auth-form hidden" id="register-form">
+            <h2 data-i18n="auth.register_title">Create an account</h2>
+            <p class="hint" data-i18n="auth.register_hint"></p>
+            <label for="register-username"
                    data-i18n="auth.username">Username</label>
-            <input type="text" id="setup-username" autocomplete="username">
-            <label for="setup-password"
+            <input type="text" id="register-username"
+                   autocomplete="username">
+            <label for="register-password"
                    data-i18n="auth.password">Password</label>
-            <input type="password" id="setup-password"
+            <input type="password" id="register-password"
                    autocomplete="new-password">
-            <label for="setup-confirm"
+            <label for="register-confirm"
                    data-i18n="auth.confirm_password">Confirm password</label>
-            <input type="password" id="setup-confirm"
+            <input type="password" id="register-confirm"
                    autocomplete="new-password">
             <button type="submit" class="primary-button"
                     data-i18n="auth.create_account">Create account</button>
-            <p class="form-message error" id="setup-message"></p>
+            <p class="form-message error" id="register-message"></p>
+            <p class="auth-links">
+                <button type="button" class="auth-link" id="show-login-link"
+                        data-i18n="auth.have_account">I already have an
+                    account</button>
+            </p>
         </form>
 
         <form class="settings-form auth-form hidden" id="login-form">
@@ -44,6 +50,16 @@
             <button type="submit" class="primary-button"
                     data-i18n="auth.log_in">Log in</button>
             <p class="form-message error" id="login-message"></p>
+            <p class="auth-links">
+                <button type="button" class="auth-link"
+                        id="show-register-link"
+                        data-i18n="auth.need_account">Create an account</button>
+                <button type="button" class="auth-link" id="forgot-link"
+                        data-i18n="auth.forgot">Forgot your password?</button>
+            </p>
+            <!-- There is no email, so there is no way to recover it. -->
+            <p class="hint auth-forgot hidden" id="forgot-hint"
+               data-i18n="auth.forgot_hint"></p>
         </form>
     </section>
 
