@@ -75,15 +75,14 @@ If nothing in the list fits, use null for both."""
 FOLDER_PROMPT = """
 
 This project is about: {description}
-These are its folders, at most two levels:
+These are the folders a file can go into, as paths from the project:
 {folders}
 Choose the folder where an archivist would file this document, by what
-it is about, not by its file type. Add "folder" with one top folder name
-exactly as written, and "subfolder" with one of its subfolders exactly
-as written (null if that folder has none). Never force a document into
-a folder made for something else. If no folder fits, use null for both
-and always add "suggested_folder": {{"parent": "<a top folder name, or
-null for a new top folder>", "name": "<new folder name, 1 to 3 words>"}}.
+it is about, not by its file type. Add "folder" with one path exactly
+as written. Never force a document into a folder made for something
+else. If no folder fits, use null and always add "suggested_folder":
+{{"parent": "<an existing folder path, or null for a new top folder>",
+"name": "<new folder name, 1 to 3 words>"}}.
 Answer with one JSON object only."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
@@ -206,9 +205,9 @@ class ClassificationPipeline:
         """Return the folder a file goes to, and if it found its place."""
         if not self.db.is_tree_project():
             return self.file_organizer.folder_for(media_type), True
-        if metadata["category"]:
+        if metadata["folder_path"]:
             return self.file_organizer.tree_folder(
-                metadata["category"], metadata["subcategory"]), True
+                metadata["folder_path"]), True
         # No folder fits: the file stays in the Drop Zone for a person.
         return os.path.dirname(file_path), False
 
@@ -320,6 +319,7 @@ class ClassificationPipeline:
             counterparty=metadata["counterparty"],
             category=metadata["category"],
             subcategory=metadata["subcategory"],
+            folder_path=metadata["folder_path"],
             review_note=reason or metadata["review_note"],
             suggested_folder=metadata["suggested_folder"],
             date_source=date_source,
@@ -437,13 +437,14 @@ class ClassificationPipeline:
         """Return the metadata of a file the AI did not read."""
         return {"source": None, "document_date": None, "topic": None,
                 "keywords": [], "counterparty": None, "category": None,
-                "subcategory": None, "review_note": None,
-                "suggested_folder": None}
+                "subcategory": None, "folder_path": None,
+                "review_note": None, "suggested_folder": None}
 
     def extract_metadata(self, text):
         """Ask the AI for the metadata, then check every field it sent."""
-        categories = self.db.get_categories()
         tree_mode = self.db.is_tree_project()
+        categories = self.db.get_folder_tree() if tree_mode \
+            else self.db.get_categories()
         prompt = METADATA_PROMPT
         if tree_mode:
             prompt += self.folder_prompt(categories)
@@ -476,30 +477,38 @@ class ClassificationPipeline:
             archive_rules.clean_text(result.get("category"), 200),
             archive_rules.clean_text(result.get("subcategory"), 200))
         metadata.update({"category": category, "subcategory": subcategory,
+                         "folder_path": folder_tree.folder_text(
+                             category, subcategory) if category else None,
                          "review_note": note})
         return metadata
 
     def folder_prompt(self, tree):
-        """Return the part of the prompt with the project's folder tree."""
-        folders = [{"folder": top["name"], "subfolders": top["subcategories"]}
-                   for top in tree]
+        """Return the part of the prompt with the project's folder paths."""
         return FOLDER_PROMPT.format(
             description=self.db.get_project_description() or "(not given)",
-            folders=json.dumps(folders, ensure_ascii=False))
+            folders=json.dumps(folder_tree.all_places(tree),
+                               ensure_ascii=False))
 
     def match_folder(self, metadata, result, tree):
-        """Keep the AI's folder if it is in the tree; else a suggestion."""
-        folder, subfolder, note = archive_rules.match_category(
-            tree,
-            archive_rules.clean_text(result.get("folder"), 200),
-            archive_rules.clean_text(result.get("subfolder"), 200))
-        if note:
-            # Half a match (a folder without its subfolder) is no match.
-            metadata["review_note"] = folder_tree.NO_FOLDER_NOTE
-            metadata["suggested_folder"] = folder_tree.clean_suggestion(
-                result.get("suggested_folder"), tree)
-            return metadata
-        metadata.update({"category": folder, "subcategory": subfolder})
+        """Keep the AI's folder if it is in the tree; else the catch-all."""
+        folder = archive_rules.clean_text(result.get("folder"), 400) or ""
+        subfolder = archive_rules.clean_text(result.get("subfolder"), 200)
+        # Older answers send the subfolder apart.
+        if subfolder:
+            folder = folder_tree.join_path([folder, subfolder])
+        place = folder_tree.find_place(tree, folder)
+        if place is None:
+            place = folder_tree.fallback_place(tree)
+            if place is None:
+                metadata["review_note"] = folder_tree.NO_FOLDER_NOTE
+                metadata["suggested_folder"] = folder_tree.clean_suggestion(
+                    result.get("suggested_folder"), tree)
+                return metadata
+            # What fits nowhere goes to the catch-all, as a Classified file.
+            metadata["review_note"] = None
+        category, subcategory = folder_tree.first_two(place)
+        metadata.update({"category": category, "subcategory": subcategory,
+                         "folder_path": place})
         return metadata
 
     def validate_completeness(self, document, required=REQUIRED_FIELDS):

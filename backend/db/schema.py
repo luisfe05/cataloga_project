@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS documents (
     category          TEXT,
     subcategory       TEXT,
     date_source       TEXT,
-    suggested_folder  TEXT
+    suggested_folder  TEXT,
+    folder_path       TEXT
 );
 """
 
@@ -87,6 +88,9 @@ ADDED_DOCUMENTS_COLUMNS = {
     "date_source": "date_source TEXT",
     # A folder the AI would create, as 'Folder/Subfolder'.
     "suggested_folder": "suggested_folder TEXT",
+    # The file's folder in the tree, as 'A/B/C'. category and subcategory
+    # keep its first two levels.
+    "folder_path": "folder_path TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -115,7 +119,9 @@ CREATE TABLE IF NOT EXISTS app_config (
     industry                TEXT,
     categories              TEXT,
     folder_mode             TEXT,
-    project_description     TEXT
+    project_description     TEXT,
+    folder_tree             TEXT,
+    numbered_folders        INTEGER
 );
 """
 
@@ -130,6 +136,10 @@ ADDED_APP_CONFIG_COLUMNS = {
     # 'tree' for projects with their own folders; empty in old projects.
     "folder_mode": "folder_mode TEXT",
     "project_description": "project_description TEXT",
+    # The whole tree as JSON (any depth); categories keeps two levels.
+    "folder_tree": "folder_tree TEXT",
+    # 1 when new folders get a 01_ prefix.
+    "numbered_folders": "numbered_folders INTEGER",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """
@@ -174,5 +184,10 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
     add_missing_columns(cursor)
+    # Rows from before folder_path: the path is the two old columns.
+    cursor.execute("UPDATE documents SET folder_path = CASE WHEN "
+                   "subcategory IS NOT NULL THEN category || '/' || "
+                   "subcategory ELSE category END WHERE folder_path IS "
+                   "NULL AND category IS NOT NULL")
     conn.commit()
     conn.close()

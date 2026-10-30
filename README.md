@@ -16,6 +16,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Folder trees | A project's folders can go six levels deep. The AI chooses one folder path per file. A folder marked Catch-all receives what fits nowhere else, as a classified file. Folders already created are never renamed |
 | Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
@@ -79,7 +80,7 @@ With the virtual environment on, run this from the `cataloga` folder:
 | Step | What to do |
 |---|---|
 | 1. Create your account | The first time Cataloga opens, choose a username and a password (at least 8 characters). After that, log in |
-| 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree, and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree |
+| 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree (folders inside folders, up to six levels; each folder can be marked Events, Catch-all, or No asking), and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree. Number new folders gives them a 01_, 02_ prefix |
 | 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog. If the folder was the only thing missing, the file becomes Classified |
 | 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a summary or a source. Turn on Edit Mode to fix a field |
 | 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
@@ -127,7 +128,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | GET | `/documents/<id>` | Yes | Gets one document |
 | PATCH | `/documents/<id>` | Yes | Edits the source, date, summary, media type, or status |
 | POST | `/documents/<id>/rename` | Yes | Renames one file, only after the user confirms in the chat |
-| POST | `/documents/<id>/move` | Yes | Moves one file to another folder of the project's tree. Creates the folder only when asked |
+| POST | `/documents/<id>/move` | Yes | Moves one file to another folder of the project's tree, given as a path like `Research/Photos/Events`. With `create_folder`, every missing level is created first |
 | POST | `/documents/<id>/open` | Yes | Opens the file with its default app |
 | POST | `/documents/<id>/reveal` | Yes | Shows the file in Finder, selected |
 | POST | `/documents/<id>/preview` | Yes | Opens a Quick Look preview of the file |

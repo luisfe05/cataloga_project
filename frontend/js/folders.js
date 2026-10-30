@@ -1,13 +1,21 @@
-/** folders.js: the project's folder tree in Settings. Two levels, edited without dragging. */
+/** folders.js: the project's folder tree in Settings. Any depth, edited without dragging. */
 
 // Same limits and rules as folder_tree.py; the backend checks again.
 const MAX_TOP_FOLDERS = 20;
 const MAX_SUBFOLDERS = 10;
+const MAX_TREE_DEPTH = 6;
 const MAX_FOLDER_NAME_LENGTH = 60;
 const FOLDER_FORBIDDEN = '/\\:*?"<>|';
 const RESERVED_FOLDER_NAMES = ["con", "prn", "aux", "nul",
     "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
     "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"];
+
+// Marks a folder can carry, with their text keys.
+const FOLDER_FLAGS = {
+    events: "folders.flag_events",
+    fallback: "folders.flag_fallback",
+    auto_apply: "folders.flag_auto",
+};
 
 // The old five folders, for "Start from file types".
 const FILE_TYPE_FOLDERS = ["Press", "Documents", "Photos", "Audio", "Video"];
@@ -15,7 +23,7 @@ const FILE_TYPE_FOLDERS = ["Press", "Documents", "Photos", "Audio", "Video"];
 // "media" for old projects sorted by type, "tree" for projects with their own folders.
 let projectFolderMode = "media";
 
-// One entry per folder: { key, name, parent (a key or null), saved, count }.
+// One entry per folder: { key, name, parent (a key or null), saved, count, flags }.
 let folderRows = [];
 let nextFolderKey = 1;
 
@@ -46,9 +54,12 @@ function folderNameProblem(name) {
     return "";
 }
 
-function addFolderRow(name, parent, saved, count) {
+function addFolderRow(name, parent, saved, count, flags) {
     const row = { key: nextFolderKey, name: name, parent: parent,
-        saved: saved, count: count || 0 };
+        saved: saved, count: count || 0,
+        events: Boolean(flags && flags.events),
+        fallback: Boolean(flags && flags.fallback),
+        auto_apply: Boolean(flags && flags.auto_apply) };
     nextFolderKey += 1;
     folderRows.push(row);
     return row;
@@ -62,21 +73,70 @@ function topRows() {
     return folderRows.filter((row) => row.parent === null);
 }
 
+function rowByKey(key) {
+    return folderRows.find((row) => row.key === key);
+}
+
+/** How deep a row sits: 0 for a top folder. */
+function depthOf(row) {
+    let depth = 0;
+    let current = row;
+    while (current.parent !== null) {
+        current = rowByKey(current.parent);
+        depth += 1;
+    }
+    return depth;
+}
+
+/** The path of a row, "A/B/C", as the backend keys the counts. */
+function pathOf(row) {
+    const names = [];
+    let current = row;
+    while (current) {
+        names.unshift(current.name);
+        current = current.parent === null ? null : rowByKey(current.parent);
+    }
+    return names.join("/");
+}
+
+/** Every row under a row, at any depth. */
+function descendantsOf(key) {
+    const found = [];
+    childrenOf(key).forEach((child) => {
+        found.push(child, ...descendantsOf(child.key));
+    });
+    return found;
+}
+
+/** How many levels a row's subtree has, the row included. */
+function subtreeDepth(row) {
+    const children = childrenOf(row.key);
+    if (!children.length) {
+        return 1;
+    }
+    return 1 + Math.max(...children.map(subtreeDepth));
+}
+
 /** Load a tree into the editor. Saved folders are locked: no rename, no move. */
 function showFolderTree(tree, counts, saved) {
     folderRows = [];
-    tree.forEach((top) => {
-        const parent = addFolderRow(top.name, null, saved,
-            counts[top.name]);
-        top.subcategories.forEach((sub) => {
-            addFolderRow(sub, parent.key, saved,
-                counts[`${top.name}/${sub}`]);
+    const addNodes = (nodes, parent, parentPath) => {
+        nodes.forEach((node) => {
+            // An old two-level list sends subfolders as plain names.
+            const item = typeof node === "string" ? { name: node } : node;
+            const path = parentPath ? `${parentPath}/${item.name}` : item.name;
+            const row = addFolderRow(item.name, parent, saved, counts[path],
+                item);
+            const children = item.children
+                || (item.subcategories || []).map((name) => ({ name: name }));
+            addNodes(children, row.key, path);
         });
-    });
+    };
+    addNodes(tree, null, "");
     renderFolderRows();
 }
 
-/** The "Inside" dropdown: top level, or one of the top folders. */
+/** The "Inside" dropdown: top level, or any folder that is not below this one. */
 function makeParentSelect(row) {
     const select = document.createElement("select");
     select.className = "folder-parent";
@@ -85,15 +145,17 @@ function makeParentSelect(row) {
     top.value = "";
     top.textContent = t("folders.top_level");
     select.appendChild(top);
-    topRows().filter((other) => other.key !== row.key).forEach((other) => {
+    const below = [row.key, ...descendantsOf(row.key).map((r) => r.key)];
+    folderRows.filter((other) => !below.includes(other.key)).forEach((other) => {
         const option = document.createElement("option");
         option.value = String(other.key);
-        option.textContent = other.name || t("folders.unnamed");
+        option.textContent = "— ".repeat(depthOf(other))
+            + (other.name || t("folders.unnamed"));
         select.appendChild(option);
     });
     select.value = row.parent === null ? "" : String(row.parent);
-    // Only two levels: a folder with subfolders stays on top.
-    select.disabled = row.saved || childrenOf(row.key).length > 0;
+    // Folders on disk stay where they are.
+    select.disabled = row.saved;
     select.addEventListener("change", () => {
         row.parent = select.value ? Number(select.value) : null;
         renderFolderRows();
@@ -101,9 +163,28 @@ function makeParentSelect(row) {
     return select;
 }
 
+/** The three marks of a folder, as small checkboxes. */
+function makeFlagBox(row) {
+    const box = document.createElement("div");
+    box.className = "folder-flags";
+    Object.keys(FOLDER_FLAGS).forEach((flag) => {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = row[flag];
+        input.addEventListener("change", () => {
+            row[flag] = input.checked;
+        });
+        label.append(input, document.createTextNode(t(FOLDER_FLAGS[flag])));
+        label.title = t(FOLDER_FLAGS[flag] + "_hint");
+        box.appendChild(label);
+    });
+    return box;
+}
+
 /** Remove a folder. Its subfolders go too, after a question. */
 function removeFolder(row) {
-    const children = childrenOf(row.key);
+    const children = descendantsOf(row.key);
     if (children.length
             && !window.confirm(t("folders.remove_with_subs",
                 { name: row.name }))) {
@@ -116,7 +197,9 @@ function removeFolder(row) {
 
 function makeFolderRow(row) {
     const line = document.createElement("div");
-    line.className = row.parent === null ? "tree-row" : "tree-row sub";
+    const depth = depthOf(row);
+    line.className = depth ? "tree-row sub" : "tree-row";
+    line.style.setProperty("--depth", depth);
 
     const name = document.createElement("input");
     name.type = "text";
@@ -146,32 +229,40 @@ function makeFolderRow(row) {
         ? t("folders.has_documents", { n: row.count }) : t("folders.remove");
     remove.addEventListener("click", () => removeFolder(row));
 
-    line.append(name, makeParentSelect(row), remove);
+    line.append(name, makeParentSelect(row), makeFlagBox(row), remove);
     line.dataset.key = row.key;
     return line;
 }
 
-/** Draw the rows: each top folder, then its subfolders. */
+/** Draw the rows: each folder, then what is inside it, at any depth. */
 function renderFolderRows() {
     const list = document.getElementById("folder-list");
     list.innerHTML = "";
-    topRows().forEach((top) => {
-        list.appendChild(makeFolderRow(top));
-        childrenOf(top.key).forEach((child) => {
-            list.appendChild(makeFolderRow(child));
+    const draw = (rows) => {
+        rows.forEach((row) => {
+            list.appendChild(makeFolderRow(row));
+            draw(childrenOf(row.key));
         });
-    });
+    };
+    draw(topRows());
     document.getElementById("add-folder").disabled =
         topRows().length >= MAX_TOP_FOLDERS;
 }
 
-/** The tree as the backend saves it: [{ name, subcategories }]. */
+/** The tree as the backend saves it: [{ name, children, events, fallback, auto_apply }]. */
 function readFolderTree() {
-    return topRows().map((top) => ({
-        name: top.name.trim().normalize("NFC"),
-        subcategories: childrenOf(top.key)
-            .map((child) => child.name.trim().normalize("NFC")),
+    const read = (rows) => rows.map((row) => ({
+        name: row.name.trim().normalize("NFC"),
+        children: read(childrenOf(row.key)),
+        events: row.events,
+        fallback: row.fallback,
+        auto_apply: row.auto_apply,
     }));
+    return read(topRows());
+}
+
+function readNumberedFolders() {
+    return document.getElementById("numbered-folders").checked;
 }
 
 /** Check the whole tree. Marks the wrong names and returns a message, or "". */
@@ -180,7 +271,7 @@ function folderTreeProblem() {
         return t("folders.err_none");
     }
     let message = "";
-    const groups = [topRows(), ...topRows().map((top) => childrenOf(top.key))];
+    const groups = [topRows(), ...folderRows.map((row) => childrenOf(row.key))];
     groups.forEach((rows) => {
         const seen = [];
         rows.forEach((row) => {
@@ -197,9 +288,13 @@ function folderTreeProblem() {
             }
         });
     });
-    if (!message && topRows().some(
-        (top) => childrenOf(top.key).length > MAX_SUBFOLDERS)) {
+    if (!message && folderRows.some(
+        (row) => childrenOf(row.key).length > MAX_SUBFOLDERS)) {
         message = t("folders.err_subs");
+    }
+    if (!message && topRows().some(
+        (row) => subtreeDepth(row) > MAX_TREE_DEPTH)) {
+        message = t("folders.err_depth");
     }
     return message;
 }
@@ -218,7 +313,9 @@ function showFolderSection(settings, isNew) {
     document.querySelectorAll(".folders-new-only").forEach((element) => {
         element.classList.toggle("hidden", !isNew);
     });
-    showFolderTree(isNew ? [] : settings.categories,
+    document.getElementById("numbered-folders").checked =
+        Boolean(!isNew && settings.numbered_folders);
+    showFolderTree(isNew ? [] : (settings.folder_tree || settings.categories),
         isNew ? {} : settings.folder_counts, !isNew);
     showFoldersMessage("", "");
 }
@@ -250,7 +347,7 @@ document.getElementById("suggest-folders")
 
 document.getElementById("file-type-folders").addEventListener("click", () => {
     showFolderTree(FILE_TYPE_FOLDERS
-        .map((name) => ({ name: name, subcategories: [] })), {}, false);
+        .map((name) => ({ name: name, children: [] })), {}, false);
     showFoldersMessage("", "");
 });
 

@@ -128,7 +128,7 @@ def test_export_csv(flask_client, repo):
                         "Category,"
                         "Subcategory,Counterparty,Confidentiality,Owner,"
                         "Effective Start,Effective End,Duplicate Of,"
-                        "Review Note,Suggested Folder,SHA-256")
+                        "Review Note,Folder,Suggested Folder,SHA-256")
     assert "D_001.pdf" in lines[1]
 
 
@@ -178,6 +178,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "providers_with_key": [], "username": "",
         "industry": "", "categories": [],
         "folder_mode": "media", "project_description": "",
+        "folder_tree": [], "numbered_folders": False,
         "folder_counts": {},
     }
 
