@@ -7,7 +7,8 @@ import time
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
-from backend.pipeline.ai_providers import project_client
+from backend.pipeline.ai_providers import (project_client,
+                                           ready_media_client)
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
@@ -93,6 +94,7 @@ def scan_once(projects_path, owner=None):
         repo,
         organizer,
         owner=owner,
+        media_client=ready_media_client(repo),
     )
     return pipeline.process_batch(files)
 
