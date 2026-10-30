@@ -5,6 +5,7 @@ import os
 import threading
 import time
 
+from backend import scanner
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.pipeline.ai_providers import (project_client,
@@ -64,16 +65,21 @@ def log_old_inbox_warning(organizer):
         warned_folders.add(folder)
 
 
-def scan_once(projects_path, owner=None):
-    """Check the active project's Drop Zone one time."""
+def scan_once(projects_path, owner=None, scan_busy=False):
+    """Check the active project's Drop Zone, or its whole folder, one time."""
     folder = projects.active_folder(projects_path)
     # No project, or its folder is missing (like an unplugged drive).
     if not folder or not os.path.isfile(projects.catalog_path(folder)):
         return []
     repo = CatalogRepository(projects.catalog_path(folder))
-    # A project read in place has no Drop Zone to watch (yet).
     if repo.reads_in_place():
-        return []
+        # The whole folder is watched; not while the first scan runs.
+        if scan_busy:
+            return []
+        client = project_client(repo)
+        if client is None:
+            return []
+        return scanner.watch_once(folder, repo, client, owner)
 
     # Only a project's own Inbox is migrated: Cataloga made it.
     organizer = FileOrganizer(folder)
@@ -106,7 +112,9 @@ def scan_for_session(app):
     if not username:
         return []
     projects_path = app.config["ACCOUNTS"].projects_path(username)
-    return scan_once(projects_path, owner=username)
+    job = app.config.get("SCAN")
+    return scan_once(projects_path, owner=username,
+                     scan_busy=bool(job and job.is_running()))
 
 
 def watch_forever(app):

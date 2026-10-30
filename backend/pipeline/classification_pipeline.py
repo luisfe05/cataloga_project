@@ -127,6 +127,16 @@ METADATA_FIELDS = ("source", "document_date", "topic")
 # Goes before the metadata prompt when the project has a sheet.
 SHEET_PREFIX = "Project sheet (what this work is):\n"
 
+# Added to FOLDER_PROMPT when the tree has folders marked as events.
+EVENTS_PROMPT = """
+
+These folders hold one folder per event, named Event_Year:
+{events}
+A file of an event goes into its event folder. For an event with no
+folder yet, answer "folder" with "<events folder>/<Event_Year>" (for
+example "{example}/Regata-Ponce_2003"): Cataloga will propose creating
+it. Never propose a new folder anywhere else."""
+
 # How many of the user's moves the AI reads before filing a document.
 MAX_CORRECTIONS = 10
 
@@ -439,10 +449,15 @@ class ClassificationPipeline:
                 metadata["review_note"] == folder_tree.NO_FOLDER_NOTE:
             metadata["review_note"] = None
 
+        # A file in an event folder takes the event's year when nothing
+        # better is known.
+        event_place = metadata["folder_path"] or metadata["suggested_folder"]
+        event_year = folder_tree.event_year(
+            folder_tree.split_path(event_place)[-1]) if event_place else None
         date, date_source = choose_date(
             metadata["document_date"], file_path, taken,
             file_meta.get("date") or file_meta.get("created"),
-            archive_rules.year_in_path(file_path), stamp)
+            archive_rules.year_in_path(file_path) or event_year, stamp)
         metadata["document_date"] = date
 
         folder, placed = self.destination(file_path, media_type, metadata)
@@ -458,6 +473,12 @@ class ClassificationPipeline:
             if place != self.file_organizer.place_of(
                     os.path.dirname(file_path)):
                 proposed_folder = place
+            # A new event folder is a proposal too: the plan creates it.
+            if proposed_folder is None and metadata["suggested_folder"] and \
+                    self.db.is_tree_project() and folder_tree.event_parent(
+                        self.db.get_folder_tree(),
+                        metadata["suggested_folder"]):
+                proposed_folder = metadata["suggested_folder"]
             if new_filename and new_filename != original_filename:
                 proposed_name = new_filename
         elif new_filename is None:
@@ -637,8 +658,20 @@ class ClassificationPipeline:
         if has_text and not metadata["topic"] and \
                 archive_rules.is_generic_name(original_filename):
             has_text = False
+        template = self.db.get_naming_template()
+        event = event_number = None
+        if template == naming.EVENT_TEMPLATE:
+            # Event_Year_N: the event folder's name and the next number on
+            # the disk. Outside an event folder, method 4 names the file.
+            event = folder_tree.event_of(self.db.get_folder_tree() or [],
+                                         metadata["folder_path"] or
+                                         metadata["suggested_folder"])
+            if event:
+                has_text = True
+                event_number = naming.next_event_number(folder, event)
+            else:
+                template = naming.NEW_PROJECT_TEMPLATE
         if has_text:
-            template = self.db.get_naming_template()
             topic_number = naming.next_topic_number(
                 metadata["topic"] or original_filename, self.db.get_topics())
             parts = naming.build_parts(
@@ -647,7 +680,8 @@ class ClassificationPipeline:
                 source=metadata["source"],
                 topic=metadata["topic"],
                 topic_number=topic_number,
-                style=style, keep_accents=keep_accents)
+                style=style, keep_accents=keep_accents,
+                event=event, event_number=event_number)
         else:
             template = naming.NO_TEXT_TEMPLATE
             parts = naming.build_parts(original_filename, number,
@@ -756,6 +790,11 @@ class ClassificationPipeline:
             description=self.db.get_project_description() or "(not given)",
             folders=json.dumps(folder_tree.all_places(tree),
                                ensure_ascii=False))
+        events = folder_tree.event_places(tree)
+        if events:
+            prompt += EVENTS_PROMPT.format(
+                events=json.dumps(events, ensure_ascii=False),
+                example=events[0])
         return prompt + self.corrections_prompt()
 
     def corrections_prompt(self):
@@ -780,6 +819,15 @@ class ClassificationPipeline:
             folder = folder_tree.join_path([folder, subfolder])
         place = folder_tree.find_place(tree, folder)
         if place is None:
+            # A new event folder is proposed, only inside an events folder.
+            parent = folder_tree.event_parent(tree, folder)
+            leaf = folder_tree.safe_folder_name(
+                folder_tree.split_path(folder)[-1]) if folder else ""
+            if parent and leaf and folder_tree.event_year(leaf):
+                metadata["review_note"] = folder_tree.NO_FOLDER_NOTE
+                metadata["suggested_folder"] = folder_tree.join_path(
+                    [parent, leaf])
+                return metadata
             place = folder_tree.fallback_place(tree)
             if place is None:
                 metadata["review_note"] = folder_tree.NO_FOLDER_NOTE

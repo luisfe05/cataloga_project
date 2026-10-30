@@ -661,6 +661,31 @@ class CatalogRepository:
         finally:
             conn.close()
 
+    def index_replace(self, old_path, new_path, size, mtime, document_id):
+        """Re-key an index row after a file moved or was renamed."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("DELETE FROM scan_index WHERE path = ?",
+                         (old_path,))
+            conn.execute(
+                "INSERT OR REPLACE INTO scan_index (path, size, mtime, "
+                "document_id, seen_at) VALUES (?, ?, ?, ?, ?)",
+                (new_path, size, mtime, document_id,
+                 datetime.now().isoformat(timespec="seconds")))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def clear_proposals(self, doc_id):
+        """Forget a document's proposed folder and name once applied."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE documents SET proposed_folder = NULL, "
+                         "proposed_name = NULL WHERE id = ?", (doc_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
     def index_count(self):
         """Count the files the scan has read."""
         conn = get_connection(self.db_path)
