@@ -12,6 +12,7 @@ from backend.pipeline.classification_pipeline import (
 from backend.config import projects as project_list
 from backend.pipeline import folder_tree
 from backend.pipeline.file_organizer import FileOrganizer
+from backend.pipeline import naming
 from backend.pipeline.naming import clean_new_name
 from backend.routes import error_response, get_active_repo, projects_path
 
@@ -187,6 +188,15 @@ def rename_document(doc_id):
                               "Document {} does not exist.".format(doc_id),
                               404)
 
+    if not repo.can_move_files():
+        return error_response(
+            "catalog_only",
+            "This project catalogs files in place: nothing is renamed.", 409)
+    if naming.is_protected(doc.filename):
+        return error_response(
+            "protected_name",
+            "Other programs look for this file by name, so it keeps it.",
+            400)
     extension = os.path.splitext(doc.filename)[1]
     new_filename = clean_new_name(body["new_name"], extension)
     if not new_filename:
@@ -223,6 +233,10 @@ def move_document(doc_id):
     repo, error = get_active_repo()
     if error:
         return error
+    if not repo.can_move_files():
+        return error_response(
+            "catalog_only",
+            "This project catalogs files in place: nothing is moved.", 409)
     tree = repo.get_folder_tree()
     if tree is None:
         return error_response(

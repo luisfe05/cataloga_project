@@ -16,6 +16,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Catalog only | A project mode for websites, code, and edits that link their files by path (InDesign, Premiere, After Effects, Final Cut). Cataloga reads, summarizes and catalogs each file where it is. Nothing is moved or renamed, there is no folder tree and no Drop Zone. Reading the whole folder in place comes with the in-place scanner |
 | Folder trees | A project's folders can go six levels deep. The AI chooses one folder path per file. A folder marked Catch-all receives what fits nowhere else, as a classified file. Folders already created are never renamed |
 | Automatic classification | One AI request per file fills its whole card: media type, summary, source, date, topic, keywords, the folder of the tree that fits its content, one line on why (the Why this folder column), and how sure the AI was. The AI sees the file name, its folder, the other files next to it, the file's own metadata, and an extract of the content. A meaningful name counts as evidence; camera and scanner names are ignored; when name and content disagree, the content wins and the card says so. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before the folder trees keep their five media-type folders |
 | Industry conventions | A built-in list of how each field organizes its archive (legal, construction, web and code, film and video, photo archive, documentary, library, general): typical folders, a naming pattern, and rules. The folder suggestion uses it. When a new project's folder looks like a website or a linked edit, Settings says so |
@@ -104,6 +105,7 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | Topic, source and date | `topic-name_source-name_date.pdf` (new projects start here) |
 | Custom | Click the parts in order (Topic, Source, Date, Original) and pick `_` or `-` between them. The extension is added on its own |
 | Style | `topic-name` (lowercase) or `Topic-Name` (Title-Case), per project. Accents are dropped (`Dia`) unless Keep accents is on (`Día`) |
+| Keep original names | Files are classified and moved, but never renamed |
 
 | Rule | What happens |
 |---|---|
@@ -117,6 +119,8 @@ Choose the method in Settings. Files already in the catalog keep their names.
 | Name already taken | The new file gets `_2`, `_3`, and so on; the first one keeps its name |
 | Versions | A version mark in the original name (`v01`, `draft-3`) stays at the end of the new name |
 | Long paths | The topic, then the source, are shortened a word at a time so the full path stays under 240 characters (the Windows limit). If it still cannot fit, the file stays put, in Manual Review |
+| Protected names | `index.html`, `README*`, `.gitignore`, `package.json`, `favicon.ico`, `robots.txt`, `sitemap.xml`, config files and lock files are never renamed, in any mode |
+| Secrets | `.env`, `*.pem`, `*.key`, `id_rsa*`, `credentials*`, `*.p12`, `*.pfx`, `*.keychain` are never read and never sent to the AI. They are cataloged by name only, in Manual Review with the note "Possible secret, not read" |
 | Rename from the chat | Uses the same cleaning rules, only after you click Confirm |
 
 ## API endpoints
@@ -147,6 +151,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | DELETE | `/settings/ai-provider/<role>` | Yes | Takes the fallback or media provider away. The key stays in the Keychain |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider, through the server URL if one is sent |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
+| POST | `/projects` with `catalog_only` | Yes | Creates a Catalog only project: no folders are created, names are kept, Move and Rename answer `409 catalog_only` |
 | POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
 | POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. With `industry`, the request lists the folders that field usually has. Saves nothing |
 | POST | `/projects/folders/inspect` | Yes | Says whether a folder looks like a website or a linked project (index.html, package.json, .git, .prproj, .indd...). Saves nothing |

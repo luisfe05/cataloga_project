@@ -278,6 +278,9 @@ class ClassificationPipeline:
 
     def destination(self, file_path, media_type, metadata):
         """Return the folder a file goes to, and if it found its place."""
+        # Catalog only: the file is already where it belongs.
+        if self.db.is_catalog_project():
+            return os.path.dirname(file_path), True
         if not self.db.is_tree_project():
             return self.file_organizer.folder_for(media_type), True
         if metadata["folder_path"]:
@@ -291,6 +294,10 @@ class ClassificationPipeline:
         original_filename = os.path.basename(file_path)
         date_added = now_timestamp()
         extension = os.path.splitext(file_path)[1].lower()
+
+        # A file that may hold keys is never read and never sent anywhere.
+        if archive_rules.is_secret(original_filename):
+            return self.add_unread(file_path, archive_rules.SECRET_NOTE)
 
         # Hash first: a duplicate never reaches the AI.
         sha256 = archive_rules.sha256_of(file_path)
@@ -372,7 +379,9 @@ class ClassificationPipeline:
         folder, placed = self.destination(file_path, media_type, metadata)
         new_filename = self.build_filename(file_path, has_text, metadata,
                                            date_source, folder)
-        if new_filename is None:
+        if self.db.is_catalog_project():
+            new_path = file_path
+        elif new_filename is None:
             # Even a short name would not fit: a person must choose.
             reason = reason or archive_rules.TOO_LONG_NOTE
             metadata["suggested_folder"] = metadata["suggested_folder"] or \
@@ -460,6 +469,24 @@ class ClassificationPipeline:
                 lines.append("What the pages show: " + description)
         return "\n".join(lines)
 
+    def add_unread(self, file_path, note):
+        """Record a file by its name only, in Manual Review, where it is."""
+        name = os.path.basename(file_path)
+        extension = os.path.splitext(name)[1].lower()
+        document = Document(
+            original_filename=name,
+            filename=name,
+            media_type=EXTENSION_MEDIA_TYPES.get(extension,
+                                                 FALLBACK_MEDIA_TYPE),
+            file_path=file_path,
+            date_added=now_timestamp(),
+            status="Manual Review",
+            review_note=note,
+            confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
+            owner=self.owner,
+        )
+        return self.db.add_document(document)
+
     def add_duplicate(self, file_path, sha256, original):
         """Record a duplicate in Manual Review. It stays in the Drop Zone."""
         name = os.path.basename(file_path)
@@ -486,6 +513,10 @@ class ClassificationPipeline:
         """Build the new file name, short enough for its folder, or None."""
         original_filename = os.path.basename(file_path)
         extension = os.path.splitext(file_path)[1]
+        # Keep original names, and names other programs look for.
+        if self.db.get_naming_template() == naming.KEEP_NAMES or \
+                naming.is_protected(original_filename):
+            return original_filename
         number = self.db.next_number()
         style = self.db.get_naming_style()
         keep_accents = self.db.keep_accents()

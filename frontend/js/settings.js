@@ -47,6 +47,7 @@ const ROW_PROVIDERS = {
 };
 
 const NAMING_METHODS = {
+    keep: "keep",
     m1: "{date}_{topic}",
     m2: "{source}_{date}_{topic}",
     m3: "{number}_{topic}",
@@ -154,8 +155,34 @@ function setProjectMode(mode) {
         .classList.toggle("hidden", treeMode);
     document.getElementById("folders-section")
         .classList.toggle("hidden", !treeMode);
+    // Catalog only: the box is a choice for new projects, a fact after.
+    const box = document.getElementById("catalog-only");
+    box.disabled = !isNew;
+    if (!isNew) {
+        box.checked = projectFolderMode === "catalog";
+    }
+    applyCatalogOnly();
     updateBrowseButton();
     resetFolderWarning();
+}
+
+/** Catalog only hides the folders and fixes the names: nothing moves. */
+function applyCatalogOnly() {
+    const on = document.getElementById("catalog-only").checked;
+    const isNew = projectMode === "new";
+    document.getElementById("catalog-only-hint")
+        .classList.toggle("hidden", !on);
+    document.getElementById("folders-section")
+        .classList.toggle("hidden", on || !(isNew
+            || projectFolderMode === "tree"));
+    document.querySelectorAll("#naming-options input").forEach((radio) => {
+        radio.disabled = on && radio.value !== "keep";
+    });
+    if (on) {
+        document.querySelector('input[name="naming-method"][value="keep"]')
+            .checked = true;
+        updateNamingPreview();
+    }
 }
 
 /** Empty the form for a new project, which starts with Ollama Cloud. */
@@ -167,6 +194,8 @@ function startNewProject() {
     document.getElementById("folder-advice").classList.add("hidden");
     document.getElementById("project-sheet").value = "";
     showSheetMessage("", "");
+    document.getElementById("catalog-only").checked = false;
+    applyCatalogOnly();
     // New projects start with method 4, lowercase, no accents.
     showSavedTemplate(NAMING_METHODS.m4);
     document.querySelector('input[name="naming-style"][value="lower"]')
@@ -271,6 +300,9 @@ function resetFolderWarning() {
 
 /** Same rules as validate_template() in naming.py; the backend checks again. */
 function validateTemplate(template) {
+    if (template === NAMING_METHODS.keep) {
+        return null;
+    }
     if (!template.trim()) {
         return { reason: "empty", token: "" };
     }
@@ -293,6 +325,9 @@ function validateTemplate(template) {
 
 /** Fill a template with example values, like render_template() in naming.py. */
 function previewFilename(template) {
+    if (template === NAMING_METHODS.keep) {
+        return t("naming.keep_example");
+    }
     let name = template;
     NAMING_TOKENS.forEach((token) => {
         const part = ["topic", "source", "original"].includes(token)
@@ -469,6 +504,9 @@ async function adviseOnFolder() {
                 { markers: result.markers.slice(0, 4).join(", ") });
             advice.className = "form-message";
             advice.classList.remove("hidden");
+            // The box is ticked, not forced: the user can untick it.
+            document.getElementById("catalog-only").checked = true;
+            applyCatalogOnly();
         }
     } catch (error) {
         // A folder that does not exist yet gets no advice.
@@ -610,7 +648,9 @@ async function saveSettings(event) {
             document.getElementById("naming-error").textContent, "error");
         return;
     }
-    const isTree = projectMode === "new" || projectFolderMode === "tree";
+    const catalogOnly = document.getElementById("catalog-only").checked;
+    const isTree = !catalogOnly
+        && (projectMode === "new" || projectFolderMode === "tree");
     const treeProblem = isTree ? folderTreeProblem() : "";
     if (treeProblem) {
         showFoldersMessage(treeProblem, "error");
@@ -640,6 +680,7 @@ async function saveSettings(event) {
                 project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 folders: readFolderTree(),
+                catalog_only: document.getElementById("catalog-only").checked,
                 numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,
                 server_url: readServerUrl(),
@@ -794,6 +835,8 @@ document.getElementById("language-select")
     .addEventListener("change", changeLanguage);
 document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
+document.getElementById("catalog-only")
+    .addEventListener("change", applyCatalogOnly);
 document.querySelectorAll('input[name="naming-style"]').forEach((radio) => {
     radio.addEventListener("change", updateNamingPreview);
 });
