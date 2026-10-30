@@ -90,16 +90,20 @@ def create_project():
         return jsonify({"name": name, "folder": folder,
                         "opened_existing": True}), 201
 
-    # Every new project files documents in its own folder tree.
-    try:
-        tree = folder_tree.check_tree(body.get("folders"))
-    except ValueError as error:
-        return error_response("invalid_folders", str(error), 400)
+    catalog_only = body.get("catalog_only") is True
+    tree = []
+    if not catalog_only:
+        # Every new project files documents in its own folder tree.
+        try:
+            tree = folder_tree.check_tree(body.get("folders"))
+        except ValueError as error:
+            return error_response("invalid_folders", str(error), 400)
     numbered = body.get("numbered_folders") is True
     if numbered:
         tree = folder_tree.number_new(tree, [])
 
-    existing = organizer.count_existing_items(tree)
+    # Catalog only reads the folder as it is: its files are expected.
+    existing = 0 if catalog_only else organizer.count_existing_items(tree)
     if existing and body.get("confirm_folder") is not True:
         return error_response(
             "folder_not_empty",
@@ -108,19 +112,27 @@ def create_project():
             "Click Save anyway to use this folder.".format(existing), 409,
             extra={"count": existing})
 
-    organizer.ensure_archive_structure(tree)
+    if not catalog_only:
+        organizer.ensure_archive_structure(tree)
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     init_db(db_path)
     new_repo = CatalogRepository(db_path)
     new_repo.save_app_config(name, folder)
-    new_repo.save_naming_template(template)
-    if body.get("naming_style") in naming.STYLES:
-        new_repo.save_config_value("naming_style", body["naming_style"])
-    if body.get("keep_accents") is True:
-        new_repo.save_config_value("keep_accents", 1)
-    new_repo.save_folder_tree(description, tree)
-    if numbered:
-        new_repo.save_config_value("numbered_folders", 1)
+    if catalog_only:
+        # Nothing moves, nothing is renamed, and there is no Drop Zone yet:
+        # reading the folder in place comes with the in-place scanner.
+        new_repo.save_naming_template(naming.KEEP_NAMES)
+        new_repo.save_config_value("folder_mode", folder_tree.CATALOG_MODE)
+        new_repo.save_config_value("project_description", description)
+    else:
+        new_repo.save_naming_template(template)
+        if body.get("naming_style") in naming.STYLES:
+            new_repo.save_config_value("naming_style", body["naming_style"])
+        if body.get("keep_accents") is True:
+            new_repo.save_config_value("keep_accents", 1)
+        new_repo.save_folder_tree(description, tree)
+        if numbered:
+            new_repo.save_config_value("numbered_folders", 1)
     sheet = project_sheet.clean_sheet(body.get("project_sheet"))
     if sheet:
         new_repo.save_config_value("project_sheet", sheet)

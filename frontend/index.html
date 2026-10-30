@@ -364,6 +364,15 @@
                         <!-- Shown for an existing project, whose folder is fixed -->
                         <p class="hint folder-locked hidden" id="folder-locked"
                            data-i18n="project.folder_locked"></p>
+                        <!-- Catalog only: read and catalog in place, never move or rename -->
+                        <label class="catalog-only-row" id="catalog-only-row">
+                            <input type="checkbox" id="catalog-only">
+                            <span data-i18n="project.catalog_only">Catalog only:
+                                read and catalog the files where they are. Never
+                                move or rename them</span>
+                        </label>
+                        <p class="hint hidden" id="catalog-only-hint"
+                           data-i18n="project.catalog_only_hint"></p>
                         <!-- What the chosen folder looks like (projects.js inspect) -->
                         <p class="form-message hidden" id="folder-advice"
                            aria-live="polite"></p>
@@ -426,6 +435,13 @@
                                 <input type="radio" name="naming-method"
                                        value="custom">
                                 <span data-i18n="naming.custom">Custom</span>
+                            </label>
+                            <label class="naming-option">
+                                <input type="radio" name="naming-method"
+                                       value="keep">
+                                <span data-i18n="naming.keep">Keep original
+                                    names</span>
+                                <code data-i18n="naming.keep_example"></code>
                             </label>
                         </div>
 

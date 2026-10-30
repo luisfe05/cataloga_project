@@ -9,6 +9,8 @@ from backend.pipeline import archive_rules
 # Saved in app_config.folder_mode. Old projects have no value: 'media'.
 TREE_MODE = "tree"
 MEDIA_MODE = "media"
+# Files are read and cataloged where they are; nothing moves or renames.
+CATALOG_MODE = "catalog"
 
 MAX_TOP_FOLDERS = 20
 MAX_SUBFOLDERS = 10
