@@ -16,6 +16,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Learns from your moves | Every time you move a file to another folder (Move, Create folder and move, or the chat after Confirm), Cataloga remembers it. The AI reads the latest ten moves of the project before it files a new document, so the same kind of file lands where you put it |
 | Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |

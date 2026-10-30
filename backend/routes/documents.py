@@ -256,6 +256,8 @@ def move_document(doc_id):
     new_path = organizer.move_to_folder(
         doc.file_path, organizer.tree_folder(*place), doc.filename)
     try:
+        # A move by hand is a lesson: the AI reads the latest ones.
+        repo.add_correction(doc, folder_tree.folder_text(*place))
         doc = repo.move_document(doc_id, new_path, *place)
     except Exception:
         # Keep the disk and the catalog in step: put the file back.

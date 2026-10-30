@@ -132,6 +132,20 @@ ADDED_APP_CONFIG_COLUMNS = {
     "project_description": "project_description TEXT",
 }
 
+# Each move the user made by hand: the AI reads the latest ones before
+# it files a new document of the same project.
+CREATE_CORRECTIONS = """
+CREATE TABLE IF NOT EXISTS corrections (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id       INTEGER,
+    original_filename TEXT    NOT NULL,
+    summary           TEXT,
+    from_folder       TEXT,
+    to_folder         TEXT    NOT NULL,
+    timestamp         TEXT    NOT NULL
+);
+"""
+
 CREATE_AI_PROVIDER_CONFIG = """
 CREATE TABLE IF NOT EXISTS ai_provider_config (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,6 +187,7 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_ACTIVITY_LOG)
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
+    cursor.execute(CREATE_CORRECTIONS)
     add_missing_columns(cursor)
     conn.commit()
     conn.close()
