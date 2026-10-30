@@ -128,7 +128,8 @@ def test_export_csv(flask_client, repo):
                         "Category,"
                         "Subcategory,Counterparty,Confidentiality,Owner,"
                         "Effective Start,Effective End,Duplicate Of,"
-                        "Review Note,Suggested Folder,SHA-256")
+                        "Review Note,Suggested Folder,Why This Folder,"
+                        "Confidence,Original Path,SHA-256")
     assert "D_001.pdf" in lines[1]
 
 
