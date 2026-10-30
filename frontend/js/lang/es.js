@@ -248,27 +248,34 @@ const LANG_ES = {
     "naming.hint": "Elige cómo Cataloga nombra los archivos nuevos. Los "
         + "archivos que ya están en el catálogo conservan su nombre.",
     "naming.m1": "Fecha y tema",
-    "naming.m1_example": "2026-07-15_oceanman-malta.pdf",
+    "naming.m1_example": "fecha_nombre-del-tema.pdf",
     "naming.m2": "Fuente, fecha y tema",
-    "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
+    "naming.m2_example": "nombre-de-la-fuente_fecha_nombre-del-tema.pdf",
     "naming.m3": "Número y tema",
-    "naming.m3_example": "0001_oceanman-malta.pdf",
-    "naming.m4": "Tema, fuente, fecha y número",
-    "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
+    "naming.m3_example": "0001_nombre-del-tema.pdf",
+    "naming.m4": "Tema, fuente y fecha",
+    "naming.m4_example": "nombre-del-tema_nombre-de-la-fuente_fecha.pdf",
     "naming.custom": "Personalizado",
     "naming.preview": "Vista previa",
     "naming.media_rule": "Las fotos se nombran con este método según lo "
         + "que muestran, y el audio y el video según el título de sus "
         + "etiquetas. Los archivos sin nada que leer usan su fecha y un "
-        + "número, por ejemplo 2026-07-15_0001.jpg, o undated_0001.jpg si "
-        + "solo se conoce la fecha del disco.",
-    "naming.duplicate_rule":
-        "Si el nombre ya existe, Cataloga agrega -2, -3 y así.",
+        + "número, por ejemplo 2026-07-15_0001.jpg, o solo el número si no "
+        + "se conoce la fecha.",
+    "naming.duplicate_rule": "Sin una fecha confiable el nombre no lleva "
+        + "fecha. Si el nombre ya existe, el archivo nuevo recibe _2, _3 y "
+        + "así; el primero conserva su nombre.",
+    "naming.version_rule": "Una marca de versión del nombre original (v01, "
+        + "v02) se conserva al final del nombre nuevo.",
+    "naming.path_rule": "Los nombres se acortan para que la ruta completa "
+        + "no pase de 240 caracteres, el límite de Windows.",
+    "naming.style": "Estilo",
+    "naming.keep_accents": "Conservar acentos (Día, no Dia)",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
     "naming.blocks_add": "Haz clic en las partes en orden",
     "naming.chosen": "Tu nombre de archivo",
     "naming.chosen_empty": "Todavía no hay partes. Haz clic en Tema, Fuente, "
-        + "Fecha, Número u Original.",
+        + "Fecha u Original.",
     "naming.block_topic": "Tema",
     "naming.block_source": "Fuente",
     "naming.block_date": "Fecha",
@@ -278,8 +285,8 @@ const LANG_ES = {
     "naming.move_left": "Mover a la izquierda",
     "naming.move_right": "Mover a la derecha",
     "naming.remove_block": "Quitar parte",
-    "naming.extension_note": "La extensión (.pdf, .jpg) se agrega sola. "
-        + "Número cuenta los archivos con el mismo tema: 001, 002...",
+    "naming.extension_note": "La extensión (.pdf, .jpg) se agrega sola. Solo "
+        + "se añade un número cuando el nombre ya existe.",
     "naming.legacy": "Nombre personalizado guardado: {template}. Haz clic en "
         + "las partes para reemplazarlo.",
     "naming.err_no_blocks": "Haz clic en al menos una parte del nombre.",

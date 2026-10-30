@@ -132,7 +132,9 @@ CREATE TABLE IF NOT EXISTS app_config (
     folder_tree             TEXT,
     numbered_folders        INTEGER,
     project_sheet           TEXT,
-    server_url              TEXT
+    server_url              TEXT,
+    naming_style            TEXT,
+    keep_accents            INTEGER
 );
 """
 
@@ -155,6 +157,10 @@ ADDED_APP_CONFIG_COLUMNS = {
     "folder_tree": "folder_tree TEXT",
     # 1 when new folders get a 01_ prefix.
     "numbered_folders": "numbered_folders INTEGER",
+    # How file names look: 'lower' (topic-name) or 'title' (Topic-Name).
+    "naming_style": "naming_style TEXT",
+    # 1 keeps accents in file names (Día); empty or 0 drops them (Dia).
+    "keep_accents": "keep_accents INTEGER",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """

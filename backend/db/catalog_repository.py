@@ -7,7 +7,7 @@ from datetime import datetime
 from backend.db.schema import get_connection, DB_PATH
 from backend.models.document import (ARCHIVE_FIELDS, Document, LOCKED_FIELDS,
                                      MEDIA_TYPES)
-from backend.pipeline import archive_rules, folder_tree
+from backend.pipeline import archive_rules, folder_tree, naming
 from backend.pipeline.file_organizer import DROP_ZONE_FOLDER
 
 EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
@@ -28,7 +28,8 @@ MAX_SUMMARY_LENGTH = 100
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
                          "categories", "folder_mode", "project_description",
                          "folder_tree", "numbered_folders",
-                         "project_sheet", "server_url")
+                         "project_sheet", "server_url", "naming_style",
+                         "keep_accents")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -505,7 +506,8 @@ class CatalogRepository:
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
                 "industry, categories, folder_mode, project_description, "
-                "folder_tree, numbered_folders, project_sheet, server_url "
+                "folder_tree, numbered_folders, project_sheet, server_url, "
+                "naming_style, keep_accents "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -630,6 +632,17 @@ class CatalogRepository:
         """Return the project sheet, or ''."""
         config = self.get_app_config() or {}
         return config.get("project_sheet") or ""
+
+    def get_naming_style(self):
+        """Return 'lower' or 'title'."""
+        config = self.get_app_config() or {}
+        style = config.get("naming_style")
+        return style if style in naming.STYLES else naming.DEFAULT_STYLE
+
+    def keep_accents(self):
+        """Say whether file names keep their accents."""
+        config = self.get_app_config() or {}
+        return bool(config.get("keep_accents"))
 
     def get_project_description(self):
         """Return what the project is about, or ''."""

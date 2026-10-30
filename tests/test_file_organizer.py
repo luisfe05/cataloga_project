@@ -106,10 +106,10 @@ def test_unique_filename_adds_2_then_3(organizer):
     folder = organizer.folder_for("Press")
     make_file(folder, "2026-07-15_malta.pdf")
     assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
-        "2026-07-15_malta-2.pdf"
-    make_file(folder, "2026-07-15_malta-2.pdf")
+        "2026-07-15_malta_2.pdf"
+    make_file(folder, "2026-07-15_malta_2.pdf")
     assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
-        "2026-07-15_malta-3.pdf"
+        "2026-07-15_malta_3.pdf"
 
 
 def test_unknown_media_type_raises_value_error(organizer):
@@ -139,7 +139,7 @@ def test_move_two_files_with_the_same_name(organizer, tmp_path):
     path_one = organizer.move_and_rename_file(first, "Documents", "x.pdf")
     path_two = organizer.move_and_rename_file(second, "Documents", "x.pdf")
     assert os.path.basename(path_one) == "x.pdf"
-    assert os.path.basename(path_two) == "x-2.pdf"
+    assert os.path.basename(path_two) == "x_2.pdf"
     with open(path_one) as file:
         assert file.read() == "first"
 
