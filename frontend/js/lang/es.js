@@ -267,6 +267,9 @@ const LANG_ES = {
     "naming.m3_example": "0001_nombre-del-tema.pdf",
     "naming.m4": "Tema, fuente y fecha",
     "naming.m4_example": "nombre-del-tema_nombre-de-la-fuente_fecha.pdf",
+    "naming.m5": "Evento y año, más un número",
+    "naming.m5_example": "Nombre-Del-Evento_1998_1.jpg (el archivo toma el "
+        + "nombre de su carpeta de evento)",
     "naming.custom": "Personalizado",
     "naming.keep": "Conservar los nombres originales",
     "naming.keep_example": "el-nombre-que-le-diste.pdf",
@@ -360,6 +363,12 @@ const LANG_ES = {
         + "nadador puertorriqueño que compite en Malta",
     "folders.suggest": "Sugerir carpetas",
     "folders.file_types": "Empezar con tipos de archivo",
+    "folders.learn": "Aprender de mi carpeta",
+    "folders.need_folder": "Elige primero la carpeta del proyecto.",
+    "folders.learning": "Leyendo la carpeta tal como está...",
+    "folders.learned": "{folders} carpetas y {files} archivos leídos. "
+        + "{description} Por ejemplo: {examples}. Edita lo que quieras y "
+        + "crea el proyecto: nada cambia en el disco.",
     "folders.suggesting": "Pidiendo carpetas a Ollama Cloud...",
     "folders.suggested": "Edita las carpetas y luego crea el proyecto.",
     "folders.need_description": "Primero describe el proyecto.",
@@ -538,6 +547,8 @@ const LANG_ES = {
     "error.suggest_failed":
         "El proveedor de IA no sugirió categorías. Inténtalo de nuevo.",
     "error.no_provider": "Primero elige un proveedor de IA en Configuración.",
+    "error.nothing_to_learn": "Esta carpeta no tiene subcarpetas de las "
+        + "que aprender.",
     "error.invalid_folders":
         "El árbol de carpetas no es válido. Revisa los nombres.",
     "error.invalid_sheet": "La ficha del proyecto es demasiado larga. Usa "

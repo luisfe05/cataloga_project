@@ -258,6 +258,9 @@ const LANG_EN = {
     "naming.m3_example": "0001_topic-name.pdf",
     "naming.m4": "Topic, source and date",
     "naming.m4_example": "topic-name_source-name_date.pdf",
+    "naming.m5": "Event and year, plus a number",
+    "naming.m5_example": "Event-Name_1998_1.jpg (the file takes the name of its "
+        + "event folder)",
     "naming.custom": "Custom",
     "naming.keep": "Keep original names",
     "naming.keep_example": "the-name-you-gave-it.pdf",
@@ -348,6 +351,12 @@ const LANG_EN = {
         + "Puerto Rican swimmer who competes in Malta",
     "folders.suggest": "Suggest folders",
     "folders.file_types": "Start from file types",
+    "folders.learn": "Learn from my folder",
+    "folders.need_folder": "Choose the project folder first.",
+    "folders.learning": "Reading the folder as it is...",
+    "folders.learned": "{folders} folders and {files} files read. "
+        + "{description} For example: {examples}. Edit anything, then "
+        + "create the project: nothing on the disk changes.",
     "folders.suggesting": "Asking Ollama Cloud for folders...",
     "folders.suggested": "Edit the folders, then create the project.",
     "folders.need_description": "Describe the project first.",
@@ -365,7 +374,8 @@ const LANG_EN = {
         + "on the disk. A folder with subfolders only holds files in them.",
     "folders.flag_events": "Events",
     "folders.flag_events_hint": "Holds one folder per event, named "
-        + "Event_Year. Cataloga may propose new event folders here.",
+        + "Event_Year. Cataloga proposes new event folders here, and only "
+        + "here, and files in them take the event's name plus a number.",
     "folders.flag_fallback": "Catch-all",
     "folders.flag_fallback_hint": "Files that fit nowhere else go here "
         + "instead of Manual Review.",
@@ -517,6 +527,7 @@ const LANG_EN = {
     "error.suggest_failed":
         "The AI provider did not suggest categories. Try again.",
     "error.no_provider": "Choose an AI provider in Settings first.",
+    "error.nothing_to_learn": "This folder has no subfolders to learn from.",
     "error.invalid_folders": "The folder tree is not valid. Check the names.",
     "error.invalid_sheet": "The project sheet is too long. Use 1,500 "
         + "characters or fewer.",

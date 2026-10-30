@@ -246,18 +246,18 @@ class ClientWithFallback(AIProviderClient):
                        self.fallback.provider_name)
         return self.fallback.ask(system_prompt, text)
 
-    def ask_about_images(self, image_uris):
-        """Send images to the first client that accepts them."""
+    def ask_about_images(self, image_uris, prompt=IMAGE_PROMPT):
+        """Send images and their prompt to the first client that reads them."""
         client = self.image_client()
         if client is None:
             return None
-        answer = client.ask_about_images(image_uris)
+        answer = client.ask_about_images(image_uris, prompt)
         if answer is None and client is self.main and self.fallback and \
                 self.fallback.api_key and self.fallback.supports_images:
             logger.warning("%s did not read the images; using %s",
                            self.main.provider_name,
                            self.fallback.provider_name)
-            return self.fallback.ask_about_images(image_uris)
+            return self.fallback.ask_about_images(image_uris, prompt)
         return answer
 
     def test_connection(self):
