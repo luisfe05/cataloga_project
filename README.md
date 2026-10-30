@@ -16,8 +16,9 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
-| Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
-| 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
+| Automatic classification | One AI request per file fills its whole card: media type, summary, source, date, topic, keywords, the folder of the tree that fits its content, one line on why (the Why this folder column), and how sure the AI was. The AI sees the file name, its folder, the other files next to it, the file's own metadata, and an extract of the content. A meaningful name counts as evidence; camera and scanner names are ignored; when name and content disagree, the content wins and the card says so. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before the folder trees keep their five media-type folders |
+| 100-character summary | The AI writes a summary of up to 100 characters for every readable document |
+| Manual Review | Only these send a file to Manual Review: it could not be read, the AI had low confidence, no folder fits, it is a duplicate, or (later) its path is too long. A missing source or date never does; the catalog just shows the field empty |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
 | Several projects | Each project has its own folder and its own catalog. Switch between them from the sidebar |
 | Login | One local account protects the app. The password is saved only as a bcrypt hash |
@@ -81,7 +82,7 @@ With the virtual environment on, run this from the `cataloga` folder:
 | 1. Create your account | The first time Cataloga opens, choose a username and a password (at least 8 characters). After that, log in |
 | 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree, and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree |
 | 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog. If the folder was the only thing missing, the file becomes Classified |
-| 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a summary or a source. Turn on Edit Mode to fix a field |
+| 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a person. The note under the status says why. More columns shows Why this folder and Confidence. Turn on Edit Mode to fix a field |
 | 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
 
 If you forget your password, close Cataloga and delete `account.json` from the data folder (`~/Library/Application Support/Cataloga/` for the Mac app, `database/` when running from source). Then open Cataloga and create a new account. Your projects and their files are not touched.

@@ -16,7 +16,7 @@ from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import ClassificationPipeline
 from backend.pipeline.file_organizer import MEDIA_TYPES, FileOrganizer
 from backend.routes import projects as project_routes
-from tests.conftest import make_project
+from tests.conftest import make_project, card_answer
 
 METADATA = {"source": "El Nuevo Día", "document_date": "2026-07-15",
             "topic": "Oceanman Malta", "keywords": ["swimming"]}
@@ -33,11 +33,7 @@ class FolderAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.prompts.append(system_prompt)
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Press"
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "A news story."
-        return json.dumps(self.metadata)
+        return card_answer(self.metadata)
 
 
 @pytest.fixture
@@ -469,7 +465,7 @@ def test_move_document_to_another_folder(flask_client, tmp_path):
     assert moved["suggested_folder"] is None
     # Without source, date, and summary it still needs a person.
     assert moved["status"] == "Manual Review"
-    assert moved["review_note"] == "Missing: source, document_date, summary"
+    assert moved["review_note"] == "Missing: summary"
     activity = flask_client.get("/dashboard/stats").get_json()[
         "recent_activity"]
     assert activity[0]["action"] == "Moved"
@@ -526,22 +522,22 @@ def test_move_classifies_a_file_that_only_needs_a_folder(
 def test_move_keeps_other_review_reasons(flask_client, tmp_path):
     """A missing field or another note keeps the file in Manual Review."""
     folder, repo = tree_repo(flask_client, tmp_path)
-    no_date = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"),
-                           status="Manual Review", source="El Nuevo Dia",
-                           summary="Una receta.",
-                           review_note=folder_tree.NO_FOLDER_NOTE)
+    no_summary = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"),
+                              status="Manual Review", source="El Nuevo Dia",
+                              document_date="2024-05-02",
+                              review_note=folder_tree.NO_FOLDER_NOTE)
     other_note = add_file_doc(repo, str(folder / "Drop Zone" / "b.txt"),
                               status="Manual Review", source="El Nuevo Dia",
                               document_date="2024-05-02",
                               summary="Una receta.",
                               review_note="This file is too big to read")
-    for doc in (no_date, other_note):
+    for doc in (no_summary, other_note):
         moved = flask_client.post("/documents/{}/move".format(doc.id),
                                   json={"folder": "Contratos"}).get_json()
         assert moved["status"] == "Manual Review"
     # The folder note is gone, so the empty field becomes the reason.
-    assert flask_client.get("/documents/{}".format(no_date.id)).get_json()[
-        "review_note"] == "Missing: document_date"
+    assert flask_client.get("/documents/{}".format(no_summary.id)).get_json()[
+        "review_note"] == "Missing: summary"
     assert flask_client.get("/documents/{}".format(other_note.id)).get_json()[
         "review_note"] == "This file is too big to read"
 

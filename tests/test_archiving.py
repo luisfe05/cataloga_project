@@ -18,7 +18,7 @@ from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import settings as settings_routes
-from tests.conftest import make_project
+from tests.conftest import make_project, card_answer
 
 CATEGORIES = [
     {"name": "Contracts", "subcategories": ["Sponsorship", "Rights"]},
@@ -350,11 +350,9 @@ class RecordingAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.prompts.append(system_prompt)
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Press"
         if system_prompt == base.SUMMARY_PROMPT:
             return "A news story."
-        return self.metadata
+        return card_answer(self.metadata)
 
 
 @pytest.fixture
@@ -392,9 +390,9 @@ def test_new_file_gets_all_archive_fields(pipe):
     assert doc.owner == "luis"
     assert len(doc.sha256) == 64
     assert doc.status == "Classified"
-    # Classification, summary, metadata: no extra AI call.
-    assert len(pipe["ai"].prompts) == 3
-    assert "Contracts" in pipe["ai"].prompts[2]
+    # One request fills the whole card: no extra AI call.
+    assert len(pipe["ai"].prompts) == 1
+    assert "Contracts" in pipe["ai"].prompts[0]
 
 
 def test_second_file_of_a_topic_gets_002(pipe):
@@ -410,7 +408,7 @@ def test_no_categories_leaves_category_empty(pipe):
     assert doc.category is None
     assert doc.review_note is None
     assert doc.status == "Classified"
-    assert "categories" not in pipe["ai"].prompts[2]
+    assert "categories" not in pipe["ai"].prompts[0]
 
 
 def test_category_not_in_list_goes_to_manual_review(pipe):
