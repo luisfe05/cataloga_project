@@ -178,6 +178,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "providers_with_key": [], "username": "",
         "industry": "", "categories": [],
         "folder_mode": "media", "project_description": "",
+        "project_sheet": "",
         "folder_counts": {},
     }
 

@@ -1,5 +1,7 @@
 """Settings routes."""
 
+import os
+
 from flask import Blueprint, current_app, jsonify, request
 from keyring.errors import KeyringError
 
@@ -8,7 +10,8 @@ from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import PROVIDERS, create_client
 from backend.pipeline.ai_providers.base import save_api_key
-from backend.pipeline import archive_rules, folder_tree, naming
+from backend.pipeline import archive_rules, folder_tree, naming, project_sheet
+from backend.pipeline.ai_providers import DEFAULT_MODEL, DEFAULT_PROVIDER
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import (error_response, get_active_repo,
                             project_status, projects_path)
@@ -43,6 +46,7 @@ def get_settings():
         "categories": [],
         "folder_mode": folder_tree.MEDIA_MODE,
         "project_description": "",
+        "project_sheet": "",
         "folder_counts": {},
         "active_provider": None,
         "active_model": None,
@@ -50,6 +54,7 @@ def get_settings():
     if status == "ok":
         repo, error = get_active_repo()
         settings.update(AppConfig(repo).get_settings())
+        settings["project_sheet"] = repo.get_project_sheet()
         if repo.is_tree_project():
             settings["folder_mode"] = folder_tree.TREE_MODE
             settings["project_description"] = \
@@ -105,6 +110,14 @@ def update_settings():
     if values is None:
         return error_response("missing_field",
                               "research_name is required.", 400)
+    if "project_sheet" in body:
+        body["project_sheet"] = project_sheet.clean_sheet(
+            body["project_sheet"])
+        if body["project_sheet"] is None:
+            return error_response(
+                "invalid_sheet", "project_sheet must be text of {} "
+                "characters or less".format(project_sheet.MAX_SHEET_LENGTH),
+                400)
     if "naming_template" in body:
         problem = naming.validate_template(body["naming_template"])
         if problem:
@@ -142,6 +155,8 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if "project_sheet" in body:
+        repo.save_config_value("project_sheet", body["project_sheet"])
     if archive is not None and not tree_mode:
         config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:
@@ -220,6 +235,41 @@ def suggest_categories():
             "suggest_failed",
             "The AI provider did not suggest any categories.", 502)
     return jsonify({"categories": categories}), 200
+
+
+@settings_bp.route("/settings/sheet/suggest", methods=["POST"])
+def suggest_sheet():
+    """Ask the AI to write the project sheet from a sample. Saves nothing."""
+    body = request.get_json(silent=True)
+    folder = body.get("folder") if isinstance(body, dict) else None
+    if isinstance(folder, str) and folder.strip():
+        folder = projects.normalize_folder(folder)
+    else:
+        # No folder sent: the active project's own folder.
+        folder = projects.active_folder(projects_path())
+    if not folder or not os.path.isdir(folder):
+        return error_response("invalid_directory",
+                              "The folder does not exist: " + str(folder),
+                              400)
+    repo, error = get_active_repo()
+    provider = repo.get_active_provider() if error is None else None
+    if provider:
+        client = create_client(provider["provider_name"], provider["model"])
+    else:
+        # Before the first project exists, the default provider is used.
+        client = create_client(DEFAULT_PROVIDER, DEFAULT_MODEL)
+    if not client.api_key:
+        return error_response("no_provider",
+                              "Choose an AI provider first.", 400)
+    sample = project_sheet.project_sample(folder)
+    sheet = project_sheet.parse_sheet_answer(client.ask(
+        project_sheet.SHEET_PROMPT.format(
+            industries=", ".join(project_sheet.INDUSTRIES)),
+        project_sheet.sample_text(sample)))
+    if not sheet:
+        return error_response("suggest_failed",
+                              "The AI provider did not write a sheet.", 502)
+    return jsonify({"sheet": sheet}), 200
 
 
 @settings_bp.route("/settings/ai-provider", methods=["PUT"])

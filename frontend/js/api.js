@@ -126,6 +126,16 @@ async function updateAIProvider(data) {
     return handleResponse(response);
 }
 
+/** POST /settings/sheet/suggest: the AI writes the sheet from a sample. Saves nothing. */
+async function suggestSheet(folder) {
+    const response = await apiFetch(`${BASE_URL}/settings/sheet/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
+    });
+    return handleResponse(response);
+}
+
 /** POST /settings/ai-provider/test */
 async function testAIProvider(data) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/test`, {
