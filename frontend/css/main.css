@@ -1105,7 +1105,9 @@ td.editable {
     border-bottom-right-radius: var(--radius-lg);
 }
 
+/* min-width: with the archiving columns the table scrolls instead of squeezing it. */
 .catalog-table td.summary {
+    min-width: 240px;
     max-width: 380px;
     color: var(--color-dusk);
 }
@@ -1204,6 +1206,27 @@ td.edit-error {
     border-radius: var(--radius-full);
     color: var(--color-violet);
     font-weight: 600;
+}
+
+/* Why a row is in Manual Review, under the badge. */
+.review-note {
+    max-width: 220px;
+    margin-top: var(--spacing-4);
+    color: var(--color-dusk);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: normal;
+}
+
+.catalog-table td.keywords {
+    min-width: 160px;
+    max-width: 220px;
+    color: var(--color-dusk);
+}
+
+/* Counterparty, Confidentiality, Owner, and dates: only with More columns on. */
+.catalog-table:not(.show-more) .more-col {
+    display: none;
 }
 
 /* Summaries: 2 lines, cut with "…". line-clamp needs display: -webkit-box. */
@@ -1532,6 +1555,49 @@ td.edit-error {
     font-size: 15px;
     font-weight: 600;
     color: var(--color-midnight);
+}
+
+/* Categories: name, subcategories, and Remove on one line. */
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-16);
+}
+
+.category-list:empty {
+    display: none;
+}
+
+.category-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 32px;
+    gap: var(--spacing-8);
+    align-items: center;
+}
+
+.category-row input {
+    margin-bottom: 0;
+}
+
+.category-remove {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-dusk);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.category-remove:hover {
+    background: var(--color-paper);
+    color: var(--color-violet);
+}
+
+.add-category {
+    align-self: flex-start;
 }
 
 /* Save and Cancel line up with the panels, under the right column. */

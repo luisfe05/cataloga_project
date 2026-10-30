@@ -124,8 +124,9 @@ def test_create_first_project(empty_client, tmp_path):
         "name": "First", "folder": str(folder)})
     assert response.status_code == 201
     assert empty_client.get("/documents").get_json() == []
+    # New projects start with method 4.
     assert empty_client.get("/settings").get_json()["naming_template"] \
-        == "{date}_{topic}"
+        == "{topic}_{source}_{date}_{topic_number}"
 
 
 def test_create_project_missing_fields(flask_client):

@@ -96,12 +96,22 @@ async function getSettings() {
     return handleResponse(response);
 }
 
-/** PUT /settings: name, naming template, and language. { language } alone saves just that. */
+/** PUT /settings: name, naming template, categories, and language. { language } alone saves just that. */
 async function updateSettings(data) {
     const response = await apiFetch(`${BASE_URL}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+}
+
+/** POST /settings/categories/suggest: categories for an industry. Saves nothing. */
+async function suggestCategories(industry) {
+    const response = await apiFetch(`${BASE_URL}/settings/categories/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ industry: industry }),
     });
     return handleResponse(response);
 }

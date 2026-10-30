@@ -55,6 +55,26 @@ const LANG_ES = {
     "catalog.backend_down": "el servidor de la app no responde.",
     "catalog.export_saved": "Hoja de cálculo guardada en {path}",
     "catalog.export_failed": "No se pudo guardar la hoja de cálculo.",
+    "catalog.filter_category_all": "Categoría: todas",
+    "catalog.filter_subcategory_all": "Subcategoría: todas",
+    "catalog.more_columns": "Más columnas",
+    "catalog.col_category": "Categoría",
+    "catalog.col_subcategory": "Subcategoría",
+    "catalog.col_keywords": "Palabras clave",
+    "catalog.col_counterparty": "Contraparte",
+    "catalog.col_confidentiality": "Confidencialidad",
+    "catalog.col_owner": "Responsable",
+    "catalog.col_effective_start": "Vigencia desde",
+    "catalog.col_effective_end": "Vigencia hasta",
+    "catalog.not_in_list": "{value} (no está en la lista)",
+    "catalog.note_duplicate": "Duplicado de {name}",
+    "catalog.note_no_category": "La categoría no está en la lista del proyecto",
+    "catalog.keywords_limit": "Usa hasta 5 palabras clave, separadas por "
+        + "comas, de hasta 40 caracteres cada una.",
+    "catalog.counterparty_limit":
+        "La contraparte puede tener hasta 100 caracteres.",
+    "catalog.date_format": "Escribe la fecha como AAAA-MM-DD, por ejemplo "
+        + "2026-07-15.",
 
     // Dashboard
     "dash.classified": "Documentos clasificados",
@@ -181,23 +201,45 @@ const LANG_ES = {
     "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
     "naming.m3": "Número y tema",
     "naming.m3_example": "0001_oceanman-malta.pdf",
+    "naming.m4": "Tema, fuente, fecha y número",
+    "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Personalizado",
     "naming.template": "Plantilla",
     "naming.template_help":
-        "Usa {date}, {source}, {topic}, {number} y {original}.",
+        "Usa {date}, {source}, {topic}, {number}, {topic_number} y {original}.",
     "naming.preview": "Vista previa",
     "naming.media_rule": "Las fotos, el audio y el video usan la fecha del "
         + "archivo y un número, por ejemplo 2026-07-15_0001.jpg.",
     "naming.duplicate_rule":
         "Si el nombre ya existe, Cataloga agrega -2, -3 y así.",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
-    "naming.err_empty": "Escribe una plantilla o elige uno de los 3 métodos.",
+    "naming.err_empty": "Escribe una plantilla o elige uno de los 4 métodos.",
     "naming.err_no_token": "Agrega al menos uno de estos: {date}, {source}, "
-        + "{topic}, {number} o {original}.",
+        + "{topic}, {number}, {topic_number} o {original}.",
     "naming.err_unknown": "{token} no es una parte válida. Usa {date}, "
-        + "{source}, {topic}, {number} o {original}.",
+        + "{source}, {topic}, {number}, {topic_number} o {original}.",
     "naming.err_chars": "Los nombres de archivo no pueden usar estos "
         + "caracteres: / \\ : * ? \" < > |",
+
+    // Settings: categories (Digital Archiving Guideline)
+    "categories.title": "Categorías",
+    "categories.hint": "Cataloga clasifica cada documento nuevo en una de "
+        + "estas categorías. Escribe tu industria y haz clic en Sugerir "
+        + "categorías; después edita la lista.",
+    "categories.industry": "Industria",
+    "categories.industry_placeholder": "Por ejemplo: documental deportivo",
+    "categories.suggest": "Sugerir categorías",
+    "categories.suggesting": "Pidiendo categorías al proveedor de IA...",
+    "categories.suggested":
+        "La lista se reemplazó. Haz clic en Guardar para conservarla.",
+    "categories.need_industry": "Primero escribe la industria.",
+    "categories.add": "Agregar categoría",
+    "categories.remove": "Quitar categoría",
+    "categories.name_placeholder": "Categoría",
+    "categories.subs_placeholder": "Subcategorías, separadas por comas",
+    "categories.rules": "Hasta 10 categorías. Un documento que no encaje en "
+        + "ninguna va a Revisión manual. Los documentos conservan su "
+        + "categoría si cambias la lista.",
 
     // Account and login
     "auth.setup_title": "Crea tu cuenta",
@@ -258,6 +300,10 @@ const LANG_ES = {
     "value.Manual Review": "Revisión manual",
     "value.Edited": "Editado",
     "value.Renamed": "Renombrado",
+    "value.Public": "Público",
+    "value.Internal": "Interno",
+    "value.Confidential": "Confidencial",
+    "value.Restricted": "Restringido",
 
     // Errors, one per backend error code
     "error.not_found":
@@ -299,4 +345,9 @@ const LANG_ES = {
     "error.invalid_name": "El nombre nuevo no tiene caracteres válidos.",
     "error.file_missing": "El archivo no está o está fuera de la carpeta del "
         + "proyecto.",
+    "error.invalid_categories": "La lista de categorías no es válida. Revisa "
+        + "los nombres y deja 10 categorías o menos.",
+    "error.suggest_failed":
+        "El proveedor de IA no sugirió categorías. Inténtalo de nuevo.",
+    "error.no_provider": "Primero elige un proveedor de IA en Configuración.",
 };

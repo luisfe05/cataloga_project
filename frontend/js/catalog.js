@@ -17,6 +17,20 @@ const STATUSES = ["Classified", "Manual Review"];
 // Same as MAX_SUMMARY_LENGTH in Python.
 const MAX_SUMMARY_LENGTH = 100;
 
+// Same limits as archive_rules.py, checked here for a clear message.
+const MAX_KEYWORDS = 5;
+const MAX_KEYWORD_LENGTH = 40;
+const MAX_COUNTERPARTY_LENGTH = 100;
+const CONFIDENTIALITY_LEVELS = ["Public", "Internal", "Confidential", "Restricted"];
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+// Shown only with the More columns switch.
+const MORE_COLUMNS = ["counterparty", "confidentiality", "owner",
+    "effective_start", "effective_end"];
+
+// The active project's category list, from GET /settings.
+let projectCategories = [];
+
 /** Current tab, search, and filters for GET /documents. Empty values are left out. */
 function readFilters() {
     const filters = {
@@ -24,6 +38,8 @@ function readFilters() {
         search: document.getElementById("search-input").value.trim(),
         media_type: document.getElementById("filter-media-type").value,
         source: document.getElementById("filter-source").value,
+        category: document.getElementById("filter-category").value,
+        subcategory: document.getElementById("filter-subcategory").value,
     };
     Object.keys(filters).forEach((key) => {
         if (!filters[key]) {
@@ -57,6 +73,27 @@ function showToolbarMessage(text, isError) {
     }, 4000);
 }
 
+/** Check an archiving field before saving. Returns the message key of the problem, or "". */
+function archiveFieldProblem(field, value) {
+    if (field === "keywords" && value) {
+        const keywords = value.split(",").map((word) => word.trim())
+            .filter(Boolean);
+        if (keywords.length > MAX_KEYWORDS
+                || keywords.some((word) => word.length > MAX_KEYWORD_LENGTH)) {
+            return "catalog.keywords_limit";
+        }
+    }
+    if (field === "counterparty" && value
+            && value.length > MAX_COUNTERPARTY_LENGTH) {
+        return "catalog.counterparty_limit";
+    }
+    if ((field === "effective_start" || field === "effective_end") && value
+            && !DATE_PATTERN.test(value)) {
+        return "catalog.date_format";
+    }
+    return "";
+}
+
 /** Save one field. Empty is saved as null. Source or date also rewrite the summary (slow). */
 async function saveField(id, field, value) {
     const fields = {};
@@ -65,6 +102,11 @@ async function saveField(id, field, value) {
     if (field === "summary" && fields.summary
             && fields.summary.length > MAX_SUMMARY_LENGTH) {
         showToolbarMessage(t("catalog.summary_limit"), true);
+        return null;
+    }
+    const problem = archiveFieldProblem(field, fields[field]);
+    if (problem) {
+        showToolbarMessage(t(problem), true);
         return null;
     }
     const updatesSummary = field === "source" || field === "document_date";
@@ -80,11 +122,20 @@ async function saveField(id, field, value) {
     }
 }
 
+/** Text shown for a field. Keywords are a list, shown as "a, b, c". */
+function fieldText(doc, field) {
+    if (field === "keywords") {
+        return (doc.keywords || []).join(", ");
+    }
+    return doc[field] || "";
+}
+
 /** A text cell for Edit Mode. Saves on Enter or when the user leaves the cell. */
 function makeEditableCell(doc, field) {
-    const original = doc[field] || "";
+    const original = fieldText(doc, field);
+    const dateFields = ["document_date", "effective_start", "effective_end"];
     const className =
-        field === "document_date" ? "editable nowrap" : "editable";
+        dateFields.includes(field) ? "editable nowrap" : "editable";
     const cell = makeCell(original, className);
     // data-field lets other code find this cell, e.g. the summary.
     cell.dataset.field = field;
@@ -118,6 +169,19 @@ function makeEditableCell(doc, field) {
     return cell;
 }
 
+/** On-screen text of a review note. The backend stores it in English. */
+function reviewNoteText(note) {
+    const duplicatePrefix = "Duplicate of ";
+    if (note.startsWith(duplicatePrefix)) {
+        return t("catalog.note_duplicate",
+            { name: note.slice(duplicatePrefix.length) });
+    }
+    if (note === "Category not in the project list") {
+        return t("catalog.note_no_category");
+    }
+    return note;
+}
+
 /** Build the Status cell: a dropdown in Edit Mode, plain text otherwise. */
 function makeStatusCell(doc) {
     const statusClass =
@@ -127,6 +191,12 @@ function makeStatusCell(doc) {
         // The text goes in a span so the CSS can draw it as a badge.
         statusCell.appendChild(document.createElement("span"))
             .textContent = valueLabel(doc.status);
+        if (doc.review_note) {
+            const note = document.createElement("p");
+            note.className = "review-note";
+            note.textContent = reviewNoteText(doc.review_note);
+            statusCell.appendChild(note);
+        }
         return statusCell;
     }
     const cell = makeCell("", "nowrap");
@@ -150,6 +220,77 @@ function makeStatusCell(doc) {
     });
     cell.appendChild(select);
     return cell;
+}
+
+/** A dropdown cell for Edit Mode. A saved value missing from the list shows "(not in list)". */
+function makeSelectCell(doc, field, values, labelOf) {
+    const cell = makeCell("", "nowrap");
+    const select = document.createElement("select");
+    select.className = "status-select";
+    const current = doc[field] || "";
+    const choices = ["", ...values];
+    if (current && !values.includes(current)) {
+        choices.push(current);
+    }
+    choices.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value && !values.includes(value)
+            ? t("catalog.not_in_list", { value: value }) : labelOf(value);
+        select.appendChild(option);
+    });
+    select.value = current;
+    select.addEventListener("change", async () => {
+        const updated = await saveField(doc.id, field, select.value);
+        if (!updated) {
+            select.value = current;
+            return;
+        }
+        Object.assign(doc, updated);
+        // The subcategory list depends on the category, so redraw the row's cells.
+        if (field === "category") {
+            loadCatalog();
+        }
+    });
+    cell.appendChild(select);
+    return cell;
+}
+
+/** Names of the subcategories of one category in the project list. */
+function subcategoriesOf(categoryName) {
+    const category = projectCategories
+        .find((item) => item.name === categoryName);
+    return category ? category.subcategories : [];
+}
+
+/** Category, Subcategory, and Keywords: always visible. */
+function addArchiveCells(row, doc) {
+    if (editMode) {
+        row.appendChild(makeSelectCell(doc, "category",
+            projectCategories.map((item) => item.name),
+            (value) => value || "—"));
+        row.appendChild(makeSelectCell(doc, "subcategory",
+            subcategoriesOf(doc.category), (value) => value || "—"));
+        row.appendChild(makeEditableCell(doc, "keywords"));
+    } else {
+        row.appendChild(makeCell(doc.category));
+        row.appendChild(makeCell(doc.subcategory));
+        row.appendChild(makeCell(fieldText(doc, "keywords"), "keywords"));
+    }
+    MORE_COLUMNS.forEach((field) => {
+        let cell;
+        if (editMode && field === "confidentiality") {
+            cell = makeSelectCell(doc, field, CONFIDENTIALITY_LEVELS,
+                (value) => (value ? valueLabel(value) : "—"));
+        } else if (editMode) {
+            cell = makeEditableCell(doc, field);
+        } else {
+            cell = makeCell(field === "confidentiality" && doc[field]
+                ? valueLabel(doc[field]) : doc[field], "nowrap");
+        }
+        cell.classList.add("more-col");
+        row.appendChild(cell);
+    });
 }
 
 /** Filename cell: the name opens the file. In Edit Mode it is plain text, but the icons stay. */
@@ -209,6 +350,7 @@ function renderTable(documents) {
                     "placeholder"));
             }
         }
+        addArchiveCells(row, doc);
         row.appendChild(makeStatusCell(doc));
         body.appendChild(row);
     });
@@ -244,6 +386,43 @@ function updateSourceFilter(allDocuments) {
         select.appendChild(option);
     });
     select.value = sources.includes(chosen) ? chosen : "";
+}
+
+/** Fill one filter dropdown with values, keeping the current choice. */
+function fillFilter(select, allLabel, values) {
+    const chosen = select.value;
+    select.innerHTML = "";
+    const allOption = document.createElement("option");
+    allOption.value = "";
+    allOption.textContent = allLabel;
+    select.appendChild(allOption);
+    values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+    });
+    select.value = values.includes(chosen) ? chosen : "";
+}
+
+/** Category and Subcategory filters: the project list plus older values still in use. */
+function updateCategoryFilters(allDocuments) {
+    const categories = [...new Set([
+        ...projectCategories.map((item) => item.name),
+        ...allDocuments.map((doc) => doc.category).filter(Boolean),
+    ])].sort();
+    const categorySelect = document.getElementById("filter-category");
+    fillFilter(categorySelect, t("catalog.filter_category_all"), categories);
+    // Subcategories of the chosen category, or of every category.
+    const chosen = categorySelect.value;
+    const subcategories = [...new Set([
+        ...projectCategories.filter((item) => !chosen || item.name === chosen)
+            .flatMap((item) => item.subcategories),
+        ...allDocuments.filter((doc) => !chosen || doc.category === chosen)
+            .map((doc) => doc.subcategory).filter(Boolean),
+    ])].sort();
+    fillFilter(document.getElementById("filter-subcategory"),
+        t("catalog.filter_subcategory_all"), subcategories);
 }
 
 /** Show or hide the old Inbox warning. It only informs: nothing is moved. */
@@ -287,7 +466,9 @@ async function loadCatalog() {
 
         // All documents feed the Source list and counter, so they stay complete while filtering.
         const allDocuments = await getDocuments();
+        projectCategories = settings.categories || [];
         updateSourceFilter(allDocuments);
+        updateCategoryFilters(allDocuments);
         const reviewCount = allDocuments
             .filter((doc) => doc.status === "Manual Review").length;
         document.getElementById("tab-review").textContent =
@@ -336,6 +517,9 @@ async function applyCatalogFilters(filters) {
         source.appendChild(option);
     }
     source.value = filters.source || "";
+    // The chat has no category filter, so these start from All.
+    document.getElementById("filter-category").value = "";
+    document.getElementById("filter-subcategory").value = "";
     selectStatus(filters.status || "");
     await loadCatalog();
 }
@@ -378,6 +562,16 @@ document.getElementById("filter-media-type")
     .addEventListener("change", loadCatalog);
 document.getElementById("filter-source")
     .addEventListener("change", loadCatalog);
+document.getElementById("filter-category")
+    .addEventListener("change", loadCatalog);
+document.getElementById("filter-subcategory")
+    .addEventListener("change", loadCatalog);
+
+// More columns: show Counterparty, Confidentiality, Owner, and the effective dates.
+document.getElementById("more-columns").addEventListener("change", (event) => {
+    document.getElementById("catalog-table").classList
+        .toggle("show-more", event.target.checked);
+});
 
 // Edit Mode: redraw the table; the bar above it stays while Edit Mode is on.
 document.getElementById("edit-mode").addEventListener("change", (event) => {
