@@ -78,6 +78,14 @@ const LANG_EN = {
     "catalog.date_from_content": "Content",
     "catalog.date_from_metadata": "File metadata",
     "catalog.date_from_file": "File date",
+    "catalog.date_from_photo_stamp": "Photo stamp",
+    "catalog.date_from_name": "File name or folder",
+    "catalog.col_folder_reason": "Why this folder",
+    "catalog.col_confidence": "Confidence",
+    "catalog.confidence_high": "High",
+    "catalog.confidence_medium": "Medium",
+    "catalog.confidence_low": "Low",
+    "catalog.note_low_confidence": "Low confidence",
     "catalog.not_in_list": "{value} (not in list)",
     "catalog.note_duplicate": "Duplicate of {name}",
     "catalog.note_no_category": "Category not in the project list",
@@ -162,6 +170,7 @@ const LANG_EN = {
     "chat.notice_rename_same": "The file already has that name.",
     "chat.notice_move_unavailable": "This project sorts files by type, so "
         + "files are not moved between folders.",
+    "chat.notice_rename_unavailable": "This file keeps its name: the project catalogs in place, or other programs look for it by name.",
     "chat.notice_move_invalid": "That folder is not in this project. "
         + "Use one of the project's folders.",
     "chat.notice_move_same": "The file is already in that folder.",
@@ -194,7 +203,21 @@ const LANG_EN = {
         + "Advanced settings.",
     "settings.advanced": "Advanced settings",
     "settings.ai_hint": "Choose another AI provider or model. Your API "
-        + "key is saved in the macOS Keychain.",
+        + "keys are saved in the macOS Keychain.",
+    "settings.ai_text_title": "Text and images",
+    "settings.ai_fallback_title": "Fallback (optional)",
+    "settings.ai_fallback_hint": "Answers when the main provider fails or "
+        + "cannot read a file. With a Claude key saved, Claude is the "
+        + "fallback unless you choose another.",
+    "settings.ai_media_title": "Audio and video",
+    "settings.ai_media_hint": "Only Google Gemini reads audio and video. "
+        + "Paid Gemini keys are not used to train models. Free keys are.",
+    "settings.ai_none": "None",
+    "settings.ai_using_fallback": "Fallback: {provider} ({model}).",
+    "settings.server_title": "Server (optional)",
+    "settings.server_hint": "A Cataloga server that holds the API keys. "
+        + "Leave it empty to call the providers from this computer.",
+    "settings.server_url": "Server URL",
     "settings.ai_provider": "AI Provider",
     "settings.api_key": "API Key",
     "settings.api_key_placeholder": "Paste your API key",
@@ -226,27 +249,41 @@ const LANG_EN = {
     "naming.hint": "Choose how Cataloga names new files. Files already in "
         + "the catalog keep their names.",
     "naming.m1": "Date and topic",
-    "naming.m1_example": "2026-07-15_oceanman-malta.pdf",
+    "naming.m1_example": "date_topic-name.pdf",
     "naming.m2": "Source, date and topic",
-    "naming.m2_example": "el-nuevo-dia_2026-07-15_oceanman-malta.pdf",
+    "naming.m2_example": "source-name_date_topic-name.pdf",
     "naming.m3": "Number and topic",
-    "naming.m3_example": "0001_oceanman-malta.pdf",
-    "naming.m4": "Topic, source, date and number",
-    "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
+    "naming.m3_example": "0001_topic-name.pdf",
+    "naming.m4": "Topic, source and date",
+    "naming.m4_example": "topic-name_source-name_date.pdf",
     "naming.custom": "Custom",
+    "naming.keep": "Keep original names",
+    "naming.keep_example": "the-name-you-gave-it.pdf",
     "naming.preview": "Preview",
+    "naming.stamp_order": "Dates stamped on photos",
+    "naming.stamp_month": "Month first (11 13 '97)",
+    "naming.stamp_day": "Day first (13 11 97)",
+    "naming.photo_date_rule": "A photo's date comes from the date printed or "
+        + "written on it, then from a camera's EXIF (a scanner's EXIF is "
+        + "the day of the scan), then from a year in its name or folder.",
     "naming.media_rule": "Photos are named with this method from what they "
         + "show, and audio and video from the title in their tags. Files "
         + "with nothing to read use their date and a number, for example "
-        + "2026-07-15_0001.jpg, or undated_0001.jpg when only the disk "
-        + "date is known.",
-    "naming.duplicate_rule":
-        "If a name already exists, Cataloga adds -2, -3 and so on.",
+        + "2026-07-15_0001.jpg, or only the number when no date is known.",
+    "naming.duplicate_rule": "Without a reliable date the name has no date "
+        + "part. If a name already exists, the new file gets _2, _3 and so "
+        + "on; the first one keeps its name.",
+    "naming.version_rule": "A version mark in the original name (v01, v02) "
+        + "stays at the end of the new name.",
+    "naming.path_rule": "Names are shortened so the full path stays under "
+        + "240 characters, the Windows limit.",
+    "naming.style": "Style",
+    "naming.keep_accents": "Keep accents (Día, not Dia)",
     "naming.changed_note": "Only new files will use this method.",
     "naming.blocks_add": "Click the parts in order",
     "naming.chosen": "Your file name",
-    "naming.chosen_empty": "No parts yet. Click Topic, Source, Date, Number "
-        + "or Original above.",
+    "naming.chosen_empty": "No parts yet. Click Topic, Source, Date or "
+        + "Original above.",
     "naming.block_topic": "Topic",
     "naming.block_source": "Source",
     "naming.block_date": "Date",
@@ -257,7 +294,7 @@ const LANG_EN = {
     "naming.move_right": "Move right",
     "naming.remove_block": "Remove part",
     "naming.extension_note": "The extension (.pdf, .jpg) is added on its own. "
-        + "Number counts the files with the same topic: 001, 002...",
+        + "A number is added only when the name already exists.",
     "naming.legacy": "Saved custom name: {template}. Click parts to replace it.",
     "naming.err_no_blocks": "Click at least one part for the file name.",
     "naming.err_empty": "Write a template, or choose one of the 4 methods.",
@@ -288,6 +325,18 @@ const LANG_EN = {
         + "the list.",
 
     // Folder tree of a project
+    "sheet.title": "About this project",
+    "sheet.hint": "A short sheet of what this work is. Cataloga reads it "
+        + "before every file, so the classification understands the work. "
+        + "Write it, or let the AI write it from a sample of the folder, "
+        + "then edit it.",
+    "sheet.label": "Project sheet",
+    "sheet.placeholder": "Work: ...\nIndustry: ...\nParts: ...\nFile "
+        + "types: ...\nNaming style: ...",
+    "sheet.suggest": "Write it for me",
+    "sheet.need_folder": "Choose the project folder first.",
+    "sheet.suggesting": "Reading a sample of the folder...",
+    "sheet.suggested": "Edit the sheet if you like, then click Save.",
     "folders.title": "Folders",
     "folders.hint": "Cataloga files each new document in the folder that "
         + "fits its content. Describe the project and click Suggest folders, "
@@ -308,9 +357,21 @@ const LANG_EN = {
     "folders.inside": "Inside",
     "folders.top_level": "Top level",
     "folders.unnamed": "(no name)",
-    "folders.rules": "Two levels at most. Up to 20 folders and 10 subfolders "
-        + "in each. Folders already created can't be renamed; you can add "
-        + "folders and remove empty ones. Removed folders stay on the disk.",
+    "folders.rules": "Up to six levels deep, 20 top folders and 10 "
+        + "subfolders in each. Folders already created can't be renamed; "
+        + "you can add folders and remove empty ones. Removed folders stay "
+        + "on the disk. A folder with subfolders only holds files in them.",
+    "folders.flag_events": "Events",
+    "folders.flag_events_hint": "Holds one folder per event, named "
+        + "Event_Year. Cataloga may propose new event folders here.",
+    "folders.flag_fallback": "Catch-all",
+    "folders.flag_fallback_hint": "Files that fit nowhere else go here "
+        + "instead of Manual Review.",
+    "folders.flag_auto": "No asking",
+    "folders.flag_auto_hint": "New files that belong here are filed "
+        + "without asking (projects without a Drop Zone).",
+    "folders.numbered": "Number new folders (01_, 02_)",
+    "folders.err_depth": "Folders can go six levels deep at most.",
     "folders.err_none": "Add at least one folder.",
     "folders.err_empty": "Every folder needs a name.",
     "folders.err_long": "\"{name}\" is too long. Use 60 characters or fewer.",
@@ -322,10 +383,10 @@ const LANG_EN = {
     "folders.err_subs": "A folder can have 10 subfolders at most.",
 
     // Account and login
-    "auth.setup_title": "Create your account",
-    "auth.setup_hint": "This account protects Cataloga on this computer. "
-        + "It does not encrypt your files. Keep the password somewhere "
-        + "safe: there is no way to recover it.",
+    "auth.register_title": "Create an account",
+    "auth.register_hint": "Each account on this computer has its own "
+        + "project list and settings. Catalogs stay inside each project "
+        + "folder. There is no way to recover a lost password.",
     "auth.login_title": "Log in",
     "auth.username": "Username",
     "auth.password": "Password",
@@ -334,8 +395,15 @@ const LANG_EN = {
     "auth.log_in": "Log in",
     "auth.log_out": "Log out",
     "auth.password_mismatch": "The passwords do not match.",
+    "auth.need_account": "Create an account",
+    "auth.have_account": "I already have an account",
+    "auth.forgot": "Forgot your password?",
+    "auth.forgot_hint": "Passwords cannot be recovered: Cataloga has no "
+        + "email. Your projects and files stay intact in their folders. "
+        + "Create a new account to keep working.",
     "account.title": "Account",
-    "account.hint": "One account for the whole app, for every project.",
+    "account.hint": "Each account on this computer has its own projects "
+        + "and settings.",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
     "account.new_password": "New password",
@@ -357,6 +425,15 @@ const LANG_EN = {
     "project.mode_tree": "Drop Zone",
     "project.mode_tree_hint": "Cataloga creates the folders now and files "
         + "what you drop into Drop Zone",
+    "project.catalog_only": "Catalog only: read and catalog the files where "
+        + "they are. Never move or rename them",
+    "project.catalog_only_hint": "For websites, code, and edits that link "
+        + "their files by path (InDesign, Premiere, After Effects, Final "
+        + "Cut). Cataloga reads, summarizes and catalogs each file in "
+        + "place. There is no folder tree and no Drop Zone.",
+    "project.linked_advice": "This folder looks like a website or a linked "
+        + "project ({markers}). Moving or renaming its files would break "
+        + "it. Catalog only is ticked for you: it keeps every link working.",
     "project.creating":
         "Creating the project and testing the AI connection...",
     "project.created": "Project created. The AI connection works.",
@@ -404,6 +481,9 @@ const LANG_EN = {
         + "Drop Zone folder are cataloged. Click Save anyway to use this "
         + "folder.",
     "error.unsupported_provider": "That AI provider is not supported.",
+    "error.invalid_role": "That provider role does not exist.",
+    "error.invalid_server_url": "The server URL must start with http:// "
+        + "or https://.",
     "error.unsupported_format": "Only CSV export is supported.",
     "error.keyring_failed": "The API key could not be saved in the macOS "
         + "Keychain. Open Keychain Access, make sure the login keychain "
@@ -424,8 +504,9 @@ const LANG_EN = {
         "The password must have at least 8 characters.",
     "error.password_too_long": "The password is too long. Use 72 "
         + "characters or fewer (fewer with accents or symbols).",
-    "error.account_exists": "The account already exists. Log in instead.",
-    "error.no_account": "Create the account first.",
+    "error.username_taken": "That username is taken.",
+    "error.invalid_username": "Use 3 to 30 letters, digits, dots, "
+        + "underscores or hyphens.",
     "error.generic": "Something went wrong. Try again.",
     "error.invalid_name": "The new name has no valid characters.",
     "error.file_missing": "The file is missing or outside the project folder.",
@@ -435,6 +516,8 @@ const LANG_EN = {
         "The AI provider did not suggest categories. Try again.",
     "error.no_provider": "Choose an AI provider in Settings first.",
     "error.invalid_folders": "The folder tree is not valid. Check the names.",
+    "error.invalid_sheet": "The project sheet is too long. Use 1,500 "
+        + "characters or fewer.",
     "error.invalid_description":
         "The description must be 300 characters or fewer.",
     "error.folder_not_empty": "A folder with documents can't be removed.",
@@ -442,6 +525,10 @@ const LANG_EN = {
     "error.not_tree_project":
         "This project sorts files by type, so files are not moved.",
     "error.use_move": "Use Move to change a document's folder.",
+    "error.catalog_only": "This project catalogs files in place: nothing is "
+        + "moved or renamed.",
+    "error.protected_name": "Other programs look for this file by name, so "
+        + "it keeps it.",
     "error.no_api_key": "Ollama Cloud has no API key yet. Add it in Advanced "
         + "settings, or build the folders by hand.",
     "error.suggest_folders_failed":

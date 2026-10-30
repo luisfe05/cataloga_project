@@ -188,7 +188,7 @@ def test_gemini_send_prompt(monkeypatch):
 
     assert answer == "Press"
     assert created_with["api_key"] == "test-key"
-    assert models.last_call["model"] == "gemini-2.5-flash"
+    assert models.last_call["model"] == "gemini-3.5-flash-lite"
     assert models.last_call["contents"] == "Some article text"
     assert models.last_call["config"] == {
         "system_instruction": "Classify this."}
@@ -256,16 +256,18 @@ def test_claude_send_prompt(monkeypatch):
     recorded = {}
 
     class FakeMessages:
-        def create(self, model, max_tokens, system, messages):
+        def create(self, model, max_tokens, system, output_config, messages):
             recorded.update({"model": model, "system": system,
+                             "output_config": output_config,
                              "messages": messages})
             text_block = type("Block", (), {"type": "text",
                                             "text": "Documents"})
             return type("Response", (), {"content": [text_block]})
 
     class FakeAnthropic:
-        def __init__(self, api_key):
+        def __init__(self, api_key, base_url=None):
             recorded["api_key"] = api_key
+            recorded["base_url"] = base_url
             self.messages = FakeMessages()
 
     monkeypatch.setattr(claude.anthropic, "Anthropic", FakeAnthropic)
@@ -274,9 +276,23 @@ def test_claude_send_prompt(monkeypatch):
 
     assert answer == "Documents"
     assert recorded["api_key"] == "test-key"
-    assert recorded["model"] == "claude-haiku-5-5"
-    assert recorded["system"] == "Classify this."
+    assert recorded["base_url"] is None
+    assert recorded["model"] == "claude-sonnet-5-5"
+    # The system prompt is cached: it is the same for every file.
+    assert recorded["system"] == [{
+        "type": "text", "text": "Classify this.",
+        "cache_control": {"type": "ephemeral"}}]
+    assert recorded["output_config"] == {"effort": "low"}
     assert recorded["messages"] == [{"role": "user", "content": "A letter"}]
+
+    ClaudeClient(base_url="https://relay.example").send_images(
+        "Read this.", ["data:image/jpeg;base64,QUJD"])
+    assert recorded["base_url"] == "https://relay.example"
+    assert recorded["messages"] == [{"role": "user", "content": [
+        {"type": "image", "source": {"type": "base64",
+                                     "media_type": "image/jpeg",
+                                     "data": "QUJD"}},
+        {"type": "text", "text": "Read this."}]}]
 
 
 @pytest.mark.parametrize("name", ["ollama", "gemini", "groq", "claude",

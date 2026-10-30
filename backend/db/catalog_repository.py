@@ -7,7 +7,7 @@ from datetime import datetime
 from backend.db.schema import get_connection, DB_PATH
 from backend.models.document import (ARCHIVE_FIELDS, Document, LOCKED_FIELDS,
                                      MEDIA_TYPES)
-from backend.pipeline import archive_rules, folder_tree
+from backend.pipeline import archive_rules, folder_tree, naming
 from backend.pipeline.file_organizer import DROP_ZONE_FOLDER
 
 EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
@@ -26,7 +26,10 @@ STATUSES = ("Classified", "Manual Review")
 MAX_SUMMARY_LENGTH = 100
 
 SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
-                         "categories", "folder_mode", "project_description")
+                         "categories", "folder_mode", "project_description",
+                         "folder_tree", "numbered_folders",
+                         "project_sheet", "server_url", "naming_style",
+                         "keep_accents", "stamp_date_order")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -189,26 +192,26 @@ class CatalogRepository:
         finally:
             conn.close()
 
-    def move_document(self, doc_id, new_path, folder, subfolder):
-        """Save a document's new folder after a move the user asked for."""
+    def move_document(self, doc_id, new_path, place):
+        """Save a document's new folder path after a move the user asked."""
         doc = self.get_document(doc_id)
         if doc is None:
             raise KeyError(doc_id)
-        old_place = folder_tree.folder_text(doc.category, doc.subcategory) \
-            if doc.category else DROP_ZONE_FOLDER
-        details = "{} → {}".format(
-            old_place, folder_tree.folder_text(folder, subfolder))
+        details = "{} → {}".format(doc.folder_path or DROP_ZONE_FOLDER,
+                                   place)
+        folder, subfolder = folder_tree.first_two(place)
 
         conn = get_connection(self.db_path)
         try:
             # A file in a folder no longer needs its folder suggestion.
             conn.execute(
                 "UPDATE documents SET file_path = ?, filename = ?, "
-                "category = ?, subcategory = ?, suggested_folder = NULL, "
+                "folder_path = ?, category = ?, subcategory = ?, "
+                "suggested_folder = NULL, "
                 "review_note = CASE WHEN review_note = ? THEN NULL "
                 "ELSE review_note END WHERE id = ?",
-                (new_path, os.path.basename(new_path), folder, subfolder,
-                 folder_tree.NO_FOLDER_NOTE, doc_id),
+                (new_path, os.path.basename(new_path), place, folder,
+                 subfolder, folder_tree.NO_FOLDER_NOTE, doc_id),
             )
             self.log_activity(conn, doc_id, "Moved", details)
             conn.commit()
@@ -237,6 +240,23 @@ class CatalogRepository:
         finally:
             conn.close()
         return self.get_document(doc_id)
+
+    def count_in_path(self, place):
+        """Count the documents in a folder path or anywhere inside it."""
+        category, subcategory = folder_tree.first_two(place)
+        # Rows with only the two old columns count for paths of 1 or 2 levels.
+        deep = len(folder_tree.split_path(place)) > 2
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM documents WHERE folder_path = ? "
+                "OR folder_path LIKE ? OR (folder_path IS NULL AND ? = 0 "
+                "AND category = ? AND (subcategory = ? OR ? IS NULL))",
+                (place, place + folder_tree.SEPARATOR + "%", int(deep),
+                 category, subcategory, subcategory)).fetchone()
+        finally:
+            conn.close()
+        return row[0]
 
     def count_in_folder(self, folder):
         """Count the documents in a tree folder or any of its subfolders."""
@@ -487,7 +507,9 @@ class CatalogRepository:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
                 "app_lock_password_hash, language, naming_template, "
-                "industry, categories, folder_mode, project_description "
+                "industry, categories, folder_mode, project_description, "
+                "folder_tree, numbered_folders, project_sheet, server_url, "
+                "naming_style, keep_accents, stamp_date_order "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -585,7 +607,8 @@ class CatalogRepository:
 
     def reads_in_place(self):
         """Say whether the project is read where it is, with no Drop Zone."""
-        return self.folder_mode() == folder_tree.PLACE_MODE
+        return self.folder_mode() in (folder_tree.PLACE_MODE,
+                                      folder_tree.CATALOG_MODE)
 
     def index_get(self, path):
         """Return what the scan index knows about a path, or None."""
@@ -620,17 +643,67 @@ class CatalogRepository:
         finally:
             conn.close()
 
+    def is_catalog_project(self):
+        """Say whether the project never moves or renames its files."""
+        config = self.get_app_config() or {}
+        return config.get("folder_mode") == folder_tree.CATALOG_MODE
+
+    def can_move_files(self):
+        """Say whether files may be moved or renamed in this project."""
+        return not self.is_catalog_project()
+
     def get_folder_tree(self):
         """Return the folder tree, or None in a project sorted by type."""
         if not self.is_tree_project():
             return None
-        return self.get_categories()
+        config = self.get_app_config() or {}
+        tree = folder_tree.tree_from_text(config.get("folder_tree"))
+        if tree:
+            return tree
+        # Projects saved before deep trees: the two-level list is the tree.
+        return folder_tree.check_tree(self.get_categories()) \
+            if self.get_categories() else []
+
+    def save_tree(self, tree):
+        """Save the whole tree, and its first two levels as categories."""
+        tree = folder_tree.check_tree(tree)
+        self.save_config_value("folder_tree",
+                               json.dumps(tree, ensure_ascii=False))
+        self.save_categories(folder_tree.to_categories(tree))
 
     def save_folder_tree(self, description, tree):
         """Make this a tree project with its description and folders."""
         self.save_config_value("folder_mode", folder_tree.TREE_MODE)
         self.save_config_value("project_description", description)
-        self.save_categories(tree)
+        self.save_tree(tree)
+
+    def numbered_folders(self):
+        """Say whether new folders get a 01_ prefix."""
+        config = self.get_app_config() or {}
+        return bool(config.get("numbered_folders"))
+
+    def get_project_sheet(self):
+        """Return the project sheet, or ''."""
+        config = self.get_app_config() or {}
+        return config.get("project_sheet") or ""
+
+    def get_naming_style(self):
+        """Return 'lower' or 'title'."""
+        config = self.get_app_config() or {}
+        style = config.get("naming_style")
+        return style if style in naming.STYLES else naming.DEFAULT_STYLE
+
+    def keep_accents(self):
+        """Say whether file names keep their accents."""
+        config = self.get_app_config() or {}
+        return bool(config.get("keep_accents"))
+
+    def stamp_date_order(self):
+        """Return 'month' or 'day': how a photo's date stamp reads."""
+        config = self.get_app_config() or {}
+        order = config.get("stamp_date_order")
+        return order if order in archive_rules.STAMP_ORDERS \
+            else archive_rules.DEFAULT_STAMP_ORDER
 
     def get_project_description(self):
         """Return what the project is about, or ''."""
@@ -647,13 +720,13 @@ class CatalogRepository:
             conn.close()
         return (row["highest"] or 0) + 1
 
-    def get_active_provider(self):
-        """Return the active AI provider and model, or None if unset."""
+    def get_provider(self, role):
+        """Return the provider and model of a role, or None if unset."""
         conn = get_connection(self.db_path)
         try:
             row = conn.execute(
                 "SELECT provider_name, model FROM ai_provider_config "
-                "WHERE is_active = 1 LIMIT 1"
+                "WHERE role = ? LIMIT 1", (role,)
             ).fetchone()
         finally:
             conn.close()
@@ -661,27 +734,41 @@ class CatalogRepository:
             return None
         return dict(row)
 
-    def set_active_provider(self, provider_name, model):
-        """Make one provider the active one and store its model."""
+    def set_provider(self, role, provider_name, model):
+        """Give a role one provider and model, replacing the old row."""
         conn = get_connection(self.db_path)
         try:
-            conn.execute("UPDATE ai_provider_config SET is_active = 0")
-            row = conn.execute(
-                "SELECT id FROM ai_provider_config WHERE provider_name = ?",
-                (provider_name,),
-            ).fetchone()
-            if row is None:
-                conn.execute(
-                    "INSERT INTO ai_provider_config (provider_name, model, "
-                    "is_active) VALUES (?, ?, 1)",
-                    (provider_name, model),
-                )
-            else:
-                conn.execute(
-                    "UPDATE ai_provider_config SET model = ?, is_active = 1 "
-                    "WHERE id = ?",
-                    (model, row["id"]),
-                )
+            conn.execute("DELETE FROM ai_provider_config WHERE role = ?",
+                         (role,))
+            # is_active stays 1 on the text row for older code and backups.
+            conn.execute(
+                "INSERT INTO ai_provider_config (provider_name, model, "
+                "is_active, role) VALUES (?, ?, ?, ?)",
+                (provider_name, model, 1 if role == "text" else 0, role),
+            )
             conn.commit()
         finally:
             conn.close()
+
+    def clear_provider(self, role):
+        """Remove the provider of a role (a fallback or media provider)."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("DELETE FROM ai_provider_config WHERE role = ?",
+                         (role,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_active_provider(self):
+        """Return the text provider and model, or None if unset."""
+        return self.get_provider("text")
+
+    def set_active_provider(self, provider_name, model):
+        """Make one provider the text provider and store its model."""
+        self.set_provider("text", provider_name, model)
+
+    def get_server_url(self):
+        """Return the relay server URL, or None to call the providers."""
+        config = self.get_app_config() or {}
+        return config.get("server_url") or None

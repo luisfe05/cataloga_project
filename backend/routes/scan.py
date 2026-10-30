@@ -3,8 +3,8 @@
 from flask import Blueprint, current_app, jsonify
 
 from backend import scanner
-from backend.config import account
-from backend.routes import error_response, get_active_repo, projects_path
+from backend.routes import (error_response, get_active_repo, projects_path,
+                            session_user)
 
 scan_bp = Blueprint("scan", __name__)
 
@@ -30,10 +30,8 @@ def scan_start():
         return error_response(
             "has_drop_zone",
             "This project reads its Drop Zone; nothing to scan.", 409)
-    saved = account.load_account(current_app.config["ACCOUNT_PATH"])
     job = scanner.start_scan(current_app._get_current_object(),
-                             projects_path(),
-                             saved["username"] if saved else None)
+                             projects_path(), session_user() or None)
     if job.error == "no_provider":
         return error_response("no_provider",
                               "Choose an AI provider first.", 400)

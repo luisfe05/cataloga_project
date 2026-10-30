@@ -73,7 +73,8 @@ def test_to_dict_contains_all_keys():
         "topic", "keywords", "sha256", "duplicate_of", "review_note",
         "counterparty", "confidentiality", "owner", "effective_start",
         "effective_end", "category", "subcategory", "date_source",
-        "suggested_folder", "proposed_folder", "proposed_name",
+        "suggested_folder", "folder_reason", "confidence", "original_path",
+        "folder_path", "proposed_folder", "proposed_name",
     }
     assert expected_keys == set(result.keys())
     assert result["keywords"] == []

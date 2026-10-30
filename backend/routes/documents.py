@@ -6,12 +6,13 @@ import os
 
 from flask import Blueprint, Response, jsonify, request
 
-from backend.pipeline.ai_providers import create_client
+from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
-    ClassificationPipeline, missing_note, needs_nothing, required_fields)
+    ClassificationPipeline, missing_note, needs_nothing)
 from backend.config import projects as project_list
 from backend.pipeline import folder_tree
 from backend.pipeline.file_organizer import FileOrganizer
+from backend.pipeline import naming
 from backend.pipeline.naming import clean_new_name
 from backend.routes import error_response, get_active_repo, projects_path
 
@@ -38,7 +39,11 @@ EXPORT_COLUMNS = (
     ("Effective End", "effective_end"),
     ("Duplicate Of", "duplicate_of"),
     ("Review Note", "review_note"),
+    ("Folder", "folder_path"),
     ("Suggested Folder", "suggested_folder"),
+    ("Why This Folder", "folder_reason"),
+    ("Confidence", "confidence"),
+    ("Original Path", "original_path"),
     ("SHA-256", "sha256"),
 )
 
@@ -52,11 +57,11 @@ def summary_should_update(fields):
 def regenerate_summary(repo, doc):
     """Ask the active AI provider for a new summary of one document."""
     config = repo.get_app_config()
-    provider = repo.get_active_provider()
-    if not config or not provider:
+    client = project_client(repo)
+    if not config or client is None:
         return doc
     pipeline = ClassificationPipeline(
-        create_client(provider["provider_name"], provider["model"]),
+        client,
         repo,
         FileOrganizer(config["target_directory"]),
     )
@@ -183,6 +188,15 @@ def rename_document(doc_id):
                               "Document {} does not exist.".format(doc_id),
                               404)
 
+    if not repo.can_move_files():
+        return error_response(
+            "catalog_only",
+            "This project catalogs files in place: nothing is renamed.", 409)
+    if naming.is_protected(doc.filename):
+        return error_response(
+            "protected_name",
+            "Other programs look for this file by name, so it keeps it.",
+            400)
     extension = os.path.splitext(doc.filename)[1]
     new_filename = clean_new_name(body["new_name"], extension)
     if not new_filename:
@@ -219,6 +233,10 @@ def move_document(doc_id):
     repo, error = get_active_repo()
     if error:
         return error
+    if not repo.can_move_files():
+        return error_response(
+            "catalog_only",
+            "This project catalogs files in place: nothing is moved.", 409)
     tree = repo.get_folder_tree()
     if tree is None:
         return error_response(
@@ -244,19 +262,19 @@ def move_document(doc_id):
             tree = folder_tree.add_place(tree, body["folder"])
         except ValueError as error:
             return error_response("invalid_folders", str(error), 400)
-        repo.save_categories(tree)
+        repo.save_tree(tree)
         organizer.ensure_archive_structure(tree)
         place = folder_tree.find_place(tree, body["folder"])
     if place is None:
         return error_response("unknown_folder",
                               "This folder is not in the project.", 400)
-    if (doc.category, doc.subcategory) == place:
+    if doc.folder_path == place:
         return jsonify(doc.to_dict()), 200
 
     new_path = organizer.move_to_folder(
-        doc.file_path, organizer.tree_folder(*place), doc.filename)
+        doc.file_path, organizer.tree_folder(place), doc.filename)
     try:
-        doc = repo.move_document(doc_id, new_path, *place)
+        doc = repo.move_document(doc_id, new_path, place)
     except Exception:
         # Keep the disk and the catalog in step: put the file back.
         os.rename(new_path, doc.file_path)
@@ -267,8 +285,7 @@ def move_document(doc_id):
             doc = repo.set_status(doc_id, "Classified")
         elif not doc.review_note:
             # Move cleared the folder note; the empty fields explain the rest.
-            doc = repo.set_review_note(
-                doc_id, missing_note(doc, required_fields(doc)))
+            doc = repo.set_review_note(doc_id, missing_note(doc))
     return jsonify(doc.to_dict()), 200
 
 
