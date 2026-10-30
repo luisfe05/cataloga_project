@@ -186,8 +186,21 @@ function reviewNoteText(note) {
         return length ? t("catalog.note_media_length", { length: length })
             : t("catalog.note_media");
     }
+    // "Missing: source, document_date": each field in the user's language.
+    const missingPrefix = "Missing: ";
+    if (note.startsWith(missingPrefix)) {
+        const labels = {
+            source: "catalog.col_source",
+            document_date: "catalog.col_date",
+            summary: "catalog.col_summary",
+        };
+        const fields = note.slice(missingPrefix.length).split(", ")
+            .map((field) => labels[field] ? t(labels[field]) : field);
+        return t("catalog.note_missing", { fields: fields.join(", ") });
+    }
     const notes = {
         "Could not read the image": "catalog.note_image",
+        "No topic could be found in the photo": "catalog.note_topic",
         "Could not read the scanned pages": "catalog.note_scan",
         "File is larger than 50 MB, so it was not read": "catalog.note_too_big",
     };
