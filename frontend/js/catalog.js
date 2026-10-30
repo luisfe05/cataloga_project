@@ -350,6 +350,16 @@ function makeFolderCell(doc) {
     if (doc.duplicate_of) {
         return cell;
     }
+    // Read in place: what the plan would do with the file, not done yet.
+    if (doc.proposed_folder || doc.proposed_name) {
+        const proposal = document.createElement("p");
+        proposal.className = "review-note";
+        proposal.textContent = t("catalog.proposed", {
+            folder: doc.proposed_folder ? folderLabel(doc.proposed_folder)
+                : folderLabel(current || t("catalog.same_folder")),
+            name: doc.proposed_name || doc.filename });
+        cell.appendChild(proposal);
+    }
     if (doc.suggested_folder) {
         const suggestion = document.createElement("p");
         suggestion.className = "review-note";
