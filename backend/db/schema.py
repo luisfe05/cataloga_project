@@ -115,7 +115,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     industry                TEXT,
     categories              TEXT,
     folder_mode             TEXT,
-    project_description     TEXT
+    project_description     TEXT,
+    server_url              TEXT
 );
 """
 
@@ -130,6 +131,8 @@ ADDED_APP_CONFIG_COLUMNS = {
     # 'tree' for projects with their own folders; empty in old projects.
     "folder_mode": "folder_mode TEXT",
     "project_description": "project_description TEXT",
+    # A relay server that holds the API keys; empty means the providers.
+    "server_url": "server_url TEXT",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """
@@ -137,9 +140,17 @@ CREATE TABLE IF NOT EXISTS ai_provider_config (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_name TEXT    NOT NULL,
     model         TEXT    NOT NULL,
-    is_active     INTEGER NOT NULL DEFAULT 0
+    is_active     INTEGER NOT NULL DEFAULT 0,
+    role          TEXT
 );
 """
+
+# Added with the provider roles. 'text' is the main provider (the old
+# is_active row), 'fallback' answers when it fails, 'media' reads audio
+# and video.
+ADDED_AI_PROVIDER_COLUMNS = {
+    "role": "role TEXT",
+}
 
 
 def get_connection(db_path=DB_PATH):
@@ -154,7 +165,8 @@ def add_missing_columns(cursor):
     # Safe: table and column names are fixed here, never from the user.
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
              ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS),
-             ("documents", ADDED_DOCUMENTS_COLUMNS))
+             ("documents", ADDED_DOCUMENTS_COLUMNS),
+             ("ai_provider_config", ADDED_AI_PROVIDER_COLUMNS))
     for table, new_columns in added:
         # row[1] is the column name.
         columns = [row[1] for row in
@@ -174,5 +186,8 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
     add_missing_columns(cursor)
+    # The provider a project used before the roles is its text provider.
+    cursor.execute("UPDATE ai_provider_config SET role = 'text' "
+                   "WHERE is_active = 1 AND role IS NULL")
     conn.commit()
     conn.close()

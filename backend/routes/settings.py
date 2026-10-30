@@ -6,7 +6,8 @@ from keyring.errors import KeyringError
 from backend.config import account, projects
 from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
-from backend.pipeline.ai_providers import PROVIDERS, create_client
+from backend.pipeline.ai_providers import (MEDIA_PROVIDER, PROVIDERS, ROLES,
+                                           create_client, project_client)
 from backend.pipeline.ai_providers.base import save_api_key
 from backend.pipeline import archive_rules, folder_tree, naming
 from backend.pipeline.file_organizer import FileOrganizer
@@ -105,6 +106,12 @@ def update_settings():
     if values is None:
         return error_response("missing_field",
                               "research_name is required.", 400)
+    if "server_url" in body:
+        body["server_url"] = clean_server_url(body["server_url"])
+        if body["server_url"] is None:
+            return error_response(
+                "invalid_server_url",
+                "server_url must start with http:// or https://.", 400)
     if "naming_template" in body:
         problem = naming.validate_template(body["naming_template"])
         if problem:
@@ -142,6 +149,8 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if "server_url" in body:
+        repo.save_config_value("server_url", body["server_url"])
     if archive is not None and not tree_mode:
         config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:
@@ -207,11 +216,10 @@ def suggest_categories():
     repo, error = get_active_repo()
     if error:
         return error
-    provider = repo.get_active_provider()
-    if not provider:
+    client = project_client(repo)
+    if client is None:
         return error_response("no_provider",
                               "Choose an AI provider first.", 400)
-    client = create_client(provider["provider_name"], provider["model"])
     industry = values["industry"][:archive_rules.MAX_INDUSTRY_LENGTH]
     categories = archive_rules.parse_category_answer(
         client.send_categories_request(industry))
@@ -222,14 +230,38 @@ def suggest_categories():
     return jsonify({"categories": categories}), 200
 
 
+def clean_server_url(value):
+    """Return a server URL without spaces, '' for none, or None if bad."""
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        return None
+    value = value.strip().rstrip("/")
+    if not value:
+        return ""
+    if not value.startswith(("http://", "https://")) or len(value) > 200:
+        return None
+    return value
+
+
+def read_role(body):
+    """Return the role a provider request is about: text unless said."""
+    role = body.get("role", "text") if isinstance(body, dict) else "text"
+    return role if role in ROLES else None
+
+
 @settings_bp.route("/settings/ai-provider", methods=["PUT"])
 def update_ai_provider():
-    """Update the active AI provider, model, and API key."""
+    """Update the provider, model, and API key of one role."""
     body = request.get_json(silent=True)
     values = read_text_fields(body, ("provider_name", "model"))
     if values is None:
         return error_response("missing_field",
                               "provider_name and model are required.", 400)
+    role = read_role(body)
+    if role is None:
+        return error_response("invalid_role",
+                              "role must be text, fallback, or media.", 400)
     repo, error = get_active_repo()
     if error:
         return error
@@ -237,6 +269,11 @@ def update_ai_provider():
         return error_response(
             "unsupported_provider",
             "Unsupported AI provider: " + values["provider_name"], 400)
+    # Ollama Cloud and the others do not read audio or video.
+    if role == "media" and values["provider_name"] != MEDIA_PROVIDER:
+        return error_response(
+            "unsupported_provider",
+            "Only Google Gemini reads audio and video.", 400)
 
     api_key = body.get("api_key")
     if isinstance(api_key, str) and api_key.strip():
@@ -249,10 +286,22 @@ def update_ai_provider():
                 "The API key could not be saved in the system keychain.",
                 400)
 
-    AppConfig(repo).set_active_provider(values["provider_name"],
-                                        values["model"])
-    return jsonify({"provider_name": values["provider_name"],
+    repo.set_provider(role, values["provider_name"], values["model"])
+    return jsonify({"role": role, "provider_name": values["provider_name"],
                     "model": values["model"]}), 200
+
+
+@settings_bp.route("/settings/ai-provider/<role>", methods=["DELETE"])
+def clear_ai_provider(role):
+    """Take the fallback or media provider away. The key stays saved."""
+    if role not in ROLES or role == "text":
+        return error_response("invalid_role",
+                              "Only fallback and media can be cleared.", 400)
+    repo, error = get_active_repo()
+    if error:
+        return error
+    repo.clear_provider(role)
+    return jsonify({"role": role, "provider_name": None}), 200
 
 
 @settings_bp.route("/settings/ai-provider/test", methods=["POST"])
@@ -263,8 +312,12 @@ def test_ai_provider():
     if values is None:
         return error_response("missing_field",
                               "provider_name and model are required.", 400)
+    server_url = body.get("server_url")
+    if not isinstance(server_url, str) or not server_url.strip():
+        server_url = None
     try:
-        client = create_client(values["provider_name"], values["model"])
+        client = create_client(values["provider_name"], values["model"],
+                               server_url)
     except ValueError as error:
         return error_response("unsupported_provider", str(error), 400)
 

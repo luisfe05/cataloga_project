@@ -12,6 +12,7 @@ from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
 from backend.pipeline import archive_rules, chat_assistant, naming
+from backend.pipeline import ai_providers
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
@@ -499,8 +500,8 @@ def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
     """The scan uses the account's username and drops gone duplicates."""
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: "test-key")
-    monkeypatch.setattr(folder_watcher, "create_client",
-                        lambda name, model: RecordingAI())
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: RecordingAI())
     projects_path = str(tmp_path / "app" / "projects.json")
     repo = make_project(projects_path, tmp_path / "Research")
     repo.set_active_provider("gemini", "gemini-2.5-flash")
@@ -568,8 +569,8 @@ class SuggestAI(AIProviderClient):
 ])
 def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
     """Suggest returns a checked list and saves nothing."""
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SuggestAI(answer))
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None: SuggestAI(answer))
     active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
@@ -580,8 +581,9 @@ def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
 
 def test_suggest_categories_bad_answer(flask_client, app, monkeypatch):
     """No usable list from the AI gives a clear error."""
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SuggestAI("I cannot help."))
+    monkeypatch.setattr(ai_providers, "create_client",
+                        lambda name, model, base_url=None:
+                        SuggestAI("I cannot help."))
     active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
