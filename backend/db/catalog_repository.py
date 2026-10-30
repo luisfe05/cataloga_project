@@ -29,7 +29,7 @@ SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
                          "categories", "folder_mode", "project_description",
                          "folder_tree", "numbered_folders",
                          "project_sheet", "server_url", "naming_style",
-                         "keep_accents")
+                         "keep_accents", "stamp_date_order")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -507,7 +507,7 @@ class CatalogRepository:
                 "app_lock_password_hash, language, naming_template, "
                 "industry, categories, folder_mode, project_description, "
                 "folder_tree, numbered_folders, project_sheet, server_url, "
-                "naming_style, keep_accents "
+                "naming_style, keep_accents, stamp_date_order "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -652,6 +652,13 @@ class CatalogRepository:
         """Say whether file names keep their accents."""
         config = self.get_app_config() or {}
         return bool(config.get("keep_accents"))
+
+    def stamp_date_order(self):
+        """Return 'month' or 'day': how a photo's date stamp reads."""
+        config = self.get_app_config() or {}
+        order = config.get("stamp_date_order")
+        return order if order in archive_rules.STAMP_ORDERS \
+            else archive_rules.DEFAULT_STAMP_ORDER
 
     def get_project_description(self):
         """Return what the project is about, or ''."""

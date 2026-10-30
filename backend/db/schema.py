@@ -134,7 +134,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     project_sheet           TEXT,
     server_url              TEXT,
     naming_style            TEXT,
-    keep_accents            INTEGER
+    keep_accents            INTEGER,
+    stamp_date_order        TEXT
 );
 """
 
@@ -161,6 +162,8 @@ ADDED_APP_CONFIG_COLUMNS = {
     "naming_style": "naming_style TEXT",
     # 1 keeps accents in file names (Día); empty or 0 drops them (Dia).
     "keep_accents": "keep_accents INTEGER",
+    # How a date stamped on a photo reads: 'month' first or 'day' first.
+    "stamp_date_order": "stamp_date_order TEXT",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """

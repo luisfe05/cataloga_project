@@ -43,6 +43,7 @@ def get_settings():
         "research_name": "",
         "target_directory": folder,
         "naming_template": naming.DEFAULT_TEMPLATE,
+        "stamp_date_order": archive_rules.DEFAULT_STAMP_ORDER,
         "naming_style": naming.DEFAULT_STYLE,
         "keep_accents": False,
         "industry": "",
@@ -114,6 +115,10 @@ def update_settings():
     if values is None:
         return error_response("missing_field",
                               "research_name is required.", 400)
+    if "stamp_date_order" in body and \
+            body["stamp_date_order"] not in archive_rules.STAMP_ORDERS:
+        return error_response("invalid_stamp_order",
+                              "stamp_date_order must be month or day.", 400)
     if "naming_style" in body and body["naming_style"] not in naming.STYLES:
         return error_response("invalid_style",
                               "naming_style must be lower or title.", 400)
@@ -172,6 +177,8 @@ def update_settings():
                             values["research_name"])
     if "naming_template" in body:
         config.update_naming_template(body["naming_template"])
+    if "stamp_date_order" in body:
+        repo.save_config_value("stamp_date_order", body["stamp_date_order"])
     if "naming_style" in body:
         repo.save_config_value("naming_style", body["naming_style"])
     if "keep_accents" in body:

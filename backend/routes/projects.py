@@ -7,8 +7,8 @@ from flask import Blueprint, jsonify, request
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import (conventions, folder_tree, naming,
-                              project_sheet)
+from backend.pipeline import (archive_rules, conventions, folder_tree,
+                              naming, project_sheet)
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            create_client)
 from backend.pipeline.file_organizer import FileOrganizer
@@ -136,6 +136,9 @@ def create_project():
     sheet = project_sheet.clean_sheet(body.get("project_sheet"))
     if sheet:
         new_repo.save_config_value("project_sheet", sheet)
+    if body.get("stamp_date_order") in archive_rules.STAMP_ORDERS:
+        new_repo.save_config_value("stamp_date_order",
+                                   body["stamp_date_order"])
     # Ollama Cloud works without typing a key.
     new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)
     server_url = clean_server_url(body.get("server_url"))

@@ -196,11 +196,14 @@ function startNewProject() {
     showSheetMessage("", "");
     document.getElementById("catalog-only").checked = false;
     applyCatalogOnly();
-    // New projects start with method 4, lowercase, no accents.
+    // New projects start with method 4, lowercase, no accents, and
+    // month-first photo stamps.
     showSavedTemplate(NAMING_METHODS.m4);
     document.querySelector('input[name="naming-style"][value="lower"]')
         .checked = true;
     document.getElementById("keep-accents").checked = false;
+    document.querySelector('input[name="stamp-order"][value="month"]')
+        .checked = true;
     showCategories("", []);
     showProvider("text", "ollama", "");
     showProvider("fallback", "", "");
@@ -433,6 +436,11 @@ function renderNamingBlocks() {
     updateNamingPreview();
 }
 
+function readStampOrder() {
+    const picked = document.querySelector('input[name="stamp-order"]:checked');
+    return picked ? picked.value : "month";
+}
+
 function chosenTemplate() {
     const picked = document.querySelector(
         'input[name="naming-method"]:checked');
@@ -598,6 +606,8 @@ async function loadSettings() {
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
+        document.querySelector(`input[name="stamp-order"][value="${
+            settings.stamp_date_order || "month"}"]`).checked = true;
         document.querySelector(`input[name="naming-style"][value="${
             settings.naming_style || "lower"}"]`).checked = true;
         document.getElementById("keep-accents").checked =
@@ -673,6 +683,7 @@ async function saveSettings(event) {
                 name: document.getElementById("research-name").value,
                 folder: document.getElementById("target-directory").value,
                 naming_template: chosenTemplate(),
+                stamp_date_order: readStampOrder(),
                 naming_style: readNamingStyle(),
                 keep_accents: readKeepAccents(),
                 description: document.getElementById("project-description")
@@ -693,6 +704,7 @@ async function saveSettings(event) {
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
+                stamp_date_order: readStampOrder(),
                 naming_style: readNamingStyle(),
                 keep_accents: readKeepAccents(),
                 project_sheet: document.getElementById("project-sheet")
