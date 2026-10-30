@@ -65,7 +65,10 @@ CREATE TABLE IF NOT EXISTS documents (
     category          TEXT,
     subcategory       TEXT,
     date_source       TEXT,
-    suggested_folder  TEXT
+    suggested_folder  TEXT,
+    folder_reason     TEXT,
+    confidence        TEXT,
+    original_path     TEXT
 );
 """
 
@@ -87,6 +90,12 @@ ADDED_DOCUMENTS_COLUMNS = {
     "date_source": "date_source TEXT",
     # A folder the AI would create, as 'Folder/Subfolder'.
     "suggested_folder": "suggested_folder TEXT",
+    # One line from the AI on why the file went to its folder.
+    "folder_reason": "folder_reason TEXT",
+    # high, medium or low; low sends the file to Manual Review.
+    "confidence": "confidence TEXT",
+    # Where the file was first seen, relative to the project folder.
+    "original_path": "original_path TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -116,7 +125,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     categories              TEXT,
     folder_mode             TEXT,
     project_description     TEXT,
-    project_sheet           TEXT
+    project_sheet           TEXT,
+    server_url              TEXT
 );
 """
 
@@ -133,6 +143,8 @@ ADDED_APP_CONFIG_COLUMNS = {
     "project_description": "project_description TEXT",
     # What the work is, written by the AI from a sample and edited by hand.
     "project_sheet": "project_sheet TEXT",
+    # A relay server that holds the API keys; empty means the providers.
+    "server_url": "server_url TEXT",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """
@@ -140,9 +152,17 @@ CREATE TABLE IF NOT EXISTS ai_provider_config (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     provider_name TEXT    NOT NULL,
     model         TEXT    NOT NULL,
-    is_active     INTEGER NOT NULL DEFAULT 0
+    is_active     INTEGER NOT NULL DEFAULT 0,
+    role          TEXT
 );
 """
+
+# Added with the provider roles. 'text' is the main provider (the old
+# is_active row), 'fallback' answers when it fails, 'media' reads audio
+# and video.
+ADDED_AI_PROVIDER_COLUMNS = {
+    "role": "role TEXT",
+}
 
 
 def get_connection(db_path=DB_PATH):
@@ -157,7 +177,8 @@ def add_missing_columns(cursor):
     # Safe: table and column names are fixed here, never from the user.
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
              ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS),
-             ("documents", ADDED_DOCUMENTS_COLUMNS))
+             ("documents", ADDED_DOCUMENTS_COLUMNS),
+             ("ai_provider_config", ADDED_AI_PROVIDER_COLUMNS))
     for table, new_columns in added:
         # row[1] is the column name.
         columns = [row[1] for row in
@@ -177,5 +198,8 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
     add_missing_columns(cursor)
+    # The provider a project used before the roles is its text provider.
+    cursor.execute("UPDATE ai_provider_config SET role = 'text' "
+                   "WHERE is_active = 1 AND role IS NULL")
     conn.commit()
     conn.close()
