@@ -11,7 +11,8 @@ import threading
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.pipeline import folder_tree
-from backend.pipeline.ai_providers import create_client
+from backend.pipeline.ai_providers import (create_client,
+                                           ready_media_client)
 from backend.pipeline.classification_pipeline import ClassificationPipeline
 from backend.pipeline.file_organizer import CATALOG_FOLDER, FileOrganizer
 
@@ -109,7 +110,8 @@ def scan_folder(job, folder, repo, client, owner=None):
     if job.status != "paused":
         job.status = "running"
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
-                                      owner=owner, in_place=True)
+                                      owner=owner, in_place=True,
+                                      media_client=ready_media_client(repo))
     for path in files:
         # Pause holds here; stop ends here.
         job.resume_event.wait()
@@ -142,7 +144,8 @@ def read_new_files(folder, repo, client, owner=None):
     The watcher calls this every few seconds; the index makes it cheap.
     """
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
-                                      owner=owner, in_place=True)
+                                      owner=owner, in_place=True,
+                                      media_client=ready_media_client(repo))
     documents = []
     for path in find_files(folder):
         try:

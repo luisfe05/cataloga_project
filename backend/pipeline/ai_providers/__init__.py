@@ -72,3 +72,11 @@ def media_client(repo):
         return None
     return create_client(saved["provider_name"], saved["model"],
                          repo.get_server_url())
+
+
+def ready_media_client(repo):
+    """Return the media client when it has a key, else None."""
+    client = media_client(repo)
+    if client is None or not getattr(client, "api_key", None):
+        return None
+    return client

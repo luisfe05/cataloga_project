@@ -8,7 +8,7 @@ from pypdf import PdfReader
 
 from backend.models.document import Document
 from backend.pipeline import (archive_rules, file_metadata, file_readers,
-                              folder_tree, naming)
+                              folder_tree, media_reader, naming)
 from backend.pipeline.ai_providers import base
 
 # Sorted by extension alone, without asking the AI.
@@ -310,17 +310,19 @@ class ClassificationPipeline:
     """Runs the classify-summarize-organize-catalog flow."""
 
     def __init__(self, ai_client, catalog_repo, file_organizer, owner=None,
-                 in_place=False):
+                 in_place=False, media_client=None):
         """Set up the pipeline; owner is the account's username.
 
         With in_place, files are cataloged where they are: the folder and
-        the name the pipeline chooses are saved as proposals.
+        the name the pipeline chooses are saved as proposals. The media
+        client listens to audio and video; without one, only tags.
         """
         self.ai_client = ai_client
         self.db = catalog_repo
         self.file_organizer = file_organizer
         self.owner = owner or None
         self.in_place = in_place
+        self.media_client = media_client
 
     def destination(self, file_path, media_type, metadata):
         """Return the folder a file goes to, and if it found its place."""
@@ -361,6 +363,8 @@ class ClassificationPipeline:
         # Metadata saved inside the file, and the date a photo was taken.
         file_meta = {}
         taken = None
+        # Whether a recording was actually listened to or watched.
+        heard = False
         # A date printed or written on a photo.
         stamp = None
 
@@ -370,8 +374,12 @@ class ClassificationPipeline:
         elif kind in ("Audio", "Video"):
             media_type = kind
             file_meta = file_metadata.media_metadata(file_path)
-            # Not listened to yet, but a title is enough to name it.
-            if file_meta["title"]:
+            if self.media_client is not None:
+                content, reason = media_reader.read_media(
+                    self.media_client, file_path, kind, file_meta["length"])
+            heard = bool(content)
+            # Not listened to, but a title is enough to name it.
+            if not content and file_meta["title"]:
                 content = ("This {} file was not listened to; use only its "
                            "tags above.").format(kind.lower())
         elif (extension in file_readers.VISION_EXTENSIONS and
@@ -423,7 +431,7 @@ class ClassificationPipeline:
                                       content)
             if media_type is None:
                 media_type = metadata["media_type"]
-            if kind in ("Audio", "Video"):
+            if kind in ("Audio", "Video") and not heard:
                 # The date of a recording comes from its tags, below.
                 metadata["document_date"] = None
             # The name of a photo must come from what the photo shows.
@@ -515,7 +523,8 @@ class ClassificationPipeline:
         )
         self.validate_completeness(document)
         # Audio or video that still needs a person says why.
-        if kind in ("Audio", "Video") and not document.review_note and \
+        if kind in ("Audio", "Video") and not heard and \
+                not document.review_note and \
                 document.status == "Manual Review":
             document.review_note = self.media_note(file_meta.get("length"))
         if not placed and not self.in_place:
