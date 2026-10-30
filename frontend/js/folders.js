@@ -351,8 +351,41 @@ async function suggestProjectFolders() {
     }
 }
 
+/** Read the chosen folder as it is: its tree, marks and naming fill the form. */
+async function learnProjectFolders() {
+    const folder = document.getElementById("target-directory").value.trim();
+    const button = document.getElementById("learn-folders");
+    if (!folder) {
+        showFoldersMessage(t("folders.need_folder"), "error");
+        return;
+    }
+    button.disabled = true;
+    showFoldersMessage(t("folders.learning"), "");
+    try {
+        const result = await learnFolder(folder);
+        showFolderTree(result.folder_tree, {}, false);
+        // The names: style, accents, and the method they follow.
+        document.querySelector(`input[name="naming-style"][value="${
+            result.naming_style}"]`).checked = true;
+        document.getElementById("keep-accents").checked =
+            result.keep_accents;
+        showSavedTemplate(result.naming_template);
+        updateNamingPreview();
+        showFoldersMessage(t("folders.learned", {
+            folders: result.folders, files: result.files,
+            description: result.description,
+            examples: result.examples.join(", ") }), "success");
+    } catch (error) {
+        showFoldersMessage(errorText(error), "error");
+    } finally {
+        button.disabled = false;
+    }
+}
+
 document.getElementById("suggest-folders")
     .addEventListener("click", suggestProjectFolders);
+document.getElementById("learn-folders")
+    .addEventListener("click", learnProjectFolders);
 
 document.getElementById("file-type-folders").addEventListener("click", () => {
     showFolderTree(FILE_TYPE_FOLDERS
