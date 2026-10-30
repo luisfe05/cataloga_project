@@ -38,6 +38,7 @@ EXPORT_COLUMNS = (
     ("Effective End", "effective_end"),
     ("Duplicate Of", "duplicate_of"),
     ("Review Note", "review_note"),
+    ("Folder", "folder_path"),
     ("Suggested Folder", "suggested_folder"),
     ("Why This Folder", "folder_reason"),
     ("Confidence", "confidence"),
@@ -247,19 +248,19 @@ def move_document(doc_id):
             tree = folder_tree.add_place(tree, body["folder"])
         except ValueError as error:
             return error_response("invalid_folders", str(error), 400)
-        repo.save_categories(tree)
+        repo.save_tree(tree)
         organizer.ensure_archive_structure(tree)
         place = folder_tree.find_place(tree, body["folder"])
     if place is None:
         return error_response("unknown_folder",
                               "This folder is not in the project.", 400)
-    if (doc.category, doc.subcategory) == place:
+    if doc.folder_path == place:
         return jsonify(doc.to_dict()), 200
 
     new_path = organizer.move_to_folder(
-        doc.file_path, organizer.tree_folder(*place), doc.filename)
+        doc.file_path, organizer.tree_folder(place), doc.filename)
     try:
-        doc = repo.move_document(doc_id, new_path, *place)
+        doc = repo.move_document(doc_id, new_path, place)
     except Exception:
         # Keep the disk and the catalog in step: put the file back.
         os.rename(new_path, doc.file_path)

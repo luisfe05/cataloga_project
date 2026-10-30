@@ -610,6 +610,7 @@ async function saveSettings(event) {
                 project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 folders: readFolderTree(),
+                numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,
                 server_url: readServerUrl(),
             });
@@ -624,8 +625,11 @@ async function saveSettings(event) {
                 project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 industry: document.getElementById("industry").value,
-                // In a tree project the categories are the folders.
-                categories: isTree ? readFolderTree() : readCategories(),
+                // In a tree project the folders are the tree.
+                ...(isTree
+                    ? { folder_tree: readFolderTree(),
+                        numbered_folders: readNumberedFolders() }
+                    : { categories: readCategories() }),
                 server_url: readServerUrl(),
             });
         }

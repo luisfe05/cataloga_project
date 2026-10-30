@@ -334,9 +334,21 @@ const LANG_EN = {
     "folders.inside": "Inside",
     "folders.top_level": "Top level",
     "folders.unnamed": "(no name)",
-    "folders.rules": "Two levels at most. Up to 20 folders and 10 subfolders "
-        + "in each. Folders already created can't be renamed; you can add "
-        + "folders and remove empty ones. Removed folders stay on the disk.",
+    "folders.rules": "Up to six levels deep, 20 top folders and 10 "
+        + "subfolders in each. Folders already created can't be renamed; "
+        + "you can add folders and remove empty ones. Removed folders stay "
+        + "on the disk. A folder with subfolders only holds files in them.",
+    "folders.flag_events": "Events",
+    "folders.flag_events_hint": "Holds one folder per event, named "
+        + "Event_Year. Cataloga may propose new event folders here.",
+    "folders.flag_fallback": "Catch-all",
+    "folders.flag_fallback_hint": "Files that fit nowhere else go here "
+        + "instead of Manual Review.",
+    "folders.flag_auto": "No asking",
+    "folders.flag_auto_hint": "New files that belong here are filed "
+        + "without asking (projects without a Drop Zone).",
+    "folders.numbered": "Number new folders (01_, 02_)",
+    "folders.err_depth": "Folders can go six levels deep at most.",
     "folders.err_none": "Add at least one folder.",
     "folders.err_empty": "Every folder needs a name.",
     "folders.err_long": "\"{name}\" is too long. Use 60 characters or fewer.",

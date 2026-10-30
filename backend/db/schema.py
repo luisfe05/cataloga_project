@@ -68,7 +68,8 @@ CREATE TABLE IF NOT EXISTS documents (
     suggested_folder  TEXT,
     folder_reason     TEXT,
     confidence        TEXT,
-    original_path     TEXT
+    original_path     TEXT,
+    folder_path       TEXT
 );
 """
 
@@ -96,6 +97,9 @@ ADDED_DOCUMENTS_COLUMNS = {
     "confidence": "confidence TEXT",
     # Where the file was first seen, relative to the project folder.
     "original_path": "original_path TEXT",
+    # The file's folder in the tree, as 'A/B/C'. category and subcategory
+    # keep its first two levels.
+    "folder_path": "folder_path TEXT",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -125,6 +129,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     categories              TEXT,
     folder_mode             TEXT,
     project_description     TEXT,
+    folder_tree             TEXT,
+    numbered_folders        INTEGER,
     project_sheet           TEXT,
     server_url              TEXT
 );
@@ -145,6 +151,10 @@ ADDED_APP_CONFIG_COLUMNS = {
     "project_sheet": "project_sheet TEXT",
     # A relay server that holds the API keys; empty means the providers.
     "server_url": "server_url TEXT",
+    # The whole tree as JSON (any depth); categories keeps two levels.
+    "folder_tree": "folder_tree TEXT",
+    # 1 when new folders get a 01_ prefix.
+    "numbered_folders": "numbered_folders INTEGER",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """
@@ -201,5 +211,10 @@ def init_db(db_path=DB_PATH):
     # The provider a project used before the roles is its text provider.
     cursor.execute("UPDATE ai_provider_config SET role = 'text' "
                    "WHERE is_active = 1 AND role IS NULL")
+    # Rows from before folder_path: the path is the two old columns.
+    cursor.execute("UPDATE documents SET folder_path = CASE WHEN "
+                   "subcategory IS NOT NULL THEN category || '/' || "
+                   "subcategory ELSE category END WHERE folder_path IS "
+                   "NULL AND category IS NOT NULL")
     conn.commit()
     conn.close()

@@ -95,6 +95,9 @@ def create_project():
         tree = folder_tree.check_tree(body.get("folders"))
     except ValueError as error:
         return error_response("invalid_folders", str(error), 400)
+    numbered = body.get("numbered_folders") is True
+    if numbered:
+        tree = folder_tree.number_new(tree, [])
 
     existing = organizer.count_existing_items(tree)
     if existing and body.get("confirm_folder") is not True:
@@ -112,6 +115,8 @@ def create_project():
     new_repo.save_app_config(name, folder)
     new_repo.save_naming_template(template)
     new_repo.save_folder_tree(description, tree)
+    if numbered:
+        new_repo.save_config_value("numbered_folders", 1)
     sheet = project_sheet.clean_sheet(body.get("project_sheet"))
     if sheet:
         new_repo.save_config_value("project_sheet", sheet)

@@ -47,6 +47,8 @@ def get_settings():
         "categories": [],
         "folder_mode": folder_tree.MEDIA_MODE,
         "project_description": "",
+        "folder_tree": [],
+        "numbered_folders": False,
         "project_sheet": "",
         "folder_counts": {},
         "active_provider": None,
@@ -60,6 +62,8 @@ def get_settings():
             settings["folder_mode"] = folder_tree.TREE_MODE
             settings["project_description"] = \
                 repo.get_project_description()
+            settings["folder_tree"] = repo.get_folder_tree()
+            settings["numbered_folders"] = repo.numbered_folders()
             settings["folder_counts"] = folder_counts(repo)
         # The list is the source of truth for where the project is.
         settings["target_directory"] = folder
@@ -73,14 +77,9 @@ def get_settings():
 
 
 def folder_counts(repo):
-    """Count the documents in every folder of the tree."""
-    counts = {}
-    for top in repo.get_categories():
-        counts[top["name"]] = repo.count_in_folder(top["name"])
-        for sub in top["subcategories"]:
-            counts[folder_tree.folder_text(top["name"], sub)] = \
-                repo.count_in_subfolder(top["name"], sub)
-    return counts
+    """Count the documents in every folder of the tree, at any depth."""
+    return {path: repo.count_in_path(path)
+            for path in folder_tree.all_paths(repo.get_folder_tree() or [])}
 
 
 def providers_with_key():
@@ -150,9 +149,12 @@ def update_settings():
     # Must run before ensure_archive_structure(), or Drop Zone is doubled.
     organizer = FileOrganizer(folder)
     organizer.migrate_old_inbox()
+    if tree_mode and "numbered_folders" in body:
+        repo.save_config_value("numbered_folders",
+                               1 if body["numbered_folders"] else 0)
     if tree_mode and archive is not None:
         # New folders are created now; removed ones stay on the disk.
-        repo.save_categories(archive["categories"])
+        repo.save_tree(archive["categories"])
     organizer.ensure_archive_structure(repo.get_folder_tree())
 
     config.update_settings(values["research_name"], folder)
@@ -189,27 +191,23 @@ def read_archive_settings(body):
 
 def read_folder_tree(body, repo):
     """Return the checked tree, or (code, message, status) if it is wrong."""
-    if "categories" not in body:
+    sent = body.get("folder_tree", body.get("categories"))
+    if sent is None:
         return None
     try:
-        tree = folder_tree.check_tree(body["categories"])
+        tree = folder_tree.check_tree(sent)
     except ValueError as error:
         return ("invalid_folders", str(error), 400)
     # A folder that holds documents can never leave the tree.
-    tops = [top["name"] for top in tree]
-    subs = [folder_tree.folder_text(top["name"], sub)
-            for top in tree for sub in top["subcategories"]]
-    for top in repo.get_categories():
-        if not folder_in(top["name"], tops) and \
-                repo.count_in_folder(top["name"]):
-            return ("folder_not_empty", "This folder has documents: " +
-                    top["name"], 409)
-        for sub in top["subcategories"]:
-            place = folder_tree.folder_text(top["name"], sub)
-            if not folder_in(place, subs) and \
-                    repo.count_in_subfolder(top["name"], sub):
-                return ("folder_not_empty",
-                        "This folder has documents: " + place, 409)
+    paths = folder_tree.all_paths(tree)
+    for place in folder_tree.all_paths(repo.get_folder_tree() or []):
+        if not folder_in(place, paths) and repo.count_in_path(place):
+            return ("folder_not_empty",
+                    "This folder has documents: " + place, 409)
+    if body.get("numbered_folders") if "numbered_folders" in body \
+            else repo.numbered_folders():
+        tree = folder_tree.number_new(
+            tree, folder_tree.all_paths(repo.get_folder_tree() or []))
     return {"categories": tree}
 
 
