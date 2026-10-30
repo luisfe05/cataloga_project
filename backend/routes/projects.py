@@ -7,7 +7,8 @@ from flask import Blueprint, jsonify, request
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import folder_tree, naming, project_sheet
+from backend.pipeline import (conventions, folder_tree, naming,
+                              project_sheet)
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            create_client)
 from backend.pipeline.file_organizer import FileOrganizer
@@ -139,13 +140,31 @@ def suggest_folders():
         return error_response(
             "no_api_key", "Ollama Cloud has no API key yet. Add one in "
             "Advanced settings, or build the folders by hand.", 400)
+    # The industry, when known, brings the folders that field always has.
+    industry = body.get("industry") if isinstance(body.get("industry"),
+                                                  str) else ""
     tree = folder_tree.parse_tree_answer(client.send_folders_request(
-        description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH]))
+        description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH],
+        conventions.folder_hints(industry)))
     if not tree:
         return error_response(
             "suggest_folders_failed",
             "The AI provider did not suggest any folders.", 502)
     return jsonify({"folders": tree}), 200
+
+
+@projects_bp.route("/projects/folders/inspect", methods=["POST"])
+def inspect_folder():
+    """Say whether a folder looks like a website or a linked project."""
+    body = request.get_json(silent=True)
+    folder = body.get("folder") if isinstance(body, dict) else None
+    if not isinstance(folder, str) or not folder.strip():
+        return error_response("missing_field", "folder is required.", 400)
+    folder = projects.normalize_folder(folder)
+    if not os.path.isdir(folder):
+        return error_response("invalid_directory",
+                              "The folder does not exist: " + folder, 400)
+    return jsonify(conventions.inspect_folder(folder)), 200
 
 
 @projects_bp.route("/projects", methods=["DELETE"])
