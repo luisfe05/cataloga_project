@@ -9,6 +9,9 @@ from backend.pipeline import archive_rules
 # Saved in app_config.folder_mode. Old projects have no value: 'media'.
 TREE_MODE = "tree"
 MEDIA_MODE = "media"
+# A tree project without a Drop Zone: the folder is read in place and
+# the moves and names are proposed, not done.
+PLACE_MODE = "place"
 # Files are read and cataloged where they are; nothing moves or renames.
 CATALOG_MODE = "catalog"
 

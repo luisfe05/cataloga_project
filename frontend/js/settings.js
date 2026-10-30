@@ -150,7 +150,7 @@ function setProjectMode(mode) {
     document.getElementById("remove-project-section")
         .classList.toggle("hidden", isNew);
     // New projects get a folder tree; old projects keep their categories.
-    const treeMode = isNew || projectFolderMode === "tree";
+    const treeMode = isNew || ["tree", "place"].includes(projectFolderMode);
     document.getElementById("categories-section")
         .classList.toggle("hidden", treeMode);
     document.getElementById("folders-section")
@@ -172,6 +172,8 @@ function applyCatalogOnly() {
     const isNew = projectMode === "new";
     document.getElementById("catalog-only-hint")
         .classList.toggle("hidden", !on);
+    document.getElementById("mode-options")
+        .classList.toggle("hidden", on || !isNew);
     document.getElementById("folders-section")
         .classList.toggle("hidden", on || !(isNew
             || projectFolderMode === "tree"));
@@ -191,6 +193,8 @@ function startNewProject() {
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
+    document.querySelector('input[name="folder-mode"][value="place"]')
+        .checked = true;
     document.getElementById("folder-advice").classList.add("hidden");
     document.getElementById("project-sheet").value = "";
     showSheetMessage("", "");
@@ -615,7 +619,7 @@ async function loadSettings() {
         updateNamingPreview();
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
-        if (projectFolderMode === "tree") {
+        if (["tree", "place"].includes(projectFolderMode)) {
             showFolderSection(settings, false);
         }
 
@@ -659,8 +663,8 @@ async function saveSettings(event) {
         return;
     }
     const catalogOnly = document.getElementById("catalog-only").checked;
-    const isTree = !catalogOnly
-        && (projectMode === "new" || projectFolderMode === "tree");
+    const isTree = !catalogOnly && (projectMode === "new"
+        || ["tree", "place"].includes(projectFolderMode));
     const treeProblem = isTree ? folderTreeProblem() : "";
     if (treeProblem) {
         showFoldersMessage(treeProblem, "error");
@@ -691,6 +695,8 @@ async function saveSettings(event) {
                 project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 folders: readFolderTree(),
+                folder_mode: document.querySelector(
+                    'input[name="folder-mode"]:checked').value,
                 catalog_only: document.getElementById("catalog-only").checked,
                 numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,

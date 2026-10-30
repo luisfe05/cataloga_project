@@ -74,7 +74,7 @@ def test_to_dict_contains_all_keys():
         "counterparty", "confidentiality", "owner", "effective_start",
         "effective_end", "category", "subcategory", "date_source",
         "suggested_folder", "folder_reason", "confidence", "original_path",
-        "folder_path",
+        "folder_path", "proposed_folder", "proposed_name",
     }
     assert expected_keys == set(result.keys())
     assert result["keywords"] == []

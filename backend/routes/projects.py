@@ -2,8 +2,9 @@
 
 import os
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
+from backend import scanner
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
@@ -12,7 +13,8 @@ from backend.pipeline import (archive_rules, conventions, folder_tree,
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            create_client)
 from backend.pipeline.file_organizer import FileOrganizer
-from backend.routes import error_response, project_status, projects_path
+from backend.routes import (error_response, project_status, projects_path,
+                            session_user)
 from backend.routes.settings import clean_server_url
 
 projects_bp = Blueprint("projects", __name__)
@@ -102,8 +104,11 @@ def create_project():
     if numbered:
         tree = folder_tree.number_new(tree, [])
 
-    # Catalog only reads the folder as it is: its files are expected.
-    existing = 0 if catalog_only else organizer.count_existing_items(tree)
+    # Read in place or Catalog only: the folder's files are expected, and
+    # nothing is made.
+    in_place = body.get("folder_mode") == folder_tree.PLACE_MODE
+    existing = 0 if (in_place or catalog_only) \
+        else organizer.count_existing_items(tree)
     if existing and body.get("confirm_folder") is not True:
         return error_response(
             "folder_not_empty",
@@ -112,7 +117,7 @@ def create_project():
             "Click Save anyway to use this folder.".format(existing), 409,
             extra={"count": existing})
 
-    if not catalog_only:
+    if not (in_place or catalog_only):
         organizer.ensure_archive_structure(tree)
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     init_db(db_path)
@@ -131,6 +136,8 @@ def create_project():
         if body.get("keep_accents") is True:
             new_repo.save_config_value("keep_accents", 1)
         new_repo.save_folder_tree(description, tree)
+        if in_place:
+            new_repo.save_config_value("folder_mode", folder_tree.PLACE_MODE)
         if numbered:
             new_repo.save_config_value("numbered_folders", 1)
     sheet = project_sheet.clean_sheet(body.get("project_sheet"))
@@ -145,6 +152,10 @@ def create_project():
     if server_url:
         new_repo.save_config_value("server_url", server_url)
     projects.add_project(projects_path(), name, folder)
+    if in_place or catalog_only:
+        # Reading starts now; the Catalog shows how far it is.
+        scanner.start_scan(current_app._get_current_object(),
+                           projects_path(), session_user() or None)
     return jsonify({"name": name, "folder": folder,
                     "opened_existing": False}), 201
 

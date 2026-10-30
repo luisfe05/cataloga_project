@@ -134,6 +134,14 @@
                     <p class="view-subtitle"
                        data-i18n="nav.catalog">Catalog</p>
                 </div>
+                <!-- Reading the folder in place (projects without a Drop Zone) -->
+                <section class="scan-status hidden" id="scan-status">
+                    <p id="scan-text"></p>
+                    <button type="button" class="pill-button" id="scan-pause"
+                            data-i18n="scan.pause">Pause</button>
+                    <button type="button" class="pill-button hidden"
+                            id="scan-resume" data-i18n="scan.resume">Resume</button>
+                </section>
                 <section class="catalog-progress">
                     <p class="progress-title"
                        data-i18n="catalog.progress">Catalog progress</p>
@@ -364,6 +372,21 @@
                         <!-- Shown for an existing project, whose folder is fixed -->
                         <p class="hint folder-locked hidden" id="folder-locked"
                            data-i18n="project.folder_locked"></p>
+                        <!-- How files reach the catalog (new projects only) -->
+                        <div class="naming-options folders-new-only" id="mode-options">
+                            <label class="naming-option">
+                                <input type="radio" name="folder-mode" value="place"
+                                       checked>
+                                <span data-i18n="project.mode_place">Read the folder
+                                    in place</span>
+                                <code data-i18n="project.mode_place_hint"></code>
+                            </label>
+                            <label class="naming-option">
+                                <input type="radio" name="folder-mode" value="tree">
+                                <span data-i18n="project.mode_tree">Drop Zone</span>
+                                <code data-i18n="project.mode_tree_hint"></code>
+                            </label>
+                        </div>
                         <!-- Catalog only: read and catalog in place, never move or rename -->
                         <label class="catalog-only-row" id="catalog-only-row">
                             <input type="checkbox" id="catalog-only">

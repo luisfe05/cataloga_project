@@ -16,6 +16,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 |---|---|
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
+| Read the folder in place | New projects start without a Drop Zone: Cataloga reads every file where it is, subfolders included, and catalogs it without moving or renaming. The Catalog shows how far the reading is, with Pause and Resume. A file that did not change is never read twice. Hidden files, `.git`, `node_modules`, `.cataloga` and links are never read. What Cataloga would do with each file (its folder and its name) is kept for the organization plan, which comes next. Drop Zone stays as a choice for new projects, and older projects keep it |
 | Scanned photos | A photo goes to the AI at 1,600 px with its four corners enlarged, so a date stamped by the camera (`11 13 '97`) or written by hand can be read. A scan lying on its side is turned before it is read; the original file is never changed. TIFF scans of any size are read: the size limit applies to what is sent, not to the file. The date of a photo comes from the stamp (Date from: Photo stamp), then from a camera's EXIF (a scanner's EXIF is the day of the scan and never counts), then from a year in the file name or its folders. Settings says whether stamps read month first or day first |
 | Catalog only | A project mode for websites, code, and edits that link their files by path (InDesign, Premiere, After Effects, Final Cut). Cataloga reads, summarizes and catalogs each file where it is. Nothing is moved or renamed, there is no folder tree and no Drop Zone. Reading the whole folder in place comes with the in-place scanner |
 | Folder trees | A project's folders can go six levels deep. The AI chooses one folder path per file. A folder marked Catch-all receives what fits nowhere else, as a classified file. Folders already created are never renamed |
@@ -152,6 +153,8 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | DELETE | `/settings/ai-provider/<role>` | Yes | Takes the fallback or media provider away. The key stays in the Keychain |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider, through the server URL if one is sent |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
+| GET | `/scan` | Yes | How far the reading of the project folder is: status, files done and total, the current file |
+| POST | `/scan/start`, `/scan/pause`, `/scan/resume` | Yes | Reads the active project's folder in place, holds it, or lets it go on |
 | POST | `/projects` with `catalog_only` | Yes | Creates a Catalog only project: no folders are created, names are kept, Move and Rename answer `409 catalog_only` |
 | POST | `/projects` | Yes | Creates a project with its folder tree, or opens a folder that already has a catalog |
 | POST | `/projects/folders/suggest` | Yes | Asks Ollama Cloud for a folder tree from the project description. With `industry`, the request lists the folders that field usually has. Saves nothing |

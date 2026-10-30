@@ -957,6 +957,16 @@ td.editable {
 
 /* ======== Catalog ======== */
 
+/* The line that says how far the reading of the folder is. */
+.scan-status {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+    margin-bottom: var(--spacing-12);
+    font-size: 0.9rem;
+    color: var(--color-dusk);
+}
+
 /* Catalog header: title on the left, progress on the right */
 .catalog-header {
     display: flex;
