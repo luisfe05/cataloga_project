@@ -357,6 +357,10 @@ const LANG_ES = {
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
         + "porque el catálogo se guarda dentro de ella.",
     "project.create": "Crear proyecto",
+    "project.linked_advice": "Esta carpeta parece una página web o un "
+        + "proyecto enlazado ({markers}). Mover o renombrar sus archivos "
+        + "lo rompería. Catalog only, que llega pronto, mantendrá todos los "
+        + "enlaces funcionando.",
     "project.creating":
         "Creando el proyecto y probando la conexión con la IA...",
     "project.created": "Proyecto creado. La conexión con la IA funciona.",

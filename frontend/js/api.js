@@ -155,11 +155,22 @@ async function createProject(data) {
 }
 
 /** POST /projects/folders/suggest: a folder tree from Ollama Cloud. Saves nothing. */
-async function suggestFolders(description) {
+async function suggestFolders(description, industry) {
     const response = await apiFetch(`${BASE_URL}/projects/folders/suggest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: description }),
+        body: JSON.stringify({ description: description,
+            industry: industry || "" }),
+    });
+    return handleResponse(response);
+}
+
+/** POST /projects/folders/inspect: does the folder look like a website or a linked project? */
+async function inspectFolder(folder) {
+    const response = await apiFetch(`${BASE_URL}/projects/folders/inspect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
     });
     return handleResponse(response);
 }
