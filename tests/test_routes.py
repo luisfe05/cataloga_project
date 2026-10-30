@@ -124,7 +124,10 @@ def test_export_csv(flask_client, repo):
     assert "attachment" in response.headers["Content-Disposition"]
     lines = response.get_data(as_text=True).strip().splitlines()
     assert lines[0] == ("Original Filename,Filename,Media Type,Source,"
-                        "Date,Summary,Status")
+                        "Date,Summary,Status,Topic,Keywords,Category,"
+                        "Subcategory,Counterparty,Confidentiality,Owner,"
+                        "Effective Start,Effective End,Duplicate Of,"
+                        "Review Note,SHA-256")
     assert "D_001.pdf" in lines[1]
 
 
@@ -172,6 +175,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "active_provider": None, "active_model": None,
         "old_inbox_has_files": False, "project_status": "ok",
         "providers_with_key": [], "username": "",
+        "industry": "", "categories": [],
     }
 
 

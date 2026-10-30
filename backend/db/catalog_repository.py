@@ -1,19 +1,30 @@
 """CatalogRepository."""
 
+import json
 from datetime import datetime
 
 from backend.db.schema import get_connection, DB_PATH
-from backend.models.document import Document, LOCKED_FIELDS, MEDIA_TYPES
+from backend.models.document import (ARCHIVE_FIELDS, Document, LOCKED_FIELDS,
+                                     MEDIA_TYPES)
+from backend.pipeline import archive_rules
 
 EDITABLE_FIELDS = ("source", "document_date", "summary", "media_type",
-                   "status")
+                   "status", "keywords", "counterparty", "confidentiality",
+                   "owner", "effective_start", "effective_end", "category",
+                   "subcategory")
+
+# Every column add_document() writes, in order.
+INSERT_COLUMNS = ("original_filename", "filename", "media_type", "source",
+                  "document_date", "summary", "status", "file_path",
+                  "date_added", "date_classified") + ARCHIVE_FIELDS
 
 STATUSES = ("Classified", "Manual Review")
 
 # Scope change of Oct 25 (was 500).
 MAX_SUMMARY_LENGTH = 100
 
-SINGLE_CONFIG_COLUMNS = ("language", "naming_template")
+SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
+                         "categories")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -28,6 +39,9 @@ def now_timestamp():
 
 def row_to_document(row):
     """Turn one row from the documents table into a Document object."""
+    archive_fields = {name: row[name] for name in ARCHIVE_FIELDS}
+    archive_fields["keywords"] = archive_rules.keywords_from_text(
+        row["keywords"])
     return Document(
         doc_id=row["id"],
         original_filename=row["original_filename"],
@@ -40,6 +54,7 @@ def row_to_document(row):
         file_path=row["file_path"],
         date_added=row["date_added"],
         date_classified=row["date_classified"],
+        **archive_fields
     )
 
 
@@ -62,14 +77,13 @@ class CatalogRepository:
         """Insert a new document row and log the 'Classified' event."""
         conn = get_connection(self.db_path)
         try:
+            values = [getattr(doc, name) for name in INSERT_COLUMNS]
+            values[INSERT_COLUMNS.index("keywords")] = \
+                archive_rules.keywords_to_text(doc.keywords)
             cursor = conn.execute(
-                "INSERT INTO documents (original_filename, filename, "
-                "media_type, source, document_date, summary, status, "
-                "file_path, date_added, date_classified) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (doc.original_filename, doc.filename, doc.media_type,
-                 doc.source, doc.document_date, doc.summary, doc.status,
-                 doc.file_path, doc.date_added, doc.date_classified),
+                "INSERT INTO documents (" + ", ".join(INSERT_COLUMNS) +
+                ") VALUES (" + ", ".join("?" * len(INSERT_COLUMNS)) + ")",
+                values,
             )
             doc.id = cursor.lastrowid
             self.log_activity(conn, doc.id, doc.status)
@@ -99,7 +113,8 @@ class CatalogRepository:
         # Values go in a separate list so SQLite fills the ? safely.
         conditions = []
         values = []
-        for field in ("media_type", "source", "status"):
+        for field in ("media_type", "source", "status", "category",
+                      "subcategory"):
             if filters.get(field):
                 conditions.append(field + " = ?")
                 values.append(filters[field])
@@ -107,10 +122,11 @@ class CatalogRepository:
         if filters.get("search"):
             conditions.append(
                 "(original_filename LIKE ? OR filename LIKE ? "
-                "OR source LIKE ? OR summary LIKE ?)"
+                "OR source LIKE ? OR summary LIKE ? OR keywords LIKE ? "
+                "OR counterparty LIKE ?)"
             )
             pattern = "%" + filters["search"] + "%"
-            values.extend([pattern, pattern, pattern, pattern])
+            values.extend([pattern] * 6)
 
         query = "SELECT * FROM documents"
         if conditions:
@@ -135,12 +151,57 @@ class CatalogRepository:
             conn.close()
         return row is not None
 
+    def find_by_sha256(self, sha256):
+        """Return the first cataloged document with this hash, or None."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute(
+                "SELECT * FROM documents WHERE sha256 = ? "
+                "AND duplicate_of IS NULL ORDER BY id LIMIT 1", (sha256,)
+            ).fetchone()
+        finally:
+            conn.close()
+        return row_to_document(row) if row else None
+
+    def get_duplicates(self):
+        """Return the rows of duplicate files left in the Drop Zone."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT * FROM documents WHERE duplicate_of IS NOT NULL "
+                "ORDER BY id").fetchall()
+        finally:
+            conn.close()
+        return [row_to_document(row) for row in rows]
+
+    def delete_document(self, doc_id):
+        """Remove one row and its activity. Never touches a file."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("DELETE FROM activity_log WHERE document_id = ?",
+                         (doc_id,))
+            conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_topics(self):
+        """Return the topic of every cataloged document that has one."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT topic FROM documents WHERE topic IS NOT NULL "
+                "AND duplicate_of IS NULL").fetchall()
+        finally:
+            conn.close()
+        return [row["topic"] for row in rows]
+
     def get_by_status(self, status):
         """Return all documents with the given status."""
         return self.get_all_documents({"status": status})
 
-    def check_fields(self, fields):
-        """Raise ValueError if any field in an update is not allowed."""
+    def check_fields(self, fields, current=None):
+        """Return the update with clean values, or raise ValueError."""
         for name in fields:
             if name in LOCKED_FIELDS:
                 raise ValueError(name + " is locked and cannot be edited")
@@ -156,12 +217,62 @@ class CatalogRepository:
         if summary is not None and len(summary) > MAX_SUMMARY_LENGTH:
             raise ValueError("summary must be {} characters or less"
                              .format(MAX_SUMMARY_LENGTH))
+        return self.check_archive_fields(dict(fields), current)
+
+    def check_archive_fields(self, fields, current):
+        """Check and clean the archiving fields of an update."""
+        rules = archive_rules
+        if "keywords" in fields:
+            fields["keywords"] = rules.keywords_to_text(
+                rules.check_keywords(fields["keywords"]))
+        if "counterparty" in fields:
+            fields["counterparty"] = rules.check_limited_text(
+                fields["counterparty"], "counterparty",
+                rules.MAX_COUNTERPARTY_LENGTH)
+        if "owner" in fields:
+            fields["owner"] = rules.check_limited_text(
+                fields["owner"], "owner", rules.MAX_OWNER_LENGTH)
+        if "confidentiality" in fields:
+            rules.check_confidentiality(fields["confidentiality"])
+        for name in ("effective_start", "effective_end"):
+            if name in fields:
+                fields[name] = rules.check_date(fields[name], name)
+        start = fields.get("effective_start",
+                           getattr(current, "effective_start", None))
+        end = fields.get("effective_end",
+                         getattr(current, "effective_end", None))
+        # YYYY-MM-DD text sorts like the dates themselves.
+        if start and end and start > end:
+            raise ValueError("effective_start must be before effective_end")
+        self.check_category(fields, current)
+        return fields
+
+    def check_category(self, fields, current):
+        """Allow a category from the project list, the current one, or none."""
+        categories = self.get_categories()
+        if "category" in fields:
+            name = fields["category"] or None
+            fields["category"] = name
+            if name and name != getattr(current, "category", None) and \
+                    archive_rules.find_category(categories, name) is None:
+                raise ValueError("category is not in the project list")
+        if "subcategory" in fields:
+            sub = fields["subcategory"] or None
+            fields["subcategory"] = sub
+            category = fields.get("category",
+                                  getattr(current, "category", None))
+            found = archive_rules.find_category(categories, category or "")
+            allowed = found["subcategories"] if found else []
+            if sub and sub != getattr(current, "subcategory", None) and \
+                    sub not in allowed:
+                raise ValueError("subcategory is not in the project list")
 
     def update_document(self, doc_id, fields):
         """Update editable fields on a document."""
         # Check everything before touching the database.
-        self.check_fields(fields)
-        if self.get_document(doc_id) is None:
+        current = self.get_document(doc_id)
+        fields = self.check_fields(fields, current)
+        if current is None:
             raise KeyError(doc_id)
         if not fields:
             return self.get_document(doc_id)
@@ -300,7 +411,8 @@ class CatalogRepository:
         try:
             row = conn.execute(
                 "SELECT research_name, target_directory, "
-                "app_lock_password_hash, language, naming_template "
+                "app_lock_password_hash, language, naming_template, "
+                "industry, categories "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -371,6 +483,20 @@ class CatalogRepository:
         if config and config["naming_template"]:
             return config["naming_template"]
         return DEFAULT_NAMING_TEMPLATE
+
+    def save_industry(self, industry):
+        """Save the project's industry, used to suggest categories."""
+        self.save_config_value("industry", industry)
+
+    def save_categories(self, categories):
+        """Save the project's category list as JSON text."""
+        self.save_config_value("categories",
+                               json.dumps(categories, ensure_ascii=False))
+
+    def get_categories(self):
+        """Return the project's category list, or [] if it has none."""
+        config = self.get_app_config() or {}
+        return archive_rules.categories_from_text(config.get("categories"))
 
     def next_number(self):
         """Return the number for the next file added to the catalog."""

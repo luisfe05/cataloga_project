@@ -70,8 +70,20 @@ def test_to_dict_contains_all_keys():
         "id", "original_filename", "filename", "media_type",
         "source", "document_date", "summary", "status",
         "file_path", "date_added", "date_classified",
+        "topic", "keywords", "sha256", "duplicate_of", "review_note",
+        "counterparty", "confidentiality", "owner", "effective_start",
+        "effective_end", "category", "subcategory",
     }
     assert expected_keys == set(result.keys())
+    assert result["keywords"] == []
+
+
+def test_unknown_document_field_is_refused():
+    """A typo in a field name raises instead of being lost."""
+    with pytest.raises(TypeError):
+        Document(original_filename="a.pdf", filename="a.pdf",
+                 media_type="Documents", file_path="/a.pdf",
+                 date_added="2026-09-11T10:00:00", keyword=["x"])
 
 
 # --- Where the database file lives (backend/db/schema.py) ---

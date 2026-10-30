@@ -165,6 +165,12 @@
                 <select id="filter-source">
                     <option value="">Source: All</option>
                 </select>
+                <select id="filter-category">
+                    <option value="">Category: All</option>
+                </select>
+                <select id="filter-subcategory">
+                    <option value="">Subcategory: All</option>
+                </select>
                 <div class="toolbar">
                     <button type="button" class="pill-button"
                             id="download-button">
@@ -172,6 +178,11 @@
                         <span data-i18n="catalog.download">Download
                             Worksheet</span>
                     </button>
+                    <label class="switch-label">
+                        <span data-i18n="catalog.more_columns">More columns</span>
+                        <input type="checkbox" id="more-columns">
+                        <span class="switch"></span>
+                    </label>
                     <label class="switch-label">
                         <span data-i18n="catalog.edit_mode">Edit Mode</span>
                         <input type="checkbox" id="edit-mode">
@@ -199,6 +210,18 @@
                             <th data-i18n="catalog.col_source">Source</th>
                             <th data-i18n="catalog.col_date">Date</th>
                             <th data-i18n="catalog.col_summary">Summary</th>
+                            <th data-i18n="catalog.col_category">Category</th>
+                            <th data-i18n="catalog.col_subcategory">Subcategory</th>
+                            <th data-i18n="catalog.col_keywords">Keywords</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_counterparty">Counterparty</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_confidentiality">Confidentiality</th>
+                            <th class="more-col" data-i18n="catalog.col_owner">Owner</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_effective_start">Effective start</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_effective_end">Effective end</th>
                             <th data-i18n="catalog.col_status">Status</th>
                         </tr>
                     </thead>
@@ -319,7 +342,7 @@
                     </div>
                 </section>
 
-                <!-- File names: 3 methods or a custom template. Saved with Save. -->
+                <!-- File names: 4 methods or a custom template. Saved with Save. -->
                 <section class="settings-section">
                     <div class="settings-intro">
                         <h2 data-i18n="naming.title">File names</h2>
@@ -346,6 +369,11 @@
                                 <code data-i18n="naming.m3_example"></code>
                             </label>
                             <label class="naming-option">
+                                <input type="radio" name="naming-method" value="m4">
+                                <span data-i18n="naming.m4">Topic, source, date and number</span>
+                                <code data-i18n="naming.m4_example"></code>
+                            </label>
+                            <label class="naming-option">
                                 <input type="radio" name="naming-method"
                                        value="custom">
                                 <span data-i18n="naming.custom">Custom</span>
@@ -370,6 +398,32 @@
                             <li data-i18n="naming.duplicate_rule"></li>
                             <li data-i18n="naming.changed_note"></li>
                         </ul>
+                    </div>
+                </section>
+
+                <!-- Industry and categories of the active project. Saved with Save. -->
+                <section class="settings-section" id="categories-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="categories.title">Categories</h2>
+                        <p class="hint" data-i18n="categories.hint"></p>
+                    </div>
+                    <div class="settings-fields">
+                        <label for="industry"
+                               data-i18n="categories.industry">Industry</label>
+                        <div class="folder-row">
+                            <input type="text" id="industry" maxlength="100"
+                                   data-i18n-placeholder="categories.industry_placeholder">
+                            <button type="button" class="secondary-button"
+                                    id="suggest-categories"
+                                    data-i18n="categories.suggest">Suggest categories</button>
+                        </div>
+                        <p class="form-message" id="categories-message"
+                           aria-live="polite"></p>
+                        <div class="category-list" id="category-list"></div>
+                        <button type="button" class="secondary-button add-category"
+                                id="add-category"
+                                data-i18n="categories.add">Add category</button>
+                        <p class="hint" data-i18n="categories.rules"></p>
                     </div>
                 </section>
 
@@ -559,6 +613,7 @@
     <script src="js/summary.js"></script>
     <script src="js/catalog.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/categories.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/chat.js"></script>
 

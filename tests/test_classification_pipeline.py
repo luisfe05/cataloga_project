@@ -67,10 +67,11 @@ def setup(tmp_path):
     return {"build": build, "repo": repo, "drop_zone": drop_zone}
 
 
-def make_text_file(folder, name, text="Article text about a swim meet."):
-    """Write a .txt file and return its path as a string."""
+def make_text_file(folder, name, text=None):
+    """Write a .txt file; the default text is different for each name."""
     path = folder / name
-    path.write_text(text)
+    # Same bytes would make a duplicate, so the name goes in the text.
+    path.write_text(text or "Article text about a swim meet. " + name)
     return str(path)
 
 
