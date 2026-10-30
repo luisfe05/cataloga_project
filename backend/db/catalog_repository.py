@@ -258,6 +258,33 @@ class CatalogRepository:
             conn.close()
         return row[0]
 
+    def add_correction(self, doc, to_folder):
+        """Remember that the user moved a document to another folder."""
+        from_folder = doc.folder_path or DROP_ZONE_FOLDER
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute(
+                "INSERT INTO corrections (document_id, original_filename, "
+                "summary, from_folder, to_folder, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (doc.id, doc.original_filename, doc.summary, from_folder,
+                 to_folder, datetime.now().isoformat(timespec="seconds")))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def recent_corrections(self, limit=10):
+        """Return the latest moves the user made, newest first."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT original_filename, summary, from_folder, to_folder "
+                "FROM corrections ORDER BY id DESC LIMIT ?",
+                (limit,)).fetchall()
+        finally:
+            conn.close()
+        return [dict(row) for row in rows]
+
     def count_in_folder(self, folder):
         """Count the documents in a tree folder or any of its subfolders."""
         conn = get_connection(self.db_path)

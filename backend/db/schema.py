@@ -171,6 +171,20 @@ ADDED_APP_CONFIG_COLUMNS = {
     "stamp_date_order": "stamp_date_order TEXT",
 }
 
+# Each move the user made by hand: the AI reads the latest ones before
+# it files a new document of the same project.
+CREATE_CORRECTIONS = """
+CREATE TABLE IF NOT EXISTS corrections (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    document_id       INTEGER,
+    original_filename TEXT    NOT NULL,
+    summary           TEXT,
+    from_folder       TEXT,
+    to_folder         TEXT    NOT NULL,
+    timestamp         TEXT    NOT NULL
+);
+"""
+
 # What was read in place, and how it looked: a file with the same size
 # and date is not read again.
 CREATE_SCAN_INDEX = """
@@ -233,6 +247,7 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_ACTIVITY_LOG)
     cursor.execute(CREATE_APP_CONFIG)
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
+    cursor.execute(CREATE_CORRECTIONS)
     cursor.execute(CREATE_SCAN_INDEX)
     add_missing_columns(cursor)
     # The provider a project used before the roles is its text provider.
