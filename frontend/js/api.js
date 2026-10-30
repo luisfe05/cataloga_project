@@ -126,6 +126,19 @@ async function updateAIProvider(data) {
     return handleResponse(response);
 }
 
+/** GET /scan: how far the reading of the project folder is. */
+async function getScan() {
+    const response = await apiFetch(`${BASE_URL}/scan`);
+    return handleResponse(response);
+}
+
+/** POST /scan/start, /scan/pause, /scan/resume */
+async function controlScan(action) {
+    const response = await apiFetch(`${BASE_URL}/scan/${action}`,
+        { method: "POST" });
+    return handleResponse(response);
+}
+
 /** POST /settings/ai-provider/test */
 async function testAIProvider(data) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/test`, {

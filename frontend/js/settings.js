@@ -114,7 +114,7 @@ function setProjectMode(mode) {
     document.getElementById("remove-project-section")
         .classList.toggle("hidden", isNew);
     // New projects get a folder tree; old projects keep their categories.
-    const treeMode = isNew || projectFolderMode === "tree";
+    const treeMode = isNew || ["tree", "place"].includes(projectFolderMode);
     document.getElementById("categories-section")
         .classList.toggle("hidden", treeMode);
     document.getElementById("folders-section")
@@ -129,6 +129,8 @@ function startNewProject() {
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
+    document.querySelector('input[name="folder-mode"][value="place"]')
+        .checked = true;
     document.getElementById("api-key").value = "";
     // New projects start with method 4.
     showSavedTemplate(NAMING_METHODS.m4);
@@ -404,7 +406,7 @@ async function loadSettings() {
         showSavedTemplate(settings.naming_template);
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
-        if (projectFolderMode === "tree") {
+        if (["tree", "place"].includes(projectFolderMode)) {
             showFolderSection(settings, false);
         }
 
@@ -442,7 +444,8 @@ async function saveSettings(event) {
             document.getElementById("naming-error").textContent, "error");
         return;
     }
-    const isTree = projectMode === "new" || projectFolderMode === "tree";
+    const isTree = projectMode === "new"
+        || ["tree", "place"].includes(projectFolderMode);
     const treeProblem = isTree ? folderTreeProblem() : "";
     if (treeProblem) {
         showFoldersMessage(treeProblem, "error");
@@ -472,6 +475,8 @@ async function saveSettings(event) {
                 description: document.getElementById("project-description")
                     .value.trim(),
                 folders: readFolderTree(),
+                folder_mode: document.querySelector(
+                    'input[name="folder-mode"]:checked').value,
                 confirm_folder: folderWarningShown,
             });
             projectCreated = true;

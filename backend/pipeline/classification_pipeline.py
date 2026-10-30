@@ -195,12 +195,18 @@ def remove_gone_duplicates(catalog_repo):
 class ClassificationPipeline:
     """Runs the classify-summarize-organize-catalog flow."""
 
-    def __init__(self, ai_client, catalog_repo, file_organizer, owner=None):
-        """Set up the pipeline; owner is the account's username."""
+    def __init__(self, ai_client, catalog_repo, file_organizer, owner=None,
+                 in_place=False):
+        """Set up the pipeline; owner is the account's username.
+
+        With in_place, files are cataloged where they are: the folder and
+        the name the pipeline chooses are saved as proposals.
+        """
         self.ai_client = ai_client
         self.db = catalog_repo
         self.file_organizer = file_organizer
         self.owner = owner or None
+        self.in_place = in_place
 
     def destination(self, file_path, media_type, metadata):
         """Return the folder a file goes to, and if it found its place."""
@@ -293,6 +299,10 @@ class ClassificationPipeline:
         # Empty fields send the document to Manual Review below.
         if media_type is None:
             media_type = FALLBACK_MEDIA_TYPE
+        # Read in place, a file with no folder is simply not proposed one.
+        if self.in_place and \
+                metadata["review_note"] == folder_tree.NO_FOLDER_NOTE:
+            metadata["review_note"] = None
 
         date, date_source = choose_date(
             metadata["document_date"], file_path, taken,
@@ -302,8 +312,19 @@ class ClassificationPipeline:
         new_filename = self.build_filename(file_path, has_text, metadata,
                                            date_source)
         folder, placed = self.destination(file_path, media_type, metadata)
-        new_path = self.file_organizer.move_to_folder(file_path, folder,
-                                                      new_filename)
+        proposed_folder = proposed_name = None
+        if self.in_place:
+            # Nothing moves: what would happen is kept for the plan.
+            new_path = file_path
+            place = self.file_organizer.place_of(folder)
+            if place != self.file_organizer.place_of(
+                    os.path.dirname(file_path)):
+                proposed_folder = place
+            if new_filename != original_filename:
+                proposed_name = new_filename
+        else:
+            new_path = self.file_organizer.move_to_folder(
+                file_path, folder, new_filename)
 
         document = Document(
             original_filename=original_filename,
@@ -322,6 +343,8 @@ class ClassificationPipeline:
             subcategory=metadata["subcategory"],
             review_note=reason or metadata["review_note"],
             suggested_folder=metadata["suggested_folder"],
+            proposed_folder=proposed_folder,
+            proposed_name=proposed_name,
             date_source=date_source,
             sha256=sha256,
             confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
@@ -332,7 +355,7 @@ class ClassificationPipeline:
         if kind in ("Audio", "Video") and not document.review_note and \
                 document.status == "Manual Review":
             document.review_note = self.media_note(file_meta.get("length"))
-        if not placed:
+        if not placed and not self.in_place:
             document.review_note = document.review_note or \
                 folder_tree.NO_FOLDER_NOTE
             document.mark_needs_review(["folder"])

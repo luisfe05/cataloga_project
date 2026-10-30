@@ -51,7 +51,8 @@ def get_settings():
         repo, error = get_active_repo()
         settings.update(AppConfig(repo).get_settings())
         if repo.is_tree_project():
-            settings["folder_mode"] = folder_tree.TREE_MODE
+            # 'tree' with a Drop Zone, or 'place' when read where it is.
+            settings["folder_mode"] = repo.folder_mode()
             settings["project_description"] = \
                 repo.get_project_description()
             settings["folder_counts"] = folder_counts(repo)

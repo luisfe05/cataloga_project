@@ -113,6 +113,11 @@ class FileOrganizer:
         shutil.move(original_path, new_path)
         return new_path
 
+    def place_of(self, folder):
+        """Return a folder of the project as 'A/B', or '' for the root."""
+        relative = os.path.relpath(folder, self.target_directory)
+        return "" if relative == "." else relative.replace(os.sep, "/")
+
     def is_inside_project(self, path):
         """Return True if a path is inside the project folder."""
         folder = os.path.realpath(self.target_directory)
