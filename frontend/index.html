@@ -13,23 +13,29 @@
         <img class="auth-logo" src="assets/logo-vertical-paper.svg"
              alt="Cataloga">
 
-        <form class="settings-form auth-form hidden" id="setup-form">
-            <h2 data-i18n="auth.setup_title">Create your account</h2>
-            <p class="hint" data-i18n="auth.setup_hint"></p>
-            <label for="setup-username"
+        <form class="settings-form auth-form hidden" id="register-form">
+            <h2 data-i18n="auth.register_title">Create an account</h2>
+            <p class="hint" data-i18n="auth.register_hint"></p>
+            <label for="register-username"
                    data-i18n="auth.username">Username</label>
-            <input type="text" id="setup-username" autocomplete="username">
-            <label for="setup-password"
+            <input type="text" id="register-username"
+                   autocomplete="username">
+            <label for="register-password"
                    data-i18n="auth.password">Password</label>
-            <input type="password" id="setup-password"
+            <input type="password" id="register-password"
                    autocomplete="new-password">
-            <label for="setup-confirm"
+            <label for="register-confirm"
                    data-i18n="auth.confirm_password">Confirm password</label>
-            <input type="password" id="setup-confirm"
+            <input type="password" id="register-confirm"
                    autocomplete="new-password">
             <button type="submit" class="primary-button"
                     data-i18n="auth.create_account">Create account</button>
-            <p class="form-message error" id="setup-message"></p>
+            <p class="form-message error" id="register-message"></p>
+            <p class="auth-links">
+                <button type="button" class="auth-link" id="show-login-link"
+                        data-i18n="auth.have_account">I already have an
+                    account</button>
+            </p>
         </form>
 
         <form class="settings-form auth-form hidden" id="login-form">
@@ -44,6 +50,16 @@
             <button type="submit" class="primary-button"
                     data-i18n="auth.log_in">Log in</button>
             <p class="form-message error" id="login-message"></p>
+            <p class="auth-links">
+                <button type="button" class="auth-link"
+                        id="show-register-link"
+                        data-i18n="auth.need_account">Create an account</button>
+                <button type="button" class="auth-link" id="forgot-link"
+                        data-i18n="auth.forgot">Forgot your password?</button>
+            </p>
+            <!-- There is no email, so there is no way to recover it. -->
+            <p class="hint auth-forgot hidden" id="forgot-hint"
+               data-i18n="auth.forgot_hint"></p>
         </form>
     </section>
 
@@ -118,6 +134,14 @@
                     <p class="view-subtitle"
                        data-i18n="nav.catalog">Catalog</p>
                 </div>
+                <!-- Reading the folder in place (projects without a Drop Zone) -->
+                <section class="scan-status hidden" id="scan-status">
+                    <p id="scan-text"></p>
+                    <button type="button" class="pill-button" id="scan-pause"
+                            data-i18n="scan.pause">Pause</button>
+                    <button type="button" class="pill-button hidden"
+                            id="scan-resume" data-i18n="scan.resume">Resume</button>
+                </section>
                 <section class="catalog-progress">
                     <p class="progress-title"
                        data-i18n="catalog.progress">Catalog progress</p>
@@ -226,6 +250,11 @@
                                 data-i18n="catalog.col_effective_end">Effective end</th>
                             <th class="more-col"
                                 data-i18n="catalog.col_date_from">Date from</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_folder_reason">Why this
+                                folder</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_confidence">Confidence</th>
                             <th data-i18n="catalog.col_status">Status</th>
                         </tr>
                     </thead>
@@ -343,6 +372,54 @@
                         <!-- Shown for an existing project, whose folder is fixed -->
                         <p class="hint folder-locked hidden" id="folder-locked"
                            data-i18n="project.folder_locked"></p>
+                        <!-- How files reach the catalog (new projects only) -->
+                        <div class="naming-options folders-new-only" id="mode-options">
+                            <label class="naming-option">
+                                <input type="radio" name="folder-mode" value="place"
+                                       checked>
+                                <span data-i18n="project.mode_place">Read the folder
+                                    in place</span>
+                                <code data-i18n="project.mode_place_hint"></code>
+                            </label>
+                            <label class="naming-option">
+                                <input type="radio" name="folder-mode" value="tree">
+                                <span data-i18n="project.mode_tree">Drop Zone</span>
+                                <code data-i18n="project.mode_tree_hint"></code>
+                            </label>
+                        </div>
+                        <!-- Catalog only: read and catalog in place, never move or rename -->
+                        <label class="catalog-only-row" id="catalog-only-row">
+                            <input type="checkbox" id="catalog-only">
+                            <span data-i18n="project.catalog_only">Catalog only:
+                                read and catalog the files where they are. Never
+                                move or rename them</span>
+                        </label>
+                        <p class="hint hidden" id="catalog-only-hint"
+                           data-i18n="project.catalog_only_hint"></p>
+                        <!-- What the chosen folder looks like (projects.js inspect) -->
+                        <p class="form-message hidden" id="folder-advice"
+                           aria-live="polite"></p>
+                    </div>
+                </section>
+
+                <!-- The project sheet: what the work is. Goes into every AI request. -->
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="sheet.title">About this project</h2>
+                        <p class="hint" data-i18n="sheet.hint"></p>
+                    </div>
+                    <div class="settings-fields">
+                        <label for="project-sheet"
+                               data-i18n="sheet.label">Project sheet</label>
+                        <textarea id="project-sheet" rows="6" maxlength="1500"
+                                  data-i18n-placeholder="sheet.placeholder"></textarea>
+                        <div class="form-buttons">
+                            <button type="button" class="secondary-button"
+                                    id="suggest-sheet"
+                                    data-i18n="sheet.suggest">Write it for me</button>
+                        </div>
+                        <p class="form-message" id="sheet-message"
+                           aria-live="polite"></p>
                     </div>
                 </section>
 
@@ -382,6 +459,13 @@
                                        value="custom">
                                 <span data-i18n="naming.custom">Custom</span>
                             </label>
+                            <label class="naming-option">
+                                <input type="radio" name="naming-method"
+                                       value="keep">
+                                <span data-i18n="naming.keep">Keep original
+                                    names</span>
+                                <code data-i18n="naming.keep_example"></code>
+                            </label>
                         </div>
 
                         <!-- Custom: parts added in order by clicking, no braces to type (settings.js). -->
@@ -403,14 +487,44 @@
                             <p class="hint" data-i18n="naming.extension_note"></p>
                         </div>
 
+                        <div class="naming-separator naming-style">
+                            <span data-i18n="naming.style">Style</span>
+                            <label><input type="radio" name="naming-style"
+                                          value="lower" checked>
+                                <code>topic-name</code></label>
+                            <label><input type="radio" name="naming-style"
+                                          value="title">
+                                <code>Topic-Name</code></label>
+                        </div>
+                        <label class="naming-accents">
+                            <input type="checkbox" id="keep-accents">
+                            <span data-i18n="naming.keep_accents">Keep accents
+                                (Día, not Dia)</span>
+                        </label>
                         <p class="naming-preview">
                             <span data-i18n="naming.preview">Preview</span>:
                             <code id="naming-preview"></code>
                         </p>
+                        <!-- How a date stamped on a photo reads: 11 13 '97 -->
+                        <div class="naming-separator stamp-order">
+                            <span data-i18n="naming.stamp_order">Dates stamped on
+                                photos</span>
+                            <label><input type="radio" name="stamp-order"
+                                          value="month" checked>
+                                <span data-i18n="naming.stamp_month">Month first
+                                    (11 13 '97)</span></label>
+                            <label><input type="radio" name="stamp-order"
+                                          value="day">
+                                <span data-i18n="naming.stamp_day">Day first
+                                    (13 11 97)</span></label>
+                        </div>
                         <p class="form-message error" id="naming-error"></p>
                         <ul class="naming-rules">
                             <li data-i18n="naming.media_rule"></li>
                             <li data-i18n="naming.duplicate_rule"></li>
+                            <li data-i18n="naming.photo_date_rule"></li>
+                            <li data-i18n="naming.version_rule"></li>
+                            <li data-i18n="naming.path_rule"></li>
                             <li data-i18n="naming.changed_note"></li>
                         </ul>
                     </div>
@@ -441,6 +555,11 @@
                         <button type="button" class="secondary-button add-category"
                                 id="add-folder"
                                 data-i18n="folders.add">Add folder</button>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="numbered-folders">
+                            <span data-i18n="folders.numbered">Number new folders
+                                (01_, 02_)</span>
+                        </label>
                         <p class="hint" data-i18n="folders.rules"></p>
                     </div>
                 </section>
@@ -485,6 +604,8 @@
                                 <p class="hint" data-i18n="settings.ai_hint">Use
                                     another AI provider with your own API key.</p>
 
+                                <h3 data-i18n="settings.ai_text_title">Text and
+                                    images</h3>
                                 <label for="ai-provider"
                                        data-i18n="settings.ai_provider">AI
                                     Provider</label>
@@ -498,6 +619,53 @@
                                 <label for="ai-model"
                                        data-i18n="settings.model">Model</label>
                                 <select id="ai-model"></select>
+
+                                <h3 data-i18n="settings.ai_fallback_title">Fallback
+                                    (optional)</h3>
+                                <p class="hint"
+                                   data-i18n="settings.ai_fallback_hint"></p>
+                                <label for="fallback-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="fallback-provider"></select>
+
+                                <label for="fallback-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="fallback-key"
+                                       autocomplete="off">
+
+                                <label for="fallback-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="fallback-model"></select>
+
+                                <h3 data-i18n="settings.ai_media_title">Audio and
+                                    video</h3>
+                                <p class="hint"
+                                   data-i18n="settings.ai_media_hint"></p>
+                                <label for="media-provider"
+                                       data-i18n="settings.ai_provider">AI
+                                    Provider</label>
+                                <select id="media-provider"></select>
+
+                                <label for="media-key"
+                                       data-i18n="settings.api_key">API Key</label>
+                                <input type="password" id="media-key"
+                                       autocomplete="off">
+
+                                <label for="media-model"
+                                       data-i18n="settings.model">Model</label>
+                                <select id="media-model"></select>
+
+                                <h3 data-i18n="settings.server_title">Server
+                                    (optional)</h3>
+                                <p class="hint"
+                                   data-i18n="settings.server_hint"></p>
+                                <label for="server-url"
+                                       data-i18n="settings.server_url">Server
+                                    URL</label>
+                                <input type="url" id="server-url"
+                                       placeholder="https://"
+                                       autocomplete="off">
                             </div>
                         </details>
                     </div>

@@ -1,4 +1,4 @@
-/** auth.js: one local account for the whole app; the token lives only in memory. */
+/** auth.js: accounts on this computer; the token lives only in memory. */
 
 // Shortest password allowed, the same rule as backend/config/account.py.
 const MIN_PASSWORD_LENGTH = 8;
@@ -18,16 +18,16 @@ function showAuthForm(formId) {
         dialog.close();
     }
     document.getElementById("auth-screen").classList.remove("hidden");
-    ["setup-form", "login-form"].forEach((id) => {
+    ["register-form", "login-form"].forEach((id) => {
         document.getElementById(id).classList.toggle("hidden", id !== formId);
     });
 }
 
-/** Show the "Create your account" form (first time only). */
-function showSetupScreen() {
-    showAuthForm("setup-form");
-    showAuthMessage("setup-message", "");
-    document.getElementById("setup-username").focus();
+/** Show the "Create an account" form. */
+function showRegisterScreen() {
+    showAuthForm("register-form");
+    showAuthMessage("register-message", "");
+    document.getElementById("register-username").focus();
 }
 
 /** Show the login form. api.js also calls this on a 401. */
@@ -35,6 +35,7 @@ function showLoginScreen() {
     setSessionToken("");
     showAuthForm("login-form");
     document.getElementById("login-password").value = "";
+    document.getElementById("forgot-hint").classList.add("hidden");
     showAuthMessage("login-message", "");
     document.getElementById("login-username").focus();
 }
@@ -50,30 +51,30 @@ function newPasswordProblem(password, confirmation) {
     return "";
 }
 
-/** Create the account, then go into the app (already logged in). */
-async function submitSetup(event) {
+/** Create an account, then go into the app (already logged in). */
+async function submitRegister(event) {
     event.preventDefault();
-    const username = document.getElementById("setup-username").value.trim();
-    const password = document.getElementById("setup-password").value;
-    const confirmation = document.getElementById("setup-confirm").value;
+    const username = document.getElementById("register-username").value.trim();
+    const password = document.getElementById("register-password").value;
+    const confirmation = document.getElementById("register-confirm").value;
     if (!username) {
-        showAuthMessage("setup-message", t("error.missing_field"));
+        showAuthMessage("register-message", t("error.missing_field"));
         return;
     }
     const problem = newPasswordProblem(password, confirmation);
     if (problem) {
-        showAuthMessage("setup-message", problem);
+        showAuthMessage("register-message", problem);
         return;
     }
     try {
-        await setupAccount(username, password);
+        await registerAccount(username, password);
     } catch (error) {
-        showAuthMessage("setup-message", errorText(error));
+        showAuthMessage("register-message", errorText(error));
         return;
     }
     // The passwords are not needed anymore.
-    document.getElementById("setup-password").value = "";
-    document.getElementById("setup-confirm").value = "";
+    document.getElementById("register-password").value = "";
+    document.getElementById("register-confirm").value = "";
     enterApp();
 }
 
@@ -134,10 +135,18 @@ async function submitPasswordChange(event) {
     }
 }
 
-document.getElementById("setup-form")
-    .addEventListener("submit", submitSetup);
+document.getElementById("register-form")
+    .addEventListener("submit", submitRegister);
 document.getElementById("login-form")
     .addEventListener("submit", submitLogin);
+document.getElementById("show-login-link")
+    .addEventListener("click", showLoginScreen);
+document.getElementById("show-register-link")
+    .addEventListener("click", showRegisterScreen);
+// The line stays visible until the login form is shown again.
+document.getElementById("forgot-link").addEventListener("click", () => {
+    document.getElementById("forgot-hint").classList.remove("hidden");
+});
 document.getElementById("logout-button")
     .addEventListener("click", submitLogout);
 document.getElementById("password-form")

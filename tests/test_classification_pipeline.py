@@ -14,6 +14,7 @@ from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, parse_json_answer)
 from backend.pipeline.file_organizer import FileOrganizer
+from tests.conftest import card_answer
 
 GOOD_METADATA = ('{"source": "El Nuevo Día", "document_date": "1964-10-12",'
                  ' "topic": "Malta Olímpica"}')
@@ -33,11 +34,11 @@ class FakeAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.calls += 1
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return self.replies["classify"]
+        self.last_text = text
         if system_prompt == base.SUMMARY_PROMPT:
             return self.replies["summary"]
-        return self.replies["metadata"]
+        return card_answer(self.replies["metadata"], self.replies["classify"],
+                           self.replies["summary"])
 
 
 @pytest.fixture(autouse=True)
@@ -102,24 +103,36 @@ def test_readable_file_is_fully_classified(setup):
     assert doc.status == "Classified"
     assert os.path.isfile(doc.file_path)
     assert not os.path.exists(path)
-    assert ai.calls == 3
+    # One request per file: the card, the folder, and how sure.
+    assert ai.calls == 1
 
 
-def test_missing_metadata_sends_to_manual_review(setup):
-    """If the AI finds no source, the document goes to Manual Review."""
+def test_missing_source_or_date_is_still_classified(setup):
+    """No source and no date: the file is read, so it is Classified."""
     replies = {"classify": "Documents", "summary": "A letter.",
-               "metadata": '{"source": null, "document_date": "1970"}'}
+               "metadata": '{"source": null, "document_date": null}'}
     pipeline, ai = setup["build"](replies)
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.source is None
-    assert doc.document_date == "1970"
+    assert doc.date_source == "file"
+    assert doc.status == "Classified"
+    assert doc.review_note is None
+
+
+def test_no_summary_sends_to_manual_review(setup):
+    """Without a summary the file was not really read."""
+    replies = {"classify": "Documents", "summary": "",
+               "metadata": '{"source": "Claridad", "document_date": "1970"}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.status == "Manual Review"
-    assert doc.review_note == "Missing: source"
+    assert doc.review_note == "Missing: summary"
 
 
 def test_every_manual_review_file_has_a_note(setup):
-    """Like plan_viaje.txt: no source, no summary, and no other reason."""
+    """Like plan_viaje.txt: no summary, and no other reason."""
     replies = {"classify": "Documents", "summary": "",
                "metadata": '{"source": null, "document_date": "2025-03",'
                            ' "topic": "Plan de viaje"}'}
@@ -132,9 +145,8 @@ def test_every_manual_review_file_has_a_note(setup):
     photo.write_bytes(b"not really a photo")
     pipeline.classify_document(str(photo))
     documents = setup["repo"].get_all_documents()
-    # The photo keeps its disk date, so only source and summary are empty.
     assert [doc.review_note for doc in documents] == [
-        "Missing: source, summary", "Missing: source, summary"]
+        "Missing: summary", "Missing: summary"]
     assert all(doc.status == "Manual Review" for doc in documents)
 
 
@@ -160,7 +172,7 @@ def test_photo_is_sorted_without_ai(setup):
     doc = pipeline.classify_document(path)
 
     assert doc.media_type == "Photos"
-    assert doc.filename == "undated_0001.jpg"
+    assert doc.filename == "0001.jpg"
     assert doc.status == "Manual Review"
     assert ai.calls == 0
 
@@ -172,7 +184,7 @@ def test_scanned_pdf_is_flagged_for_manual_summary(setup):
     os.utime(path, (JULY_15, JULY_15))
     doc = pipeline.classify_document(path)
     assert doc.media_type == "Documents"
-    assert doc.filename == "undated_0001.pdf"
+    assert doc.filename == "0001.pdf"
     assert doc.summary is None
     assert doc.status == "Manual Review"
     assert ai.calls == 0
@@ -198,8 +210,8 @@ def test_process_batch_handles_every_file(setup):
     documents = pipeline.process_batch(paths)
     # Same date and topic, so the names get -2 and -3.
     assert [doc.filename for doc in documents] == [
-        "1964-10-12_malta-olimpica.txt", "1964-10-12_malta-olimpica-2.txt",
-        "1964-10-12_malta-olimpica-3.txt"]
+        "1964-10-12_malta-olimpica.txt", "1964-10-12_malta-olimpica_2.txt",
+        "1964-10-12_malta-olimpica_3.txt"]
     assert len(setup["repo"].get_all_documents()) == 3
 
 
@@ -215,7 +227,7 @@ def test_process_batch_skips_files_already_cataloged(setup):
     second = pipeline.process_batch([first[0].file_path, new_file])
 
     assert [doc.original_filename for doc in second] == ["b.txt"]
-    assert ai.calls == calls_after_first_run + 3
+    assert ai.calls == calls_after_first_run + 1
 
 
 def test_process_batch_continues_after_a_missing_file(setup):
@@ -252,7 +264,7 @@ def test_missing_date_source_and_topic(setup):
     path = make_text_file(setup["drop_zone"], "Carta de Ramón.txt")
     os.utime(path, (JULY_15, JULY_15))
     doc = pipeline.classify_document(path)
-    assert doc.filename == "undated_carta-de-ramon.txt"
+    assert doc.filename == "carta-de-ramon.txt"
     assert doc.document_date == "2026-07-15"
     assert doc.date_source == "file"
 
@@ -274,15 +286,15 @@ def test_photo_ignores_the_custom_template(setup):
     with open(path, "wb") as file:
         file.write(b"fake image bytes")
     os.utime(path, (JULY_15, JULY_15))
-    assert pipeline.classify_document(path).filename == "undated_0001.png"
+    assert pipeline.classify_document(path).filename == "0001.png"
 
 
 def test_topic_comes_in_the_metadata_request(setup):
-    """Naming adds no AI request: still 3 calls per readable file."""
+    """Naming adds no AI request: still 1 call per readable file."""
     pipeline, ai = setup["build"]()
     pipeline.classify_document(make_text_file(setup["drop_zone"], "a.txt"))
-    assert ai.calls == 3
-    assert '"topic"' in classification_pipeline.METADATA_PROMPT
+    assert ai.calls == 1
+    assert '"topic"' in classification_pipeline.FILE_PROMPT
 
 
 @pytest.mark.parametrize("answer, expected", [
@@ -346,3 +358,110 @@ def test_regenerate_summary_skips_files_without_text(setup):
 
     assert doc.summary is None
     assert ai.calls == 0
+
+
+# --- One request per file: the context the AI gets and the card it fills ---
+
+def test_context_names_the_file_its_folder_and_its_neighbors(setup):
+    """The AI sees the name, the folder, the other files, and the text."""
+    pipeline, ai = setup["build"]()
+    make_text_file(setup["drop_zone"], "otro.txt")
+    pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "Contrato_alquiler_v02.txt"))
+    text = ai.last_text
+    assert text.startswith("File name: Contrato_alquiler_v02.txt")
+    assert "Type: .txt" in text
+    # The test Drop Zone sits next to the archive, so the path goes up.
+    assert "Folder: ../drop_zone" in text
+    assert "Media type: decide between Press and Documents" in text
+    assert "Name hints: words: Contrato alquiler v02; version v02" in text
+    assert "Other files in that folder: otro.txt" in text
+    assert text.rstrip().endswith("Contrato_alquiler_v02.txt")
+
+
+def test_context_says_when_the_name_is_a_camera_name(setup):
+    """DSC_0042 tells the AI nothing, and the prompt says so."""
+    pipeline, ai = setup["build"]()
+    pipeline.classify_document(make_text_file(setup["drop_zone"],
+                                              "DSC_0042.txt"))
+    assert "camera, scanner or phone name" in ai.last_text
+    assert "Name hints" not in ai.last_text
+
+
+def test_year_in_the_name_is_the_date_when_the_text_has_none(setup):
+    """Juegos-Nacionales_1997.txt with no date inside gives 1997."""
+    replies = {"classify": "Documents", "summary": "A program.",
+               "metadata": '{"source": null, "document_date": null}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "Juegos-Nacionales_1997.txt"))
+    assert doc.document_date == "1997"
+    assert doc.date_source == "name"
+    assert doc.filename.startswith("1997_")
+
+
+def test_why_and_confidence_are_saved(setup):
+    """The AI's reason and confidence go to the catalog."""
+    replies = {"classify": "Press", "summary": "A story.",
+               "metadata": '{"source": "El Mundo", "document_date": "1964",'
+                           ' "topic": "Malta", "confidence": "medium",'
+                           ' "folder_reason": "A news story about a race."}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
+    assert doc.status == "Classified"
+    assert doc.confidence == "medium"
+    assert doc.folder_reason == "A news story about a race."
+    assert doc.original_path == os.path.join("..", "drop_zone", "a.txt")
+
+
+def test_low_confidence_goes_to_manual_review_with_the_reason(setup):
+    """Low confidence needs a person; the note says why."""
+    replies = {"classify": "Press", "summary": "A story.",
+               "metadata": '{"source": "El Mundo", "confidence": "low",'
+                           ' "folder_reason": "Could be sports or politics."}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
+    assert doc.status == "Manual Review"
+    assert doc.review_note == "Low confidence: Could be sports or politics."
+    assert doc.confidence == "low"
+
+
+def test_name_and_content_conflict_is_noted(setup):
+    """When the name says one thing and the text another, the card says."""
+    replies = {"classify": "Documents", "summary": "A recipe.",
+               "metadata": '{"source": null, "confidence": "high",'
+                           ' "folder_reason": "It is a recipe.",'
+                           ' "name_hint_conflict": "The name says contract."}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "contrato.txt"))
+    assert doc.status == "Classified"
+    assert doc.folder_reason == ("It is a recipe. Name and content "
+                                 "disagree: The name says contract.")
+
+
+@pytest.mark.parametrize("value, expected", [
+    ("Press", "Press"), ("documents", "Documents"), ("Newspaper", "Documents"),
+    (None, "Documents"),
+])
+def test_media_type_from_the_card(setup, value, expected):
+    """Only Press and Documents are accepted; anything else is Documents."""
+    replies = {"classify": value, "summary": "x",
+               "metadata": '{"source": "S"}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
+    assert doc.media_type == expected
+
+
+def test_unknown_confidence_counts_as_medium(setup):
+    """A confidence the AI made up does not block the file."""
+    replies = {"classify": "Press", "summary": "x",
+               "metadata": '{"source": "S", "confidence": "very sure"}'}
+    pipeline, ai = setup["build"](replies)
+    doc = pipeline.classify_document(
+        make_text_file(setup["drop_zone"], "a.txt"))
+    assert doc.confidence == "medium"
+    assert doc.status == "Classified"
