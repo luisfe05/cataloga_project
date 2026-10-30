@@ -88,6 +88,9 @@ Answer with one JSON object only."""
 
 METADATA_FIELDS = ("source", "document_date", "topic")
 
+# Goes before the metadata prompt when the project has a sheet.
+SHEET_PREFIX = "Project sheet (what this work is):\n"
+
 
 def now_timestamp():
     """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00."""
@@ -444,7 +447,7 @@ class ClassificationPipeline:
         """Ask the AI for the metadata, then check every field it sent."""
         categories = self.db.get_categories()
         tree_mode = self.db.is_tree_project()
-        prompt = METADATA_PROMPT
+        prompt = self.sheet_prompt() + METADATA_PROMPT
         if tree_mode:
             prompt += self.folder_prompt(categories)
         elif categories:
@@ -478,6 +481,13 @@ class ClassificationPipeline:
         metadata.update({"category": category, "subcategory": subcategory,
                          "review_note": note})
         return metadata
+
+    def sheet_prompt(self):
+        """Return the project sheet as the first part of the prompt, or ''."""
+        sheet = self.db.get_project_sheet()
+        if not sheet:
+            return ""
+        return SHEET_PREFIX + sheet + "\n\n"
 
     def folder_prompt(self, tree):
         """Return the part of the prompt with the project's folder tree."""

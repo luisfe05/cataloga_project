@@ -346,6 +346,27 @@
                     </div>
                 </section>
 
+                <!-- The project sheet: what the work is. Goes into every AI request. -->
+                <section class="settings-section">
+                    <div class="settings-intro">
+                        <h2 data-i18n="sheet.title">About this project</h2>
+                        <p class="hint" data-i18n="sheet.hint"></p>
+                    </div>
+                    <div class="settings-fields">
+                        <label for="project-sheet"
+                               data-i18n="sheet.label">Project sheet</label>
+                        <textarea id="project-sheet" rows="6" maxlength="1500"
+                                  data-i18n-placeholder="sheet.placeholder"></textarea>
+                        <div class="form-buttons">
+                            <button type="button" class="secondary-button"
+                                    id="suggest-sheet"
+                                    data-i18n="sheet.suggest">Write it for me</button>
+                        </div>
+                        <p class="form-message" id="sheet-message"
+                           aria-live="polite"></p>
+                    </div>
+                </section>
+
                 <!-- File names: 4 methods or a custom template. Saved with Save. -->
                 <section class="settings-section">
                     <div class="settings-intro">

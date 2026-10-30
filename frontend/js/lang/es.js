@@ -289,6 +289,18 @@ const LANG_ES = {
         + "categoría si cambias la lista.",
 
     // Folder tree of a project
+    "sheet.title": "Sobre este proyecto",
+    "sheet.hint": "Una ficha corta de qué trabajo es. Cataloga la lee "
+        + "antes de cada archivo, para que la clasificación entienda el "
+        + "trabajo. Escríbela, o deja que la IA la escriba a partir de una "
+        + "muestra de la carpeta, y luego edítala.",
+    "sheet.label": "Ficha del proyecto",
+    "sheet.placeholder": "Trabajo: ...\nIndustria: ...\nPartes: ...\n"
+        + "Tipos de archivo: ...\nEstilo de nombres: ...",
+    "sheet.suggest": "Escríbela por mí",
+    "sheet.need_folder": "Elige primero la carpeta del proyecto.",
+    "sheet.suggesting": "Leyendo una muestra de la carpeta...",
+    "sheet.suggested": "Edita la ficha si quieres y luego pulsa Guardar.",
     "folders.title": "Carpetas",
     "folders.hint": "Cataloga guarda cada documento nuevo en la carpeta que "
         + "encaja con su contenido. Describe el proyecto y haz clic en "
@@ -437,6 +449,8 @@ const LANG_ES = {
     "error.no_provider": "Primero elige un proveedor de IA en Configuración.",
     "error.invalid_folders":
         "El árbol de carpetas no es válido. Revisa los nombres.",
+    "error.invalid_sheet": "La ficha del proyecto es demasiado larga. Usa "
+        + "1,500 caracteres o menos.",
     "error.invalid_description":
         "La descripción debe tener 300 caracteres o menos.",
     "error.folder_not_empty": "No se puede quitar una carpeta con documentos.",

@@ -17,6 +17,7 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 | Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
 | Automatic classification | The AI reads each file and puts it in the folder of the tree that fits its content. The media type (Press, Documents, Photos, Audio, Video) stays as a column. If no folder fits, the file stays in the Drop Zone in Manual Review with a suggested folder. Projects made before this change keep their five media-type folders |
+| Project sheet | A short text of what the work is (Settings > About this project). Write it, or click Write it for me: the AI reads a sample of the folder (its structure, some file names, a few extracts) and writes it. Cataloga reads the sheet before every file, so the classification understands the work |
 | 100-character summary | The AI writes a summary of up to 100 characters for every readable document. Files it cannot read go to Manual Review instead of being skipped |
 | File naming methods | Every new file gets a readable name: date and topic, source, date and topic, number and topic, or your own template |
 | Several projects | Each project has its own folder and its own catalog. Switch between them from the sidebar |
@@ -134,6 +135,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | GET | `/dashboard/stats` | Yes | Gives the numbers for the dashboard |
 | GET | `/settings` | Yes | Gives the active project's settings and the language |
 | PUT | `/settings` | Yes | Saves the project name, the naming template, the folder tree (new folders only; folders with documents stay), and the language |
+| POST | `/settings/sheet/suggest` | Yes | Asks the AI to write the project sheet from a sample of a folder (the active project's, or `folder`). Saves nothing |
 | PUT | `/settings/ai-provider` | Yes | Saves the AI provider, model, and API key |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
