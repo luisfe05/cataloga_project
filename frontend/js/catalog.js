@@ -31,6 +31,9 @@ const MORE_COLUMNS = ["counterparty", "confidentiality", "owner",
 // The active project's category list, from GET /settings.
 let projectCategories = [];
 
+// The active project's folder tree (any depth), from GET /settings.
+let projectTree = [];
+
 // True when the project files documents in its own folder tree.
 let catalogTreeMode = false;
 
@@ -192,6 +195,12 @@ function reviewNoteText(note) {
         return length ? t("catalog.note_media_length", { length: length })
             : t("catalog.note_media");
     }
+    // "Low confidence: <the AI's reason>".
+    const lowPrefix = "Low confidence: ";
+    if (note.startsWith(lowPrefix)) {
+        return t("catalog.note_low_confidence")
+            + ": " + note.slice(lowPrefix.length);
+    }
     // "Missing: source, document_date": each field in the user's language.
     const missingPrefix = "Missing: ";
     if (note.startsWith(missingPrefix)) {
@@ -302,14 +311,16 @@ function folderLabel(place) {
     return place.split("/").join(" / ");
 }
 
-/** Every folder a file can go into: "Folder", or "Folder/Subfolder". */
-function allFolderPlaces() {
+/** Every folder a file can go into, as a path: a folder with subfolders only holds files in them. */
+function allFolderPlaces(nodes = projectTree, parent = "") {
     const places = [];
-    projectCategories.forEach((top) => {
-        if (!top.subcategories.length) {
-            places.push(top.name);
+    nodes.forEach((node) => {
+        const path = parent ? `${parent}/${node.name}` : node.name;
+        if (node.children && node.children.length) {
+            places.push(...allFolderPlaces(node.children, path));
+        } else {
+            places.push(path);
         }
-        top.subcategories.forEach((sub) => places.push(`${top.name}/${sub}`));
     });
     return places;
 }
@@ -330,8 +341,9 @@ async function moveToFolder(doc, place, createFolder) {
 /** Folder cell of a tree project: where the file is, the AI's suggestion, and Move. */
 function makeFolderCell(doc) {
     const cell = makeCell("", "folder-cell");
-    const current = doc.category
-        ? [doc.category, doc.subcategory].filter(Boolean).join("/") : "";
+    const current = doc.folder_path
+        || (doc.category
+            ? [doc.category, doc.subcategory].filter(Boolean).join("/") : "");
     cell.appendChild(document.createElement("span")).textContent = current
         ? folderLabel(current) : t("catalog.in_drop_zone");
     // A duplicate stays in the Drop Zone until the user deletes it.
@@ -413,6 +425,10 @@ function addArchiveCells(row, doc) {
     const dateSource = makeCell(doc.date_source
         ? t(`catalog.date_from_${doc.date_source}`) : "", "nowrap more-col");
     row.appendChild(dateSource);
+    // Why the AI chose the folder, and how sure it was. Read only.
+    row.appendChild(makeCell(doc.folder_reason || "", "more-col"));
+    row.appendChild(makeCell(doc.confidence
+        ? t(`catalog.confidence_${doc.confidence}`) : "", "nowrap more-col"));
 }
 
 /** Filename cell: the name opens the file. In Edit Mode it is plain text, but the icons stay. */
@@ -603,6 +619,7 @@ async function loadCatalog() {
         // All documents feed the Source list and counter, so they stay complete while filtering.
         const allDocuments = await getDocuments();
         projectCategories = settings.categories || [];
+        projectTree = settings.folder_tree || [];
         showFolderColumns(settings.folder_mode === "tree");
         updateSourceFilter(allDocuments);
         updateCategoryFilters(allDocuments);

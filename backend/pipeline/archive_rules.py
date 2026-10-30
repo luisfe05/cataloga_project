@@ -15,6 +15,7 @@ MAX_KEYWORDS = 5
 MAX_KEYWORD_LENGTH = 40
 MAX_COUNTERPARTY_LENGTH = 100
 MAX_TOPIC_LENGTH = 60
+MAX_SUMMARY_LENGTH = 100
 MAX_OWNER_LENGTH = 100
 MAX_INDUSTRY_LENGTH = 100
 
@@ -45,6 +46,17 @@ GENERIC_NAME = re.compile(
     r"cimg|wp|sam|p|document|doc|file|untitled|new)[\s_.-]*[\d\s_.:-]*"
     r"(at[\s\d_.:-]*)?(am|pm)?[\s\d()_.-]*$", re.IGNORECASE)
 
+# A year like 1997 or 2026 inside a file name.
+NAME_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
+
+# A version mark at the end of a name: v01, v2, draft-3, borrador_2.
+NAME_VERSION = re.compile(
+    r"(?<![a-z0-9])(v\d{1,3}|draft[-_ ]?\d+|borrador[-_ ]?\d+)(?![a-z0-9])",
+    re.IGNORECASE)
+
+# What the AI says when it is not sure, before its own reason.
+LOW_CONFIDENCE_NOTE = "Low confidence"
+
 # Read the file in 1 MB pieces, so big videos never fill the memory.
 HASH_CHUNK_SIZE = 1024 * 1024
 
@@ -55,6 +67,19 @@ def is_generic_name(text):
         return True
     stem = os.path.splitext(str(text).strip())[0]
     return bool(GENERIC_NAME.match(stem))
+
+
+def name_hints(filename):
+    """Say what a file name tells on its own: words, a year, a version."""
+    stem = os.path.splitext(os.path.basename(str(filename or "")))[0]
+    if is_generic_name(stem):
+        return {"generic": True, "words": "", "year": None, "version": None}
+    year = NAME_YEAR.search(stem)
+    version = NAME_VERSION.search(stem)
+    words = re.sub(r"[_\-.]+", " ", stem).strip()
+    return {"generic": False, "words": " ".join(words.split()),
+            "year": year.group(1) if year else None,
+            "version": version.group(1) if version else None}
 
 
 def sha256_of(path):
