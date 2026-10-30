@@ -9,7 +9,7 @@ LOCKED_FIELDS = ("original_filename", "filename")
 ARCHIVE_FIELDS = ("topic", "keywords", "sha256", "duplicate_of",
                   "review_note", "counterparty", "confidentiality", "owner",
                   "effective_start", "effective_end", "category",
-                  "subcategory")
+                  "subcategory", "date_source")
 
 
 class Document:

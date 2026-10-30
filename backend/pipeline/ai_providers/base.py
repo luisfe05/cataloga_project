@@ -39,6 +39,17 @@ Respond with ONLY the summary text, with no labels or quotation marks."""
 
 CONNECTION_TEST_PROMPT = "Reply with the single word OK."
 
+IMAGE_PROMPT = """You are helping a researcher catalog an archive.
+Look at the image or images (a photo, or the pages of a scanned document).
+Find:
+- text: all the text you can read, exactly as written, in reading order.
+- description: one sentence about what the image shows.
+
+Use null for text if there is no text. Do not invent anything.
+
+Respond with ONLY a JSON object in this exact format:
+{"text": "...", "description": "..."}"""
+
 CATEGORIES_PROMPT = """You are helping a researcher set up a research archive.
 For the industry or field the user gives, propose 6 to 10 categories to
 sort its documents, each with 0 to 6 subcategories. Use short names
@@ -55,6 +66,9 @@ def save_api_key(provider_name, api_key):
 
 class AIProviderClient:
     """Base class for AI provider integrations."""
+
+    # Only providers and models that accept images set this to True.
+    supports_images = False
 
     def __init__(self, provider_name, model):
         """Store provider identity; fetch the API key from the OS keyring."""
@@ -80,6 +94,24 @@ class AIProviderClient:
                 return (answer or "").strip()
             except Exception:
                 # Wait 5 s, then 10 s.
+                if attempt < MAX_ATTEMPTS:
+                    time.sleep(self.retry_delay * attempt)
+        return None
+
+    def send_images(self, prompt, image_uris):
+        """Send a prompt with images to the provider's API."""
+        raise NotImplementedError
+
+    def ask_about_images(self, image_uris):
+        """Ask the AI to read and describe images. None if it cannot."""
+        if not self.api_key or not self.supports_images or not image_uris:
+            return None
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            try:
+                answer = self.send_images(IMAGE_PROMPT, image_uris)
+                return (answer or "").strip()
+            except Exception:
+                # Wait 5 s, then 10 s, like text requests.
                 if attempt < MAX_ATTEMPTS:
                     time.sleep(self.retry_delay * attempt)
         return None
