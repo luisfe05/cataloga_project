@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw
 from backend.pipeline import archive_rules, file_readers
 from backend.pipeline.ai_providers import base
 # The fixtures come along with the helpers.
+from tests.conftest import card_answer
 from tests.test_file_formats import FakeAI, setup, test_key  # noqa: F401
 
 
@@ -122,14 +123,11 @@ class StampAI(FakeAI):
         self.prompts = []
 
     def send_prompt(self, system_prompt, text):
-        # No date in the metadata: the photo's own dates decide.
+        # No date in the card: the photo's own dates decide.
         self.text_calls += 1
-        if system_prompt == base.SUMMARY_PROMPT:
-            return "Children at a track meet."
-        if system_prompt == base.CLASSIFICATION_PROMPT:
-            return "Photos"
-        return json.dumps({"source": None, "document_date": None,
-                           "topic": "Juegos Nacionales"})
+        return card_answer({"source": None, "document_date": None,
+                            "topic": "Juegos Nacionales"}, "Photos",
+                           "Children at a track meet.")
 
     def send_images(self, prompt, image_uris):
         self.image_calls.append(image_uris)

@@ -17,17 +17,26 @@ class AppConfig:
         """Read the current app settings."""
         config = self.db.get_app_config() or {}
         provider = self.db.get_active_provider() or {}
+        fallback = self.db.get_provider("fallback") or {}
+        media = self.db.get_provider("media") or {}
         return {
             "research_name": config.get("research_name", ""),
             "target_directory": config.get("target_directory", ""),
             "naming_template": config.get("naming_template",
                                           naming.DEFAULT_TEMPLATE),
+            "naming_style": self.db.get_naming_style(),
+            "keep_accents": self.db.keep_accents(),
             "stamp_date_order": self.db.stamp_date_order(),
             "industry": config.get("industry") or "",
             "categories": archive_rules.categories_from_text(
                 config.get("categories")),
             "active_provider": provider.get("provider_name"),
             "active_model": provider.get("model"),
+            "fallback_provider": fallback.get("provider_name"),
+            "fallback_model": fallback.get("model"),
+            "media_provider": media.get("provider_name"),
+            "media_model": media.get("model"),
+            "server_url": config.get("server_url") or "",
         }
 
     def update_settings(self, research_name, target_directory):

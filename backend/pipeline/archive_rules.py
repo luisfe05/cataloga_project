@@ -15,6 +15,7 @@ MAX_KEYWORDS = 5
 MAX_KEYWORD_LENGTH = 40
 MAX_COUNTERPARTY_LENGTH = 100
 MAX_TOPIC_LENGTH = 60
+MAX_SUMMARY_LENGTH = 100
 MAX_OWNER_LENGTH = 100
 MAX_INDUSTRY_LENGTH = 100
 
@@ -33,6 +34,15 @@ IMAGE_NOTE = "Could not read the image"
 SCAN_NOTE = "Could not read the scanned pages"
 TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 TOPIC_NOTE = "No topic could be found in the photo"
+TOO_LONG_NOTE = "Path too long for Windows (over 240 characters)"
+SECRET_NOTE = "Possible secret, not read"
+
+# Files that may hold keys or passwords: never read, never sent anywhere.
+SECRET_NAMES = (".env", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
+SECRET_PREFIXES = (".env.", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
+                   "credentials")
+SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".keychain",
+                   ".keychain-db", ".jks", ".kdbx")
 # Fields are listed by their column name: "Missing: source, document_date".
 MISSING_NOTE = "Missing: {}"
 
@@ -56,8 +66,26 @@ MONTHS = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
           "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
           "ene": 1, "abr": 4, "ago": 8, "dic": 12}
 
+# A year like 1997 or 2026 inside a file name.
+NAME_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
+
+# A version mark at the end of a name: v01, v2, draft-3, borrador_2.
+NAME_VERSION = re.compile(
+    r"(?<![a-z0-9])(v\d{1,3}|draft[-_ ]?\d+|borrador[-_ ]?\d+)(?![a-z0-9])",
+    re.IGNORECASE)
+
+# What the AI says when it is not sure, before its own reason.
+LOW_CONFIDENCE_NOTE = "Low confidence"
+
 # Read the file in 1 MB pieces, so big videos never fill the memory.
 HASH_CHUNK_SIZE = 1024 * 1024
+
+
+def is_secret(filename):
+    """Say whether a file looks like it holds keys or passwords."""
+    name = os.path.basename(str(filename or "")).lower()
+    return (name in SECRET_NAMES or name.startswith(SECRET_PREFIXES)
+            or name.endswith(SECRET_SUFFIXES))
 
 
 def is_generic_name(text):
@@ -131,6 +159,19 @@ def stamp_date(text, order=DEFAULT_STAMP_ORDER):
     if found:
         return found.group(1)
     return None
+
+
+def name_hints(filename):
+    """Say what a file name tells on its own: words, a year, a version."""
+    stem = os.path.splitext(os.path.basename(str(filename or "")))[0]
+    if is_generic_name(stem):
+        return {"generic": True, "words": "", "year": None, "version": None}
+    year = NAME_YEAR.search(stem)
+    version = NAME_VERSION.search(stem)
+    words = re.sub(r"[_\-.]+", " ", stem).strip()
+    return {"generic": False, "words": " ".join(words.split()),
+            "year": year.group(1) if year else None,
+            "version": version.group(1) if version else None}
 
 
 def sha256_of(path):
