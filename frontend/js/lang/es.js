@@ -71,6 +71,13 @@ const LANG_ES = {
     "catalog.date_from_content": "Contenido",
     "catalog.date_from_metadata": "Metadata del archivo",
     "catalog.date_from_file": "Fecha del archivo",
+    "catalog.date_from_name": "Nombre del archivo",
+    "catalog.col_folder_reason": "Por qué esta carpeta",
+    "catalog.col_confidence": "Confianza",
+    "catalog.confidence_high": "Alta",
+    "catalog.confidence_medium": "Media",
+    "catalog.confidence_low": "Baja",
+    "catalog.note_low_confidence": "Confianza baja",
     "catalog.not_in_list": "{value} (no está en la lista)",
     "catalog.note_duplicate": "Duplicado de {name}",
     "catalog.note_no_category": "La categoría no está en la lista del proyecto",
@@ -189,8 +196,24 @@ const LANG_ES = {
     "settings.ai_needs_key": "{provider} necesita una clave de API. "
         + "Agrégala en Configuración avanzada.",
     "settings.advanced": "Configuración avanzada",
-    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tu clave "
-        + "de API se guarda en el Llavero de macOS.",
+    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tus claves "
+        + "de API se guardan en el Llavero de macOS.",
+    "settings.ai_text_title": "Texto e imágenes",
+    "settings.ai_fallback_title": "Respaldo (opcional)",
+    "settings.ai_fallback_hint": "Responde cuando el proveedor principal "
+        + "falla o no puede leer un archivo. Con una clave de Claude "
+        + "guardada, Claude es el respaldo a menos que elijas otro.",
+    "settings.ai_media_title": "Audio y video",
+    "settings.ai_media_hint": "Solo Google Gemini lee audio y video. Las "
+        + "claves pagadas de Gemini no se usan para entrenar modelos. Las "
+        + "gratuitas sí.",
+    "settings.ai_none": "Ninguno",
+    "settings.ai_using_fallback": "Respaldo: {provider} ({model}).",
+    "settings.server_title": "Servidor (opcional)",
+    "settings.server_hint": "Un servidor de Cataloga que guarda las claves "
+        + "de API. Déjalo vacío para llamar a los proveedores desde esta "
+        + "computadora.",
+    "settings.server_url": "URL del servidor",
     "settings.ai_provider": "Proveedor de IA",
     "settings.api_key": "Clave de API",
     "settings.api_key_placeholder": "Pega tu clave de API",
@@ -289,6 +312,18 @@ const LANG_ES = {
         + "categoría si cambias la lista.",
 
     // Folder tree of a project
+    "sheet.title": "Sobre este proyecto",
+    "sheet.hint": "Una ficha corta de qué trabajo es. Cataloga la lee "
+        + "antes de cada archivo, para que la clasificación entienda el "
+        + "trabajo. Escríbela, o deja que la IA la escriba a partir de una "
+        + "muestra de la carpeta, y luego edítala.",
+    "sheet.label": "Ficha del proyecto",
+    "sheet.placeholder": "Trabajo: ...\nIndustria: ...\nPartes: ...\n"
+        + "Tipos de archivo: ...\nEstilo de nombres: ...",
+    "sheet.suggest": "Escríbela por mí",
+    "sheet.need_folder": "Elige primero la carpeta del proyecto.",
+    "sheet.suggesting": "Leyendo una muestra de la carpeta...",
+    "sheet.suggested": "Edita la ficha si quieres y luego pulsa Guardar.",
     "folders.title": "Carpetas",
     "folders.hint": "Cataloga guarda cada documento nuevo en la carpeta que "
         + "encaja con su contenido. Describe el proyecto y haz clic en "
@@ -339,10 +374,11 @@ const LANG_ES = {
     "folders.err_subs": "Una carpeta puede tener 10 subcarpetas como máximo.",
 
     // Account and login
-    "auth.setup_title": "Crea tu cuenta",
-    "auth.setup_hint": "Esta cuenta protege Cataloga en esta computadora. "
-        + "No cifra tus archivos. Guarda la contraseña en un lugar "
-        + "seguro: no hay forma de recuperarla.",
+    "auth.register_title": "Crear una cuenta",
+    "auth.register_hint": "Cada cuenta en esta computadora tiene su propia "
+        + "lista de proyectos y sus ajustes. Los catálogos se quedan dentro "
+        + "de cada carpeta de proyecto. Una contraseña perdida no se puede "
+        + "recuperar.",
     "auth.login_title": "Iniciar sesión",
     "auth.username": "Usuario",
     "auth.password": "Contraseña",
@@ -351,8 +387,15 @@ const LANG_ES = {
     "auth.log_in": "Iniciar sesión",
     "auth.log_out": "Cerrar sesión",
     "auth.password_mismatch": "Las contraseñas no coinciden.",
+    "auth.need_account": "Crear una cuenta",
+    "auth.have_account": "Ya tengo una cuenta",
+    "auth.forgot": "¿Olvidaste tu contraseña?",
+    "auth.forgot_hint": "Las contraseñas no se pueden recuperar: Cataloga "
+        + "no usa correo. Tus proyectos y archivos siguen intactos en sus "
+        + "carpetas. Crea una cuenta nueva para seguir trabajando.",
     "account.title": "Cuenta",
-    "account.hint": "Una sola cuenta para toda la app y todos los proyectos.",
+    "account.hint": "Cada cuenta en esta computadora tiene sus propios "
+        + "proyectos y ajustes.",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
     "account.new_password": "Contraseña nueva",
@@ -369,6 +412,10 @@ const LANG_ES = {
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
         + "porque el catálogo se guarda dentro de ella.",
     "project.create": "Crear proyecto",
+    "project.linked_advice": "Esta carpeta parece una página web o un "
+        + "proyecto enlazado ({markers}). Mover o renombrar sus archivos "
+        + "lo rompería. Catalog only, que llega pronto, mantendrá todos los "
+        + "enlaces funcionando.",
     "project.creating":
         "Creando el proyecto y probando la conexión con la IA...",
     "project.created": "Proyecto creado. La conexión con la IA funciona.",
@@ -415,6 +462,9 @@ const LANG_ES = {
         + "pongas en su carpeta Drop Zone. Haz clic en Guardar de todos "
         + "modos para usar esta carpeta.",
     "error.unsupported_provider": "Ese proveedor de IA no es compatible.",
+    "error.invalid_role": "Ese rol de proveedor no existe.",
+    "error.invalid_server_url": "La URL del servidor debe empezar con "
+        + "http:// o https://.",
     "error.unsupported_format": "Solo se puede exportar en CSV.",
     "error.keyring_failed": "No se pudo guardar la clave de API en el "
         + "Llavero de macOS. Abre Acceso a Llaveros, revisa que el llavero "
@@ -436,8 +486,9 @@ const LANG_ES = {
         "La contraseña debe tener al menos 8 caracteres.",
     "error.password_too_long": "La contraseña es demasiado larga. Usa 72 "
         + "caracteres o menos (menos si tiene acentos o símbolos).",
-    "error.account_exists": "La cuenta ya existe. Inicia sesión.",
-    "error.no_account": "Primero crea la cuenta.",
+    "error.username_taken": "Ese usuario ya existe.",
+    "error.invalid_username": "Usa de 3 a 30 letras, números, puntos, "
+        + "guiones bajos o guiones.",
     "error.generic": "Algo salió mal. Inténtalo de nuevo.",
     "error.invalid_name": "El nombre nuevo no tiene caracteres válidos.",
     "error.file_missing": "El archivo no está o está fuera de la carpeta del "
@@ -449,6 +500,8 @@ const LANG_ES = {
     "error.no_provider": "Primero elige un proveedor de IA en Configuración.",
     "error.invalid_folders":
         "El árbol de carpetas no es válido. Revisa los nombres.",
+    "error.invalid_sheet": "La ficha del proyecto es demasiado larga. Usa "
+        + "1,500 caracteres o menos.",
     "error.invalid_description":
         "La descripción debe tener 300 caracteres o menos.",
     "error.folder_not_empty": "No se puede quitar una carpeta con documentos.",

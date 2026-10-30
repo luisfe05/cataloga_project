@@ -320,6 +320,13 @@ function showFolderSection(settings, isNew) {
     showFoldersMessage("", "");
 }
 
+/** The industry named in the project sheet, as "Industry: legal", or "". */
+function sheetIndustry() {
+    const sheet = document.getElementById("project-sheet").value;
+    const found = sheet.match(/^\s*Industry:\s*(.+)$/im);
+    return found ? found[1].trim().toLowerCase() : "";
+}
+
 /** Ask Ollama Cloud for a tree. It replaces the editor; nothing is saved yet. */
 async function suggestProjectFolders() {
     const description = document.getElementById("project-description")
@@ -332,7 +339,7 @@ async function suggestProjectFolders() {
     button.disabled = true;
     showFoldersMessage(t("folders.suggesting"), "");
     try {
-        const result = await suggestFolders(description);
+        const result = await suggestFolders(description, sheetIndustry());
         showFolderTree(result.folders, {}, false);
         showFoldersMessage(t("folders.suggested"), "success");
     } catch (error) {

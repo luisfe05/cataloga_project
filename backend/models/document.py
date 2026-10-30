@@ -10,6 +10,7 @@ ARCHIVE_FIELDS = ("topic", "keywords", "sha256", "duplicate_of",
                   "review_note", "counterparty", "confidentiality", "owner",
                   "effective_start", "effective_end", "category",
                   "subcategory", "date_source", "suggested_folder",
+                  "folder_reason", "confidence", "original_path",
                   "folder_path")
 
 

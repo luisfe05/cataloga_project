@@ -71,6 +71,13 @@ const LANG_EN = {
     "catalog.date_from_content": "Content",
     "catalog.date_from_metadata": "File metadata",
     "catalog.date_from_file": "File date",
+    "catalog.date_from_name": "File name",
+    "catalog.col_folder_reason": "Why this folder",
+    "catalog.col_confidence": "Confidence",
+    "catalog.confidence_high": "High",
+    "catalog.confidence_medium": "Medium",
+    "catalog.confidence_low": "Low",
+    "catalog.note_low_confidence": "Low confidence",
     "catalog.not_in_list": "{value} (not in list)",
     "catalog.note_duplicate": "Duplicate of {name}",
     "catalog.note_no_category": "Category not in the project list",
@@ -187,7 +194,21 @@ const LANG_EN = {
         + "Advanced settings.",
     "settings.advanced": "Advanced settings",
     "settings.ai_hint": "Choose another AI provider or model. Your API "
-        + "key is saved in the macOS Keychain.",
+        + "keys are saved in the macOS Keychain.",
+    "settings.ai_text_title": "Text and images",
+    "settings.ai_fallback_title": "Fallback (optional)",
+    "settings.ai_fallback_hint": "Answers when the main provider fails or "
+        + "cannot read a file. With a Claude key saved, Claude is the "
+        + "fallback unless you choose another.",
+    "settings.ai_media_title": "Audio and video",
+    "settings.ai_media_hint": "Only Google Gemini reads audio and video. "
+        + "Paid Gemini keys are not used to train models. Free keys are.",
+    "settings.ai_none": "None",
+    "settings.ai_using_fallback": "Fallback: {provider} ({model}).",
+    "settings.server_title": "Server (optional)",
+    "settings.server_hint": "A Cataloga server that holds the API keys. "
+        + "Leave it empty to call the providers from this computer.",
+    "settings.server_url": "Server URL",
     "settings.ai_provider": "AI Provider",
     "settings.api_key": "API Key",
     "settings.api_key_placeholder": "Paste your API key",
@@ -281,6 +302,18 @@ const LANG_EN = {
         + "the list.",
 
     // Folder tree of a project
+    "sheet.title": "About this project",
+    "sheet.hint": "A short sheet of what this work is. Cataloga reads it "
+        + "before every file, so the classification understands the work. "
+        + "Write it, or let the AI write it from a sample of the folder, "
+        + "then edit it.",
+    "sheet.label": "Project sheet",
+    "sheet.placeholder": "Work: ...\nIndustry: ...\nParts: ...\nFile "
+        + "types: ...\nNaming style: ...",
+    "sheet.suggest": "Write it for me",
+    "sheet.need_folder": "Choose the project folder first.",
+    "sheet.suggesting": "Reading a sample of the folder...",
+    "sheet.suggested": "Edit the sheet if you like, then click Save.",
     "folders.title": "Folders",
     "folders.hint": "Cataloga files each new document in the folder that "
         + "fits its content. Describe the project and click Suggest folders, "
@@ -327,10 +360,10 @@ const LANG_EN = {
     "folders.err_subs": "A folder can have 10 subfolders at most.",
 
     // Account and login
-    "auth.setup_title": "Create your account",
-    "auth.setup_hint": "This account protects Cataloga on this computer. "
-        + "It does not encrypt your files. Keep the password somewhere "
-        + "safe: there is no way to recover it.",
+    "auth.register_title": "Create an account",
+    "auth.register_hint": "Each account on this computer has its own "
+        + "project list and settings. Catalogs stay inside each project "
+        + "folder. There is no way to recover a lost password.",
     "auth.login_title": "Log in",
     "auth.username": "Username",
     "auth.password": "Password",
@@ -339,8 +372,15 @@ const LANG_EN = {
     "auth.log_in": "Log in",
     "auth.log_out": "Log out",
     "auth.password_mismatch": "The passwords do not match.",
+    "auth.need_account": "Create an account",
+    "auth.have_account": "I already have an account",
+    "auth.forgot": "Forgot your password?",
+    "auth.forgot_hint": "Passwords cannot be recovered: Cataloga has no "
+        + "email. Your projects and files stay intact in their folders. "
+        + "Create a new account to keep working.",
     "account.title": "Account",
-    "account.hint": "One account for the whole app, for every project.",
+    "account.hint": "Each account on this computer has its own projects "
+        + "and settings.",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
     "account.new_password": "New password",
@@ -356,6 +396,9 @@ const LANG_EN = {
     "project.folder_locked": "The project folder can't change, because the "
         + "catalog is saved inside it.",
     "project.create": "Create project",
+    "project.linked_advice": "This folder looks like a website or a linked "
+        + "project ({markers}). Moving or renaming its files would break "
+        + "it. Catalog only, coming soon, will keep every link working.",
     "project.creating":
         "Creating the project and testing the AI connection...",
     "project.created": "Project created. The AI connection works.",
@@ -403,6 +446,9 @@ const LANG_EN = {
         + "Drop Zone folder are cataloged. Click Save anyway to use this "
         + "folder.",
     "error.unsupported_provider": "That AI provider is not supported.",
+    "error.invalid_role": "That provider role does not exist.",
+    "error.invalid_server_url": "The server URL must start with http:// "
+        + "or https://.",
     "error.unsupported_format": "Only CSV export is supported.",
     "error.keyring_failed": "The API key could not be saved in the macOS "
         + "Keychain. Open Keychain Access, make sure the login keychain "
@@ -423,8 +469,9 @@ const LANG_EN = {
         "The password must have at least 8 characters.",
     "error.password_too_long": "The password is too long. Use 72 "
         + "characters or fewer (fewer with accents or symbols).",
-    "error.account_exists": "The account already exists. Log in instead.",
-    "error.no_account": "Create the account first.",
+    "error.username_taken": "That username is taken.",
+    "error.invalid_username": "Use 3 to 30 letters, digits, dots, "
+        + "underscores or hyphens.",
     "error.generic": "Something went wrong. Try again.",
     "error.invalid_name": "The new name has no valid characters.",
     "error.file_missing": "The file is missing or outside the project folder.",
@@ -434,6 +481,8 @@ const LANG_EN = {
         "The AI provider did not suggest categories. Try again.",
     "error.no_provider": "Choose an AI provider in Settings first.",
     "error.invalid_folders": "The folder tree is not valid. Check the names.",
+    "error.invalid_sheet": "The project sheet is too long. Use 1,500 "
+        + "characters or fewer.",
     "error.invalid_description":
         "The description must be 300 characters or fewer.",
     "error.folder_not_empty": "A folder with documents can't be removed.",
