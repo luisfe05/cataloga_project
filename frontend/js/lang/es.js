@@ -327,10 +327,11 @@ const LANG_ES = {
     "folders.err_subs": "Una carpeta puede tener 10 subcarpetas como máximo.",
 
     // Account and login
-    "auth.setup_title": "Crea tu cuenta",
-    "auth.setup_hint": "Esta cuenta protege Cataloga en esta computadora. "
-        + "No cifra tus archivos. Guarda la contraseña en un lugar "
-        + "seguro: no hay forma de recuperarla.",
+    "auth.register_title": "Crear una cuenta",
+    "auth.register_hint": "Cada cuenta en esta computadora tiene su propia "
+        + "lista de proyectos y sus ajustes. Los catálogos se quedan dentro "
+        + "de cada carpeta de proyecto. Una contraseña perdida no se puede "
+        + "recuperar.",
     "auth.login_title": "Iniciar sesión",
     "auth.username": "Usuario",
     "auth.password": "Contraseña",
@@ -339,8 +340,15 @@ const LANG_ES = {
     "auth.log_in": "Iniciar sesión",
     "auth.log_out": "Cerrar sesión",
     "auth.password_mismatch": "Las contraseñas no coinciden.",
+    "auth.need_account": "Crear una cuenta",
+    "auth.have_account": "Ya tengo una cuenta",
+    "auth.forgot": "¿Olvidaste tu contraseña?",
+    "auth.forgot_hint": "Las contraseñas no se pueden recuperar: Cataloga "
+        + "no usa correo. Tus proyectos y archivos siguen intactos en sus "
+        + "carpetas. Crea una cuenta nueva para seguir trabajando.",
     "account.title": "Cuenta",
-    "account.hint": "Una sola cuenta para toda la app y todos los proyectos.",
+    "account.hint": "Cada cuenta en esta computadora tiene sus propios "
+        + "proyectos y ajustes.",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
     "account.new_password": "Contraseña nueva",
@@ -424,8 +432,9 @@ const LANG_ES = {
         "La contraseña debe tener al menos 8 caracteres.",
     "error.password_too_long": "La contraseña es demasiado larga. Usa 72 "
         + "caracteres o menos (menos si tiene acentos o símbolos).",
-    "error.account_exists": "La cuenta ya existe. Inicia sesión.",
-    "error.no_account": "Primero crea la cuenta.",
+    "error.username_taken": "Ese usuario ya existe.",
+    "error.invalid_username": "Usa de 3 a 30 letras, números, puntos, "
+        + "guiones bajos o guiones.",
     "error.generic": "Algo salió mal. Inténtalo de nuevo.",
     "error.invalid_name": "El nombre nuevo no tiene caracteres válidos.",
     "error.file_missing": "El archivo no está o está fuera de la carpeta del "
