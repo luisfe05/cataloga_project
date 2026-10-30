@@ -173,6 +173,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "research_name": "Research",
         "target_directory": app.config["PROJECT_FOLDER"],
         "language": "en", "naming_template": "{date}_{topic}",
+        "stamp_date_order": "month",
         "active_provider": None, "active_model": None,
         "old_inbox_has_files": False, "project_status": "ok",
         "providers_with_key": [], "username": "",

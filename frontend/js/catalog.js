@@ -410,8 +410,10 @@ function addArchiveCells(row, doc) {
         row.appendChild(cell);
     });
     // Where the date came from. Read only, even in Edit Mode.
+    // "photo stamp" becomes the key catalog.date_from_photo_stamp.
     const dateSource = makeCell(doc.date_source
-        ? t(`catalog.date_from_${doc.date_source}`) : "", "nowrap more-col");
+        ? t(`catalog.date_from_${doc.date_source.replace(" ", "_")}`)
+        : "", "nowrap more-col");
     row.appendChild(dateSource);
 }
 

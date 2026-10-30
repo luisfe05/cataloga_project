@@ -71,6 +71,8 @@ const LANG_EN = {
     "catalog.date_from_content": "Content",
     "catalog.date_from_metadata": "File metadata",
     "catalog.date_from_file": "File date",
+    "catalog.date_from_photo_stamp": "Photo stamp",
+    "catalog.date_from_name": "File name or folder",
     "catalog.not_in_list": "{value} (not in list)",
     "catalog.note_duplicate": "Duplicate of {name}",
     "catalog.note_no_category": "Category not in the project list",
@@ -228,6 +230,12 @@ const LANG_EN = {
     "naming.m4_example": "oceanman-malta_el-nuevo-dia_2026-07-15_001.pdf",
     "naming.custom": "Custom",
     "naming.preview": "Preview",
+    "naming.stamp_order": "Dates stamped on photos",
+    "naming.stamp_month": "Month first (11 13 '97)",
+    "naming.stamp_day": "Day first (13 11 97)",
+    "naming.photo_date_rule": "A photo's date comes from the date printed or "
+        + "written on it, then from a camera's EXIF (a scanner's EXIF is "
+        + "the day of the scan), then from a year in its name or folder.",
     "naming.media_rule": "Photos are named with this method from what they "
         + "show, and audio and video from the title in their tags. Files "
         + "with nothing to read use their date and a number, for example "

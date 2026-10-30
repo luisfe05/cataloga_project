@@ -115,7 +115,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     industry                TEXT,
     categories              TEXT,
     folder_mode             TEXT,
-    project_description     TEXT
+    project_description     TEXT,
+    stamp_date_order        TEXT
 );
 """
 
@@ -130,6 +131,8 @@ ADDED_APP_CONFIG_COLUMNS = {
     # 'tree' for projects with their own folders; empty in old projects.
     "folder_mode": "folder_mode TEXT",
     "project_description": "project_description TEXT",
+    # How a date stamped on a photo reads: 'month' first or 'day' first.
+    "stamp_date_order": "stamp_date_order TEXT",
 }
 
 CREATE_AI_PROVIDER_CONFIG = """

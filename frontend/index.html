@@ -407,10 +407,24 @@
                             <span data-i18n="naming.preview">Preview</span>:
                             <code id="naming-preview"></code>
                         </p>
+                        <!-- How a date stamped on a photo reads: 11 13 '97 -->
+                        <div class="naming-separator stamp-order">
+                            <span data-i18n="naming.stamp_order">Dates stamped on
+                                photos</span>
+                            <label><input type="radio" name="stamp-order"
+                                          value="month" checked>
+                                <span data-i18n="naming.stamp_month">Month first
+                                    (11 13 '97)</span></label>
+                            <label><input type="radio" name="stamp-order"
+                                          value="day">
+                                <span data-i18n="naming.stamp_day">Day first
+                                    (13 11 97)</span></label>
+                        </div>
                         <p class="form-message error" id="naming-error"></p>
                         <ul class="naming-rules">
                             <li data-i18n="naming.media_rule"></li>
                             <li data-i18n="naming.duplicate_rule"></li>
+                            <li data-i18n="naming.photo_date_rule"></li>
                             <li data-i18n="naming.changed_note"></li>
                         </ul>
                     </div>

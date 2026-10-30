@@ -198,7 +198,8 @@ def test_photo_date_from_exif(tmp_path):
     """The date the photo was taken comes from its EXIF data."""
     path = str(tmp_path / "p.jpg")
     exif = Image.Exif()
-    exif[306] = "2026:07:15 10:30:00"
+    exif[271] = "Canon"
+    exif.get_ifd(0x8769)[36867] = "2026:07:15 10:30:00"
     Image.new("RGB", (10, 10)).save(path, exif=exif)
     assert file_readers.photo_date(path) == "2026-07-15"
 
@@ -406,7 +407,8 @@ def test_photo_date_comes_first(setup):
     """For photos, the EXIF date wins over a date in the content."""
     path = str(setup["drop"] / "p.jpg")
     exif = Image.Exif()
-    exif[306] = "2025:12:24 18:00:00"
+    exif[271] = "Canon"
+    exif.get_ifd(0x8769)[36867] = "2025:12:24 18:00:00"
     Image.new("RGB", (20, 20), (255, 255, 255)).save(path, exif=exif)
     doc = setup["build"](FakeAI()).classify_document(path)
     assert doc.document_date == "2025-12-24"

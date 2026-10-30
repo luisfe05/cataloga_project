@@ -130,8 +130,10 @@ function startNewProject() {
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
     document.getElementById("api-key").value = "";
-    // New projects start with method 4.
+    // New projects start with method 4 and month-first photo stamps.
     showSavedTemplate(NAMING_METHODS.m4);
+    document.querySelector('input[name="stamp-order"][value="month"]')
+        .checked = true;
     showCategories("", []);
     showProvider("ollama", "");
     showSettingsMessage("", "");
@@ -297,6 +299,11 @@ function renderNamingBlocks() {
     updateNamingPreview();
 }
 
+function readStampOrder() {
+    const picked = document.querySelector('input[name="stamp-order"]:checked');
+    return picked ? picked.value : "month";
+}
+
 function chosenTemplate() {
     const picked = document.querySelector(
         'input[name="naming-method"]:checked');
@@ -402,6 +409,8 @@ async function loadSettings() {
         document.getElementById("language-select").value =
             settings.language;
         showSavedTemplate(settings.naming_template);
+        document.querySelector(`input[name="stamp-order"][value="${
+            settings.stamp_date_order || "month"}"]`).checked = true;
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
         if (projectFolderMode === "tree") {
@@ -469,6 +478,7 @@ async function saveSettings(event) {
                 name: document.getElementById("research-name").value,
                 folder: document.getElementById("target-directory").value,
                 naming_template: chosenTemplate(),
+                stamp_date_order: readStampOrder(),
                 description: document.getElementById("project-description")
                     .value.trim(),
                 folders: readFolderTree(),
@@ -482,6 +492,7 @@ async function saveSettings(event) {
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
+                stamp_date_order: readStampOrder(),
                 industry: document.getElementById("industry").value,
                 // In a tree project the categories are the folders.
                 categories: isTree ? readFolderTree() : readCategories(),

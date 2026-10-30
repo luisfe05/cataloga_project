@@ -50,6 +50,26 @@ Use null for text if there is no text. Do not invent anything.
 Respond with ONLY a JSON object in this exact format:
 {"text": "...", "description": "..."}"""
 
+PHOTO_PROMPT = """You are helping a researcher catalog an archive of photos.
+The first image is a photo, maybe an old scanned print. The images after
+it are its four corners, enlarged, so small writing can be read.
+Find:
+- rotation: 0 if the photo is upright; else the degrees to turn it
+  clockwise so it is upright: 90, 180, or 270.
+- printed_date: a date stamped on the photo by the camera, often orange
+  digits in a corner like 11 13 '97, exactly as it reads, else null.
+- handwritten_date: a date written by hand on the photo, exactly as it
+  reads, else null.
+- text: any other text you can read, exactly as written, else null.
+- description: one sentence about what the photo shows: the people, the
+  place, the event, the era.
+
+Do not invent anything.
+
+Respond with ONLY a JSON object in this exact format:
+{"rotation": 0, "printed_date": null, "handwritten_date": null,
+ "text": null, "description": "..."}"""
+
 CATEGORIES_PROMPT = """You are helping a researcher set up a research archive.
 For the industry or field the user gives, propose 6 to 10 categories to
 sort its documents, each with 0 to 6 subcategories. Use short names
@@ -119,13 +139,13 @@ class AIProviderClient:
         """Send a prompt with images to the provider's API."""
         raise NotImplementedError
 
-    def ask_about_images(self, image_uris):
+    def ask_about_images(self, image_uris, prompt=IMAGE_PROMPT):
         """Ask the AI to read and describe images. None if it cannot."""
         if not self.api_key or not self.supports_images or not image_uris:
             return None
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                answer = self.send_images(IMAGE_PROMPT, image_uris)
+                answer = self.send_images(prompt, image_uris)
                 return (answer or "").strip()
             except Exception:
                 # Wait 5 s, then 10 s, like text requests.
