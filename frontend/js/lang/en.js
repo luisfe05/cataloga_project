@@ -384,6 +384,9 @@ const LANG_EN = {
     "project.folder_locked": "The project folder can't change, because the "
         + "catalog is saved inside it.",
     "project.create": "Create project",
+    "project.linked_advice": "This folder looks like a website or a linked "
+        + "project ({markers}). Moving or renaming its files would break "
+        + "it. Catalog only, coming soon, will keep every link working.",
     "project.creating":
         "Creating the project and testing the AI connection...",
     "project.created": "Project created. The AI connection works.",

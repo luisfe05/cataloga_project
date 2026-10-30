@@ -146,6 +146,7 @@ function startNewProject() {
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
+    document.getElementById("folder-advice").classList.add("hidden");
     document.getElementById("project-sheet").value = "";
     showSheetMessage("", "");
     // New projects start with method 4.
@@ -430,6 +431,27 @@ function showSavedTemplate(template) {
     renderNamingBlocks();
 }
 
+/** After a folder is chosen for a new project, say what it looks like. */
+async function adviseOnFolder() {
+    const advice = document.getElementById("folder-advice");
+    const folder = document.getElementById("target-directory").value.trim();
+    advice.classList.add("hidden");
+    if (projectMode !== "new" || !folder) {
+        return;
+    }
+    try {
+        const result = await inspectFolder(folder);
+        if (result.catalog_only_recommended) {
+            advice.textContent = t("project.linked_advice",
+                { markers: result.markers.slice(0, 4).join(", ") });
+            advice.className = "form-message";
+            advice.classList.remove("hidden");
+        }
+    } catch (error) {
+        // A folder that does not exist yet gets no advice.
+    }
+}
+
 function showSheetMessage(text, kind) {
     const message = document.getElementById("sheet-message");
     message.textContent = text;
@@ -662,6 +684,7 @@ async function browseFolder() {
     const folder = await window.pywebview.api.choose_folder();
     if (folder) {
         document.getElementById("target-directory").value = folder;
+        adviseOnFolder();
         resetFolderWarning();
     }
 }
@@ -725,6 +748,8 @@ Object.keys(PROVIDER_ROWS).forEach((role) => {
 // A different folder needs its own warning.
 document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
+document.getElementById("target-directory")
+    .addEventListener("change", adviseOnFolder);
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 document.getElementById("suggest-sheet")
