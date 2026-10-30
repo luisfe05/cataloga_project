@@ -74,6 +74,16 @@ const LANG_EN = {
     "catalog.not_in_list": "{value} (not in list)",
     "catalog.note_duplicate": "Duplicate of {name}",
     "catalog.note_no_category": "Category not in the project list",
+    "catalog.note_no_folder": "No folder fits this file",
+    "catalog.col_folder": "Folder",
+    "catalog.filter_folder_all": "Folder: All",
+    "catalog.filter_subfolder_all": "Subfolder: All",
+    "catalog.in_drop_zone": "Drop Zone",
+    "catalog.suggested_folder": "Suggested: {folder}",
+    "catalog.create_and_move": "Create folder and move",
+    "catalog.move_to": "Move to…",
+    "catalog.moving": "Moving...",
+    "catalog.moved": "Moved to {folder}",
     "catalog.note_media": "Audio and video reading is coming soon",
     "catalog.note_media_length":
         "Audio and video reading is coming soon. Length {length}",
@@ -126,6 +136,7 @@ const LANG_EN = {
     "chat.cancel": "Cancel",
     "chat.renamed": "Renamed to {name}",
     "chat.rename_cancelled": "Cancelled. Nothing changed.",
+    "chat.move_title": "Move {name} to another folder",
     "chat.summary_total": "Documents",
     "chat.summary_dates": "Dates",
     "chat.summary_sources": "Top sources",
@@ -142,6 +153,11 @@ const LANG_EN = {
     "chat.notice_rename_invalid": "That name has no valid characters. Use "
         + "letters and numbers.",
     "chat.notice_rename_same": "The file already has that name.",
+    "chat.notice_move_unavailable": "This project sorts files by type, so "
+        + "files are not moved between folders.",
+    "chat.notice_move_invalid": "That folder is not in this project. "
+        + "Use one of the project's folders.",
+    "chat.notice_move_same": "The file is already in that folder.",
 
     // File links: open, preview, show in Finder
     "files.open": "Open file",
@@ -250,6 +266,40 @@ const LANG_EN = {
         + "to Manual Review. Documents keep their category if you change "
         + "the list.",
 
+    // Folder tree of a project
+    "folders.title": "Folders",
+    "folders.hint": "Cataloga files each new document in the folder that "
+        + "fits its content. Describe the project and click Suggest folders, "
+        + "then edit the tree before you create the project.",
+    "folders.description": "What is this project about?",
+    "folders.description_placeholder": "For example: documentary about a "
+        + "Puerto Rican swimmer who competes in Malta",
+    "folders.suggest": "Suggest folders",
+    "folders.file_types": "Start from file types",
+    "folders.suggesting": "Asking Ollama Cloud for folders...",
+    "folders.suggested": "Edit the folders, then create the project.",
+    "folders.need_description": "Describe the project first.",
+    "folders.add": "Add folder",
+    "folders.remove": "Remove folder",
+    "folders.remove_with_subs": "Remove \"{name}\" and its subfolders?",
+    "folders.has_documents": "{n} documents are in this folder, so it stays.",
+    "folders.name_placeholder": "Folder name",
+    "folders.inside": "Inside",
+    "folders.top_level": "Top level",
+    "folders.unnamed": "(no name)",
+    "folders.rules": "Two levels at most. Up to 20 folders and 10 subfolders "
+        + "in each. Folders already created can't be renamed; you can add "
+        + "folders and remove empty ones. Removed folders stay on the disk.",
+    "folders.err_none": "Add at least one folder.",
+    "folders.err_empty": "Every folder needs a name.",
+    "folders.err_long": "\"{name}\" is too long. Use 60 characters or fewer.",
+    "folders.err_chars": "\"{name}\" has a character folders can't use: "
+        + "/ \\ : * ? \" < > |",
+    "folders.err_reserved": "\"{name}\" can't be a folder name on Mac or "
+        + "Windows.",
+    "folders.err_twin": "Two folders are named \"{name}\" in the same place.",
+    "folders.err_subs": "A folder can have 10 subfolders at most.",
+
     // Account and login
     "auth.setup_title": "Create your account",
     "auth.setup_hint": "This account protects Cataloga on this computer. "
@@ -357,4 +407,16 @@ const LANG_EN = {
     "error.suggest_failed":
         "The AI provider did not suggest categories. Try again.",
     "error.no_provider": "Choose an AI provider in Settings first.",
+    "error.invalid_folders": "The folder tree is not valid. Check the names.",
+    "error.invalid_description":
+        "The description must be 300 characters or fewer.",
+    "error.folder_not_empty": "A folder with documents can't be removed.",
+    "error.unknown_folder": "That folder is not in this project.",
+    "error.not_tree_project":
+        "This project sorts files by type, so files are not moved.",
+    "error.use_move": "Use Move to change a document's folder.",
+    "error.no_api_key": "Ollama Cloud has no API key yet. Add it in Advanced "
+        + "settings, or build the folders by hand.",
+    "error.suggest_folders_failed":
+        "The AI provider did not suggest folders. Try again.",
 };
