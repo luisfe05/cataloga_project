@@ -33,6 +33,10 @@ EXTENSION_MEDIA_TYPES = {
 
 READABLE_EXTENSIONS = (".pdf", ".txt") + file_readers.OFFICE_EXTENSIONS
 
+# Opened whole, so the 50 MB limit applies to them.
+OPENED_EXTENSIONS = (READABLE_EXTENSIONS + file_readers.DESIGN_EXTENSIONS +
+                     file_readers.ARCHIVE_EXTENSIONS)
+
 # Used when a file can't be read or classified.
 FALLBACK_MEDIA_TYPE = "Documents"
 
@@ -157,6 +161,24 @@ def needs_nothing(document):
                for field in required_fields(document))
 
 
+def name_context(file_path):
+    """What is known of a file the app cannot open: its name and place."""
+    folder = os.path.basename(os.path.dirname(file_path))
+    try:
+        neighbors = sorted(n for n in os.listdir(os.path.dirname(file_path))
+                           if not n.startswith(".") and
+                           n != os.path.basename(file_path))[:10]
+    except OSError:
+        neighbors = []
+    lines = ["File name: " + os.path.basename(file_path),
+             "Type: " + (os.path.splitext(file_path)[1].lower() or "(none)"),
+             "Folder: " + folder]
+    if neighbors:
+        lines.append("Other files in that folder: " + ", ".join(neighbors))
+    lines.append("The file itself could not be read; use only these facts.")
+    return "\n".join(lines)
+
+
 def with_metadata(text, meta):
     """Put the useful file metadata in front of the text for the AI."""
     lines = file_metadata.metadata_text(meta)
@@ -180,7 +202,7 @@ def choose_date(content_date, file_path, taken=None, meta_date=None):
 
 def too_big_to_read(file_path, extension):
     """Say whether a file that would be opened is over the size limit."""
-    opened = READABLE_EXTENSIONS + file_readers.VISION_EXTENSIONS
+    opened = OPENED_EXTENSIONS + file_readers.VISION_EXTENSIONS
     return (extension in opened and
             os.path.getsize(file_path) > file_readers.MAX_READ_BYTES)
 
@@ -289,6 +311,39 @@ class ClassificationPipeline:
                 media_type = self.ai_client.send_classification_request(text)
                 summary = self.generate_summary(text)
                 metadata = self.extract_metadata(text)
+        elif extension in file_readers.DESIGN_EXTENSIONS:
+            # A design file: its picture when there is one, else its XMP.
+            file_meta = file_readers.design_metadata(file_path)
+            text = ""
+            if self.ai_client.supports_images:
+                text = self.read_images(file_readers.design_views(file_path),
+                                        "photo")
+            if not text:
+                text = name_context(file_path)
+                if file_meta:
+                    text = with_metadata(text, file_meta)
+            has_text = True
+            summary = self.generate_summary(text)
+            metadata = self.extract_metadata(text)
+        elif extension in file_readers.ARCHIVE_EXTENSIONS:
+            # A zip: the list of what it holds, never unpacked.
+            text = file_readers.zip_listing(file_path) or \
+                name_context(file_path)
+            has_text = True
+            summary = self.generate_summary(text)
+            metadata = self.extract_metadata(text)
+        elif file_readers.is_text_file(file_path):
+            # Text or code of any kind, known by its bytes, not its name.
+            text = file_readers.text_extract(file_path)
+            has_text = True
+            summary = self.generate_summary(text)
+            metadata = self.extract_metadata(text)
+        else:
+            # Unknown format: the name, the folder and the neighbors still
+            # say something. Never Manual Review only for the format.
+            text = name_context(file_path)
+            summary = self.generate_summary(text)
+            metadata = self.extract_metadata(text)
 
         # Empty fields send the document to Manual Review below.
         if media_type is None:
