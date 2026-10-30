@@ -90,6 +90,8 @@ const LANG_EN = {
     "catalog.note_image": "Could not read the image",
     "catalog.note_scan": "Could not read the scanned pages",
     "catalog.note_too_big": "File is larger than 50 MB, so it was not read",
+    "catalog.note_topic": "No topic could be found in the photo",
+    "catalog.note_missing": "Missing: {fields}",
     "catalog.keywords_limit": "Use up to 5 keywords, separated by commas, "
         + "with up to 40 characters each.",
     "catalog.counterparty_limit": "Counterparty can have up to 100 characters.",
@@ -229,8 +231,11 @@ const LANG_EN = {
     "naming.template_help":
         "Use {date}, {source}, {topic}, {number}, {topic_number} and {original}.",
     "naming.preview": "Preview",
-    "naming.media_rule": "Photos, audio and video use the file date and a "
-        + "number, for example 2026-07-15_0001.jpg.",
+    "naming.media_rule": "Photos are named with this method from what they "
+        + "show, and audio and video from the title in their tags. Files "
+        + "with nothing to read use their date and a number, for example "
+        + "2026-07-15_0001.jpg, or undated_0001.jpg when only the disk "
+        + "date is known.",
     "naming.duplicate_rule":
         "If a name already exists, Cataloga adds -2, -3 and so on.",
     "naming.changed_note": "Only new files will use this method.",
