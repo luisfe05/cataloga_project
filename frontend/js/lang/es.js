@@ -345,10 +345,11 @@ const LANG_ES = {
     "folders.inside": "Dentro de",
     "folders.top_level": "Nivel principal",
     "folders.unnamed": "(sin nombre)",
-    "folders.rules": "Dos niveles como máximo. Hasta 20 carpetas y 10 "
-        + "subcarpetas en cada una. Las carpetas ya creadas no se pueden "
-        + "renombrar; puedes agregar carpetas y quitar las vacías. Las "
-        + "carpetas quitadas se quedan en el disco.",
+    "folders.rules": "Hasta seis niveles, 20 carpetas principales y 10 "
+        + "subcarpetas en cada una. Las carpetas ya creadas no se renombran; "
+        + "puedes agregar carpetas y quitar las vacías. Las que quitas siguen "
+        + "en el disco. Una carpeta con subcarpetas solo guarda archivos en "
+        + "ellas.",
     "folders.err_none": "Agrega al menos una carpeta.",
     "folders.err_empty": "Cada carpeta necesita un nombre.",
     "folders.err_long":
@@ -359,6 +360,17 @@ const LANG_ES = {
         + "Mac o Windows.",
     "folders.err_twin":
         "Hay dos carpetas llamadas \"{name}\" en el mismo lugar.",
+    "folders.flag_events": "Eventos",
+    "folders.flag_events_hint": "Guarda una carpeta por evento, llamada "
+        + "Evento_Año. Cataloga puede proponer carpetas de evento aquí.",
+    "folders.flag_fallback": "Descarte",
+    "folders.flag_fallback_hint": "Los archivos que no encajan en ninguna "
+        + "otra carpeta van aquí en vez de a Revisión manual.",
+    "folders.flag_auto": "Sin preguntar",
+    "folders.flag_auto_hint": "Los archivos nuevos que van aquí se archivan "
+        + "sin preguntar (proyectos sin Drop Zone).",
+    "folders.numbered": "Numerar carpetas nuevas (01_, 02_)",
+    "folders.err_depth": "Las carpetas pueden tener seis niveles como máximo.",
     "folders.err_subs": "Una carpeta puede tener 10 subcarpetas como máximo.",
 
     // Account and login
