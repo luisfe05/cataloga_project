@@ -304,6 +304,45 @@ def all_paths(tree, parent=""):
     return paths
 
 
+# A folder named like an event: Trialo-Isla-Verde_1998, Boda 2003.
+EVENT_NAME = re.compile(r"^(.+?)[\s_-]((?:18|19|20)\d{2})$")
+
+
+def event_places(tree, parent=""):
+    """List the paths of the folders marked as holding events."""
+    places = []
+    for node in tree:
+        path = join_path([parent, node["name"]]) if parent else node["name"]
+        if node.get("events"):
+            places.append(path)
+        places += event_places(children_of(node), path)
+    return places
+
+
+def event_parent(tree, text):
+    """Return the saved path of an events folder a path points into."""
+    parts = split_path(text)
+    if len(parts) < 2:
+        return None
+    parent = canonical_path(tree, join_path(parts[:-1]))
+    if parent is None or not node_at(tree, parent).get("events"):
+        return None
+    return parent
+
+
+def event_of(tree, place):
+    """Return the event folder name of a place inside an events folder."""
+    if not place or event_parent(tree, place) is None:
+        return None
+    return split_path(place)[-1]
+
+
+def event_year(name):
+    """Return the year in an event folder name, or None."""
+    found = EVENT_NAME.match(name or "")
+    return found.group(2) if found else None
+
+
 def fallback_place(tree, parent=""):
     """Return the catch-all folder: the one marked, or one by its name."""
     for node in tree:

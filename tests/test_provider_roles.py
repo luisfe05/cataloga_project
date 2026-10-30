@@ -35,6 +35,7 @@ class FakeClient(AIProviderClient):
         return answer
 
     def send_images(self, prompt, image_uris):
+        self.last_prompt = prompt
         return self.send_prompt(prompt, "")
 
 
@@ -133,6 +134,18 @@ def test_images_go_to_the_client_that_reads_them():
         '{"text": "hi"}'
     assert main.calls == 0
     assert ClientWithFallback(main, None).supports_images is False
+
+
+def test_photo_prompt_reaches_the_client_that_reads_images():
+    """The photo prompt (corners, rotation, stamps) passes the wrapper."""
+    main = FakeClient("ollama", ['{"rotation": 0}', '{"rotation": 0}'],
+                      images=True)
+    client = ClientWithFallback(main, None)
+    client.ask_about_images(["data:image/jpeg;base64,QUJD"],
+                            base.PHOTO_PROMPT)
+    assert main.last_prompt == base.PHOTO_PROMPT
+    client.ask_about_images(["data:image/jpeg;base64,QUJD"])
+    assert main.last_prompt == base.IMAGE_PROMPT
 
 
 # --- Building the project's clients ---
