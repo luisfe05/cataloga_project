@@ -39,6 +39,9 @@ VISION_EXTENSIONS = (".jpg", ".jpeg", ".png", ".heic", ".tif", ".tiff",
                      ".gif", ".bmp", ".webp")
 
 # Longest side of an image sent to the AI, to save time and quota.
+# macOS marks a file whose content is only in the cloud (SF_DATALESS).
+DATALESS_FLAG = 0x40000000
+
 MAX_IMAGE_SIDE = 1600
 JPEG_QUALITY = 85
 
@@ -64,6 +67,14 @@ MAX_READ_BYTES = 50 * 1024 * 1024
 WORD = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 SHEET = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 DRAWING = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+
+
+def in_cloud_only(file_path):
+    """Say whether a file is in iCloud and not on this Mac, without opening.
+
+    Opening such a file makes macOS download it and can hang for minutes.
+    """
+    return bool(getattr(os.stat(file_path), "st_flags", 0) & DATALESS_FLAG)
 
 
 def read_zip_xml(archive, name):

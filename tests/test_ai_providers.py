@@ -62,11 +62,11 @@ def test_classification_retries_after_error():
     assert len(client.calls) == 2
 
 
-def test_classification_gives_up_after_three_errors():
-    """After three failed attempts the result is None, not a crash."""
-    client = FakeClient([RuntimeError("busy")] * 3)
+def test_classification_gives_up_after_two_errors():
+    """After two failed attempts the result is None, not a crash."""
+    client = FakeClient([RuntimeError("busy")] * 2)
     assert client.send_classification_request("text") is None
-    assert len(client.calls) == 3
+    assert len(client.calls) == 2
 
 
 def test_long_text_is_cut_before_sending():
@@ -177,8 +177,9 @@ def test_gemini_send_prompt(monkeypatch):
     created_with = {}
 
     class FakeGenaiClient:
-        def __init__(self, api_key):
+        def __init__(self, api_key, http_options=None):
             created_with["api_key"] = api_key
+            created_with["http_options"] = http_options
             self.models = models
 
     monkeypatch.setattr(gemini.genai, "Client", FakeGenaiClient)
@@ -191,7 +192,9 @@ def test_gemini_send_prompt(monkeypatch):
     assert models.last_call["model"] == "gemini-3.5-flash-lite"
     assert models.last_call["contents"] == "Some article text"
     assert models.last_call["config"] == {
-        "system_instruction": "Classify this."}
+        "system_instruction": "Classify this.", "max_output_tokens": 4096}
+    # One call waits 60 s at most; Google counts in milliseconds.
+    assert created_with["http_options"] == {"timeout": 60000}
 
 
 # --- Groq, OpenAI, and xAI (all use the chat completions format) ---
@@ -203,8 +206,9 @@ class FakeChatCompletions:
         self.answer = answer
         self.last_call = None
 
-    def create(self, model, messages):
-        self.last_call = {"model": model, "messages": messages}
+    def create(self, model, messages, **limits):
+        self.last_call = {"model": model, "messages": messages,
+                          "limits": limits}
         message = type("Message", (), {"content": self.answer})
         choice = type("Choice", (), {"message": message})
         return type("Response", (), {"choices": [choice]})
@@ -215,9 +219,10 @@ def make_fake_chat_sdk(answer, created_with):
     completions = FakeChatCompletions(answer)
 
     class FakeSDKClient:
-        def __init__(self, api_key, base_url=None):
+        def __init__(self, api_key, base_url=None, **limits):
             created_with["api_key"] = api_key
             created_with["base_url"] = base_url
+            created_with["limits"] = limits
             self.chat = type("Chat", (), {"completions": completions})
 
     return FakeSDKClient, completions
@@ -242,6 +247,9 @@ def test_chat_providers_send_prompt(monkeypatch, module, sdk_name,
     assert answer == "Press"
     assert created_with["api_key"] == "test-key"
     assert created_with["base_url"] == base_url
+    # Every call has a time limit, one retry and a longest answer.
+    assert created_with["limits"] == {"timeout": 60, "max_retries": 1}
+    assert list(completions.last_call["limits"].values()) == [4096]
     assert completions.last_call["model"] == model
     assert completions.last_call["messages"] == [
         {"role": "system", "content": "Classify this."},
@@ -265,9 +273,12 @@ def test_claude_send_prompt(monkeypatch):
             return type("Response", (), {"content": [text_block]})
 
     class FakeAnthropic:
-        def __init__(self, api_key, base_url=None):
+        def __init__(self, api_key, base_url=None, timeout=None,
+                     max_retries=None):
             recorded["api_key"] = api_key
             recorded["base_url"] = base_url
+            recorded["timeout"] = timeout
+            recorded["max_retries"] = max_retries
             self.messages = FakeMessages()
 
     monkeypatch.setattr(claude.anthropic, "Anthropic", FakeAnthropic)
@@ -277,6 +288,7 @@ def test_claude_send_prompt(monkeypatch):
     assert answer == "Documents"
     assert recorded["api_key"] == "test-key"
     assert recorded["base_url"] is None
+    assert recorded["timeout"] == 60 and recorded["max_retries"] == 1
     assert recorded["model"] == "claude-sonnet-5-5"
     # The system prompt is cached: it is the same for every file.
     assert recorded["system"] == [{

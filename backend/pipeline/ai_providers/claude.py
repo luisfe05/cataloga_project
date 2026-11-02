@@ -2,6 +2,7 @@
 
 import anthropic
 
+from backend.pipeline import time_budget
 from backend.pipeline.ai_providers.base import AIProviderClient
 
 # Cataloga's answers are short: a label, a summary, or small JSON. The
@@ -34,10 +35,12 @@ class ClaudeClient(AIProviderClient):
 
     def sdk_client(self):
         """Build the SDK client, aimed at the relay server if there is one."""
+        limits = {"timeout": time_budget.call_seconds(),
+                  "max_retries": time_budget.CLIENT_RETRIES}
         if self.base_url:
             return anthropic.Anthropic(api_key=self.api_key,
-                                       base_url=self.base_url)
-        return anthropic.Anthropic(api_key=self.api_key)
+                                       base_url=self.base_url, **limits)
+        return anthropic.Anthropic(api_key=self.api_key, **limits)
 
     def send(self, system_prompt, content):
         """Send one request and return the text of the answer."""

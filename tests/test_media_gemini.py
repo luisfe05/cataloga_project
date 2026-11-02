@@ -233,7 +233,7 @@ def client(monkeypatch):
     sdk = FakeSDK()
     gem = GeminiClient()
     gem.api_key = "k"
-    monkeypatch.setattr(gem, "sdk_client", lambda: sdk)
+    monkeypatch.setattr(gem, "sdk_client", lambda one_call=True: sdk)
     monkeypatch.setattr(gemini.time, "sleep", lambda s: None)
     return gem, sdk
 

@@ -7,7 +7,8 @@ import time
 from google import genai
 from google.genai import types
 
-from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline import time_budget
+from backend.pipeline.ai_providers.base import AIProviderClient, OTHER_TOKENS
 
 
 # Files up to this size go inside the request; bigger ones are uploaded.
@@ -27,11 +28,19 @@ class GeminiClient(AIProviderClient):
         super().__init__(provider_name="gemini", model=model,
                          base_url=base_url)
 
-    def sdk_client(self):
-        """Build the SDK client, aimed at the relay server if there is one."""
+    def sdk_client(self, one_call=True):
+        """Build the SDK client, aimed at the relay server if there is one.
+
+        Uploading a recording is not one call: only the file's limit applies.
+        """
+        options = {}
+        if one_call:
+            # Google's library counts in milliseconds.
+            options["timeout"] = int(time_budget.call_seconds() * 1000)
         if self.base_url:
-            return genai.Client(api_key=self.api_key,
-                                http_options={"base_url": self.base_url})
+            options["base_url"] = self.base_url
+        if options:
+            return genai.Client(api_key=self.api_key, http_options=options)
         return genai.Client(api_key=self.api_key)
 
     def send_prompt(self, system_prompt, text):
@@ -39,7 +48,8 @@ class GeminiClient(AIProviderClient):
         response = self.sdk_client().models.generate_content(
             model=self.model,
             contents=text,
-            config={"system_instruction": system_prompt},
+            config={"system_instruction": system_prompt,
+                    "max_output_tokens": OTHER_TOKENS},
         )
         # response.text can be None.
         return response.text or ""
@@ -54,7 +64,8 @@ class GeminiClient(AIProviderClient):
                 data=base64.b64decode(data), mime_type=media_type))
         parts.append(prompt)
         response = self.sdk_client().models.generate_content(
-            model=self.model, contents=parts)
+            model=self.model, contents=parts,
+            config={"max_output_tokens": OTHER_TOKENS})
         return response.text or ""
 
     def send_media(self, prompt, file_path, mime_type, seconds=None):
@@ -65,7 +76,7 @@ class GeminiClient(AIProviderClient):
         """
         if not self.api_key:
             raise ValueError("No Gemini key is saved.")
-        client = self.sdk_client()
+        client = self.sdk_client(one_call=False)
         uploaded = None
         try:
             if os.path.getsize(file_path) <= INLINE_BYTES:

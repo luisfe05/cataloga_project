@@ -5,7 +5,9 @@ import sys
 
 from openai import OpenAI
 
-from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline import time_budget
+from backend.pipeline.ai_providers.base import (AIProviderClient, image_tokens,
+                                                text_tokens)
 
 OLLAMA_BASE_URL = "https://ollama.com/v1"
 
@@ -54,11 +56,17 @@ class OllamaCloudClient(AIProviderClient):
         if not self.api_key:
             self.api_key = read_development_key()
 
+    def sdk_client(self):
+        """Build the library's client, with the time this call may take."""
+        return OpenAI(api_key=self.api_key, base_url=self.base_url,
+                      timeout=time_budget.call_seconds(),
+                      max_retries=time_budget.CLIENT_RETRIES)
+
     def send_prompt(self, system_prompt, text):
         """Send one request to Ollama Cloud and return its answer."""
-        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-        response = client.chat.completions.create(
+        response = self.sdk_client().chat.completions.create(
             model=self.model,
+            max_tokens=text_tokens(),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text},
@@ -73,12 +81,12 @@ class OllamaCloudClient(AIProviderClient):
 
     def send_images(self, prompt, image_uris):
         """Send a prompt and images (JPEG data URIs) to Ollama Cloud."""
-        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         content = [{"type": "text", "text": prompt}]
         for uri in image_uris:
             content.append({"type": "image_url", "image_url": {"url": uri}})
-        response = client.chat.completions.create(
+        response = self.sdk_client().chat.completions.create(
             model=self.model,
+            max_tokens=image_tokens(prompt),
             messages=[{"role": "user", "content": content}],
         )
         return response.choices[0].message.content or ""

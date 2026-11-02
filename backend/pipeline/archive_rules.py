@@ -39,6 +39,9 @@ TOO_BIG_NOTE = "File is larger than 50 MB, so it was not read"
 TOPIC_NOTE = "No topic could be found in the photo"
 TOO_LONG_NOTE = "Path too long for Windows (over 240 characters)"
 SECRET_NOTE = "Possible secret, not read"
+TIMEOUT_NOTE = "Timed out while reading"
+CUT_OFF_NOTE = "AI answer was cut off"
+ICLOUD_NOTE = "In iCloud, not downloaded"
 
 # Files that may hold keys or passwords: never read, never sent anywhere.
 SECRET_NAMES = (".env", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
