@@ -44,6 +44,16 @@ RETRY_NOTES = (archive_rules.TIMEOUT_NOTE, archive_rules.CUT_OFF_NOTE,
                archive_rules.SCAN_NOTE, archive_rules.ICLOUD_NOTE)
 
 
+def is_listed_file(folder, name):
+    """Say whether a file counts: not hidden, temporary, or a link."""
+    path = os.path.join(folder, name)
+    if name.startswith(".") or name.startswith("~$") or \
+            name in SKIPPED_FILES or name.endswith(TEMPORARY_ENDINGS):
+        return False
+    # A link could point outside the project: never followed.
+    return not os.path.islink(path) and os.path.isfile(path)
+
+
 def find_files(folder):
     """List the files of a folder and its subfolders, in a steady order."""
     found = []
@@ -53,15 +63,8 @@ def find_files(folder):
         dirs[:] = sorted(d for d in dirs if not d.startswith(".") and
                          d not in SKIPPED_FOLDERS and
                          not os.path.islink(os.path.join(current, d)))
-        for name in sorted(files):
-            path = os.path.join(current, name)
-            if name.startswith(".") or name.startswith("~$") or \
-                    name in SKIPPED_FILES or name.endswith(TEMPORARY_ENDINGS):
-                continue
-            # A link could point outside the project: never followed.
-            if os.path.islink(path) or not os.path.isfile(path):
-                continue
-            found.append(path)
+        found += [os.path.join(current, name) for name in sorted(files)
+                  if is_listed_file(current, name)]
     return found
 
 

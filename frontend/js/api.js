@@ -377,6 +377,44 @@ async function moveDocument(id, folder, createFolder) {
 
 // --- File links: only the id is sent, never a path ---
 
+// --- Browse ---
+
+/** GET /browse: one folder of the project, as on the disk. */
+async function browseFolderList(path) {
+    const query = new URLSearchParams({ path: path }).toString();
+    const response = await apiFetch(`${BASE_URL}/browse?${query}`);
+    return handleResponse(response);
+}
+
+/** The address of a file's small picture. An <img> cannot send headers. */
+function fileThumbUrl(path) {
+    const query = new URLSearchParams({ path: path, token: sessionToken });
+    return `${BASE_URL}/browse/thumb?${query.toString()}`;
+}
+
+/** GET /browse/preview: a picture or text for the overlay, by path. */
+async function getFilePreview(path) {
+    const query = new URLSearchParams({ path: path }).toString();
+    const response = await apiFetch(`${BASE_URL}/browse/preview?${query}`);
+    return handleResponse(response);
+}
+
+/** The address of a recording, by path. */
+function fileMediaUrl(path) {
+    const query = new URLSearchParams({ path: path, token: sessionToken });
+    return `${BASE_URL}/browse/media?${query.toString()}`;
+}
+
+/** POST /browse/reveal: show a file or folder in Finder. */
+async function revealFile(path) {
+    const response = await apiFetch(`${BASE_URL}/browse/reveal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: path }),
+    });
+    return handleResponse(response);
+}
+
 /** GET /documents/:id/preview: a picture or text for the overlay. */
 async function getDocumentPreview(id) {
     const response = await apiFetch(`${BASE_URL}/documents/${id}/preview`);

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cataloga</title>
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/home.css">
 </head>
 <body>
 
@@ -102,8 +103,12 @@
         <!-- Sidebar. Text sits in its own span, so translating it keeps the icon. -->
         <div class="sidebar">
             <div class="nav-links">
-                <a href="#" class="nav-link active" data-view="catalog">
-                    <span class="icon icon-catalog"></span>
+                <a href="#" class="nav-link active" data-view="home">
+                    <span class="icon icon-home"></span>
+                    <span data-i18n="nav.home">Home</span>
+                </a>
+                <a href="#" class="nav-link" data-view="catalog">
+                    <span class="icon icon-list"></span>
                     <span data-i18n="nav.catalog">Catalog</span>
                 </a>
                 <a href="#" class="nav-link" data-view="plan">
@@ -136,7 +141,45 @@
 
     <!-- Views: only one is visible at a time. -->
     <main id="app-main" class="hidden">
-        <div id="view-catalog" class="view">
+        <!-- Folders or List, and how the folders look. Home and Catalog list only. -->
+        <div class="home-top hidden" id="home-top">
+            <div class="home-tabs" role="tablist">
+                <button type="button" class="on" data-home-tab="home"
+                        data-i18n="home.tab_folders">Folders</button>
+                <button type="button" data-home-tab="catalog"
+                        data-i18n="home.tab_list">List</button>
+            </div>
+            <div class="home-views" id="home-views">
+                <button type="button" class="on" data-home-view="icons"
+                        data-i18n-label="home.view_icons">
+                    <span class="icon icon-grid"></span>
+                </button>
+                <button type="button" data-home-view="columns"
+                        data-i18n-label="home.view_columns">
+                    <span class="icon icon-columns"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Home: the project's folders and files, like Finder (home.js). -->
+        <div id="view-home" class="view">
+            <div class="home-head">
+                <div>
+                    <small data-i18n="home.project">Project</small>
+                    <h1 id="home-title"></h1>
+                    <nav class="home-crumbs" id="home-crumbs"
+                         data-i18n-label="home.path"></nav>
+                </div>
+                <div class="home-chips" id="home-chips"></div>
+            </div>
+            <p class="empty-message hidden" id="home-message"></p>
+            <section class="home-work" id="home-work">
+                <div class="home-pane" id="home-browser"></div>
+                <aside class="home-info" id="home-info" aria-live="polite"></aside>
+            </section>
+        </div>
+
+        <div id="view-catalog" class="view hidden">
             <!-- Title and progress, filled by catalog.js. -->
             <div class="catalog-header">
                 <!-- Project name from app.js. No data-i18n, so a language change keeps it. -->
@@ -951,6 +994,7 @@
     <script src="js/app.js"></script>
     <script src="js/help.js"></script>
     <script src="js/preview.js"></script>
+    <script src="js/home.js"></script>
     <script src="js/files.js"></script>
     <script src="js/summary.js"></script>
     <script src="js/catalog.js"></script>
