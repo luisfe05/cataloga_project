@@ -160,3 +160,29 @@ def test_the_plan_of_a_project_left_for_later_says_why_it_is_empty(
 def test_folders_request_still_exists_for_the_ai(tmp_path):
     """The prompt the tree comes from is unchanged."""
     assert "JSON list" in base.FOLDERS_PROMPT
+
+
+def test_the_job_says_how_long_the_current_file_has_taken():
+    """The screen says Still reading after 30 s."""
+    job = scanner.ScanJob()
+    now = [100.0]
+    job.clock = lambda: now[0]
+    assert job.to_dict()["current_seconds"] == 0
+    job.file_started = 100.0
+    now[0] = 131.5
+    assert job.to_dict()["current_seconds"] == 31
+
+
+def test_the_seconds_go_back_to_zero_after_each_file(tmp_path):
+    """Nothing is left counting when a scan ends."""
+    root = a_folder(tmp_path / "p")
+    (root / ".cataloga").mkdir()
+    from backend.db.schema import init_db
+    db_path = projects.catalog_path(str(root))
+    init_db(db_path)
+    repo = CatalogRepository(db_path)
+    repo.save_app_config("Nuevo", str(root))
+    job = scanner.ScanJob()
+    scanner.scan_folder(job, str(root), repo, FakeAI())
+    assert job.file_started is None
+    assert job.to_dict()["current_seconds"] == 0

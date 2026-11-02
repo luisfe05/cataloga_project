@@ -82,7 +82,6 @@ const LANG_ES = {
         + "{path}. Aparecerán aquí cuando se clasifiquen.",
     "catalog.no_match": "Ningún archivo coincide con tu búsqueda.",
     "catalog.progress": "Progreso del catálogo",
-    "scan.running": "Leyendo {done} de {total} archivos: {file}",
     "scan.paused": "En pausa en {done} de {total} archivos.",
     "scan.done": "Se leyeron los {total} archivos. Nada se movió ni se "
         + "renombró.",
@@ -101,7 +100,6 @@ const LANG_ES = {
     "ask.total": "total",
     "ask.note": "Antes de empezar puedes ver las carpetas, elegir Solo catalogar o usar Aprender de mi carpeta. Puedes empezar cuando quieras desde Inicio.",
     "ask.later": "Después",
-    "scan.running_title": "Leyendo la carpeta",
     "scan.retry_title": "Algunos archivos no se pudieron leer.",
     "plan.summary": "{files} archivos leídos. {moves} movimientos, {renames} "
         + "renombres, {folders} carpetas nuevas.",
@@ -174,6 +172,9 @@ const LANG_ES = {
     "error.nothing_approved": "Aprueba al menos una fila primero.",
     "scan.stalled": "La lectura se trabó en {file}. Continúa para intentarlo de nuevo.",
     "scan.retry": "Reintentar los archivos sin terminar ({count})",
+    "scan.loading": "Cargando documentos",
+    "scan.running": "Leyendo {file}",
+    "scan.still_reading": "Todavía leyendo este archivo… {file}",
     "scan.pause": "Pausar",
     "scan.resume": "Continuar",
     "catalog.progress_percent": "{n}% clasificado",

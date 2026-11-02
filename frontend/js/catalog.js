@@ -630,8 +630,31 @@ function renderProgress(classified, review) {
 // Polls GET /scan while the project folder is being read.
 let scanTimer = null;
 let scanStatus = "";
+let scanPollTimer = null;
+
+// After this long on one file, the banner says it is still reading it.
+const STILL_READING_SECONDS = 30;
 // The active project's mode, for the words a row uses.
 let catalogFolderMode = "";
+
+/** LOADING DOCUMENTS: the counter, the bar, and the spin while it reads. */
+function showScanProgress(scan) {
+    const active = ["running", "paused"].includes(scan.status);
+    const box = document.getElementById("scan-status");
+    box.classList.toggle("loading", active);
+    box.classList.toggle("paused", scan.status === "paused");
+    document.getElementById("scan-spin").classList.toggle("hidden", !active);
+    document.getElementById("scan-bar").classList.toggle("hidden", !active);
+    if (!active) {
+        return;
+    }
+    // Three digits, as the drawing has them: 005 of 161.
+    const digits = (number) => String(number).padStart(3, "0");
+    document.getElementById("scan-counter").textContent =
+        `${digits(scan.done)} of ${digits(scan.total)}`;
+    document.getElementById("scan-bar-fill").style.width =
+        `${scan.total ? (scan.done / scan.total) * 100 : 0}%`;
+}
 
 /** The two lines of the banner, for this state of the reading. */
 function showScanWords(scan) {
@@ -639,9 +662,13 @@ function showScanWords(scan) {
     // A pause the scan made by itself says why.
     const state = scan.error === "stalled" ? "stalled" : scan.status;
     const title = { unread: "banner.not_cataloged", stopped: "scan.stopped",
-        running: "scan.running_title", paused: "scan.paused",
+        running: "scan.loading", paused: "scan.paused",
         stalled: "scan.paused" }[state];
-    const text = { unread: "banner.listed", running: "scan.running",
+    // A file that takes long says so, in place of its name.
+    const reading = scan.current_seconds >= STILL_READING_SECONDS
+        ? "scan.still_reading" : "scan.running";
+    const text = { unread: "banner.listed", running: reading,
+        paused: scan.current ? "scan.running" : "",
         stalled: "scan.stalled" }[state];
     document.getElementById("scan-title").textContent =
         title ? t(title, vars) : t("scan.retry_title");
@@ -667,6 +694,7 @@ async function renderScan(settings) {
     scanStatus = scan.status;
     box.classList.toggle("hidden", !active && !waiting && !scan.retryable);
     showScanWords(scan);
+    showScanProgress(scan);
     const show = {
         "scan-learn": scan.status === "unread",
         "scan-catalog": scan.status === "unread",
@@ -679,6 +707,11 @@ async function renderScan(settings) {
     });
     document.getElementById("scan-retry").textContent =
         t("scan.retry", { count: scan.retryable });
+    // The counter and the file name move faster than the table.
+    clearTimeout(scanPollTimer);
+    if (active) {
+        scanPollTimer = setTimeout(() => renderScan(settings), 1500);
+    }
     clearTimeout(scanTimer);
     if (active) {
         // New rows appear as the scan goes: refresh the table too.
