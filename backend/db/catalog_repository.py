@@ -838,6 +838,19 @@ class CatalogRepository:
         finally:
             conn.close()
 
+    def chosen_in_draft(self):
+        """Return the documents the draft already has an answer for."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT i.document_id FROM batch_items i JOIN batches b ON "
+                "b.id = i.batch_id WHERE b.status = 'draft' AND "
+                "i.document_id IS NOT NULL AND i.status IN "
+                "('approved', 'skipped')").fetchall()
+        finally:
+            conn.close()
+        return {row[0] for row in rows}
+
     def documents_with_proposals(self):
         """Return the documents the plan has something to do with."""
         conn = get_connection(self.db_path)

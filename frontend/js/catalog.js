@@ -730,6 +730,7 @@ async function startOrResumeScan(action) {
 }
 
 async function loadCatalog() {
+    refreshPlanBadge();
     try {
         const settings = await getSettings();
         renderOldInboxWarning(settings);
