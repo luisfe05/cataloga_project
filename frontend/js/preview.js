@@ -32,10 +32,10 @@ function showPreviewMessage(text) {
 }
 
 /** A player for a recording, with its controls. */
-function makePreviewPlayer(tag, id) {
+function makePreviewPlayer(tag, mediaUrl) {
     const player = document.createElement(tag);
     player.controls = true;
-    player.src = documentMediaUrl(id);
+    player.src = mediaUrl;
     // A format the player cannot read (.avi, .mkv) says so instead of failing.
     player.addEventListener("error", () => {
         if (player.getAttribute("src")) {
@@ -46,7 +46,7 @@ function makePreviewPlayer(tag, id) {
 }
 
 /** Fill the overlay with what the backend says this file shows. */
-function fillPreview(id, preview) {
+function fillPreview(mediaUrl, preview) {
     const content = document.getElementById("preview-content");
     content.innerHTML = "";
     if (preview.kind === "image") {
@@ -59,14 +59,14 @@ function fillPreview(id, preview) {
         text.textContent = preview.text;
         content.appendChild(text);
     } else if (preview.kind === "audio" || preview.kind === "video") {
-        content.appendChild(makePreviewPlayer(preview.kind, id));
+        content.appendChild(makePreviewPlayer(preview.kind, mediaUrl));
     } else {
         showPreviewMessage(t("preview.unavailable"));
     }
 }
 
-/** Open the overlay for a document. A missing file shows a toast. */
-async function openPreview(id) {
+/** Open the overlay and fill it with what load() answers. */
+async function showPreview(load, mediaUrl) {
     previewReturnFocus = document.activeElement;
     clearPreview();
     showPreviewMessage(t("preview.loading"));
@@ -74,15 +74,25 @@ async function openPreview(id) {
     document.getElementById("preview-overlay").classList.remove("hidden");
     document.getElementById("preview-close").focus();
     try {
-        const preview = await getDocumentPreview(id);
+        const preview = await load();
         document.getElementById("preview-title").textContent =
             preview.filename;
-        fillPreview(id, preview);
+        fillPreview(mediaUrl, preview);
     } catch (error) {
         closePreview();
         showToolbarMessage(error && error.code === "file_missing"
             ? t("files.not_found") : errorText(error), true);
     }
+}
+
+/** Preview a cataloged document. A missing file shows a toast. */
+function openPreview(id) {
+    return showPreview(() => getDocumentPreview(id), documentMediaUrl(id));
+}
+
+/** Preview a file by its path in the project, cataloged or not. */
+function openPreviewAt(path) {
+    return showPreview(() => getFilePreview(path), fileMediaUrl(path));
 }
 
 document.getElementById("preview-close")

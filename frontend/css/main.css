@@ -1245,6 +1245,8 @@ td.editable {
 
 /* Catalog and Plan: the header stays put, only the list scrolls. */
 #app-main.fixed-view {
+    display: flex;
+    flex-direction: column;
     height: calc(100vh - var(--topbar-height) - var(--frame-gap) * 3);
     min-height: 0;
     padding-bottom: 0;
@@ -1253,8 +1255,8 @@ td.editable {
 
 .fixed-view > .view:not(.hidden) {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    height: 100%;
     min-height: 0;
     padding-bottom: var(--spacing-12);
 }

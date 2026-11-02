@@ -16,8 +16,9 @@ auth_bp = Blueprint("auth", __name__)
 # The app needs these before login.
 PUBLIC_PATHS = ("/auth/status", "/auth/register", "/auth/login")
 
-# Recordings: the one route that takes the token in its URL.
-MEDIA_PATH = re.compile(r"/documents/\d+/media")
+# Recordings and small pictures: a player or an <img> cannot send headers,
+# so these routes alone take the token in their URL.
+MEDIA_PATH = re.compile(r"/documents/\d+/media|/browse/(media|thumb)")
 
 MAX_FAILED_ATTEMPTS = 5
 LOCK_SECONDS = 30

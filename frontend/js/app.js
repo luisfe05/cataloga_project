@@ -12,7 +12,17 @@ function showView(name) {
     });
     // In these two the header stays put and only the list scrolls.
     document.getElementById("app-main").classList
-        .toggle("fixed-view", ["catalog", "plan"].includes(name));
+        .toggle("fixed-view", ["home", "catalog", "plan"].includes(name));
+    document.getElementById("home-top").classList
+        .toggle("hidden", !["home", "catalog"].includes(name));
+    document.querySelectorAll("[data-home-tab]").forEach((tab) => {
+        tab.classList.toggle("on", tab.dataset.homeTab === name);
+    });
+    document.getElementById("home-views").style.visibility =
+        name === "home" ? "visible" : "hidden";
+    if (name === "home") {
+        loadHome();
+    }
     document.querySelectorAll(".nav-link").forEach((link) => {
         link.classList.toggle("active", link.dataset.view === name);
     });
@@ -24,6 +34,10 @@ function showView(name) {
         loadPlan();
     }
 }
+
+document.querySelectorAll("[data-home-tab]").forEach((tab) => {
+    tab.addEventListener("click", () => showView(tab.dataset.homeTab));
+});
 
 document.querySelectorAll(".nav-link").forEach((link) => {
     link.addEventListener("click", (event) => {
@@ -86,6 +100,7 @@ async function loadProjectHeader() {
     const title = document.getElementById("catalog-title");
     title.textContent = active ? active.name : t("header.no_project");
     title.title = title.textContent;
+    document.getElementById("home-title").textContent = title.textContent;
 }
 
 async function refreshAfterProjectChange() {
@@ -94,20 +109,21 @@ async function refreshAfterProjectChange() {
     await loadProjectHeader();
     await loadSettings();
     loadCatalog();
+    resetHome();
     if (!document.getElementById("view-dashboard")
             .classList.contains("hidden")) {
         loadDashboard();
     }
 }
 
-/** Switch to a project and open Catalog, or open the New project form. */
+/** Switch to a project and open Home, or open the New project form. */
 async function chooseProject(folder) {
     if (folder === NEW_PROJECT_OPTION) {
         showView("settings");
         startNewProject();
         return;
     }
-    // The active project is already loaded: just open Catalog.
+    // The active project is already loaded: just open Home.
     if (folder !== activeFolder) {
         try {
             await setActiveProject(folder);
@@ -116,7 +132,7 @@ async function chooseProject(folder) {
         }
         await refreshAfterProjectChange();
     }
-    showView("catalog");
+    showView("home");
 }
 
 // One listener for the list, because loadProjectHeader() redraws its buttons.
@@ -156,7 +172,7 @@ function enterApp() {
     // A new session starts with a closed, empty chat (chat.js).
     clearChat();
     toggleChat(false);
-    showView("catalog");
+    showView("home");
     loadProjectHeader();
     loadSettings();
     loadCatalog();
