@@ -173,6 +173,26 @@ td.media-type::before,
     -webkit-mask-image: url("../assets/icons/circle-help.svg");
 }
 
+.icon-home {
+    mask-image: url("../assets/icons/home.svg");
+    -webkit-mask-image: url("../assets/icons/home.svg");
+}
+
+.icon-list {
+    mask-image: url("../assets/icons/list.svg");
+    -webkit-mask-image: url("../assets/icons/list.svg");
+}
+
+.icon-grid {
+    mask-image: url("../assets/icons/layout-grid.svg");
+    -webkit-mask-image: url("../assets/icons/layout-grid.svg");
+}
+
+.icon-columns {
+    mask-image: url("../assets/icons/columns-3.svg");
+    -webkit-mask-image: url("../assets/icons/columns-3.svg");
+}
+
 .icon-plan {
     mask-image: url("../assets/icons/check-circle.svg");
     -webkit-mask-image: url("../assets/icons/check-circle.svg");

@@ -44,3 +44,15 @@ def test_old_inbox_warning_text():
         read_entries("en.js")["catalog.old_inbox_warning"]
     assert "Tu carpeta Inbox vieja todavía tiene" in \
         read_entries("es.js")["catalog.old_inbox_warning"]
+
+
+def test_the_icons_and_logomarks_the_screens_use_exist():
+    """Lucide icons with their license, and all six logomarks."""
+    assets = os.path.join(os.path.dirname(LANG_FOLDER), "..", "assets")
+    for name in ("home", "list", "layout-grid", "columns-3", "circle-help",
+                 "eye", "eye-off", "x", "LICENSE.txt"):
+        extension = "" if "." in name else ".svg"
+        assert os.path.isfile(os.path.join(assets, "icons", name + extension))
+    for number in range(1, 7):
+        assert os.path.isfile(os.path.join(
+            assets, "logomarks", "logomark-{}.svg".format(number)))
