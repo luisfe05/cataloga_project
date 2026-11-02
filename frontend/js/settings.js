@@ -94,10 +94,6 @@ function readNamingStyle() {
     return picked ? picked.value : "lower";
 }
 
-function readKeepAccents() {
-    return document.getElementById("keep-accents").checked;
-}
-
 /** "topic-name" as the chosen style writes it: "Topic-Name" for Title-Case. */
 function styledPart(text) {
     if (readNamingStyle() !== "title") {
@@ -208,7 +204,6 @@ function startNewProject() {
     showSavedTemplate(NAMING_METHODS.m4);
     document.querySelector('input[name="naming-style"][value="lower"]')
         .checked = true;
-    document.getElementById("keep-accents").checked = false;
     document.querySelector('input[name="stamp-order"][value="month"]')
         .checked = true;
     showCategories("", []);
@@ -617,8 +612,6 @@ async function loadSettings() {
             settings.stamp_date_order || "month"}"]`).checked = true;
         document.querySelector(`input[name="naming-style"][value="${
             settings.naming_style || "lower"}"]`).checked = true;
-        document.getElementById("keep-accents").checked =
-            Boolean(settings.keep_accents);
         updateNamingPreview();
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
@@ -692,7 +685,6 @@ async function saveSettings(event) {
                 naming_template: chosenTemplate(),
                 stamp_date_order: readStampOrder(),
                 naming_style: readNamingStyle(),
-                keep_accents: readKeepAccents(),
                 description: document.getElementById("project-description")
                     .value.trim(),
                 project_sheet: document.getElementById("project-sheet")
@@ -715,7 +707,6 @@ async function saveSettings(event) {
                 naming_template: chosenTemplate(),
                 stamp_date_order: readStampOrder(),
                 naming_style: readNamingStyle(),
-                keep_accents: readKeepAccents(),
                 project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 industry: document.getElementById("industry").value,

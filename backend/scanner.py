@@ -71,6 +71,27 @@ def file_stamp(path):
     return info.st_size, int(info.st_mtime)
 
 
+def already_read(repo, path, stamp):
+    """Say whether a file's row is good; if not, clear the way for a new one.
+
+    A catalog never has two rows for one path. A row whose index entry was
+    lost, or whose date changed with a copy, stays if the content is the same.
+    """
+    known = repo.index_get(path)
+    if known and (known["size"], known["mtime"]) == stamp:
+        return True
+    doc = repo.document_at(path)
+    if doc is not None and doc.sha256 and \
+            archive_rules.sha256_of(path) == doc.sha256:
+        repo.index_put(path, stamp[0], stamp[1], doc.id)
+        return True
+    if doc is not None:
+        repo.delete_document(doc.id)
+    if known:
+        repo.delete_document(known["document_id"])
+    return False
+
+
 class ScanJob:
     """The state of one scan, read by GET /scan and driven by a thread."""
 
@@ -157,14 +178,10 @@ def scan_folder(job, folder, repo, client, owner=None):
         job.current = os.path.relpath(path, folder)
         try:
             stamp = file_stamp(path)
-            known = repo.index_get(path)
-            # The same size and date: the file was read already.
-            if known and (known["size"], known["mtime"]) == stamp:
+            if already_read(repo, path, stamp):
                 job.done += 1
                 job.note_progress()
                 continue
-            if known:
-                repo.delete_document(known["document_id"])
             logger.info("reading %d/%d %s", number, job.total, job.current)
             document = pipeline.classify_within_limit(path)
             repo.index_put(path, stamp[0], stamp[1], document.id)
@@ -192,11 +209,8 @@ def read_new_files(folder, repo, client, owner=None):
     for path in find_files(folder):
         try:
             stamp = file_stamp(path)
-            known = repo.index_get(path)
-            if known and (known["size"], known["mtime"]) == stamp:
+            if already_read(repo, path, stamp):
                 continue
-            if known:
-                repo.delete_document(known["document_id"])
             logger.info("reading %s", os.path.relpath(path, folder))
             document = pipeline.classify_within_limit(path)
             repo.index_put(path, stamp[0], stamp[1], document.id)

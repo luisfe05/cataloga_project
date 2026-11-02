@@ -70,18 +70,13 @@ DATE_PATTERN = re.compile(r"^\d{4}(-\d{2}(-\d{2})?)?$")
 TOKEN_PATTERN = re.compile(r"\{([^{}]*)\}")
 
 
-def slugify(text, max_length=MAX_TOPIC_LENGTH, style=DEFAULT_STYLE,
-            keep_accents=False):
+def slugify(text, max_length=MAX_TOPIC_LENGTH, style=DEFAULT_STYLE):
     """Turn text into a short slug with hyphens: topic-name or Topic-Name."""
     if not text:
         return ""
-    if keep_accents:
-        # NFC keeps 'í' as one character.
-        text = unicodedata.normalize("NFC", str(text))
-    else:
-        # NFKD splits 'í' into 'i' + accent; encode drops the accent.
-        text = unicodedata.normalize("NFKD", str(text))
-        text = text.encode("ascii", "ignore").decode("ascii")
+    # NFKD splits 'í' into 'i' + accent; encode drops the accent.
+    text = unicodedata.normalize("NFKD", str(text))
+    text = text.encode("ascii", "ignore").decode("ascii")
     # Every run of other characters becomes one hyphen.
     words = [w for w in re.split(r"[^0-9A-Za-z\u00C0-\u024F]+", text) if w]
     if style == "title":
@@ -140,15 +135,14 @@ def next_event_number(folder, event):
 
 def build_parts(original_filename, number, document_date=None,
                 source=None, topic=None, topic_number=1,
-                style=DEFAULT_STYLE, keep_accents=False, event=None,
+                style=DEFAULT_STYLE, event=None,
                 event_number=None):
     """Prepare the value of every template part."""
-    original = slugify(os.path.splitext(original_filename)[0],
-                       style=style, keep_accents=keep_accents)
+    original = slugify(os.path.splitext(original_filename)[0], style=style)
     return {
         "date": clean_date(document_date),
-        "source": slugify(source, MAX_SOURCE_LENGTH, style, keep_accents),
-        "topic": slugify(topic, style=style, keep_accents=keep_accents)
+        "source": slugify(source, MAX_SOURCE_LENGTH, style),
+        "topic": slugify(topic, style=style)
         or original or "untitled",
         "number": "{:04d}".format(number),
         # 3 digits; the 1000th file of a topic simply gets 4.

@@ -794,7 +794,6 @@ class ClassificationPipeline:
             return original_filename
         number = self.db.next_number()
         style = self.db.get_naming_style()
-        keep_accents = self.db.keep_accents()
         # The disk date changes when files are copied, so it is left out.
         name_date = None if date_source == "file" else \
             metadata["document_date"]
@@ -826,13 +825,13 @@ class ClassificationPipeline:
                 source=metadata["source"],
                 topic=metadata["topic"],
                 topic_number=topic_number,
-                style=style, keep_accents=keep_accents,
+                style=style,
                 event=event, event_number=event_number)
         else:
             template = naming.NO_TEXT_TEMPLATE
             parts = naming.build_parts(original_filename, number,
                                        document_date=name_date,
-                                       style=style, keep_accents=keep_accents)
+                                       style=style)
         return naming.fit_path(folder, template, parts, extension)
 
     def regenerate_summary(self, document):

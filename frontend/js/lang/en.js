@@ -324,8 +324,6 @@ const LANG_EN = {
 
     // Settings: file names
     "naming.title": "File names",
-    "naming.hint": "Choose how Cataloga names new files. Files already in "
-        + "the catalog keep their names.",
     "naming.m1": "Date and topic",
     "naming.m1_example": "date_topic-name.pdf",
     "naming.m2": "Source, date and topic",
@@ -344,22 +342,12 @@ const LANG_EN = {
     "naming.stamp_order": "Dates stamped on photos",
     "naming.stamp_month": "Month first (11 13 '97)",
     "naming.stamp_day": "Day first (13 11 97)",
-    "naming.photo_date_rule": "A photo's date comes from the date printed or "
-        + "written on it, then from a camera's EXIF (a scanner's EXIF is "
-        + "the day of the scan), then from a year in its name or folder.",
-    "naming.media_rule": "Photos are named with this method from what they "
-        + "show, and audio and video from the title in their tags. Files "
-        + "with nothing to read use their date and a number, for example "
-        + "2026-07-15_0001.jpg, or only the number when no date is known.",
-    "naming.duplicate_rule": "Without a reliable date the name has no date "
-        + "part. If a name already exists, the new file gets _2, _3 and so "
-        + "on; the first one keeps its name.",
-    "naming.version_rule": "A version mark in the original name (v01, v02) "
-        + "stays at the end of the new name.",
-    "naming.path_rule": "Names are shortened so the full path stays under "
-        + "240 characters, the Windows limit.",
+    "naming.help_names": "Choose how Cataloga names new files; names already there stay. Accents are dropped, and a version mark stays at the end. Photos are named from what they show. Example: Niña de la Playa v02 becomes nina-de-la-playa_v02.jpg.",
+    "naming.help_style": "How the words of a name look. Example: topic-name, or Topic-Name.",
+    "naming.help_repeats": "Without a reliable date the name has no date part. A name already taken gets _2, _3, and names stay under 240 characters. Example: carta.pdf, then carta_2.pdf.",
+    "naming.help_dates": "A photo's date comes from what is printed on it, then a camera's EXIF, then a year in its name or folder. This says how to read a stamp. Example: 11 13 '97 is 1997-11-13.",
+    "help.open": "Help",
     "naming.style": "Style",
-    "naming.keep_accents": "Keep accents (Día, not Dia)",
     "naming.changed_note": "Only new files will use this method.",
     "naming.blocks_add": "Click the parts in order",
     "naming.chosen": "Your file name",

@@ -2,7 +2,6 @@
 
 import os
 import re
-import unicodedata
 
 from backend.pipeline import folder_tree, naming
 from backend.scanner import SKIPPED_FILES, SKIPPED_FOLDERS
@@ -78,18 +77,13 @@ def mark_tree(tree):
     return tree
 
 
-def has_accents(text):
-    """Say whether a name carries accented letters."""
-    return unicodedata.normalize("NFKD", text) != text
-
-
 def detect_naming(names):
-    """Say how the files are named: style, accents, separator, pattern."""
+    """Say how the files are named: style, separator, pattern."""
     stems = [os.path.splitext(name)[0] for folder, name in names
              if not folder_tree.safe_folder_name(name) == ""]
     stems = [s for s in stems if len(s) > 3]
     if not stems:
-        return {"naming_style": naming.DEFAULT_STYLE, "keep_accents": False,
+        return {"naming_style": naming.DEFAULT_STYLE,
                 "naming_template": naming.NEW_PROJECT_TEMPLATE,
                 "event_numbering": False, "examples": [],
                 "description": "No files to learn from."}
@@ -97,7 +91,6 @@ def detect_naming(names):
              if w and w[0].isalpha()]
     title = bool(words) and \
         sum(1 for w in words if w[0].isupper()) * 2 > len(words)
-    accents = sum(1 for s in stems if has_accents(s)) * 2 > len(stems)
     event_numbered = sum(1 for s in stems if EVENT_FILE.match(s))
     date_first = sum(1 for s in stems if DATE_FIRST.match(s))
     examples = [name for folder, name in names][:MAX_EXAMPLES]
@@ -113,10 +106,9 @@ def detect_naming(names):
         template = naming.KEEP_NAMES
         description = "Names that are kept as they are."
     style = "title" if title else "lower"
-    description += " Words in {}{}.".format(
-        "Title-Case" if title else "lowercase",
-        " with accents" if accents else "")
-    return {"naming_style": style, "keep_accents": accents,
+    description += " Words in {}.".format(
+        "Title-Case" if title else "lowercase")
+    return {"naming_style": style,
             "naming_template": template,
             "event_numbering": event_numbered * 2 > len(stems),
             "examples": examples, "description": description}

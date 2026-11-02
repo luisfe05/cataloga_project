@@ -146,6 +146,16 @@ class CatalogRepository:
             conn.close()
         return [row_to_document(row) for row in rows]
 
+    def document_at(self, file_path):
+        """Return the document saved for a path, or None."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute("SELECT * FROM documents WHERE file_path = ?",
+                               (file_path,)).fetchone()
+        finally:
+            conn.close()
+        return row_to_document(row) if row else None
+
     def has_file_path(self, file_path):
         """Return True if a document with this file_path is already saved."""
         conn = get_connection(self.db_path)
@@ -976,11 +986,6 @@ class CatalogRepository:
         config = self.get_app_config() or {}
         style = config.get("naming_style")
         return style if style in naming.STYLES else naming.DEFAULT_STYLE
-
-    def keep_accents(self):
-        """Say whether file names keep their accents."""
-        config = self.get_app_config() or {}
-        return bool(config.get("keep_accents"))
 
     def stamp_date_order(self):
         """Return 'month' or 'day': how a photo's date stamp reads."""

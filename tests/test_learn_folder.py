@@ -57,7 +57,7 @@ def test_the_naming_of_the_photo_archive(tmp_path):
     """Title-Case words, _ between parts, event name, year and a number."""
     result = learn_folder.learn(str(delfin(tmp_path / "p")))
     assert result["naming_style"] == "title"
-    assert result["keep_accents"] is False
+    assert "keep_accents" not in result
     assert result["event_numbering"] is True
     assert result["naming_template"] == naming.EVENT_TEMPLATE
     assert "event folder and a number" in result["description"]
@@ -80,14 +80,14 @@ def test_date_first_names(tmp_path):
 
 
 def test_lowercase_names_with_accents(tmp_path):
-    """notas-del-día.txt: lowercase, accents kept."""
+    """notas-del-día.txt: lowercase; accents are not learned."""
     root = tmp_path / "web"
     (root / "notas").mkdir(parents=True)
     for name in ("notas-del-día.txt", "guión-rodaje.txt", "año-uno.txt"):
         (root / "notas" / name).write_text("x")
     result = learn_folder.learn(str(root))
     assert result["naming_style"] == "lower"
-    assert result["keep_accents"] is True
+    assert "keep_accents" not in result
 
 
 def test_nothing_on_disk_changes(tmp_path):
@@ -147,8 +147,7 @@ def test_learned_tree_creates_a_project_without_touching_folders(
         "name": "Delfin", "folder": str(root), "folder_mode": "place",
         "folders": learned["folder_tree"],
         "naming_template": learned["naming_template"],
-        "naming_style": learned["naming_style"],
-        "keep_accents": learned["keep_accents"]})
+        "naming_style": learned["naming_style"]})
     assert response.status_code == 201
     settings = empty_client.get("/settings").get_json()
     assert folder_tree.node_at(settings["folder_tree"],
