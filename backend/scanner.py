@@ -35,6 +35,9 @@ STATUSES = ("idle", "running", "paused", "done", "stopped", "unread")
 SCAN_RUNNING = "running"
 SCAN_DONE = "done"
 
+# How many file names the AI sees to suggest the folders of a new project.
+MAX_NAMES_FOR_TREE = 60
+
 # With no file finished in this time, the scan pauses and says so. A file
 # that timed out does not count: an AI that is down stops the scan here.
 STALL_SECONDS = 5 * 60
@@ -157,6 +160,37 @@ class ScanJob:
         self.resume_event.set()
 
 
+def folder_facts(folder):
+    """Count a folder's files and subfolders, and how much they weigh."""
+    files = find_files(folder)
+    folders = 0
+    for current, dirs, names in os.walk(os.path.realpath(folder)):
+        dirs[:] = [d for d in dirs if not d.startswith(".") and
+                   d not in SKIPPED_FOLDERS and
+                   not os.path.islink(os.path.join(current, d))]
+        folders += len(dirs)
+    return {"files": len(files), "folders": folders,
+            "size": sum(os.path.getsize(path) for path in files)}
+
+
+def suggest_tree_if_empty(repo, folder, files, client):
+    """A project made with Later may have no folders yet: ask the AI once."""
+    if not repo.is_tree_project() or repo.get_folder_tree():
+        return
+    config = repo.get_app_config() or {}
+    names = [os.path.basename(path) for path in files[:MAX_NAMES_FOR_TREE]]
+    description = "{}. {} Some files: {}".format(
+        config.get("research_name") or os.path.basename(folder),
+        config.get("project_description") or "", ", ".join(names))
+    try:
+        tree = folder_tree.parse_tree_answer(
+            client.send_folders_request(description))
+        if tree:
+            repo.save_tree(tree)
+    except (ValueError, OSError) as error:
+        logger.warning("could not suggest folders: %s", error)
+
+
 def scan_folder(job, folder, repo, client, owner=None):
     """Read every new or changed file of a folder in place, one by one."""
     files = find_files(folder)
@@ -165,6 +199,7 @@ def scan_folder(job, folder, repo, client, owner=None):
     job.done = 0
     # Saved in the catalog: a closed app leaves it as "running".
     repo.save_config_value("scan_state", SCAN_RUNNING)
+    suggest_tree_if_empty(repo, folder, files, client)
     # A job that starts paused waits for Resume before its first file.
     if job.status != "paused":
         job.status = "running"

@@ -94,8 +94,11 @@ def create_project():
                         "opened_existing": True}), 201
 
     catalog_only = body.get("catalog_only") is True
+    # Later: the folder is only listed. Its tree can come with Learn from my
+    # folder, or from the AI when the reading starts.
+    later = body.get("defer_scan") is True
     tree = []
-    if not catalog_only:
+    if not catalog_only and not (later and not body.get("folders")):
         # Every new project files documents in its own folder tree.
         try:
             tree = folder_tree.check_tree(body.get("folders"))
@@ -107,7 +110,7 @@ def create_project():
 
     # Read in place or Catalog only: the folder's files are expected, and
     # nothing is made.
-    in_place = body.get("folder_mode") == folder_tree.PLACE_MODE
+    in_place = later or body.get("folder_mode") == folder_tree.PLACE_MODE
     existing = 0 if (in_place or catalog_only) \
         else organizer.count_existing_items(tree)
     if existing and body.get("confirm_folder") is not True:
@@ -134,7 +137,10 @@ def create_project():
         new_repo.save_naming_template(template)
         if body.get("naming_style") in naming.STYLES:
             new_repo.save_config_value("naming_style", body["naming_style"])
-        new_repo.save_folder_tree(description, tree)
+        if tree:
+            new_repo.save_folder_tree(description, tree)
+        else:
+            new_repo.save_config_value("project_description", description)
         if in_place:
             new_repo.save_config_value("folder_mode", folder_tree.PLACE_MODE)
         if numbered:
@@ -151,7 +157,7 @@ def create_project():
     if server_url:
         new_repo.save_config_value("server_url", server_url)
     projects.add_project(projects_path(), name, folder)
-    if in_place or catalog_only:
+    if (in_place or catalog_only) and not later:
         # Reading starts now; the Catalog shows how far it is.
         scanner.start_scan(current_app._get_current_object(),
                            projects_path(), session_user() or None)
@@ -204,6 +210,46 @@ def learn_folder():
                               "This folder has no subfolders to learn from.",
                               400)
     return jsonify(result), 200
+
+
+@projects_bp.route("/projects/folders/list", methods=["POST"])
+def list_folder():
+    """Count what a folder holds. No AI, and nothing is written."""
+    body = request.get_json(silent=True)
+    folder = body.get("folder") if isinstance(body, dict) else None
+    if not isinstance(folder, str) or not folder.strip():
+        return error_response("missing_field", "folder is required.", 400)
+    folder = projects.normalize_folder(folder)
+    if not os.path.isdir(folder):
+        return error_response("invalid_directory",
+                              "The folder does not exist: " + folder, 400)
+    return jsonify(dict(scanner.folder_facts(folder),
+                        has_catalog=os.path.isfile(
+                            projects.catalog_path(folder)))), 200
+
+
+@projects_bp.route("/projects/active/learn", methods=["POST"])
+def learn_active_project():
+    """Use the tree and the names of the active project's own folder."""
+    folder = projects.active_folder(projects_path())
+    if project_status(folder) != "ok":
+        return error_response("no_project", "There is no open project.", 409)
+    repo = CatalogRepository(projects.catalog_path(folder))
+    if repo.is_catalog_project():
+        return error_response("catalog_only",
+                              "This project keeps its files as they are.",
+                              409)
+    result = learn_folder_module.learn(folder)
+    if not result["folder_tree"]:
+        return error_response("nothing_to_learn",
+                              "This folder has no subfolders to learn from.",
+                              400)
+    repo.save_tree(result["folder_tree"])
+    repo.save_naming_template(result["naming_template"])
+    repo.save_config_value("naming_style", result["naming_style"])
+    return jsonify({"description": result["description"],
+                    "folders": result["folders"],
+                    "files": result["files"]}), 200
 
 
 @projects_bp.route("/projects/folders/inspect", methods=["POST"])

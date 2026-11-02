@@ -773,9 +773,67 @@ async function browseFolder() {
     const folder = await window.pywebview.api.choose_folder();
     if (folder) {
         document.getElementById("target-directory").value = folder;
-        adviseOnFolder();
+        await adviseOnFolder();
         resetFolderWarning();
+        askAboutNewFolder();
     }
+}
+
+/** The folder of a project read in place: list it, then ask now or later. */
+async function askAboutNewFolder() {
+    const folder = document.getElementById("target-directory").value.trim();
+    const mode = document.querySelector('input[name="folder-mode"]:checked');
+    if (projectMode !== "new" || !folder || mode.value !== "place") {
+        return;
+    }
+    let facts;
+    try {
+        facts = await listNewFolder(folder);
+    } catch (error) {
+        return;
+    }
+    if (facts.has_catalog) {
+        // Already a project: it opens as it is, with nothing to ask.
+        finishNewProject(false);
+        return;
+    }
+    document.getElementById("ask-files").textContent = facts.files;
+    document.getElementById("ask-folders").textContent = facts.folders;
+    document.getElementById("ask-size").textContent = humanSize(facts.size);
+    document.getElementById("ask-message").textContent = "";
+    document.getElementById("ask-overlay").classList.remove("hidden");
+    document.getElementById("ask-now").focus();
+}
+
+/** Make the project from what the form has, and read it now or not. */
+async function finishNewProject(readNow) {
+    const folder = document.getElementById("target-directory").value.trim();
+    const typed = document.getElementById("research-name").value.trim();
+    const parts = folder.split("/").filter(Boolean);
+    try {
+        await createProject({
+            name: typed || parts[parts.length - 1],
+            folder: folder,
+            defer_scan: true,
+            naming_template: chosenTemplate(),
+            stamp_date_order: readStampOrder(),
+            naming_style: readNamingStyle(),
+            description: document.getElementById("project-description")
+                .value.trim(),
+            folders: readFolderTree(),
+            catalog_only: document.getElementById("catalog-only").checked,
+        });
+        if (readNow) {
+            await controlScan("start");
+        }
+    } catch (error) {
+        document.getElementById("ask-message").textContent = errorText(error);
+        document.getElementById("ask-overlay").classList.remove("hidden");
+        return;
+    }
+    document.getElementById("ask-overlay").classList.add("hidden");
+    await refreshAfterProjectChange();
+    showView("home");
 }
 
 /** Apply and save the language; reload the views so JS-built text changes too. */
@@ -838,7 +896,10 @@ Object.keys(PROVIDER_ROWS).forEach((role) => {
 document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
 document.getElementById("target-directory")
-    .addEventListener("change", adviseOnFolder);
+    .addEventListener("change", async () => {
+        await adviseOnFolder();
+        askAboutNewFolder();
+    });
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 document.getElementById("suggest-sheet")
@@ -861,3 +922,16 @@ document.querySelectorAll('input[name="naming-separator"]')
     });
 
 // startApp() in app.js calls fillProviders() and loadSettings() after the language loads.
+
+document.getElementById("ask-later").addEventListener("click", () => {
+    finishNewProject(false);
+});
+document.getElementById("ask-now").addEventListener("click", () => {
+    finishNewProject(true);
+});
+// Esc goes back to the form, for those who want to fill it in first.
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        document.getElementById("ask-overlay").classList.add("hidden");
+    }
+});

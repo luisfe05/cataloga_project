@@ -161,6 +161,23 @@
             </div>
         </div>
 
+        <!-- The folder's reading, in every state: Home and Catalog list. -->
+        <section class="folder-banner hidden" id="scan-status">
+            <p><b id="scan-title"></b><span id="scan-text"></span></p>
+            <button type="button" class="banner-button line hidden"
+                    id="scan-learn"
+                    data-i18n="banner.learn">Learn from my folder</button>
+            <button type="button" class="banner-button violet hidden"
+                    id="scan-catalog"
+                    data-i18n="banner.catalog_now">Catalog now</button>
+            <button type="button" class="banner-button line hidden"
+                    id="scan-pause" data-i18n="scan.pause">Pause</button>
+            <button type="button" class="banner-button violet hidden"
+                    id="scan-resume" data-i18n="scan.resume">Resume</button>
+            <button type="button" class="banner-button line hidden"
+                    id="scan-retry"></button>
+        </section>
+
         <!-- Home: the project's folders and files, like Finder (home.js). -->
         <div id="view-home" class="view">
             <div class="home-head">
@@ -214,20 +231,6 @@
                     </div>
                 </section>
             </div>
-
-            <!-- Reading the folder in place: its own line, under the title. -->
-            <section class="scan-status hidden" id="scan-status">
-                <p id="scan-text"></p>
-                <button type="button" class="primary-button hidden"
-                        id="scan-catalog"
-                        data-i18n="scan.catalog_files">Catalog files</button>
-                <button type="button" class="pill-button" id="scan-pause"
-                        data-i18n="scan.pause">Pause</button>
-                <button type="button" class="pill-button hidden"
-                        id="scan-resume" data-i18n="scan.resume">Resume</button>
-                <button type="button" class="pill-button hidden"
-                        id="scan-retry"></button>
-            </section>
 
             <!-- Tabs, filters, Download, and Edit Mode. The search is in the top bar. -->
             <div class="filter-row">
@@ -895,6 +898,32 @@
 
         <!-- Toast, outside the views so it shows on any screen. catalog.js clears it. -->
         <p class="toolbar-message" id="toolbar-message"></p>
+
+    <!-- A new project's folder was only listed: read it now, or later. -->
+    <div class="ask-overlay hidden" id="ask-overlay">
+        <div class="ask-box" role="dialog" aria-modal="true"
+             aria-labelledby="ask-title">
+            <h2 id="ask-title" data-i18n="ask.title">Catalog this folder now?</h2>
+            <p data-i18n="ask.found">Cataloga found this folder. Nothing has
+                been read or sent to the AI yet.</p>
+            <div class="ask-facts">
+                <div><strong id="ask-files">0</strong>
+                    <span data-i18n="ask.files">files</span></div>
+                <div><strong id="ask-folders">0</strong>
+                    <span data-i18n="ask.folders">folders</span></div>
+                <div><strong id="ask-size">0</strong>
+                    <span data-i18n="ask.total">total</span></div>
+            </div>
+            <p class="ask-note" data-i18n="ask.note"></p>
+            <p class="form-message error" id="ask-message"></p>
+            <div class="ask-actions">
+                <button type="button" class="banner-button line" id="ask-later"
+                        data-i18n="ask.later">Later</button>
+                <button type="button" class="banner-button violet" id="ask-now"
+                        data-i18n="banner.catalog_now">Catalog now</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Preview of a file, inside the app so it shows in a screen recording. -->
     <div class="preview-overlay hidden" id="preview-overlay" role="dialog"
