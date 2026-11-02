@@ -177,6 +177,16 @@ async function runPlan(action, batchId) {
     return handleResponse(response);
 }
 
+/** PUT /plan/leave: mark a folder Leave as is, or unmark it. */
+async function setLeaveAlone(folder, leave) {
+    const response = await apiFetch(`${BASE_URL}/plan/leave`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder, leave: leave }),
+    });
+    return handleResponse(response);
+}
+
 /** GET /plan/progress: how far the running batch is. */
 async function getPlanProgress() {
     const response = await apiFetch(`${BASE_URL}/plan/progress`);

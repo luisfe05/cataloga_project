@@ -1,5 +1,7 @@
 """Folder tree of a project: folders inside folders, chosen by the user."""
 
+import os
+
 import json
 import re
 import unicodedata
@@ -42,8 +44,9 @@ SEPARATOR = "/"
 
 # Marks a folder can carry. events: holds Event_Year folders (PR 11).
 # fallback: the catch-all for what fits nowhere. auto_apply: new files
-# in it move without asking (PR 13).
-FLAGS = ("events", "fallback", "auto_apply")
+# in it move without asking (PR 13). leave: files in it are cataloged but
+# never proposed a move or a new name (PR 12).
+FLAGS = ("events", "fallback", "auto_apply", "leave")
 
 # Folders that are a catch-all by their name, when none is marked.
 CATCH_ALL_NAMES = ("sin tema", "sin_tema", "sin-tema", "otros", "otro",
@@ -328,6 +331,38 @@ def event_parent(tree, text):
     if parent is None or not node_at(tree, parent).get("events"):
         return None
     return parent
+
+
+def left_alone(tree, place):
+    """Say whether a place, or a folder above it, is marked Leave as is."""
+    nodes = tree
+    for part in split_path(place or ""):
+        found = find_node(nodes, part)
+        if found is None:
+            return False
+        if found.get("leave"):
+            return True
+        nodes = children_of(found)
+    return False
+
+
+def event_for_name(tree, filename):
+    """Return the event folder whose name starts the file's name, or None.
+
+    Juegos-Nacionales_1997_7.tif belongs in Juegos-Nacionales_1997.
+    """
+    stem = os.path.splitext(os.path.basename(str(filename or "")))[0].lower()
+    best = None
+    for events_folder in event_places(tree):
+        node = node_at(tree, events_folder)
+        for child in children_of(node):
+            name = child["name"].lower()
+            if stem == name or (stem.startswith(name) and
+                                stem[len(name)] in "_- ."):
+                place = join_path([events_folder, child["name"]])
+                if best is None or len(name) > len(split_path(best)[-1]):
+                    best = place
+    return best
 
 
 def event_of(tree, place):

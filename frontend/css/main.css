@@ -1160,8 +1160,14 @@ td.editable {
     color: var(--color-violet);
 }
 
-.plan-batches li .pill-button {
+.plan-batches li .pill-button,
+.plan-batches li .plan-leave {
     margin-left: auto;
+}
+
+.plan-folders ul {
+    max-height: 320px;
+    overflow-y: auto;
 }
 
 /* Only the table scrolls sideways when long file names do not fit. */

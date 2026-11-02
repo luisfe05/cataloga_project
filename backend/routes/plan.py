@@ -65,10 +65,14 @@ def batch_view(repo, plan, batch_id):
     batch = repo.get_batch(batch_id)
     items = repo.get_items(batch_id)
     docs = {doc.id: doc for doc in repo.get_all_documents()}
+    tree = repo.get_folder_tree() or []
     return {"batch": batch, "summary": plan.summary(batch_id),
             "rows": [row_of(repo, item, docs) for item in items],
             "unchanged": unchanged_rows(docs, items),
-            "folders": folder_tree.all_places(repo.get_folder_tree() or [])}
+            "folders": folder_tree.all_places(tree),
+            "tree_folders": [{"path": path,
+                              "leave": folder_tree.left_alone(tree, path)}
+                             for path in folder_tree.all_paths(tree)]}
 
 
 def batch_list(repo, plan):
@@ -97,14 +101,41 @@ def get_plan():
         return jsonify({"mode": repo.folder_mode(),
                         "message": "This project has no plan."}), 200
     plan = plan_for(repo)
-    # A batch cut short by a crash is settled before anything else.
+    # A batch cut short by a crash is settled before anything else. The
+    # draft is rebuilt so folders made or removed since show up; choices
+    # already made are kept. While a batch runs, the draft stays as it is.
     if not organization_plan.is_busy():
         plan.recover()
-    view = batch_view(repo, plan, plan.draft())
+        batch_id = plan.build()
+    else:
+        batch_id = plan.draft()
+    view = batch_view(repo, plan, batch_id)
     view.update({"mode": repo.folder_mode(),
                  "busy": organization_plan.is_busy(),
                  "batches": batch_list(repo, plan)})
     return jsonify(view), 200
+
+
+@plan_bp.route("/plan/leave", methods=["PUT"])
+def leave_folder():
+    """Mark a folder Leave as is, or unmark it: {"folder", "leave"}."""
+    repo, plan, error = ready_repo()
+    if error:
+        return error
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or not isinstance(
+            body.get("folder"), str) or not isinstance(
+            body.get("leave"), bool):
+        return error_response("missing_field",
+                              "folder and leave are required.", 400)
+    tree = folder_tree.copy_tree(repo.get_folder_tree() or [])
+    node = folder_tree.node_at(tree, body["folder"])
+    if node is None:
+        return error_response("unknown_folder",
+                              "This folder is not in the project.", 400)
+    node["leave"] = body["leave"]
+    repo.save_tree(tree)
+    return jsonify(batch_view(repo, plan, plan.build())), 200
 
 
 @plan_bp.route("/plan/items", methods=["PUT"])

@@ -482,6 +482,7 @@ class ClassificationPipeline:
             if media_type is None:
                 media_type = metadata["media_type"]
             self.apply_printed_facts(metadata)
+            self.apply_name_match(file_path, metadata)
             if kind in ("Audio", "Video") and not heard:
                 # The date of a recording comes from its tags, below.
                 metadata["document_date"] = None
@@ -524,10 +525,14 @@ class ClassificationPipeline:
             new_path = file_path
             place = self.file_organizer.place_of(folder)
             here = self.file_organizer.place_of(os.path.dirname(file_path))
+            tree = self.db.get_folder_tree() or []
             if place != here:
                 proposed_folder = place
+            # A folder marked Leave as is: cataloged, never proposed a move.
+            if folder_tree.left_alone(tree, here):
+                proposed_folder = None
+                new_filename = original_filename
             # The row says where the file is; the AI's folder is a proposal.
-            tree = self.db.get_folder_tree() or []
             metadata["folder_path"] = folder_tree.canonical_path(
                 tree, here) or here or None
             metadata["category"], metadata["subcategory"] = \
@@ -634,6 +639,22 @@ class ClassificationPipeline:
         if length:
             return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
         return archive_rules.MEDIA_NOTE
+
+    def apply_name_match(self, file_path, metadata):
+        """A name that starts with an event folder's name belongs there."""
+        if not self.db.is_tree_project():
+            return
+        tree = self.db.get_folder_tree() or []
+        place = folder_tree.event_for_name(tree, file_path)
+        if place is None:
+            return
+        folder, subfolder = folder_tree.first_two(place)
+        metadata.update({"folder_path": place, "category": folder,
+                         "subcategory": subfolder, "suggested_folder": None,
+                         "confidence": "high",
+                         "folder_reason": archive_rules.NAME_MATCH_REASON})
+        if metadata["review_note"] == folder_tree.NO_FOLDER_NOTE:
+            metadata["review_note"] = None
 
     def apply_printed_facts(self, metadata):
         """What is printed on a page beats what the AI made of it."""
