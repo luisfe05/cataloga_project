@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 # Everything for one file: reading, every AI call, every retry.
 FILE_SECONDS = 120
+# Audio and video: the recording is listened to, or uploaded first.
+MEDIA_SECONDS = 300
 # One AI call. A whole file took 3 s (median) and 12 s (slowest) in real use.
 CALL_SECONDS = 60
 # A retry with less time than this left has no chance of finishing.

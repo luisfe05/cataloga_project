@@ -134,10 +134,15 @@ def stamp_date(text, order=DEFAULT_STAMP_ORDER):
     if found:
         return "{}-{:02d}-{:02d}".format(found.group(1), int(found.group(2)),
                                          int(found.group(3)))
-    # 13 nov 97, nov 13 1997, noviembre de 1997.
-    found = re.search(r"(?:(\d{1,2})\s*)?([a-z]{3})[a-z]*\.?\s*(?:de\s*)?"
-                      r"(\d{1,2}(?=\D)\s*)?(\d{2,4})\b", text)
-    if found and found.group(2) in MONTHS:
+    # 13 nov 97, nov 13 1997, noviembre de 1997, 19 de julio de 2006,
+    # july 19, 2006. A four-digit year wins over a two-digit day.
+    # Only a real month name counts, so the day of the week ("jueves, 03
+    # de agosto") cannot take the day with it.
+    found = re.search(
+        r"(?:(\d{1,2})\s*(?:de\s*)?)?\b(" + "|".join(MONTHS) +
+        r")[a-z]*\.?,?\s*(?:de\s*)?(?:(\d{1,2})(?!\d)(?:st|nd|rd|th)?,?\s*)?"
+        r"((?:18|19|20)\d{2}|\d{2})\b", text)
+    if found:
         day = found.group(1) or found.group(3)
         year = full_year(found.group(4))
         month = MONTHS[found.group(2)]

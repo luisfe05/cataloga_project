@@ -352,9 +352,13 @@ class ClassificationPipeline:
         left behind can no longer write anything.
         """
         started = time.monotonic()
+        extension = os.path.splitext(file_path)[1].lower()
+        # A recording is listened to, or uploaded: it gets more time.
+        seconds = time_budget.MEDIA_SECONDS if EXTENSION_MEDIA_TYPES.get(
+            extension) in ("Audio", "Video") else time_budget.FILE_SECONDS
         try:
             document = time_budget.run_limited(
-                lambda: self.classify_document(file_path))
+                lambda: self.classify_document(file_path), seconds)
         except time_budget.TimedOut as error:
             logger.warning("timed out after %.0fs in step %s: %s",
                            time.monotonic() - started, error,
@@ -367,6 +371,7 @@ class ClassificationPipeline:
     def classify_document(self, file_path):
         """Run the full pipeline on a single file."""
         self.reading.cut_off = False
+        self.reading.source = self.reading.printed_date = None
         original_filename = os.path.basename(file_path)
         date_added = now_timestamp()
         extension = os.path.splitext(file_path)[1].lower()
@@ -470,6 +475,7 @@ class ClassificationPipeline:
                                       content)
             if media_type is None:
                 media_type = metadata["media_type"]
+            self.apply_printed_facts(metadata)
             if kind in ("Audio", "Video") and not heard:
                 # The date of a recording comes from its tags, below.
                 metadata["document_date"] = None
@@ -592,6 +598,19 @@ class ClassificationPipeline:
             return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
         return archive_rules.MEDIA_NOTE
 
+    def apply_printed_facts(self, metadata):
+        """What is printed on a page beats what the AI made of it."""
+        source = getattr(self.reading, "source", None)
+        if source:
+            # Folio lines are in capitals: El Nuevo Dia, not EL NUEVO DIA.
+            metadata["source"] = source.title() if source.isupper() \
+                else source
+        printed = archive_rules.stamp_date(
+            getattr(self.reading, "printed_date", None),
+            self.db.stamp_date_order())
+        if printed and len(printed) == 10:
+            metadata["document_date"] = printed
+
     def ask_images(self, image_uris, prompt):
         """Ask about images; if the answer was cut off, ask for less."""
         answer = self.ai_client.ask_about_images(image_uris, prompt)
@@ -643,6 +662,15 @@ class ClassificationPipeline:
         description = archive_rules.clean_text(result.get("description"), 500)
         if not found and not description:
             return ""
+        # The short answer names the publication and the printed date. They
+        # go to the AI as text, and they also decide the card below.
+        for field, label in (("source", "Publication printed on the page"),
+                             ("printed_date", "Date printed on the page")):
+            value = archive_rules.clean_text(result.get(field), 200)
+            if value and value.lower() != "null":
+                description = "{} {}: {}.".format(
+                    description or "", label, value).strip()
+                setattr(self.reading, field, value)
         # The summary and metadata prompts then read this like a document.
         if kind == "photo":
             # Without this, the AI often finds no topic in a photo.

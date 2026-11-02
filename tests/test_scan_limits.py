@@ -234,6 +234,76 @@ def test_a_cut_off_answer_asks_for_a_description(tmp_path, monkeypatch):
     assert doc.status == "Classified" and doc.summary
 
 
+def test_the_short_answer_names_the_publication_and_the_date(
+        tmp_path, monkeypatch):
+    """What the card prompt reads says the publication and printed date."""
+    path = scanned_pdf(tmp_path / "p", monkeypatch)
+    repo = place_project(tmp_path / "p")
+    ai = ImageAI(['{"text": "cut', '{"text": null, "description": "A page '
+                  'on a swim meet.", "source": "El Nuevo Dia", '
+                  '"printed_date": "19 de julio de 2006"}'])
+    seen = []
+    original = ai.send_prompt
+
+    def record(system_prompt, text):
+        seen.append(text)
+        return original(system_prompt, text)
+
+    ai.send_prompt = record
+    doc = pipeline_for(tmp_path / "p", repo, ai).classify_document(str(path))
+    assert "Publication printed on the page: El Nuevo Dia." in seen[0]
+    assert "Date printed on the page: 19 de julio de 2006." in seen[0]
+    # Whatever the card says, the page decides the source and the date.
+    assert doc.source == "El Nuevo Dia"
+    assert doc.document_date == "2006-07-19"
+    assert "folio line" in base.DESCRIPTION_PROMPT
+    assert "not\n  the publication" in base.DESCRIPTION_PROMPT
+
+
+def test_a_capitalized_publication_is_title_cased(tmp_path, monkeypatch):
+    """EL NUEVO DIA in the folio line is saved as El Nuevo Dia."""
+    path = scanned_pdf(tmp_path / "p", monkeypatch)
+    repo = place_project(tmp_path / "p")
+    ai = ImageAI(['{"text": "cut', '{"text": null, "description": "A page.",'
+                  ' "source": "EL NUEVO DIA", "printed_date": null}'])
+    doc = pipeline_for(tmp_path / "p", repo, ai).classify_document(str(path))
+    assert doc.source == "El Nuevo Dia"
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("MIÉRCOLES, 19 DE JULIO DE 2006", "2006-07-19"),
+    ("JUEVES, 03 DE AGOSTO DE 2006", "2006-08-03"),
+    ("July 19, 2006", "2006-07-19"),
+    ("Nov 13 1997", "1997-11-13"),
+    ("13 nov 97", "1997-11-13"),
+    ("noviembre de 1997", "1997-11"),
+])
+def test_printed_dates_with_the_day_before_the_month(text, expected):
+    """Spanish folio lines and English dates with a comma."""
+    assert archive_rules.stamp_date(text) == expected
+
+
+def test_recordings_get_a_longer_limit(tmp_path, monkeypatch):
+    """Audio and video have 300 s; documents and photos 120 s."""
+    given = []
+
+    def fake_run(work, seconds=None):
+        given.append(seconds)
+        return work()
+
+    monkeypatch.setattr(time_budget, "run_limited", fake_run)
+    root = tmp_path / "p"
+    root.mkdir()
+    (root / "a.txt").write_text("A letter")
+    (root / "b.mp3").write_bytes(b"not really audio")
+    repo = place_project(root)
+    pipeline = pipeline_for(root, repo, FakeAI())
+    pipeline.classify_within_limit(str(root / "a.txt"))
+    pipeline.classify_within_limit(str(root / "b.mp3"))
+    assert given == [120, 300]
+    assert time_budget.MEDIA_SECONDS == 300
+
+
 def test_cut_off_twice_says_so(tmp_path, monkeypatch):
     """Without any answer the file says why it needs a person."""
     path = scanned_pdf(tmp_path / "p", monkeypatch)
