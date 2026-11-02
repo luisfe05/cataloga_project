@@ -11,7 +11,8 @@ import time
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
-from backend.pipeline import archive_rules, file_readers, folder_tree
+from backend.pipeline import (archive_rules, file_readers, folder_tree,
+                              organization_plan)
 from backend.pipeline.ai_providers import (create_client,
                                            ready_media_client)
 from backend.pipeline.classification_pipeline import ClassificationPipeline
@@ -224,28 +225,22 @@ def auto_apply_place(repo, doc):
     return None
 
 
+def apply_proposals(repo, organizer, docs):
+    """File documents as proposed, as one watch batch Undo can reverse.
+
+    The batch is written first and the disk touched after, like the plan.
+    Returns the documents, fresh from the catalog.
+    """
+    plan = organization_plan.OrganizationPlan(repo, organizer)
+    batch = plan.apply_watch(docs)
+    if batch is not None:
+        logger.info("watch batch %s: %s", batch["id"], batch["status"])
+    return [repo.get_document(doc.id) for doc in docs]
+
+
 def apply_proposal(repo, organizer, doc):
-    """Move and rename a file as proposed; the folder is created if needed."""
-    place = doc.proposed_folder or folder_tree.join_path(
-        folder_tree.split_path(doc.folder_path or ""))
-    tree = repo.get_folder_tree() or []
-    if doc.proposed_folder and folder_tree.find_place(
-            tree, doc.proposed_folder) is None:
-        # A new event folder: the tree gains it, then the disk.
-        tree = folder_tree.add_place(tree, doc.proposed_folder)
-        repo.save_tree(tree)
-    target = organizer.tree_folder(place) if place else \
-        os.path.dirname(doc.file_path)
-    name = doc.proposed_name or doc.filename
-    old_path = doc.file_path
-    new_path = organizer.move_to_folder(old_path, target, name)
-    stamp = file_stamp(new_path)
-    repo.clear_proposals(doc.id)
-    repo.index_replace(old_path, new_path, stamp[0], stamp[1], doc.id)
-    logger.info("Moved %s to %s", doc.filename, new_path)
-    return repo.move_document(doc.id, new_path,
-                              folder_tree.canonical_path(tree, place)
-                              if place else (doc.folder_path or ""))
+    """File one document as proposed. Returns it, fresh from the catalog."""
+    return apply_proposals(repo, organizer, [doc])[0]
 
 
 def watch_once(folder, repo, client, owner=None):
@@ -253,17 +248,16 @@ def watch_once(folder, repo, client, owner=None):
     documents = read_new_files(folder, repo, client, owner)
     if repo.is_catalog_project():
         return documents
-    organizer = FileOrganizer(folder)
-    applied = []
-    for doc in documents:
-        if auto_apply_place(repo, doc):
-            try:
-                applied.append(apply_proposal(repo, organizer, doc))
-            except Exception as error:
-                logger.warning("could not file %s: %s", doc.filename, error)
-        else:
-            applied.append(doc)
-    return applied
+    marked = [doc for doc in documents if auto_apply_place(repo, doc)]
+    if not marked:
+        return documents
+    try:
+        filed = {doc.id: doc for doc in apply_proposals(
+            repo, FileOrganizer(folder), marked)}
+    except Exception as error:
+        logger.warning("could not file the new files: %s", error)
+        return documents
+    return [filed.get(doc.id, doc) for doc in documents]
 
 
 def retryable_documents(repo):

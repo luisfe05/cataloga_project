@@ -98,6 +98,10 @@
                     <span class="icon icon-catalog"></span>
                     <span data-i18n="nav.catalog">Catalog</span>
                 </a>
+                <a href="#" class="nav-link" data-view="plan">
+                    <span class="icon icon-plan"></span>
+                    <span data-i18n="nav.plan">Plan</span>
+                </a>
                 <!-- Projects and New project, filled by loadProjectHeader() in app.js. -->
                 <ul class="project-list" id="project-list"></ul>
                 <a href="#" class="nav-link" data-view="dashboard">
@@ -263,6 +267,98 @@
                     <tbody id="catalog-body"></tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- Plan: what the pipeline proposed for files read in place (plan.js). -->
+        <div id="view-plan" class="view hidden">
+            <div class="catalog-header">
+                <div class="catalog-heading">
+                    <h1 class="view-title" data-i18n="nav.plan">Plan</h1>
+                    <p class="view-subtitle" id="plan-summary"></p>
+                </div>
+            </div>
+
+            <p class="empty-message hidden" id="plan-message"></p>
+
+            <!-- A batch being applied or undone, or one that paused. -->
+            <section class="scan-status hidden" id="plan-progress">
+                <p id="plan-progress-text"></p>
+                <button type="button" class="pill-button hidden"
+                        id="plan-resume" data-i18n="plan.resume">Resume</button>
+                <button type="button" class="pill-button hidden"
+                        id="plan-undo" data-i18n="plan.undo">Undo this
+                    batch</button>
+            </section>
+
+            <div class="filter-row hidden" id="plan-filters">
+                <select id="plan-filter-folder">
+                    <option value="" data-i18n="plan.filter_folder_all">Destination:
+                        All</option>
+                </select>
+                <select id="plan-filter-action">
+                    <option value="" data-i18n="plan.filter_action_all">Action:
+                        All</option>
+                    <option value="move" data-i18n="plan.action_move">Move</option>
+                    <option value="rename" data-i18n="plan.action_rename">Rename</option>
+                    <option value="move_rename"
+                            data-i18n="plan.action_move_rename">Move and
+                        rename</option>
+                    <option value="create_folder"
+                            data-i18n="plan.action_create_folder">New
+                        folder</option>
+                    <option value="review" data-i18n="plan.filter_review">Manual
+                        Review</option>
+                    <option value="none" data-i18n="plan.filter_unchanged">Unchanged</option>
+                </select>
+                <input type="search" class="plan-search" id="plan-search"
+                       data-i18n-placeholder="plan.search">
+                <div class="toolbar">
+                    <button type="button" class="pill-button"
+                            id="plan-approve-all"
+                            data-i18n="plan.approve_all">Approve all</button>
+                    <button type="button" class="pill-button"
+                            id="plan-approve-selected"
+                            data-i18n="plan.approve_selected">Approve
+                        selected</button>
+                    <button type="button" class="pill-button"
+                            id="plan-skip-selected"
+                            data-i18n="plan.skip_selected">Skip selected</button>
+                    <button type="button" class="pill-button primary-button"
+                            id="plan-apply" data-i18n="plan.apply">Apply</button>
+                </div>
+            </div>
+
+            <div class="table-scroll hidden" id="plan-table-wrap">
+                <table class="catalog-table plan-table" id="plan-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="plan-check-all"
+                                       aria-label="Select all"></th>
+                            <th data-i18n="plan.col_file">File</th>
+                            <th data-i18n="plan.col_current">Current folder</th>
+                            <th data-i18n="plan.col_proposed">Proposed folder</th>
+                            <th data-i18n="plan.col_name">Proposed name</th>
+                            <th data-i18n="plan.col_why">Why</th>
+                            <th data-i18n="catalog.col_confidence">Confidence</th>
+                            <th data-i18n="catalog.col_status">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="plan-rows"></tbody>
+                </table>
+            </div>
+
+            <!-- Every folder of the tree with its Leave as is switch. -->
+            <section class="plan-batches plan-folders hidden" id="plan-folders">
+                <h2 class="progress-title" data-i18n="plan.folders">Folders</h2>
+                <p class="view-subtitle" data-i18n="plan.folders_hint"></p>
+                <ul id="plan-folder-list"></ul>
+            </section>
+
+            <!-- Batches applied so far, newest first, each with Undo. -->
+            <section class="plan-batches hidden" id="plan-batches">
+                <h2 class="progress-title" data-i18n="plan.batches">Batches</h2>
+                <ul id="plan-batch-list"></ul>
+            </section>
         </div>
 
         <div id="view-dashboard" class="view hidden">
@@ -836,6 +932,7 @@
     <script src="js/summary.js"></script>
     <script src="js/catalog.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/plan.js"></script>
     <script src="js/categories.js"></script>
     <script src="js/folders.js"></script>
     <script src="js/settings.js"></script>

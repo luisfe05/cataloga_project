@@ -8,6 +8,7 @@ import time
 from backend import scanner
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
+from backend.pipeline import organization_plan
 from backend.pipeline.ai_providers import (project_client,
                                            ready_media_client)
 from backend.pipeline.classification_pipeline import (
@@ -70,6 +71,9 @@ def scan_once(projects_path, owner=None, scan_busy=False):
     folder = projects.active_folder(projects_path)
     # No project, or its folder is missing (like an unplugged drive).
     if not folder or not os.path.isfile(projects.catalog_path(folder)):
+        return []
+    # Files are being moved by a batch: this pass waits.
+    if organization_plan.is_busy():
         return []
     repo = CatalogRepository(projects.catalog_path(folder))
     if repo.reads_in_place():

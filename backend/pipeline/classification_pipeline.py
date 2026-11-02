@@ -387,6 +387,12 @@ class ClassificationPipeline:
         # Hash first: a duplicate never reaches the AI.
         sha256 = time_budget.timed("hash", archive_rules.sha256_of, file_path)
         original = self.db.find_by_sha256(sha256)
+        if original is not None and original.file_path != file_path and \
+                not os.path.isfile(original.file_path):
+            # The same file, moved by hand: its old row is stale, not a
+            # twin. It is read again where it is now.
+            self.db.delete_document(original.id)
+            original = None
         if original is not None:
             return self.add_duplicate(file_path, sha256, original)
 
@@ -476,6 +482,7 @@ class ClassificationPipeline:
             if media_type is None:
                 media_type = metadata["media_type"]
             self.apply_printed_facts(metadata)
+            self.apply_name_match(file_path, metadata)
             if kind in ("Audio", "Video") and not heard:
                 # The date of a recording comes from its tags, below.
                 metadata["document_date"] = None
@@ -517,16 +524,29 @@ class ClassificationPipeline:
             # Nothing moves: what would happen is kept for the plan.
             new_path = file_path
             place = self.file_organizer.place_of(folder)
-            if place != self.file_organizer.place_of(
-                    os.path.dirname(file_path)):
+            here = self.file_organizer.place_of(os.path.dirname(file_path))
+            tree = self.db.get_folder_tree() or []
+            if place != here:
                 proposed_folder = place
+            # A folder marked Leave as is: cataloged, never proposed a move.
+            if folder_tree.left_alone(tree, here):
+                proposed_folder = None
+                new_filename = original_filename
+            # The row says where the file is; the AI's folder is a proposal.
+            metadata["folder_path"] = folder_tree.canonical_path(
+                tree, here) or here or None
+            metadata["category"], metadata["subcategory"] = \
+                folder_tree.first_two(metadata["folder_path"]) \
+                if metadata["folder_path"] else (None, None)
             # A new event folder is a proposal too: the plan creates it.
             if proposed_folder is None and metadata["suggested_folder"] and \
                     self.db.is_tree_project() and folder_tree.event_parent(
                         self.db.get_folder_tree(),
                         metadata["suggested_folder"]):
                 proposed_folder = metadata["suggested_folder"]
-            if new_filename and new_filename != original_filename:
+            if new_filename and new_filename != original_filename and \
+                    not self.already_named(original_filename, folder,
+                                           proposed_folder):
                 proposed_name = new_filename
         elif new_filename is None:
             # Even a short name would not fit: a person must choose.
@@ -583,6 +603,28 @@ class ClassificationPipeline:
             document.review_note = missing_note(document)
         return self.db.add_document(document)
 
+    def already_named(self, filename, folder, proposed_folder):
+        """Say whether a file in its right folder already follows the rule.
+
+        Such a file never enters the plan: the pipeline's own name would
+        only differ in details (a number, a shorter topic).
+        """
+        if proposed_folder:
+            return False
+        template = self.db.get_naming_template()
+        event = None
+        if template == naming.EVENT_TEMPLATE:
+            event = folder_tree.event_of(self.db.get_folder_tree() or [],
+                                         self.organizer_place(folder))
+            if not event:
+                template = naming.NEW_PROJECT_TEMPLATE
+        return (naming.follows_template(filename, template, event) or
+                naming.follows_template(filename, naming.NO_TEXT_TEMPLATE))
+
+    def organizer_place(self, folder):
+        """Return a disk folder as its place in the tree."""
+        return self.file_organizer.place_of(folder)
+
     def relative_path(self, file_path):
         """Return where a file was first seen, relative to the project."""
         folder = self.file_organizer.target_directory
@@ -597,6 +639,22 @@ class ClassificationPipeline:
         if length:
             return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
         return archive_rules.MEDIA_NOTE
+
+    def apply_name_match(self, file_path, metadata):
+        """A name that starts with an event folder's name belongs there."""
+        if not self.db.is_tree_project():
+            return
+        tree = self.db.get_folder_tree() or []
+        place = folder_tree.event_for_name(tree, file_path)
+        if place is None:
+            return
+        folder, subfolder = folder_tree.first_two(place)
+        metadata.update({"folder_path": place, "category": folder,
+                         "subcategory": subfolder, "suggested_folder": None,
+                         "confidence": "high",
+                         "folder_reason": archive_rules.NAME_MATCH_REASON})
+        if metadata["review_note"] == folder_tree.NO_FOLDER_NOTE:
+            metadata["review_note"] = None
 
     def apply_printed_facts(self, metadata):
         """What is printed on a page beats what the AI made of it."""
@@ -749,9 +807,11 @@ class ClassificationPipeline:
         if template == naming.EVENT_TEMPLATE:
             # Event_Year_N: the event folder's name and the next number on
             # the disk. Outside an event folder, method 4 names the file.
+            # The AI's folder, or the folder the file already sits in.
             event = folder_tree.event_of(self.db.get_folder_tree() or [],
                                          metadata["folder_path"] or
-                                         metadata["suggested_folder"])
+                                         metadata["suggested_folder"] or
+                                         self.file_organizer.place_of(folder))
             if event:
                 has_text = True
                 event_number = naming.next_event_number(folder, event)

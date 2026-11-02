@@ -178,6 +178,43 @@ def is_protected(filename):
             or name.endswith(PROTECTED_SUFFIXES))
 
 
+# What each part of a name looks like, when checking an existing name.
+TOKEN_SHAPES = {
+    "date": r"(?:18|19|20)\d{2}(?:-\d{2}(?:-\d{2})?)?",
+    "number": r"\d{4}",
+    "n": r"\d{1,4}",
+    "topic_number": r"[0-9A-Za-z\u00C0-\u024F-]+",
+}
+WORD_SHAPE = r"[0-9A-Za-z\u00C0-\u024F-]+"
+
+
+def follows_template(filename, template, event=None):
+    """Say whether a file name already has the shape of a template.
+
+    A file that follows the pattern it was given keeps its name: the plan
+    has nothing to do with it. The event part must be the file's own
+    event folder, and a version mark at the end is allowed.
+    """
+    if not template or template == KEEP_NAMES:
+        return True
+    stem = os.path.splitext(os.path.basename(str(filename)))[0]
+    pattern = ""
+    position = 0
+    for found in TOKEN_PATTERN.finditer(template):
+        pattern += re.escape(template[position:found.start()])
+        token = found.group(1)
+        if token == "event":
+            if not event:
+                return False
+            pattern += re.escape(event)
+        else:
+            pattern += TOKEN_SHAPES.get(token, WORD_SHAPE)
+        position = found.end()
+    pattern += re.escape(template[position:])
+    pattern += r"(?:_(?:v\d{1,3}|draft[-_]?\d+|borrador[-_]?\d+))?"
+    return re.fullmatch(pattern, stem, re.IGNORECASE) is not None
+
+
 def validate_template(template):
     """Check a template before it is saved."""
     if template == KEEP_NAMES:

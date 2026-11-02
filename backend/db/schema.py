@@ -185,6 +185,53 @@ CREATE TABLE IF NOT EXISTS corrections (
 );
 """
 
+# Added with the plan: a name the user changed before applying.
+ADDED_CORRECTIONS_COLUMNS = {
+    "from_name": "from_name TEXT",
+    "to_name": "to_name TEXT",
+}
+
+# A batch of moves and renames: the plan the user applied, or what the
+# watcher filed without asking. Undo works on a batch.
+CREATE_BATCHES = """
+CREATE TABLE IF NOT EXISTS batches (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    origin     TEXT    NOT NULL,
+    status     TEXT    NOT NULL,
+    created    TEXT    NOT NULL,
+    applied_at TEXT,
+    undone_at  TEXT,
+    note       TEXT
+);
+"""
+
+# The journal: one row per file or folder, written before the disk is
+# touched (pending) and again after (applied). old_* and new_* are what
+# Undo needs; size and mtime say whether the file is still the same.
+CREATE_BATCH_ITEMS = """
+CREATE TABLE IF NOT EXISTS batch_items (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id    INTEGER NOT NULL REFERENCES batches(id),
+    position    INTEGER NOT NULL,
+    document_id INTEGER,
+    action      TEXT    NOT NULL,
+    status      TEXT    NOT NULL,
+    old_path    TEXT,
+    new_path    TEXT,
+    temp_path   TEXT,
+    old_folder  TEXT,
+    new_folder  TEXT,
+    old_name    TEXT,
+    new_name    TEXT,
+    size        INTEGER,
+    mtime       INTEGER,
+    new_size    INTEGER,
+    new_mtime   INTEGER,
+    reason      TEXT,
+    created     INTEGER NOT NULL DEFAULT 0
+);
+"""
+
 # What was read in place, and how it looked: a file with the same size
 # and date is not read again.
 CREATE_SCAN_INDEX = """
@@ -228,6 +275,7 @@ def add_missing_columns(cursor):
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
              ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS),
              ("documents", ADDED_DOCUMENTS_COLUMNS),
+             ("corrections", ADDED_CORRECTIONS_COLUMNS),
              ("ai_provider_config", ADDED_AI_PROVIDER_COLUMNS))
     for table, new_columns in added:
         # row[1] is the column name.
@@ -237,6 +285,35 @@ def add_missing_columns(cursor):
             if name not in columns:
                 cursor.execute("ALTER TABLE " + table + " ADD COLUMN " +
                                definition)
+
+
+def repair_in_place_folders(cursor):
+    """In a project read in place, folder_path is the file's own folder.
+
+    Rows made before the plan kept the AI's folder there. The real folder
+    comes from the path; the AI's choice is already in proposed_folder.
+    """
+    config = cursor.execute(
+        "SELECT target_directory, folder_mode FROM app_config "
+        "ORDER BY id LIMIT 1").fetchone()
+    if not config or config[1] != "place":
+        return
+    root = os.path.realpath(config[0])
+    rows = cursor.execute("SELECT id, file_path FROM documents").fetchall()
+    for doc_id, file_path in rows:
+        folder = os.path.dirname(os.path.realpath(file_path))
+        relative = os.path.relpath(folder, root)
+        if relative.startswith(".."):
+            continue
+        place = "" if relative == "." else relative.replace(os.sep, "/")
+        parts = place.split("/") if place else []
+        cursor.execute(
+            "UPDATE documents SET folder_path = ?, category = ?, "
+            "subcategory = ? WHERE id = ? AND (folder_path IS NOT ? OR "
+            "folder_path IS NULL AND ? IS NOT NULL)",
+            (place or None, parts[0] if parts else None,
+             parts[1] if len(parts) > 1 else None, doc_id, place or None,
+             place or None))
 
 
 def init_db(db_path=DB_PATH):
@@ -249,10 +326,13 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
     cursor.execute(CREATE_CORRECTIONS)
     cursor.execute(CREATE_SCAN_INDEX)
+    cursor.execute(CREATE_BATCHES)
+    cursor.execute(CREATE_BATCH_ITEMS)
     add_missing_columns(cursor)
     # The provider a project used before the roles is its text provider.
     cursor.execute("UPDATE ai_provider_config SET role = 'text' "
                    "WHERE is_active = 1 AND role IS NULL")
+    repair_in_place_folders(cursor)
     # Rows from before folder_path: the path is the two old columns.
     cursor.execute("UPDATE documents SET folder_path = CASE WHEN "
                    "subcategory IS NOT NULL THEN category || '/' || "

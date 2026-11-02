@@ -15,6 +15,7 @@ const FOLDER_FLAGS = {
     events: "folders.flag_events",
     fallback: "folders.flag_fallback",
     auto_apply: "folders.flag_auto",
+    leave: "folders.flag_leave",
 };
 
 // The old five folders, for "Start from file types".
@@ -59,7 +60,8 @@ function addFolderRow(name, parent, saved, count, flags) {
         saved: saved, count: count || 0,
         events: Boolean(flags && flags.events),
         fallback: Boolean(flags && flags.fallback),
-        auto_apply: Boolean(flags && flags.auto_apply) };
+        auto_apply: Boolean(flags && flags.auto_apply),
+        leave: Boolean(flags && flags.leave) };
     nextFolderKey += 1;
     folderRows.push(row);
     return row;
@@ -163,7 +165,7 @@ function makeParentSelect(row) {
     return select;
 }
 
-/** The three marks of a folder, as small checkboxes. */
+/** The four marks of a folder, as small checkboxes. */
 function makeFlagBox(row) {
     const box = document.createElement("div");
     box.className = "folder-flags";
@@ -249,7 +251,7 @@ function renderFolderRows() {
         topRows().length >= MAX_TOP_FOLDERS;
 }
 
-/** The tree as the backend saves it: [{ name, children, events, fallback, auto_apply }]. */
+/** The tree as the backend saves it: [{ name, children, events, fallback, auto_apply, leave }]. */
 function readFolderTree() {
     const read = (rows) => rows.map((row) => ({
         name: row.name.trim().normalize("NFC"),
@@ -257,6 +259,7 @@ function readFolderTree() {
         events: row.events,
         fallback: row.fallback,
         auto_apply: row.auto_apply,
+        leave: row.leave,
     }));
     return read(topRows());
 }
