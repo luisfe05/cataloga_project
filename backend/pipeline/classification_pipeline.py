@@ -387,6 +387,12 @@ class ClassificationPipeline:
         # Hash first: a duplicate never reaches the AI.
         sha256 = time_budget.timed("hash", archive_rules.sha256_of, file_path)
         original = self.db.find_by_sha256(sha256)
+        if original is not None and original.file_path != file_path and \
+                not os.path.isfile(original.file_path):
+            # The same file, moved by hand: its old row is stale, not a
+            # twin. It is read again where it is now.
+            self.db.delete_document(original.id)
+            original = None
         if original is not None:
             return self.add_duplicate(file_path, sha256, original)
 
@@ -517,9 +523,16 @@ class ClassificationPipeline:
             # Nothing moves: what would happen is kept for the plan.
             new_path = file_path
             place = self.file_organizer.place_of(folder)
-            if place != self.file_organizer.place_of(
-                    os.path.dirname(file_path)):
+            here = self.file_organizer.place_of(os.path.dirname(file_path))
+            if place != here:
                 proposed_folder = place
+            # The row says where the file is; the AI's folder is a proposal.
+            tree = self.db.get_folder_tree() or []
+            metadata["folder_path"] = folder_tree.canonical_path(
+                tree, here) or here or None
+            metadata["category"], metadata["subcategory"] = \
+                folder_tree.first_two(metadata["folder_path"]) \
+                if metadata["folder_path"] else (None, None)
             # A new event folder is a proposal too: the plan creates it.
             if proposed_folder is None and metadata["suggested_folder"] and \
                     self.db.is_tree_project() and folder_tree.event_parent(

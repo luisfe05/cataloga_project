@@ -287,6 +287,35 @@ def add_missing_columns(cursor):
                                definition)
 
 
+def repair_in_place_folders(cursor):
+    """In a project read in place, folder_path is the file's own folder.
+
+    Rows made before the plan kept the AI's folder there. The real folder
+    comes from the path; the AI's choice is already in proposed_folder.
+    """
+    config = cursor.execute(
+        "SELECT target_directory, folder_mode FROM app_config "
+        "ORDER BY id LIMIT 1").fetchone()
+    if not config or config[1] != "place":
+        return
+    root = os.path.realpath(config[0])
+    rows = cursor.execute("SELECT id, file_path FROM documents").fetchall()
+    for doc_id, file_path in rows:
+        folder = os.path.dirname(os.path.realpath(file_path))
+        relative = os.path.relpath(folder, root)
+        if relative.startswith(".."):
+            continue
+        place = "" if relative == "." else relative.replace(os.sep, "/")
+        parts = place.split("/") if place else []
+        cursor.execute(
+            "UPDATE documents SET folder_path = ?, category = ?, "
+            "subcategory = ? WHERE id = ? AND (folder_path IS NOT ? OR "
+            "folder_path IS NULL AND ? IS NOT NULL)",
+            (place or None, parts[0] if parts else None,
+             parts[1] if len(parts) > 1 else None, doc_id, place or None,
+             place or None))
+
+
 def init_db(db_path=DB_PATH):
     """Create all tables if they don't already exist."""
     conn = get_connection(db_path)
@@ -303,6 +332,7 @@ def init_db(db_path=DB_PATH):
     # The provider a project used before the roles is its text provider.
     cursor.execute("UPDATE ai_provider_config SET role = 'text' "
                    "WHERE is_active = 1 AND role IS NULL")
+    repair_in_place_folders(cursor)
     # Rows from before folder_path: the path is the two old columns.
     cursor.execute("UPDATE documents SET folder_path = CASE WHEN "
                    "subcategory IS NOT NULL THEN category || '/' || "

@@ -434,10 +434,19 @@ class OrganizationPlan:
             raise ValueError("batch_not_ready")
         with BUSY:
             self.repo.set_batch(batch_id, status="applying", note=None)
+            approved = self.repo.get_items(batch_id, ["approved"])
+            # A folder is made only when an approved file goes into it.
+            wanted = {os.path.dirname(item["new_path"]) for item in approved
+                      if item["document_id"]}
             try:
-                for item in self.repo.get_items(batch_id, ["approved"]):
+                for item in approved:
                     if item["action"] == "create_folder":
-                        self.make_folder(item)
+                        if any(path == item["new_path"] or path.startswith(
+                                item["new_path"] + os.sep)
+                               for path in wanted):
+                            self.make_folder(item)
+                        else:
+                            self.repo.set_item(item["id"], status="skipped")
                     else:
                         self.apply_file(item)
                     if progress:

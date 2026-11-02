@@ -565,6 +565,74 @@ def test_11_every_step_is_in_the_activity_log(three):
     assert len([a for a in actions if a[0] == "Undone"]) == 3
 
 
+# --- Rows of files read in place ---
+
+def test_a_row_read_in_place_says_where_the_file_is(tmp_path):
+    """folder_path is the real folder; the AI's folder is the proposal."""
+    root = tmp_path / "p"
+    repo = project(root)
+    (root / "Documentos" / "Cartas").mkdir(parents=True)
+    (root / "Documentos" / "Cartas" / "a.txt").write_text("A letter")
+    (root / "b.txt").write_text("Loose")
+    docs = scan(root, repo)
+    assert docs["a.txt"].folder_path == "Documentos/Cartas"
+    assert docs["a.txt"].category == "Documentos"
+    assert docs["a.txt"].subcategory == "Cartas"
+    assert docs["b.txt"].folder_path is None
+    # FakeAI answers Press: that is the proposal, not where the file is.
+    assert docs["a.txt"].proposed_folder in (None, "Prensa")
+
+
+def test_a_file_moved_by_hand_is_read_again_not_a_duplicate(tmp_path):
+    """Same hash, old file gone: the stale row goes and the file is read."""
+    root = tmp_path / "p"
+    repo = project(root)
+    (root / "a.txt").write_text("A letter")
+    first = scan(root, repo)["a.txt"]
+    (root / "Prensa").mkdir()
+    os.rename(str(root / "a.txt"), str(root / "Prensa" / "moved.txt"))
+    docs = scan(root, repo)
+    assert list(docs) == ["moved.txt"]
+    assert docs["moved.txt"].duplicate_of is None
+    assert docs["moved.txt"].status == "Classified"
+    assert docs["moved.txt"].folder_path == "Prensa"
+    assert repo.get_document(first.id) is None
+    assert repo.index_get(str(root / "a.txt")) is None
+
+
+def test_older_in_place_catalogs_get_their_real_folders(tmp_path):
+    """init_db repairs folder_path from the path, once."""
+    root = tmp_path / "p"
+    repo = project(root)
+    (root / "Prensa").mkdir()
+    (root / "Prensa" / "a.txt").write_text("x")
+    doc = scan(root, repo)["a.txt"]
+    conn = get_connection(repo.db_path)
+    conn.execute("UPDATE documents SET folder_path = 'Documentos/Cartas', "
+                 "category = 'Documentos', subcategory = 'Cartas' "
+                 "WHERE id = ?", (doc.id,))
+    conn.commit()
+    conn.close()
+    from backend.db.schema import init_db
+    init_db(repo.db_path)
+    fixed = repo.get_document(doc.id)
+    assert fixed.folder_path == "Prensa"
+    assert fixed.category == "Prensa" and fixed.subcategory is None
+
+
+def test_a_folder_is_made_only_for_an_approved_file(three):
+    """Approving one rename makes no folder; its row is skipped."""
+    root, repo, plan = three
+    batch_id = plan.draft()
+    plan.choose(batch_id, [items_by_name(repo, batch_id)["c.txt"]["id"]],
+                "approved")
+    plan.apply(batch_id)
+    assert not (root / "Prensa").exists()
+    items = items_by_name(repo, batch_id)
+    assert items["Prensa"]["status"] == "skipped"
+    assert items["c.txt"]["status"] == "applied"
+
+
 # --- The watcher's batches ---
 
 def test_the_watcher_files_as_a_batch_that_undo_can_reverse(tmp_path):
