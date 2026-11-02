@@ -168,6 +168,11 @@ td.media-type::before,
     -webkit-mask-image: url("../assets/icons/x.svg");
 }
 
+.icon-help {
+    mask-image: url("../assets/icons/circle-help.svg");
+    -webkit-mask-image: url("../assets/icons/circle-help.svg");
+}
+
 .icon-plan {
     mask-image: url("../assets/icons/check-circle.svg");
     -webkit-mask-image: url("../assets/icons/check-circle.svg");
@@ -1426,6 +1431,60 @@ td.editable {
     max-width: 100%;
 }
 
+/* Help: a "?" next to a field; a small balloon on hover, click or focus. */
+.help-tip {
+    position: relative;
+    display: inline-flex;
+    vertical-align: middle;
+}
+
+.help-button {
+    display: inline-flex;
+    padding: 2px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: none;
+    color: var(--color-dusk);
+    cursor: pointer;
+}
+
+.help-button:hover,
+.help-button:focus-visible {
+    color: var(--color-violet);
+}
+
+.help-button .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.help-bubble {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: -8px;
+    z-index: 30;
+    display: none;
+    width: 280px;
+    padding: var(--spacing-8) var(--spacing-12);
+    border-radius: var(--radius-sm);
+    background: var(--color-deep-space);
+    color: var(--color-paper);
+    box-shadow: var(--shadow-md);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 18px;
+    letter-spacing: 0;
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+}
+
+.help-tip.open .help-bubble,
+.help-tip:hover:not(.dismissed) .help-bubble {
+    display: block;
+}
+
 /* Preview: over everything, inside the app. */
 .preview-overlay {
     position: fixed;
@@ -2354,13 +2413,6 @@ td.edit-error {
     margin-top: 4px;
 }
 
-.naming-accents {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-8);
-    margin: var(--spacing-8) 0;
-}
-
 .naming-custom .hint {
     margin: 0 0 var(--spacing-16);
 }
@@ -2368,13 +2420,6 @@ td.edit-error {
 .naming-preview {
     font-size: 14px;
     color: var(--color-dusk);
-}
-
-.naming-rules {
-    color: var(--color-dusk);
-    font-size: 13px;
-    margin: var(--spacing-16) 0 var(--spacing-24);
-    padding-left: 18px;
 }
 
 .settings-form .folder-locked {

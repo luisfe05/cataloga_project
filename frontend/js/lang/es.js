@@ -334,8 +334,6 @@ const LANG_ES = {
 
     // Settings: file names
     "naming.title": "Nombres de archivo",
-    "naming.hint": "Elige cómo Cataloga nombra los archivos nuevos. Los "
-        + "archivos que ya están en el catálogo conservan su nombre.",
     "naming.m1": "Fecha y tema",
     "naming.m1_example": "fecha_nombre-del-tema.pdf",
     "naming.m2": "Fuente, fecha y tema",
@@ -354,23 +352,12 @@ const LANG_ES = {
     "naming.stamp_order": "Fechas impresas en las fotos",
     "naming.stamp_month": "Mes primero (11 13 '97)",
     "naming.stamp_day": "Día primero (13 11 97)",
-    "naming.photo_date_rule": "La fecha de una foto sale de la fecha impresa "
-        + "o escrita en ella, luego del EXIF de una cámara (el de un escáner "
-        + "es el día del escaneo), y luego de un año en su nombre o carpeta.",
-    "naming.media_rule": "Las fotos se nombran con este método según lo "
-        + "que muestran, y el audio y el video según el título de sus "
-        + "etiquetas. Los archivos sin nada que leer usan su fecha y un "
-        + "número, por ejemplo 2026-07-15_0001.jpg, o solo el número si no "
-        + "se conoce la fecha.",
-    "naming.duplicate_rule": "Sin una fecha confiable el nombre no lleva "
-        + "fecha. Si el nombre ya existe, el archivo nuevo recibe _2, _3 y "
-        + "así; el primero conserva su nombre.",
-    "naming.version_rule": "Una marca de versión del nombre original (v01, "
-        + "v02) se conserva al final del nombre nuevo.",
-    "naming.path_rule": "Los nombres se acortan para que la ruta completa "
-        + "no pase de 240 caracteres, el límite de Windows.",
+    "naming.help_names": "Elige cómo Cataloga nombra los archivos nuevos; los nombres que ya existen no cambian. Se quitan los acentos y la marca de versión queda al final. Las fotos se nombran por lo que muestran. Ejemplo: Niña de la Playa v02 queda nina-de-la-playa_v02.jpg.",
+    "naming.help_style": "Cómo se ven las palabras del nombre. Ejemplo: tema-del-archivo, o Tema-Del-Archivo.",
+    "naming.help_repeats": "Sin una fecha confiable, el nombre no lleva fecha. Un nombre ya usado recibe _2, _3, y los nombres quedan bajo 240 caracteres. Ejemplo: carta.pdf, luego carta_2.pdf.",
+    "naming.help_dates": "La fecha de una foto sale de lo impreso en ella, luego del EXIF de una cámara, luego de un año en su nombre o carpeta. Esto dice cómo leer un sello. Ejemplo: 11 13 '97 es 1997-11-13.",
+    "help.open": "Ayuda",
     "naming.style": "Estilo",
-    "naming.keep_accents": "Conservar acentos (Día, no Dia)",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
     "naming.blocks_add": "Haz clic en las partes en orden",
     "naming.chosen": "Tu nombre de archivo",

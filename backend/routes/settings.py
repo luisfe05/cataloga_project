@@ -45,7 +45,6 @@ def get_settings():
         "naming_template": naming.DEFAULT_TEMPLATE,
         "stamp_date_order": archive_rules.DEFAULT_STAMP_ORDER,
         "naming_style": naming.DEFAULT_STYLE,
-        "keep_accents": False,
         "industry": "",
         "categories": [],
         "folder_mode": folder_tree.MEDIA_MODE,
@@ -171,7 +170,9 @@ def update_settings():
         if tree_mode and archive is not None:
             # New folders are created now; removed ones stay on the disk.
             repo.save_tree(archive["categories"])
-        organizer.ensure_archive_structure(repo.get_folder_tree())
+        # Read in place nothing is made: the plan makes folders when applied.
+        if not repo.reads_in_place():
+            organizer.ensure_archive_structure(repo.get_folder_tree())
 
     config.update_settings(values["research_name"], folder)
     projects.rename_project(projects_path(), folder,
@@ -182,9 +183,6 @@ def update_settings():
         repo.save_config_value("stamp_date_order", body["stamp_date_order"])
     if "naming_style" in body:
         repo.save_config_value("naming_style", body["naming_style"])
-    if "keep_accents" in body:
-        repo.save_config_value("keep_accents",
-                               1 if body["keep_accents"] else 0)
     if "project_sheet" in body:
         repo.save_config_value("project_sheet", body["project_sheet"])
     if "server_url" in body:

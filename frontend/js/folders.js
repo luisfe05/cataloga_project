@@ -367,11 +367,9 @@ async function learnProjectFolders() {
     try {
         const result = await learnFolder(folder);
         showFolderTree(result.folder_tree, {}, false);
-        // The names: style, accents, and the method they follow.
+        // The names: style and the method they follow.
         document.querySelector(`input[name="naming-style"][value="${
             result.naming_style}"]`).checked = true;
-        document.getElementById("keep-accents").checked =
-            result.keep_accents;
         showSavedTemplate(result.naming_template);
         updateNamingPreview();
         showFoldersMessage(t("folders.learned", {
