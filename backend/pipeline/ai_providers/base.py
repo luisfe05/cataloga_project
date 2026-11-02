@@ -64,12 +64,18 @@ Respond with ONLY a JSON object in this exact format:
 
 # When the full reading was cut off: only what the pages show, no copying.
 DESCRIPTION_PROMPT = """You are helping a researcher catalog an archive.
-Look at the image or images. In one or two sentences, say what they show:
-the kind of document, the newspaper or source, the date, the people and the
-topic, when you can read them. Do not copy the text.
+Look at the image or images. Do not copy the text. Find:
+- description: one or two sentences on what they show: the kind of
+  document, the people and the topic.
+- source: the name of the newspaper or magazine. On a newspaper page it is
+  printed in small type in the folio line, next to the page number and the
+  date, at the top or bottom edge (for example "EL NUEVO DIA" or "PRIMERA
+  HORA"). A big banner across the page names a section or an event, not
+  the publication. Use null if no publication name is printed.
+- printed_date: the date printed on the page, as written. Use null if none.
 
 Respond with ONLY a JSON object in this exact format:
-{"text": null, "description": "..."}"""
+{"text": null, "description": "...", "source": "...", "printed_date": "..."}"""
 
 PHOTO_PROMPT = """You are helping a researcher catalog an archive of photos.
 The first image is a photo, maybe an old scanned print. The images after
