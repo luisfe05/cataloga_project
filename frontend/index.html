@@ -72,36 +72,12 @@
         </form>
     </section>
 
-    <!-- App frame: hiding #nav-bar hides the top bar, sidebar, and chat button. -->
+    <!-- App frame: hiding #nav-bar hides the sidebar and the chat button. -->
     <nav id="nav-bar" class="hidden">
-        <header class="topbar">
-            <img class="app-logo" src="assets/logo-horizontal-paper.svg"
-                 alt="Cataloga">
-
-            <!-- Typing here from another screen opens Catalog (catalog.js). -->
-            <div class="search-box">
-                <label class="visually-hidden" for="search-input"
-                       data-i18n="catalog.search">Search the catalog</label>
-                <span class="icon icon-search"></span>
-                <input type="search" id="search-input"
-                       placeholder="Search the catalog"
-                       data-i18n-placeholder="catalog.search">
-            </div>
-
-            <div class="topbar-user">
-                <span class="icon icon-user"></span>
-                <!-- Filled by loadSettings() in settings.js -->
-                <span id="topbar-user"></span>
-                <button type="button" class="logout-button"
-                        id="logout-button">
-                    <span class="icon icon-logout"></span>
-                    <span data-i18n="auth.log_out">Log out</span>
-                </button>
-            </div>
-        </header>
-
         <!-- Sidebar. Text sits in its own span, so translating it keeps the icon. -->
         <div class="sidebar">
+            <img class="app-logo" src="assets/logo-horizontal-paper.svg"
+                 alt="Cataloga">
             <div class="nav-links">
                 <a href="#" class="nav-link active" data-view="home">
                     <span class="icon icon-home"></span>
@@ -109,7 +85,7 @@
                 </a>
                 <a href="#" class="nav-link" data-view="catalog">
                     <span class="icon icon-list"></span>
-                    <span data-i18n="nav.catalog">Catalog</span>
+                    <span data-i18n="nav.catalog">Catalog list</span>
                 </a>
                 <a href="#" class="nav-link" data-view="plan">
                     <span class="icon icon-plan"></span>
@@ -121,10 +97,22 @@
                     <span class="icon icon-dashboard"></span>
                     <span data-i18n="nav.dashboard">Dashboard</span>
                 </a>
+            </div>
+            <!-- Settings and the account, at the bottom of the block. -->
+            <div class="side-bottom">
                 <a href="#" class="nav-link" data-view="settings">
                     <span class="icon icon-settings"></span>
                     <span data-i18n="nav.settings">Settings</span>
                 </a>
+                <button type="button" class="nav-link logout-button"
+                        id="logout-button">
+                    <span class="icon icon-user"></span>
+                    <span class="account-line">
+                        <!-- Filled by loadSettings() in settings.js -->
+                        <span id="topbar-user"></span> ·
+                        <span data-i18n="auth.log_out">Log out</span>
+                    </span>
+                </button>
             </div>
         </div>
 
@@ -143,6 +131,15 @@
     <main id="app-main" class="hidden">
         <!-- Folders or List, and how the folders look. Home and Catalog list only. -->
         <div class="home-top hidden" id="home-top">
+            <!-- Typing here from Home opens the list (catalog.js). -->
+            <div class="search-box">
+                <label class="visually-hidden" for="search-input"
+                       data-i18n="catalog.search">Search the catalog</label>
+                <span class="icon icon-search"></span>
+                <input type="search" id="search-input"
+                       placeholder="Search the catalog"
+                       data-i18n-placeholder="catalog.search">
+            </div>
             <div class="home-tabs" role="tablist">
                 <button type="button" class="on" data-home-tab="home"
                         data-i18n="home.tab_folders">Folders</button>
