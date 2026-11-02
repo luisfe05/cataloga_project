@@ -258,17 +258,18 @@ class CatalogRepository:
             conn.close()
         return row[0]
 
-    def add_correction(self, doc, to_folder):
-        """Remember that the user moved a document to another folder."""
+    def add_correction(self, doc, to_folder, from_name=None, to_name=None):
+        """Remember a folder, or a name, the user chose over the AI's."""
         from_folder = doc.folder_path or DROP_ZONE_FOLDER
         conn = get_connection(self.db_path)
         try:
             conn.execute(
                 "INSERT INTO corrections (document_id, original_filename, "
-                "summary, from_folder, to_folder, timestamp) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "summary, from_folder, to_folder, from_name, to_name, "
+                "timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (doc.id, doc.original_filename, doc.summary, from_folder,
-                 to_folder, datetime.now().isoformat(timespec="seconds")))
+                 to_folder, from_name, to_name,
+                 datetime.now().isoformat(timespec="seconds")))
             conn.commit()
         finally:
             conn.close()
@@ -278,8 +279,9 @@ class CatalogRepository:
         conn = get_connection(self.db_path)
         try:
             rows = conn.execute(
-                "SELECT original_filename, summary, from_folder, to_folder "
-                "FROM corrections ORDER BY id DESC LIMIT ?",
+                "SELECT original_filename, summary, from_folder, to_folder, "
+                "from_name, to_name FROM corrections ORDER BY id DESC "
+                "LIMIT ?",
                 (limit,)).fetchall()
         finally:
             conn.close()
@@ -636,6 +638,205 @@ class CatalogRepository:
         """Say whether the project is read where it is, with no Drop Zone."""
         return self.folder_mode() in (folder_tree.PLACE_MODE,
                                       folder_tree.CATALOG_MODE)
+
+    # --- The plan: batches and their journal ---
+
+    def set_proposal(self, doc_id, folder, name):
+        """Save what the plan does with a file, after the user changed it."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE documents SET proposed_folder = ?, "
+                         "proposed_name = ? WHERE id = ?",
+                         (folder, name, doc_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def create_batch(self, origin, status="draft"):
+        """Start a batch and return its id."""
+        conn = get_connection(self.db_path)
+        try:
+            cursor = conn.execute(
+                "INSERT INTO batches (origin, status, created) "
+                "VALUES (?, ?, ?)", (origin, status, now_timestamp()))
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_batch(self, batch_id):
+        """Return one batch as a dict, or None."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute("SELECT * FROM batches WHERE id = ?",
+                               (batch_id,)).fetchone()
+        finally:
+            conn.close()
+        return dict(row) if row else None
+
+    def list_batches(self, statuses=None):
+        """Return the batches, newest first, all or with these statuses."""
+        query = "SELECT * FROM batches"
+        values = []
+        if statuses:
+            query += " WHERE status IN (" + ", ".join(
+                "?" for _ in statuses) + ")"
+            values = list(statuses)
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(query + " ORDER BY id DESC",
+                                values).fetchall()
+        finally:
+            conn.close()
+        return [dict(row) for row in rows]
+
+    def set_batch(self, batch_id, **fields):
+        """Change a batch's status, note or dates."""
+        allowed = ("status", "note", "applied_at", "undone_at")
+        names = [name for name in fields if name in allowed]
+        if not names:
+            return
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE batches SET " + ", ".join(
+                name + " = ?" for name in names) + " WHERE id = ?",
+                [fields[name] for name in names] + [batch_id])
+            conn.commit()
+        finally:
+            conn.close()
+
+    def delete_batch(self, batch_id):
+        """Remove a batch and its items. Only for drafts."""
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("DELETE FROM batch_items WHERE batch_id = ?",
+                         (batch_id,))
+            conn.execute("DELETE FROM batches WHERE id = ?", (batch_id,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def add_batch_items(self, batch_id, items):
+        """Write the rows of a batch's journal, in order."""
+        columns = ("document_id", "action", "status", "old_path", "new_path",
+                   "old_folder", "new_folder", "old_name", "new_name", "size",
+                   "mtime", "reason", "created")
+        conn = get_connection(self.db_path)
+        try:
+            for position, item in enumerate(items, start=1):
+                conn.execute(
+                    "INSERT INTO batch_items (batch_id, position, " +
+                    ", ".join(columns) + ") VALUES (?, ?, " +
+                    ", ".join("?" * len(columns)) + ")",
+                    [batch_id, position] + [item.get(name)
+                                            for name in columns])
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_items(self, batch_id, statuses=None):
+        """Return a batch's items in order, all or with these statuses."""
+        query = "SELECT * FROM batch_items WHERE batch_id = ?"
+        values = [batch_id]
+        if statuses:
+            query += " AND status IN (" + ", ".join(
+                "?" for _ in statuses) + ")"
+            values += list(statuses)
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(query + " ORDER BY position",
+                                values).fetchall()
+        finally:
+            conn.close()
+        return [dict(row) for row in rows]
+
+    def get_item(self, item_id):
+        """Return one journal row, or None."""
+        conn = get_connection(self.db_path)
+        try:
+            row = conn.execute("SELECT * FROM batch_items WHERE id = ?",
+                               (item_id,)).fetchone()
+        finally:
+            conn.close()
+        return dict(row) if row else None
+
+    def set_item(self, item_id, **fields):
+        """Change a journal row. Each change is committed on its own."""
+        allowed = ("status", "reason", "new_path", "new_name", "temp_path",
+                   "new_size", "new_mtime", "created", "new_folder")
+        names = [name for name in fields if name in allowed]
+        if not names:
+            return
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE batch_items SET " + ", ".join(
+                name + " = ?" for name in names) + " WHERE id = ?",
+                [fields[name] for name in names] + [item_id])
+            conn.commit()
+        finally:
+            conn.close()
+
+    def set_items_status(self, batch_id, status, item_ids=None,
+                         only_from=("proposed", "approved", "skipped")):
+        """Approve or skip rows of a draft; return how many changed."""
+        query = ("UPDATE batch_items SET status = ? WHERE batch_id = ? "
+                 "AND status IN (" + ", ".join("?" for _ in only_from) + ")")
+        values = [status, batch_id] + list(only_from)
+        if item_ids is not None:
+            if not item_ids:
+                return 0
+            query += " AND id IN (" + ", ".join("?" for _ in item_ids) + ")"
+            values += list(item_ids)
+        conn = get_connection(self.db_path)
+        try:
+            count = conn.execute(query, values).rowcount
+            conn.commit()
+        finally:
+            conn.close()
+        return count
+
+    def record_file_change(self, item_id, item_status, doc_id, fields,
+                           old_path, new_path, action, details,
+                           new_size=None, new_mtime=None):
+        """Save a move or rename everywhere at once: one transaction.
+
+        documents, scan_index, activity_log and the journal row change
+        together, or not at all.
+        """
+        fields = dict(fields)
+        fields["file_path"] = new_path
+        fields["filename"] = os.path.basename(new_path)
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE documents SET " + ", ".join(
+                name + " = ?" for name in fields) + " WHERE id = ?",
+                list(fields.values()) + [doc_id])
+            conn.execute("DELETE FROM scan_index WHERE path = ?",
+                         (old_path,))
+            if new_size is not None:
+                conn.execute(
+                    "INSERT OR REPLACE INTO scan_index (path, size, mtime, "
+                    "document_id, seen_at) VALUES (?, ?, ?, ?, ?)",
+                    (new_path, new_size, new_mtime, doc_id,
+                     now_timestamp()))
+            self.log_activity(conn, doc_id, action, details)
+            conn.execute("UPDATE batch_items SET status = ?, new_size = ?, "
+                         "new_mtime = ?, temp_path = NULL WHERE id = ?",
+                         (item_status, new_size, new_mtime, item_id))
+            conn.commit()
+        finally:
+            conn.close()
+
+    def documents_with_proposals(self):
+        """Return the documents the plan has something to do with."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT * FROM documents WHERE proposed_folder IS NOT NULL "
+                "OR proposed_name IS NOT NULL ORDER BY id").fetchall()
+        finally:
+            conn.close()
+        return [row_to_document(row) for row in rows]
 
     def untouched_with_notes(self, notes):
         """Return the rows with one of these notes nobody edited by hand.

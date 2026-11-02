@@ -17,6 +17,9 @@ function showView(name) {
     if (name === "dashboard") {
         loadDashboard();
     }
+    if (name === "plan") {
+        loadPlan();
+    }
 }
 
 document.querySelectorAll(".nav-link").forEach((link) => {

@@ -139,6 +139,50 @@ async function controlScan(action) {
     return handleResponse(response);
 }
 
+// --- Plan ---
+
+/** GET /plan: the draft, its rows and the batches. */
+async function getPlan() {
+    const response = await apiFetch(`${BASE_URL}/plan`);
+    return handleResponse(response);
+}
+
+/** PUT /plan/items: approve or skip rows ({status, ids} or {status, all}). */
+async function choosePlanItems(data) {
+    const response = await apiFetch(`${BASE_URL}/plan/items`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+}
+
+/** PATCH /plan/items/:id: change a row's folder or name before applying. */
+async function editPlanItem(id, data) {
+    const response = await apiFetch(`${BASE_URL}/plan/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+}
+
+/** POST /plan/apply, /plan/resume, /plan/undo, with an optional batch id. */
+async function runPlan(action, batchId) {
+    const response = await apiFetch(`${BASE_URL}/plan/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(batchId ? { batch_id: batchId } : {}),
+    });
+    return handleResponse(response);
+}
+
+/** GET /plan/progress: how far the running batch is. */
+async function getPlanProgress() {
+    const response = await apiFetch(`${BASE_URL}/plan/progress`);
+    return handleResponse(response);
+}
+
 /** POST /settings/sheet/suggest: the AI writes the sheet from a sample. Saves nothing. */
 async function suggestSheet(folder) {
     const response = await apiFetch(`${BASE_URL}/settings/sheet/suggest`, {

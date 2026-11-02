@@ -185,6 +185,53 @@ CREATE TABLE IF NOT EXISTS corrections (
 );
 """
 
+# Added with the plan: a name the user changed before applying.
+ADDED_CORRECTIONS_COLUMNS = {
+    "from_name": "from_name TEXT",
+    "to_name": "to_name TEXT",
+}
+
+# A batch of moves and renames: the plan the user applied, or what the
+# watcher filed without asking. Undo works on a batch.
+CREATE_BATCHES = """
+CREATE TABLE IF NOT EXISTS batches (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    origin     TEXT    NOT NULL,
+    status     TEXT    NOT NULL,
+    created    TEXT    NOT NULL,
+    applied_at TEXT,
+    undone_at  TEXT,
+    note       TEXT
+);
+"""
+
+# The journal: one row per file or folder, written before the disk is
+# touched (pending) and again after (applied). old_* and new_* are what
+# Undo needs; size and mtime say whether the file is still the same.
+CREATE_BATCH_ITEMS = """
+CREATE TABLE IF NOT EXISTS batch_items (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id    INTEGER NOT NULL REFERENCES batches(id),
+    position    INTEGER NOT NULL,
+    document_id INTEGER,
+    action      TEXT    NOT NULL,
+    status      TEXT    NOT NULL,
+    old_path    TEXT,
+    new_path    TEXT,
+    temp_path   TEXT,
+    old_folder  TEXT,
+    new_folder  TEXT,
+    old_name    TEXT,
+    new_name    TEXT,
+    size        INTEGER,
+    mtime       INTEGER,
+    new_size    INTEGER,
+    new_mtime   INTEGER,
+    reason      TEXT,
+    created     INTEGER NOT NULL DEFAULT 0
+);
+"""
+
 # What was read in place, and how it looked: a file with the same size
 # and date is not read again.
 CREATE_SCAN_INDEX = """
@@ -228,6 +275,7 @@ def add_missing_columns(cursor):
     added = (("app_config", ADDED_APP_CONFIG_COLUMNS),
              ("activity_log", ADDED_ACTIVITY_LOG_COLUMNS),
              ("documents", ADDED_DOCUMENTS_COLUMNS),
+             ("corrections", ADDED_CORRECTIONS_COLUMNS),
              ("ai_provider_config", ADDED_AI_PROVIDER_COLUMNS))
     for table, new_columns in added:
         # row[1] is the column name.
@@ -249,6 +297,8 @@ def init_db(db_path=DB_PATH):
     cursor.execute(CREATE_AI_PROVIDER_CONFIG)
     cursor.execute(CREATE_CORRECTIONS)
     cursor.execute(CREATE_SCAN_INDEX)
+    cursor.execute(CREATE_BATCHES)
+    cursor.execute(CREATE_BATCH_ITEMS)
     add_missing_columns(cursor)
     # The provider a project used before the roles is its text provider.
     cursor.execute("UPDATE ai_provider_config SET role = 'text' "
