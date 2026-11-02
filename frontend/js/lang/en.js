@@ -88,7 +88,20 @@ const LANG_EN = {
     "scan.idle": "",
     "scan.stopped": "Scan stopped at {done} of {total}",
     "scan.unread": "{total} files have not been read yet.",
-    "scan.catalog_files": "Catalog files",
+    "banner.not_cataloged": "This folder is not cataloged yet.",
+    "banner.listed": "Cataloga listed {total} files without reading them. Start when you are ready.",
+    "banner.learn": "Learn from my folder",
+    "banner.catalog_now": "Catalog now",
+    "banner.learned": "Learned {n} folders from your folder.",
+    "ask.title": "Catalog this folder now?",
+    "ask.found": "Cataloga found this folder. Nothing has been read or sent to the AI yet.",
+    "ask.files": "files",
+    "ask.folders": "folders",
+    "ask.total": "total",
+    "ask.note": "Before you start, you can browse the folders, choose Catalog only, or use Learn from my folder. You can start anytime from Home.",
+    "ask.later": "Later",
+    "scan.running_title": "Reading the folder",
+    "scan.retry_title": "Some files could not be read.",
     "plan.summary": "{files} files read. {moves} moves, {renames} renames, "
         + "{folders} new folders.",
     "plan.summary_unchanged": "{n} files stay as they are.",
@@ -113,8 +126,8 @@ const LANG_EN = {
     "plan.apply_one": "Apply 1 change",
     "plan.apply_many": "Apply {n} changes",
     "plan.tab_files": "Files",
-    "plan.unread": "{n} files have not been read yet. Use Catalog files in "
-        + "the Catalog; the proposals appear here.",
+    "plan.unread": "{n} files have not been read yet. Use Catalog now in "
+        + "Home; the proposals appear here.",
     "plan.drop_zone": "This project files new documents from its Drop Zone, "
         + "so there are no proposals to approve.",
     "plan.resume": "Resume",

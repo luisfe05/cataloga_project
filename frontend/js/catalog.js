@@ -633,6 +633,22 @@ let scanStatus = "";
 // The active project's mode, for the words a row uses.
 let catalogFolderMode = "";
 
+/** The two lines of the banner, for this state of the reading. */
+function showScanWords(scan) {
+    const vars = { done: scan.done, total: scan.total, file: scan.current };
+    // A pause the scan made by itself says why.
+    const state = scan.error === "stalled" ? "stalled" : scan.status;
+    const title = { unread: "banner.not_cataloged", stopped: "scan.stopped",
+        running: "scan.running_title", paused: "scan.paused",
+        stalled: "scan.paused" }[state];
+    const text = { unread: "banner.listed", running: "scan.running",
+        stalled: "scan.stalled" }[state];
+    document.getElementById("scan-title").textContent =
+        title ? t(title, vars) : t("scan.retry_title");
+    document.getElementById("scan-text").textContent =
+        text ? t(text, vars) : "";
+}
+
 /** Show how far the reading is; keep asking while it runs. */
 async function renderScan(settings) {
     const box = document.getElementById("scan-status");
@@ -648,24 +664,21 @@ async function renderScan(settings) {
     }
     const active = ["running", "paused"].includes(scan.status);
     const waiting = ["unread", "stopped"].includes(scan.status);
-    box.classList.toggle("hidden", !active && !waiting
-        && scan.status !== "done" && !scan.retryable);
     scanStatus = scan.status;
-    // A pause the scan made by itself says why.
-    const message = scan.error === "stalled" ? "stalled" : scan.status;
-    document.getElementById("scan-text").textContent = t(
-        `scan.${message}`, { done: scan.done, total: scan.total,
-            file: scan.current });
-    const retry = document.getElementById("scan-retry");
-    retry.textContent = t("scan.retry", { count: scan.retryable });
-    retry.classList.toggle("hidden", active || !scan.retryable);
-    document.getElementById("scan-catalog")
-        .classList.toggle("hidden", scan.status !== "unread");
-    document.getElementById("scan-pause")
-        .classList.toggle("hidden", scan.status !== "running");
-    document.getElementById("scan-resume")
-        .classList.toggle("hidden",
-            !["paused", "stopped"].includes(scan.status));
+    box.classList.toggle("hidden", !active && !waiting && !scan.retryable);
+    showScanWords(scan);
+    const show = {
+        "scan-learn": scan.status === "unread",
+        "scan-catalog": scan.status === "unread",
+        "scan-pause": scan.status === "running",
+        "scan-resume": ["paused", "stopped"].includes(scan.status),
+        "scan-retry": !active && Boolean(scan.retryable),
+    };
+    Object.keys(show).forEach((id) => {
+        document.getElementById(id).classList.toggle("hidden", !show[id]);
+    });
+    document.getElementById("scan-retry").textContent =
+        t("scan.retry", { count: scan.retryable });
     clearTimeout(scanTimer);
     if (active) {
         // New rows appear as the scan goes: refresh the table too.
@@ -878,4 +891,13 @@ document.getElementById("scan-resume").addEventListener("click", async () => {
 });
 document.getElementById("scan-catalog").addEventListener("click", () => {
     startOrResumeScan("start");
+});
+document.getElementById("scan-learn").addEventListener("click", async () => {
+    try {
+        const learned = await learnActiveProject();
+        showToolbarMessage(t("banner.learned", { n: learned.folders }));
+        await loadSettings();
+    } catch (error) {
+        showToolbarMessage(errorText(error), true);
+    }
 });

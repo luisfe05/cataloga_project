@@ -193,6 +193,23 @@ async function getPlanProgress() {
     return handleResponse(response);
 }
 
+/** POST /projects/folders/list: what a folder holds. No AI, nothing written. */
+async function listNewFolder(folder) {
+    const response = await apiFetch(`${BASE_URL}/projects/folders/list`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
+    });
+    return handleResponse(response);
+}
+
+/** POST /projects/active/learn: use the tree of the project's own folder. */
+async function learnActiveProject() {
+    const response = await apiFetch(`${BASE_URL}/projects/active/learn`,
+        { method: "POST" });
+    return handleResponse(response);
+}
+
 /** POST /settings/sheet/suggest: the AI writes the sheet from a sample. Saves nothing. */
 async function suggestSheet(folder) {
     const response = await apiFetch(`${BASE_URL}/settings/sheet/suggest`, {
