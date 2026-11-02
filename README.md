@@ -4,6 +4,8 @@ Cataloga is a Mac desktop app that classifies, renames, and summarizes research 
 
 This is a Holberton School Portfolio Project.
 
+Landing page: https://luisfe05.github.io/cataloga-landing/
+
 ## The problem it solves
 
 Research material piles up fast: scans, PDFs, photos, audio, and video, with names like `IMG_4521.jpg` or `scan0003.pdf`. A name like that says nothing about what is inside the file. Tools like Google Drive keep the files safe, but they do not describe them or put them in order. Finding the right document weeks later means opening files one by one.
@@ -14,7 +16,11 @@ Cataloga reads each new file, decides what kind of material it is, gives it a na
 
 | Feature | What it does |
 |---|---|
-| Drop Zone | Each project has a Drop Zone folder. Every file you drop there is processed. Files already in the project folder are never moved |
+| Home | Browse the project like Finder, in icons or columns, with thumbnails, folders shown as the logomark, and a panel with each file's date, source, summary, and why it belongs in its folder |
+| Preview | Double-click a file to see it in an overlay: photos, PDFs, audio, and video |
+| Plan | After a scan, Cataloga proposes a folder, a name, and a reason for each file. You edit, approve, or skip each row, then press Apply changes. Nothing moves before that |
+| Undo | Undo this batch puts every file back where it was, with its old name |
+| Drop Zone | Optional project mode. Cataloga creates the folders now and files what you drop into a Drop Zone folder. New projects read the folder in place instead |
 | Project folders | When you create a project, you describe it in one or two sentences. The AI proposes a tree of folders (two levels) and you edit it before you create the project |
 | Learns from your moves | Every time you move a file to another folder (Move, Create folder and move, or the chat after Confirm), Cataloga remembers it. The AI reads the latest ten moves of the project before it files a new document, so the same kind of file lands where you put it |
 | Every format | Text and code of any kind are read by their bytes, not by a list of extensions, and big ones only at the start. Design files show their picture (Photoshop's flattened image, Illustrator's first page, Sketch's preview, InDesign's XMP thumbnail) or their XMP title and author. Zips are cataloged from the list of what they hold, never unpacked. An unknown format is cataloged from its name, its folder and the files next to it: no format goes to Manual Review only because the app cannot read it |
@@ -91,10 +97,11 @@ With the virtual environment on, run this from the `cataloga` folder:
 | Step | What to do |
 |---|---|
 | 1. Create an account | Choose a username (3 to 30 letters, digits, dots, underscores or hyphens) and a password (at least 8 characters). Each person on the computer can have their own account, with their own projects. After that, log in |
-| 2. Create a project | In Settings, type a name, pick a folder, and describe the project. Click Suggest folders, edit the tree (folders inside folders, up to six levels; each folder can be marked Events, Catch-all, or No asking), and click Create project. Cataloga creates a Drop Zone folder and the folders of the tree. Number new folders gives them a 01_, 02_ prefix |
-| 3. Drop files | Put new files in the project's Drop Zone. Every few seconds, Cataloga classifies each one, renames it, writes its summary, and moves it to its folder. Files with no folder stay in the Drop Zone: use Move, or Create folder and move, in Catalog. If the folder was the only thing missing, the file becomes Classified |
-| 4. Review the Catalog | Search, filter by media type or source, and open the Manual Review tab to see the files that need a person. The note under the status says why. More columns shows Why this folder and Confidence. Turn on Edit Mode to fix a field |
-| 5. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
+| 2. Create a project | Click New project, type a name, and pick a folder. Cataloga lists the folder without reading it and asks: Catalog this folder now? Choose Catalog now, or Later to browse first and start from the banner in Home |
+| 3. Let it read | LOADING DOCUMENTS shows the progress, and you can pause it. Every file stays where it is while Cataloga reads it |
+| 4. Browse and review | Use Home to browse in icons or columns, and Catalog list to search and filter. Files that need a person are in Manual Review, with a note that says why |
+| 5. Approve the Plan | Open Plan, check the proposals, edit any name or folder, and press Approve all or select some rows. Apply changes moves and renames the files. Undo this batch puts them back |
+| 6. Use the chat | Click the round button at the bottom right and ask, for example, "Find press clippings" or "Summarize this project". If the chat proposes a new name, nothing changes until you click Confirm |
 
 Cataloga has no email, so a lost password cannot be recovered. Create a new account and add your project folders to it again: the projects and their files are not touched, because each catalog lives inside its project folder. Accounts made with an older version keep working after the update.
 
@@ -158,6 +165,13 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | PUT | `/settings/ai-provider` | Yes | Saves the provider, model, and API key of one role: `text` (default), `fallback`, or `media` (Gemini only) |
 | DELETE | `/settings/ai-provider/<role>` | Yes | Takes the fallback or media provider away. The key stays in the Keychain |
 | POST | `/settings/ai-provider/test` | Yes | Tests the connection to the AI provider, through the server URL if one is sent |
+| GET | `/browse` | Yes | Lists a folder of the project for Home, with thumbnails and catalog data |
+| GET | `/browse/thumb`, `/browse/preview`, `/browse/media` | Yes | Gives a file's thumbnail, its preview, or its audio or video |
+| POST | `/browse/reveal` | Yes | Shows a file or folder in Finder |
+| GET | `/plan`, `/plan/count` | Yes | Gives the proposals of the active project, or how many are waiting |
+| PUT, PATCH | `/plan/items`, `/plan/items/<id>` | Yes | Approves or skips rows, or edits the folder or name of one row |
+| POST | `/plan/apply`, `/plan/resume`, `/plan/undo` | Yes | Applies the approved rows as a batch, continues one, or undoes one |
+| GET | `/plan/progress`, `/batches` | Yes | Gives how far a batch went, and the list of batches |
 | GET | `/projects` | Yes | Lists the projects and says which one is active |
 | GET | `/scan` | Yes | How far the reading of the project folder is: status, files done and total, the current file |
 | POST | `/scan/start`, `/scan/pause`, `/scan/resume` | Yes | Reads the active project's folder in place, holds it, or lets it go on |
@@ -178,7 +192,7 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | `build.sh` | Builds `Cataloga.app` with PyInstaller |
 | `assets/` | The app icon |
 | `backend/app.py` | Creates the Flask app and registers the routes |
-| `backend/folder_watcher.py` | Checks the active project's Drop Zone every few seconds |
+| `backend/folder_watcher.py` | Checks the active project every few seconds for new and changed files |
 | `backend/config/` | The accounts, each account's project list, and the app settings |
 | `backend/db/` | The database schema and CatalogRepository, which does every database read and write |
 | `backend/models/` | The Document class, one row of the worksheet |
@@ -186,7 +200,6 @@ The backend runs on `http://127.0.0.1:5050`. Routes that need login ask for the 
 | `backend/routes/` | The API endpoints |
 | `frontend/` | The app screens: `index.html`, `css/`, `js/` (with `js/lang/` for English and Spanish), fonts, and icons |
 | `tests/` | The pytest tests |
-| `qa/` | The answer key for the 100-file test batch |
 | `database/` | Data when running from source (not tracked by git) |
 
 ## Tests
@@ -195,11 +208,17 @@ Run these from the `cataloga` folder with the virtual environment on. The AI cal
 
 | Check | Command | Result |
 |---|---|---|
-| Tests | `python -m pytest` | 333 tests in 13 test files |
+| Tests | `python -m pytest` | 872 tests in 36 test files |
 | Code style | `pycodestyle --exclude=venv,build,dist .` | No errors |
 
 `pycodestyle` is not in `requirements.txt`. Install it with `pip install pycodestyle`.
 
 ## Author
 
-Luis Felipe González López, GitHub [luisfe05](https://github.com/luisfe05), Holberton School Puerto Rico.
+Luis Felipe González López, Holberton School Puerto Rico.
+
+| Link | Where |
+|---|---|
+| GitHub | https://github.com/luisfe05 |
+| LinkedIn | https://www.linkedin.com/in/luisgonz |
+| Landing page | https://luisfe05.github.io/cataloga-landing/ |

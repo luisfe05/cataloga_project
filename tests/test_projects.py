@@ -346,20 +346,20 @@ def make_old_database(path, folder, with_language=True):
     """Build a database like the one used before projects existed."""
     init_db(path)
     repo = CatalogRepository(path)
-    repo.save_app_config("El Delfin", str(folder))
+    repo.save_app_config("Harbor Swimmers", str(folder))
     if with_language:
         repo.save_language("es")
     repo.set_active_provider("gemini", "gemini-2.5-flash")
     repo.add_document(Document(
         original_filename="clip.pdf", filename="PR_001.pdf",
         media_type="Press", file_path=str(folder / "Press" / "PR_001.pdf"),
-        date_added="2026-10-20T10:00:00", source="Claridad",
+        date_added="2026-10-20T10:00:00", source="Gazette",
         summary="A swim meet.", status="Classified"))
 
 
 def test_old_database_becomes_the_first_project(tmp_path):
     """Nothing is lost: documents, provider, name, and language."""
-    folder = tmp_path / "El Delfin"
+    folder = tmp_path / "Harbor Swimmers"
     (folder / "Press").mkdir(parents=True)
     old_db = str(tmp_path / "database" / "catalog.db")
     os.makedirs(os.path.dirname(old_db))
@@ -377,7 +377,7 @@ def test_old_database_becomes_the_first_project(tmp_path):
     assert [doc["filename"] for doc in documents] == ["PR_001.pdf"]
     assert documents[0]["file_path"] == str(folder / "Press" / "PR_001.pdf")
     settings = client.get("/settings").get_json()
-    assert settings["research_name"] == "El Delfin"
+    assert settings["research_name"] == "Harbor Swimmers"
     assert settings["language"] == "es"
     assert settings["active_provider"] == "gemini"
     assert settings["naming_template"] == "{date}_{topic}"

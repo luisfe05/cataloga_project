@@ -122,7 +122,7 @@ def test_indd_uses_its_xmp_when_there_is_no_picture(setup):
     ai = FakeAI()
     path = setup["drop"] / "libro.indd"
     xmp = ('<x:xmpmeta><dc:title><rdf:Alt><rdf:li xml:lang="x-default">'
-           'Libro del Delfin</rdf:li></rdf:Alt></dc:title><dc:creator>'
+           'Harbor Swimmers Book</rdf:li></rdf:Alt></dc:title><dc:creator>'
            '<rdf:Seq><rdf:li>Luis</rdf:li></rdf:Seq></dc:creator></x:xmpmeta>')
     path.write_bytes(b"\x00\x01" + xmp.encode("utf-8") + b"\x00")
     seen = []
@@ -134,7 +134,7 @@ def test_indd_uses_its_xmp_when_there_is_no_picture(setup):
     ai.send_prompt = send
     doc = setup["build"](ai).classify_document(str(path))
     assert ai.image_calls == []
-    assert "Title: Libro del Delfin" in seen[0]
+    assert "Title: Harbor Swimmers Book" in seen[0]
     assert "Author: Luis" in seen[0]
     assert doc.status == "Classified"
 

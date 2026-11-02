@@ -40,10 +40,11 @@ def test_add_document_sets_id(repo):
 
 def test_get_document_returns_saved_fields(repo):
     """A saved document comes back with the same values."""
-    repo.add_document(make_doc(source="El Nuevo Dia", summary="A report."))
+    repo.add_document(make_doc(source="The Harbor Gazette",
+                               summary="A report."))
     doc = repo.get_document(1)
     assert doc.filename == "D_001.pdf"
-    assert doc.source == "El Nuevo Dia"
+    assert doc.source == "The Harbor Gazette"
     assert doc.summary == "A report."
 
 
@@ -96,9 +97,9 @@ def test_get_by_status(repo):
 def test_update_document_changes_editable_field(repo):
     """An editable field is saved and the updated document is returned."""
     repo.add_document(make_doc())
-    doc = repo.update_document(1, {"source": "Primera Hora"})
-    assert doc.source == "Primera Hora"
-    assert repo.get_document(1).source == "Primera Hora"
+    doc = repo.update_document(1, {"source": "Port Alder Post"})
+    assert doc.source == "Port Alder Post"
+    assert repo.get_document(1).source == "Port Alder Post"
 
 
 @pytest.mark.parametrize("field", ["original_filename", "filename"])

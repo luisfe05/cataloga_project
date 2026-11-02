@@ -11,10 +11,10 @@ from tests.test_classification_pipeline import (  # noqa: F401
 
 
 @pytest.mark.parametrize("text, style, expected", [
-    ("Juegos Nacionales PR", "lower", "juegos-nacionales-pr"),
-    ("Juegos Nacionales PR", "title", "Juegos-Nacionales-PR"),
-    ("El Nuevo Día", "lower", "el-nuevo-dia"),
-    ("El Nuevo Día", "title", "El-Nuevo-Dia"),
+    ("Harbor Swim PR", "lower", "harbor-swim-pr"),
+    ("Harbor Swim PR", "title", "Harbor-Swim-PR"),
+    ("Gaceta Bahía", "lower", "gaceta-bahia"),
+    ("Gaceta Bahía", "title", "Gaceta-Bahia"),
     ("año de la niña", "title", "Ano-De-La-Nina"),
     ("  --Hello___World--  ", "title", "Hello-World"),
 ])
@@ -45,9 +45,9 @@ def test_version_stays_at_the_end_of_the_new_name():
     """informe_v02.docx keeps v02, so v01 and v02 never collide."""
     parts = naming.build_parts("informe_v02.docx", 1,
                                document_date="2026-07-15", topic="Informe",
-                               source="Claridad")
+                               source="Gazette")
     assert naming.make_filename("{topic}_{source}_{date}", parts, ".docx") \
-        == "informe_claridad_2026-07-15_v02.docx"
+        == "informe_gazette_2026-07-15_v02.docx"
     # With {original} the version is already there.
     assert naming.make_filename("{original}", parts, ".docx") == \
         "informe-v02.docx"
@@ -80,7 +80,7 @@ def test_pipeline_uses_the_style_and_ignores_the_old_accents_option(setup):
     pipeline, ai = setup["build"]()
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "clipping.txt"))
-    assert doc.filename == "Malta-Olimpica_El-Nuevo-Dia_1964-10-12.txt"
+    assert doc.filename == "Harbor-Olimpica_Gaceta-Bahia_1964-10-12.txt"
 
 
 def test_pipeline_never_writes_undated(setup):
@@ -104,8 +104,8 @@ def test_second_file_with_the_same_name_gets_2(setup):
         make_text_file(setup["drop_zone"], "a.txt"))
     second = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "b.txt"))
-    assert first.filename == "malta-olimpica_el-nuevo-dia_1964-10-12.txt"
-    assert second.filename == "malta-olimpica_el-nuevo-dia_1964-10-12_2.txt"
+    assert first.filename == "harbor-olimpica_gaceta-bahia_1964-10-12.txt"
+    assert second.filename == "harbor-olimpica_gaceta-bahia_1964-10-12_2.txt"
     assert os.path.isfile(first.file_path)
 
 

@@ -69,8 +69,8 @@ Look at the image or images. Do not copy the text. Find:
   document, the people and the topic.
 - source: the name of the newspaper or magazine. On a newspaper page it is
   printed in small type in the folio line, next to the page number and the
-  date, at the top or bottom edge (for example "EL NUEVO DIA" or "PRIMERA
-  HORA"). A big banner across the page names a section or an event, not
+  date, at the top or bottom edge (for example "THE HARBOR GAZETTE" or
+  "BAY POST"). A big banner across the page names a section or an event, not
   the publication. Use null if no publication name is printed.
 - printed_date: the date printed on the page, as written. Use null if none.
 

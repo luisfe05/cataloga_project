@@ -20,7 +20,8 @@ def make_tree(root):
     (root / "Fotos" / "1997").mkdir(parents=True)
     (root / ".git").mkdir()
     (root / "node_modules" / "x").mkdir(parents=True)
-    (root / "Prensa" / "articulo.txt").write_text("El Nuevo Dia, 1964. " * 200)
+    (root / "Prensa" / "articulo.txt").write_text(
+        "The Harbor Gazette, 1964. " * 200)
     (root / "Fotos" / "1997" / "IMG_0001.jpg").write_bytes(b"jpg")
     (root / ".DS_Store").write_bytes(b"")
     (root / ".git" / "config").write_text("x")

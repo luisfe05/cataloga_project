@@ -2,9 +2,10 @@
 
 import os
 
-# From the research of October 2026 (Getty, ATLA, ISO 19650, legal and
-# film guides). The folders and the naming are starting points the AI
-# and the user adjust; the rules are what the app turns on by default.
+# From the research of October 2026 (museum vocabularies, ATLA, ISO
+# 19650, legal and film guides). The folders and the naming are starting
+# points the AI and the user adjust; the rules are what the app turns on
+# by default.
 CONVENTIONS = {
     "documentary and research": {
         "folders": ["Press", "Interviews", "Documents", "Photos",

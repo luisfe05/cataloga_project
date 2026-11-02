@@ -108,11 +108,11 @@ def test_summary_prompt_asks_for_100_characters():
 def test_summary_with_facts_sends_them_first():
     """Facts typed by the researcher go before the document text."""
     client = FakeClient(["A summary."])
-    client.send_summary_request("The text.", {"source": "Claridad",
+    client.send_summary_request("The text.", {"source": "Gazette",
                                               "document_date": None})
     sent = client.calls[0]
     assert sent.startswith("Facts confirmed by the researcher")
-    assert "- source: Claridad" in sent
+    assert "- source: Gazette" in sent
     assert "document_date" not in sent
     assert sent.endswith("Document text:\nThe text.")
 

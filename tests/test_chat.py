@@ -91,9 +91,9 @@ def project(app, repo):
     """A project with three real files. Returns (folder, documents)."""
     folder = app.config["PROJECT_FOLDER"]
     docs = [
-        add_file_doc(repo, folder, "2026-07-15_malta.pdf",
-                     source="El Nuevo Dia", document_date="2026-07-15",
-                     summary="Oceanman Malta open water race results."),
+        add_file_doc(repo, folder, "2026-07-15_harbor.pdf",
+                     source="The Harbor Gazette", document_date="2026-07-15",
+                     summary="Pier Swim open water race results."),
         add_file_doc(repo, folder, "2026-05-02_letter.pdf",
                      media_type="Documents", source="Coach",
                      document_date="2026-05-02",
@@ -123,17 +123,17 @@ def test_rename_confirmed(flask_client, app, project):
     folder, docs = project
     response = flask_client.post(
         "/documents/{}/rename".format(docs[0].id),
-        json={"new_name": "oceanman-malta-results"})
+        json={"new_name": "pier-swim-results"})
 
     assert response.status_code == 200
     body = response.get_json()
-    assert body["filename"] == "oceanman-malta-results.pdf"
-    assert body["original_filename"] == "scan_2026-07-15_malta.pdf"
+    assert body["filename"] == "pier-swim-results.pdf"
+    assert body["original_filename"] == "scan_2026-07-15_harbor.pdf"
     assert os.path.isfile(os.path.join(folder, "Press",
-                                       "oceanman-malta-results.pdf"))
+                                       "pier-swim-results.pdf"))
     assert not os.path.exists(docs[0].file_path)
     assert activity(app)[-1] == (
-        "Renamed", "2026-07-15_malta.pdf → oceanman-malta-results.pdf")
+        "Renamed", "2026-07-15_harbor.pdf → pier-swim-results.pdf")
 
 
 def test_rename_duplicate_name_gets_a_number(flask_client, project):
@@ -193,7 +193,7 @@ def test_rename_same_name_changes_nothing(flask_client, app, project):
     before = activity(app)
     response = flask_client.post(
         "/documents/{}/rename".format(docs[0].id),
-        json={"new_name": "2026-07-15_malta.pdf"})
+        json={"new_name": "2026-07-15_harbor.pdf"})
     assert response.status_code == 200
     assert activity(app) == before
 
@@ -241,9 +241,9 @@ def test_new_routes_need_the_token(app, path, body):
 # --- clean_new_name ---
 
 @pytest.mark.parametrize("name, expected", [
-    ("Oceanman Malta Results", "oceanman-malta-results.pdf"),
-    ("2026-07-15_Oceanman Malta", "2026-07-15_oceanman-malta.pdf"),
-    ("malta.PDF", "malta.pdf"),
+    ("Pier Swim Results", "pier-swim-results.pdf"),
+    ("2026-07-15_Pier Swim", "2026-07-15_pier-swim.pdf"),
+    ("harbor.PDF", "harbor.pdf"),
     ("report v1.2", "report-v1-2.pdf"),
     ("???", ""),
     (None, ""),
@@ -304,15 +304,16 @@ def test_show_documents_with_no_valid_id(flask_client, fake_ai, project):
 
 def test_filter_catalog_valid(flask_client, fake_ai, project):
     """Valid filters are kept in their stored spelling; others dropped."""
-    fake_ai({"action": "filter_catalog", "reply": "Press from El Nuevo Dia.",
-             "filters": {"media_type": "press", "source": "el nuevo dia",
-                         "status": "manual review", "text": " malta ",
+    fake_ai({"action": "filter_catalog",
+             "reply": "Press from The Harbor Gazette.",
+             "filters": {"media_type": "press", "source": "the harbor gazette",
+                         "status": "manual review", "text": " harbor ",
                          "date_from": "2026-01-01"}})
     body = chat(flask_client)
     assert body["action"] == "filter_catalog"
     assert body["filters"] == {"media_type": "Press",
-                               "source": "El Nuevo Dia",
-                               "status": "Manual Review", "text": "malta"}
+                               "source": "The Harbor Gazette",
+                               "status": "Manual Review", "text": "harbor"}
 
 
 def test_filter_catalog_invalid(flask_client, fake_ai, project):
@@ -348,12 +349,12 @@ def test_propose_rename_valid(flask_client, fake_ai, project):
     folder, docs = project
     fake_ai({"action": "propose_rename", "reply": "How about this?",
              "document_id": docs[0].id,
-             "new_name": "Oceanman Malta Results"})
+             "new_name": "Pier Swim Results"})
     body = chat(flask_client)
     assert body["action"] == "propose_rename"
     assert body["rename"] == {"document_id": docs[0].id,
-                              "current_name": "2026-07-15_malta.pdf",
-                              "new_name": "oceanman-malta-results.pdf"}
+                              "current_name": "2026-07-15_harbor.pdf",
+                              "new_name": "pier-swim-results.pdf"}
     assert os.path.isfile(docs[0].file_path)
 
 
@@ -363,7 +364,7 @@ def test_propose_rename_valid(flask_client, fake_ai, project):
     ({"action": "propose_rename", "document_id": 1, "new_name": "!!!"},
      "rename_invalid"),
     ({"action": "propose_rename", "document_id": 1,
-      "new_name": "2026-07-15_malta"}, "rename_same"),
+      "new_name": "2026-07-15_harbor"}, "rename_same"),
 ])
 def test_propose_rename_invalid(flask_client, fake_ai, project, answer,
                                 notice):
@@ -415,7 +416,7 @@ def test_chat_never_changes_anything(flask_client, app, fake_ai, project,
     """No action of /chat changes the catalog or any file."""
     before = snapshot(app)
     fake_ai(answer)
-    chat(flask_client, "rename the Malta article to renamed")
+    chat(flask_client, "rename the Harbor article to renamed")
     assert snapshot(app) == before
 
 
@@ -428,11 +429,11 @@ def test_context_has_project_documents_and_history(flask_client, fake_ai,
     history = [{"role": "user", "text": "message {}".format(number)}
                for number in range(10)]
     history.append({"role": "system", "text": "ignored"})
-    chat(flask_client, "Oceanman results", history)
+    chat(flask_client, "Dawn results", history)
 
     prompt = json.loads(client.prompts[0])
     assert prompt["project"]["total"] == 3
-    assert prompt["documents"][0]["filename"] == "2026-07-15_malta.pdf"
+    assert prompt["documents"][0]["filename"] == "2026-07-15_harbor.pdf"
     assert [item["text"] for item in prompt["conversation"]] == \
         ["message {}".format(number) for number in range(5, 10)]
 

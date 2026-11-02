@@ -470,7 +470,7 @@ const LANG_ES = {
         + "Sugerir carpetas; luego edita el árbol antes de crear el proyecto.",
     "folders.description": "¿De qué trata este proyecto?",
     "folders.description_placeholder": "Por ejemplo: documental sobre un "
-        + "nadador puertorriqueño que compite en Malta",
+        + "club de natación del puerto en los años 50",
     "folders.suggest": "Sugerir carpetas",
     "folders.file_types": "Empezar con tipos de archivo",
     "folders.learn": "Aprender de mi carpeta",

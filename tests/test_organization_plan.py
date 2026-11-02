@@ -636,8 +636,8 @@ def test_a_folder_is_made_only_for_an_approved_file(three):
 # --- A name that matches an event folder ---
 
 EVENTS = [{"name": "Eventos", "events": True,
-           "children": [{"name": "Trialo-Isla-Verde_1998"},
-                        {"name": "Juegos-Nacionales_1997"}]},
+           "children": [{"name": "Harbor-Race_1998"},
+                        {"name": "Dawn-Swim_1997"}]},
           {"name": "SIN_TEMA", "fallback": True}]
 
 
@@ -645,37 +645,37 @@ def test_a_file_named_after_an_event_folder_goes_there(tmp_path):
     """The name wins over the AI: high confidence, with the reason."""
     root = tmp_path / "p"
     repo = project(root, EVENTS)
-    for place in ("Eventos/Trialo-Isla-Verde_1998",
-                  "Eventos/Juegos-Nacionales_1997"):
+    for place in ("Eventos/Harbor-Race_1998",
+                  "Eventos/Dawn-Swim_1997"):
         (root / place).mkdir(parents=True)
-    (root / "Juegos-Nacionales_1997_7.txt").write_text("A photo text")
+    (root / "Dawn-Swim_1997_7.txt").write_text("A photo text")
     (root / "SIN_TEMA").mkdir()
-    (root / "SIN_TEMA" / "trialo-isla-verde_1998-3.txt").write_text("x")
+    (root / "SIN_TEMA" / "harbor-race_1998-3.txt").write_text("x")
     (root / "other_1997.txt").write_text("y")
     docs = scan(root, repo)
-    seven = docs["Juegos-Nacionales_1997_7.txt"]
-    assert seven.proposed_folder == "Eventos/Juegos-Nacionales_1997"
+    seven = docs["Dawn-Swim_1997_7.txt"]
+    assert seven.proposed_folder == "Eventos/Dawn-Swim_1997"
     assert seven.confidence == "high"
     assert seven.folder_reason == "File name matches this folder"
     # Already in its folder: no proposal, but the same reason is kept.
-    (root / "Eventos" / "Juegos-Nacionales_1997" /
-     "Juegos-Nacionales_1997_8.txt").write_text("Another")
-    eight = scan(root, repo)["Juegos-Nacionales_1997_8.txt"]
+    (root / "Eventos" / "Dawn-Swim_1997" /
+     "Dawn-Swim_1997_8.txt").write_text("Another")
+    eight = scan(root, repo)["Dawn-Swim_1997_8.txt"]
     assert eight.proposed_folder is None
     assert eight.folder_reason == "File name matches this folder"
     assert seven.status == "Classified"
-    three = docs["trialo-isla-verde_1998-3.txt"]
-    assert three.proposed_folder == "Eventos/Trialo-Isla-Verde_1998"
+    three = docs["harbor-race_1998-3.txt"]
+    assert three.proposed_folder == "Eventos/Harbor-Race_1998"
     # No event folder starts this name: the AI decides, as before.
     assert docs["other_1997.txt"].folder_reason != \
         "File name matches this folder"
 
 
 @pytest.mark.parametrize("name, expected", [
-    ("Juegos-Nacionales_1997_7.tif", "Eventos/Juegos-Nacionales_1997"),
-    ("juegos-nacionales_1997.tif", "Eventos/Juegos-Nacionales_1997"),
-    ("Juegos-Nacionales_1997b.tif", None),
-    ("Juegos-Nacionales_19.tif", None),
+    ("Dawn-Swim_1997_7.tif", "Eventos/Dawn-Swim_1997"),
+    ("dawn-swim_1997.tif", "Eventos/Dawn-Swim_1997"),
+    ("Dawn-Swim_1997b.tif", None),
+    ("Dawn-Swim_19.tif", None),
     ("IMG_0900.tif", None),
 ])
 def test_event_for_name(name, expected):
@@ -690,11 +690,11 @@ def test_a_folder_marked_leave_as_is_gets_no_proposals(tmp_path):
     """Its files are cataloged normally but never moved or renamed."""
     root = tmp_path / "p"
     repo = project(root, [{"name": "Prensa"},
-                          {"name": "Luly", "leave": True,
+                          {"name": "Mike", "leave": True,
                            "children": [{"name": "Viejas"}]}])
-    (root / "Luly" / "Viejas").mkdir(parents=True)
-    (root / "Luly" / "a.txt").write_text("Article one")
-    (root / "Luly" / "Viejas" / "b.txt").write_text("Article two")
+    (root / "Mike" / "Viejas").mkdir(parents=True)
+    (root / "Mike" / "a.txt").write_text("Article one")
+    (root / "Mike" / "Viejas" / "b.txt").write_text("Article two")
     (root / "c.txt").write_text("Article three")
     docs = scan(root, repo)
     assert docs["a.txt"].status == "Classified" and docs["a.txt"].summary
@@ -708,17 +708,17 @@ def test_a_folder_marked_leave_as_is_gets_no_proposals(tmp_path):
 def test_marking_a_folder_drops_its_rows_from_the_plan(tmp_path):
     """Proposals saved before the mark leave the draft when it is set."""
     root = tmp_path / "p"
-    repo = project(root, [{"name": "Prensa"}, {"name": "Luly"}])
-    (root / "Luly").mkdir()
-    (root / "Luly" / "a.txt").write_text("Article")
+    repo = project(root, [{"name": "Prensa"}, {"name": "Mike"}])
+    (root / "Mike").mkdir()
+    (root / "Mike" / "a.txt").write_text("Article")
     docs = scan(root, repo)
     propose(repo, docs["a.txt"], "Prensa", "1980_a.txt")
     plan = plan_for(root, repo)
     assert plan.summary(plan.draft())["moves"] == 1
     tree = repo.get_folder_tree()
-    folder_tree.node_at(tree, "Luly")["leave"] = True
+    folder_tree.node_at(tree, "Mike")["leave"] = True
     repo.save_tree(tree)
-    assert folder_tree.left_alone(repo.get_folder_tree(), "Luly")
+    assert folder_tree.left_alone(repo.get_folder_tree(), "Mike")
     assert plan.summary(plan.build())["moves"] == 0
 
 
@@ -770,25 +770,25 @@ def test_a_file_in_its_folder_that_follows_the_pattern_is_left_alone(
     """Event_Year_N inside its event folder: no proposal at all."""
     root = tmp_path / "p"
     repo = project(root, [{"name": "Eventos", "events": True,
-                           "children": [{"name": "Trialo-Isla-Verde_1998"}]}])
+                           "children": [{"name": "Harbor-Race_1998"}]}])
     repo.save_naming_template(naming.EVENT_TEMPLATE)
-    event = root / "Eventos" / "Trialo-Isla-Verde_1998"
+    event = root / "Eventos" / "Harbor-Race_1998"
     event.mkdir(parents=True)
-    (event / "Trialo-Isla-Verde_1998_3.txt").write_text("Race photo text")
+    (event / "Harbor-Race_1998_3.txt").write_text("Race photo text")
     (event / "IMG_0042.txt").write_text("Race photo text two")
     docs = scan(root, repo)
-    done = docs["Trialo-Isla-Verde_1998_3.txt"]
+    done = docs["Harbor-Race_1998_3.txt"]
     assert done.proposed_folder is None and done.proposed_name is None
     other = docs["IMG_0042.txt"]
-    assert other.proposed_name == "Trialo-Isla-Verde_1998_4.txt"
+    assert other.proposed_name == "Harbor-Race_1998_4.txt"
     plan = plan_for(root, repo)
     assert plan.summary(plan.draft())["moves"] == 0
 
 
 @pytest.mark.parametrize("name, template, event, expected", [
-    ("Juegos_1997_13.tif", "{event}_{n}", "Juegos_1997", True),
-    ("Juegos_1997_13_v2.tif", "{event}_{n}", "Juegos_1997", True),
-    ("Otros_1997_13.tif", "{event}_{n}", "Juegos_1997", False),
+    ("Swim_1997_13.tif", "{event}_{n}", "Swim_1997", True),
+    ("Swim_1997_13_v2.tif", "{event}_{n}", "Swim_1997", True),
+    ("Otros_1997_13.tif", "{event}_{n}", "Swim_1997", False),
     ("2026-05-21_0001.jpg", "{date}_{number}", None, True),
     ("regata_el-dia_1998-03.pdf", "{topic}_{source}_{date}", None, True),
     ("PHOTO-2026-05-21(13).jpg", "{topic}_{source}_{date}", None, False),

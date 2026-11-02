@@ -91,19 +91,19 @@ def test_new_event_folder_is_created_when_its_events_folder_is_marked(
     from backend.db.schema import get_connection
     conn = get_connection(repo.db_path)
     conn.execute("UPDATE documents SET proposed_folder = ? WHERE id = ?",
-                 ("Eventos/Regata-Ponce_2003", doc.id))
+                 ("Eventos/Harbor-Regatta_2003", doc.id))
     conn.commit()
     conn.close()
     doc = repo.get_document(doc.id)
-    assert scanner.auto_apply_place(repo, doc) == "Eventos/Regata-Ponce_2003"
+    assert scanner.auto_apply_place(repo, doc) == "Eventos/Harbor-Regatta_2003"
     moved = scanner.apply_proposal(repo, scanner.FileOrganizer(str(root)),
                                    doc)
     assert os.path.dirname(moved.file_path) == str(
-        root / "Eventos" / "Regata-Ponce_2003")
+        root / "Eventos" / "Harbor-Regatta_2003")
     assert os.path.isfile(moved.file_path)
-    assert "Eventos/Regata-Ponce_2003" in folder_tree.all_places(
+    assert "Eventos/Harbor-Regatta_2003" in folder_tree.all_places(
         repo.get_folder_tree())
-    assert moved.folder_path == "Eventos/Regata-Ponce_2003"
+    assert moved.folder_path == "Eventos/Harbor-Regatta_2003"
 
 
 def test_catalog_only_never_applies(tmp_path):

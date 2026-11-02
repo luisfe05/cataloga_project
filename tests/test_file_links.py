@@ -50,7 +50,7 @@ def add_doc(repo, path):
 def real_doc(app, repo):
     """A document whose file exists inside the project, with a space."""
     path = os.path.join(app.config["PROJECT_FOLDER"], "Press",
-                        "oceanman malta.pdf")
+                        "pier swim.pdf")
     with open(path, "w") as handle:
         handle.write("content")
     return add_doc(repo, path)

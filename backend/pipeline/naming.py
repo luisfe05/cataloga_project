@@ -80,7 +80,7 @@ def slugify(text, max_length=MAX_TOPIC_LENGTH, style=DEFAULT_STYLE):
     # Every run of other characters becomes one hyphen.
     words = [w for w in re.split(r"[^0-9A-Za-z\u00C0-\u024F]+", text) if w]
     if style == "title":
-        # Juegos-Nacionales-PR: the first letter up, the rest as written.
+        # Harbor-Swim-PR: the first letter up, the rest as written.
         words = [w[0].upper() + w[1:] for w in words]
     else:
         words = [w.lower() for w in words]

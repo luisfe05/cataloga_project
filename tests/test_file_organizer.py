@@ -97,19 +97,19 @@ def test_ensure_archive_structure_keeps_existing_files(organizer):
 def test_unique_filename_free_name_is_kept(organizer):
     """A name that is not taken comes back unchanged."""
     folder = organizer.folder_for("Press")
-    assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
-        "2026-07-15_malta.pdf"
+    assert organizer.unique_filename(folder, "2026-07-15_harbor.pdf") == \
+        "2026-07-15_harbor.pdf"
 
 
 def test_unique_filename_adds_2_then_3(organizer):
     """Taken names get -2, then -3, before the extension."""
     folder = organizer.folder_for("Press")
-    make_file(folder, "2026-07-15_malta.pdf")
-    assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
-        "2026-07-15_malta_2.pdf"
-    make_file(folder, "2026-07-15_malta_2.pdf")
-    assert organizer.unique_filename(folder, "2026-07-15_malta.pdf") == \
-        "2026-07-15_malta_3.pdf"
+    make_file(folder, "2026-07-15_harbor.pdf")
+    assert organizer.unique_filename(folder, "2026-07-15_harbor.pdf") == \
+        "2026-07-15_harbor_2.pdf"
+    make_file(folder, "2026-07-15_harbor_2.pdf")
+    assert organizer.unique_filename(folder, "2026-07-15_harbor.pdf") == \
+        "2026-07-15_harbor_3.pdf"
 
 
 def test_unknown_media_type_raises_value_error(organizer):
@@ -122,10 +122,10 @@ def test_move_and_rename_file(organizer, tmp_path):
     """The file ends up in its folder with its new name."""
     original = make_file(str(tmp_path / "drop_zone"), "scan.pdf", "hello")
     new_path = organizer.move_and_rename_file(
-        original, "Press", "2026-07-15_malta.pdf")
+        original, "Press", "2026-07-15_harbor.pdf")
 
     assert new_path == os.path.join(organizer.target_directory, "Press",
-                                    "2026-07-15_malta.pdf")
+                                    "2026-07-15_harbor.pdf")
     assert os.path.isfile(new_path)
     assert not os.path.exists(original)
     with open(new_path) as file:
@@ -148,7 +148,7 @@ def test_existing_cataloged_files_keep_their_names(organizer, tmp_path):
     """Old serial names (PR_001) are never renamed by a new file."""
     old = make_file(organizer.folder_for("Press"), "PR_001.pdf", "old")
     new = make_file(str(tmp_path / "drop_zone"), "c.pdf")
-    organizer.move_and_rename_file(new, "Press", "2026-07-15_malta.pdf")
+    organizer.move_and_rename_file(new, "Press", "2026-07-15_harbor.pdf")
     assert os.path.isfile(old)
 
 

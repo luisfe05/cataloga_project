@@ -7,9 +7,9 @@ from backend.pipeline import naming
 
 
 @pytest.mark.parametrize("text, expected", [
-    ("Oceanman Malta", "oceanman-malta"),
-    ("Malta Olímpica, 1964!", "malta-olimpica-1964"),
-    ("El Nuevo Día", "el-nuevo-dia"),
+    ("Pier Swim", "pier-swim"),
+    ("Harbor Olímpica, 1964!", "harbor-olimpica-1964"),
+    ("Gaceta Bahía", "gaceta-bahia"),
     ("Año de la niña", "ano-de-la-nina"),
     ("  --Hello___World--  ", "hello-world"),
     ("¿?¡!", ""),
@@ -38,14 +38,14 @@ def test_default_template_matches_the_database_default():
 def full_parts():
     """Parts for the approved example document."""
     return naming.build_parts("scan.pdf", 1, document_date="2026-07-15",
-                              source="El Nuevo Día", topic="Oceanman Malta")
+                              source="Gaceta Bahía", topic="Pier Swim")
 
 
 @pytest.mark.parametrize("template, expected", [
-    ("{date}_{topic}", "2026-07-15_oceanman-malta.pdf"),
+    ("{date}_{topic}", "2026-07-15_pier-swim.pdf"),
     ("{source}_{date}_{topic}",
-     "el-nuevo-dia_2026-07-15_oceanman-malta.pdf"),
-    ("{number}_{topic}", "0001_oceanman-malta.pdf"),
+     "gaceta-bahia_2026-07-15_pier-swim.pdf"),
+    ("{number}_{topic}", "0001_pier-swim.pdf"),
 ])
 def test_the_three_methods(template, expected):
     """The approved examples come out exactly."""
@@ -75,9 +75,9 @@ def test_missing_date_leaves_the_date_out():
 def test_missing_source_is_left_out():
     """Method 2 without a source has no leading underscore."""
     parts = naming.build_parts("scan.pdf", 1, document_date="2026-07-15",
-                               topic="Oceanman Malta")
+                               topic="Pier Swim")
     assert naming.make_filename("{source}_{date}_{topic}", parts, ".pdf") \
-        == "2026-07-15_oceanman-malta.pdf"
+        == "2026-07-15_pier-swim.pdf"
 
 
 def test_missing_topic_uses_the_original_name():
@@ -91,10 +91,10 @@ def test_missing_topic_uses_the_original_name():
 def test_custom_template_with_every_token():
     """A custom template can use all five parts and its own separators."""
     parts = naming.build_parts("My Scan.pdf", 42, document_date="2026-07-15",
-                               source="Claridad", topic="Malta")
+                               source="Gazette", topic="Harbor")
     template = "{number}-{source}-{date}-{topic}-{original}"
     assert naming.make_filename(template, parts, ".pdf") == \
-        "0042-claridad-2026-07-15-malta-my-scan.pdf"
+        "0042-gazette-2026-07-15-harbor-my-scan.pdf"
 
 
 def test_empty_result_falls_back_to_the_number():
@@ -121,7 +121,7 @@ def test_validate_template_errors(template, reason, token):
 
 
 @pytest.mark.parametrize("template", list(naming.METHOD_TEMPLATES) + [
-    "{date}-{original}", "Malta {number}", "{topic}.{date}"])
+    "{date}-{original}", "Harbor {number}", "{topic}.{date}"])
 def test_validate_template_accepts_good_ones(template):
     """The three methods and normal custom templates are valid."""
     assert naming.validate_template(template) is None
