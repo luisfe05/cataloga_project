@@ -42,6 +42,7 @@ SECRET_NOTE = "Possible secret, not read"
 TIMEOUT_NOTE = "Timed out while reading"
 CUT_OFF_NOTE = "AI answer was cut off"
 ICLOUD_NOTE = "In iCloud, not downloaded"
+NAME_MATCH_REASON = "File name matches this folder"
 
 # Files that may hold keys or passwords: never read, never sent anywhere.
 SECRET_NAMES = (".env", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")

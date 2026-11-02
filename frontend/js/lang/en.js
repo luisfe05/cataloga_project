@@ -103,6 +103,10 @@ const LANG_EN = {
     "plan.applied": "Applied: {done} of {total} done, {failed} failed.",
     "plan.started": "Applying the plan…",
     "plan.undo_started": "Undoing the batch…",
+    "plan.folders": "Folders",
+    "plan.leave": "Leave as is",
+    "plan.folders_hint": "Files in a folder marked Leave as is are cataloged "
+        + "but never proposed a move or a new name.",
     "plan.batches": "Batches",
     "plan.batch_line": "Batch {id}, {date}: {applied} applied, {failed} failed, "
         + "{undone} undone.",
@@ -442,6 +446,9 @@ const LANG_EN = {
     "folders.flag_fallback": "Catch-all",
     "folders.flag_fallback_hint": "Files that fit nowhere else go here "
         + "instead of Manual Review.",
+    "folders.flag_leave": "Leave as is",
+    "folders.flag_leave_hint": "Files in this folder are cataloged but never "
+        + "proposed a move or a new name.",
     "folders.flag_auto": "No asking",
     "folders.flag_auto_hint": "New files that belong here are filed "
         + "without asking (projects without a Drop Zone).",

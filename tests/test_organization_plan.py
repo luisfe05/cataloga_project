@@ -633,6 +633,115 @@ def test_a_folder_is_made_only_for_an_approved_file(three):
     assert items["c.txt"]["status"] == "applied"
 
 
+# --- A name that matches an event folder ---
+
+EVENTS = [{"name": "Eventos", "events": True,
+           "children": [{"name": "Trialo-Isla-Verde_1998"},
+                        {"name": "Juegos-Nacionales_1997"}]},
+          {"name": "SIN_TEMA", "fallback": True}]
+
+
+def test_a_file_named_after_an_event_folder_goes_there(tmp_path):
+    """The name wins over the AI: high confidence, with the reason."""
+    root = tmp_path / "p"
+    repo = project(root, EVENTS)
+    for place in ("Eventos/Trialo-Isla-Verde_1998",
+                  "Eventos/Juegos-Nacionales_1997"):
+        (root / place).mkdir(parents=True)
+    (root / "Juegos-Nacionales_1997_7.txt").write_text("A photo text")
+    (root / "SIN_TEMA").mkdir()
+    (root / "SIN_TEMA" / "trialo-isla-verde_1998-3.txt").write_text("x")
+    (root / "other_1997.txt").write_text("y")
+    docs = scan(root, repo)
+    seven = docs["Juegos-Nacionales_1997_7.txt"]
+    assert seven.proposed_folder == "Eventos/Juegos-Nacionales_1997"
+    assert seven.confidence == "high"
+    assert seven.folder_reason == "File name matches this folder"
+    # Already in its folder: no proposal, but the same reason is kept.
+    (root / "Eventos" / "Juegos-Nacionales_1997" /
+     "Juegos-Nacionales_1997_8.txt").write_text("Another")
+    eight = scan(root, repo)["Juegos-Nacionales_1997_8.txt"]
+    assert eight.proposed_folder is None
+    assert eight.folder_reason == "File name matches this folder"
+    assert seven.status == "Classified"
+    three = docs["trialo-isla-verde_1998-3.txt"]
+    assert three.proposed_folder == "Eventos/Trialo-Isla-Verde_1998"
+    # No event folder starts this name: the AI decides, as before.
+    assert docs["other_1997.txt"].folder_reason != \
+        "File name matches this folder"
+
+
+@pytest.mark.parametrize("name, expected", [
+    ("Juegos-Nacionales_1997_7.tif", "Eventos/Juegos-Nacionales_1997"),
+    ("juegos-nacionales_1997.tif", "Eventos/Juegos-Nacionales_1997"),
+    ("Juegos-Nacionales_1997b.tif", None),
+    ("Juegos-Nacionales_19.tif", None),
+    ("IMG_0900.tif", None),
+])
+def test_event_for_name(name, expected):
+    """Only a whole event folder name, followed by a separator or the end."""
+    tree = folder_tree.check_tree(EVENTS)
+    assert folder_tree.event_for_name(tree, name) == expected
+
+
+# --- Leave as is ---
+
+def test_a_folder_marked_leave_as_is_gets_no_proposals(tmp_path):
+    """Its files are cataloged normally but never moved or renamed."""
+    root = tmp_path / "p"
+    repo = project(root, [{"name": "Prensa"},
+                          {"name": "Luly", "leave": True,
+                           "children": [{"name": "Viejas"}]}])
+    (root / "Luly" / "Viejas").mkdir(parents=True)
+    (root / "Luly" / "a.txt").write_text("Article one")
+    (root / "Luly" / "Viejas" / "b.txt").write_text("Article two")
+    (root / "c.txt").write_text("Article three")
+    docs = scan(root, repo)
+    assert docs["a.txt"].status == "Classified" and docs["a.txt"].summary
+    assert docs["a.txt"].proposed_folder is None
+    assert docs["a.txt"].proposed_name is None
+    assert docs["b.txt"].proposed_folder is None
+    # Outside the marked folder, proposals as usual.
+    assert docs["c.txt"].proposed_name or docs["c.txt"].proposed_folder
+
+
+def test_marking_a_folder_drops_its_rows_from_the_plan(tmp_path):
+    """Proposals saved before the mark leave the draft when it is set."""
+    root = tmp_path / "p"
+    repo = project(root, [{"name": "Prensa"}, {"name": "Luly"}])
+    (root / "Luly").mkdir()
+    (root / "Luly" / "a.txt").write_text("Article")
+    docs = scan(root, repo)
+    propose(repo, docs["a.txt"], "Prensa", "1980_a.txt")
+    plan = plan_for(root, repo)
+    assert plan.summary(plan.draft())["moves"] == 1
+    tree = repo.get_folder_tree()
+    folder_tree.node_at(tree, "Luly")["leave"] = True
+    repo.save_tree(tree)
+    assert folder_tree.left_alone(repo.get_folder_tree(), "Luly")
+    assert plan.summary(plan.build())["moves"] == 0
+
+
+def test_leave_route_toggles_the_mark(plan_client):
+    """PUT /plan/leave sets the flag, rebuilds the draft, and GET lists it."""
+    client, root, repo = plan_client
+    view = client.get("/plan").get_json()
+    assert {"path": "Prensa", "leave": False} in view["tree_folders"]
+    assert any(row["old_name"] == "a.txt" for row in view["rows"])
+    # a.txt sits at the root: mark the root's folder? No: files at the
+    # root have no folder. Mark Prensa and check the flag is saved.
+    response = client.put("/plan/leave", json={"folder": "Prensa",
+                                               "leave": True})
+    assert response.status_code == 200
+    assert {"path": "Prensa", "leave": True} in \
+        response.get_json()["tree_folders"]
+    assert folder_tree.node_at(repo.get_folder_tree(), "Prensa")["leave"]
+    assert client.put("/plan/leave", json={"folder": "Nowhere",
+                                           "leave": True}).status_code == 400
+    assert client.put("/plan/leave", json={"folder": "Prensa"}
+                      ).status_code == 400
+
+
 # --- The watcher's batches ---
 
 def test_the_watcher_files_as_a_batch_that_undo_can_reverse(tmp_path):

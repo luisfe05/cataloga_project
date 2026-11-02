@@ -105,6 +105,10 @@ const LANG_ES = {
     "plan.applied": "Aplicado: {done} de {total} hechos, {failed} fallaron.",
     "plan.started": "Aplicando el plan…",
     "plan.undo_started": "Deshaciendo el lote…",
+    "plan.folders": "Carpetas",
+    "plan.leave": "Dejar como está",
+    "plan.folders_hint": "Los archivos de una carpeta marcada Dejar como está "
+        + "se catalogan, pero nunca se propone moverlos ni renombrarlos.",
     "plan.batches": "Lotes",
     "plan.batch_line": "Lote {id}, {date}: {applied} aplicados, {failed} "
         + "fallaron, {undone} deshechos.",
@@ -466,6 +470,9 @@ const LANG_ES = {
     "folders.flag_fallback": "Descarte",
     "folders.flag_fallback_hint": "Los archivos que no encajan en ninguna "
         + "otra carpeta van aquí en vez de a Revisión manual.",
+    "folders.flag_leave": "Dejar como está",
+    "folders.flag_leave_hint": "Los archivos de esta carpeta se catalogan, "
+        + "pero nunca se propone moverlos ni renombrarlos.",
     "folders.flag_auto": "Sin preguntar",
     "folders.flag_auto_hint": "Los archivos nuevos que van aquí se archivan "
         + "sin preguntar (proyectos sin Drop Zone).",

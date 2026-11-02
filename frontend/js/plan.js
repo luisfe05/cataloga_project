@@ -292,13 +292,54 @@ function renderPlanBatches() {
     });
 }
 
+/** Every folder of the tree with its Leave as is switch. */
+function renderPlanFolders() {
+    const section = document.getElementById("plan-folders");
+    const list = document.getElementById("plan-folder-list");
+    list.innerHTML = "";
+    const folders = planView.tree_folders || [];
+    section.classList.toggle("hidden", folders.length === 0);
+    folders.forEach((folder) => {
+        const item = document.createElement("li");
+        const name = document.createElement("span");
+        name.textContent = planFolderLabel(folder.path);
+        const label = document.createElement("label");
+        label.className = "switch-label plan-leave";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = folder.leave;
+        input.dataset.folder = folder.path;
+        input.setAttribute("aria-label", t("plan.leave") + ": "
+            + planFolderLabel(folder.path));
+        input.addEventListener("change", async () => {
+            try {
+                const view = await setLeaveAlone(folder.path, input.checked);
+                Object.assign(planView, view);
+                renderPlan();
+            } catch (error) {
+                input.checked = !input.checked;
+                showToolbarMessage(errorText(error), true);
+            }
+        });
+        const text = document.createElement("span");
+        text.textContent = t("plan.leave");
+        const knob = document.createElement("span");
+        knob.className = "switch";
+        label.append(text, input, knob);
+        item.append(name, label);
+        list.appendChild(item);
+    });
+}
+
 function renderPlan() {
     renderPlanSummary();
     fillPlanFolderFilter();
     renderPlanRows();
+    renderPlanFolders();
     renderPlanBatches();
+    // The batch in progress, or the newest one applied, with its Undo.
     const running = (planView.batches || []).find((batch) =>
-        ["applying", "undoing", "paused"].includes(batch.status));
+        ["applying", "undoing", "paused", "applied"].includes(batch.status));
     renderPlanProgress(running || null, running ? running.summary : null);
     if (!planView.rows.length) {
         planMessage(t("plan.empty"));
@@ -319,6 +360,7 @@ async function loadPlan() {
             showPlanParts(false);
             document.getElementById("plan-summary").textContent = "";
             document.getElementById("plan-batches").classList.add("hidden");
+            document.getElementById("plan-folders").classList.add("hidden");
             document.getElementById("plan-progress").classList.add("hidden");
             planMessage(view.mode === "catalog" ? t("plan.catalog_only")
                 : t("plan.no_plan"));

@@ -196,6 +196,10 @@ class OrganizationPlan:
         """The journal row for one document's proposal, or None."""
         if not (doc.proposed_folder or doc.proposed_name):
             return None
+        # A folder marked Leave as is: its files stay as they are.
+        if folder_tree.left_alone(self.repo.get_folder_tree() or [],
+                                  doc.folder_path or ""):
+            return None
         old_path = doc.file_path
         new_name = doc.proposed_name or doc.filename
         folder = self.organizer.tree_folder(doc.proposed_folder) \
