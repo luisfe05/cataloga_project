@@ -113,6 +113,9 @@ function planFolderSelect(row) {
     });
     select.value = planView.folders.includes(row.new_folder)
         && row.new_folder !== row.old_folder ? row.new_folder : "";
+    // A long folder ends in "…"; the mouse shows it whole.
+    select.title = select.value ? planFolderLabel(select.value)
+        : t("plan.same_folder");
     select.addEventListener("change", () => {
         savePlanEdit(row.id, { folder: select.value });
     });
@@ -124,6 +127,7 @@ function planNameInput(row) {
     const input = document.createElement("input");
     input.type = "text";
     input.value = row.new_name || "";
+    input.title = input.value;
     input.setAttribute("aria-label", t("plan.col_name"));
     input.addEventListener("change", () => {
         if (input.value.trim() && input.value.trim() !== row.new_name) {
