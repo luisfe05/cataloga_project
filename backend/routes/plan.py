@@ -121,6 +121,26 @@ def get_plan():
     return jsonify(view), 200
 
 
+@plan_bp.route("/plan/count", methods=["GET"])
+def proposals_waiting():
+    """How many proposals nobody has approved or skipped: the sidebar's number.
+
+    Only the draft is read, so asking often writes nothing.
+    """
+    repo, error = get_active_repo()
+    if error or not repo.is_tree_project():
+        return jsonify({"waiting": 0}), 200
+    plan = plan_for(repo)
+    chosen = repo.chosen_in_draft()
+    waiting = 0
+    for doc in repo.documents_with_proposals():
+        # The same test as the plan: Leave as is and protected names are out.
+        item = plan.file_item(doc)
+        if item and item["status"] == "proposed" and doc.id not in chosen:
+            waiting += 1
+    return jsonify({"waiting": waiting}), 200
+
+
 @plan_bp.route("/plan/leave", methods=["PUT"])
 def leave_folder():
     """Mark a folder Leave as is, or unmark it: {"folder", "leave"}."""

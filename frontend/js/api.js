@@ -177,6 +177,12 @@ async function runPlan(action, batchId) {
     return handleResponse(response);
 }
 
+/** GET /plan/count: how many proposals wait for a look. */
+async function getPlanCount() {
+    const response = await apiFetch(`${BASE_URL}/plan/count`);
+    return handleResponse(response);
+}
+
 /** PUT /plan/leave: mark a folder Leave as is, or unmark it. */
 async function setLeaveAlone(folder, leave) {
     const response = await apiFetch(`${BASE_URL}/plan/leave`, {

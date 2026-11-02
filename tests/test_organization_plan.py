@@ -921,3 +921,50 @@ def test_move_and_rename_wait_while_a_batch_runs(flask_client):
         response = flask_client.post("/documents/1/rename",
                                      json={"new_name": "x"})
         assert response.get_json()["error"]["code"] == "plan_applying"
+
+
+# --- The sidebar's number ---
+
+def test_the_number_counts_what_nobody_has_looked_at(plan_client):
+    """Approving or skipping takes a row off; applying takes it for good."""
+    client, root, repo = plan_client
+    assert client.get("/plan/count").get_json() == {"waiting": 2}
+    rows = {row["old_name"]: row for row in client.get("/plan").get_json()[
+        "rows"] if row["old_name"]}
+    client.put("/plan/items", json={"status": "approved",
+                                    "ids": [rows["a.txt"]["id"]]})
+    assert client.get("/plan/count").get_json() == {"waiting": 1}
+    client.put("/plan/items", json={"status": "skipped",
+                                    "ids": [rows["b.txt"]["id"]]})
+    assert client.get("/plan/count").get_json() == {"waiting": 0}
+    client.post("/plan/apply")
+    wait_for_batch(client)
+    # A row skipped in a batch that is done comes up for a look again.
+    assert client.get("/plan/count").get_json() == {"waiting": 1}
+
+
+def test_the_number_writes_nothing(plan_client):
+    """It is asked for every few seconds."""
+    client, root, repo = plan_client
+    before = repo.list_batches()
+    client.get("/plan/count")
+    assert repo.list_batches() == before
+
+
+def test_the_number_leaves_out_what_the_plan_leaves_out(plan_client):
+    """A folder marked Leave as is has nothing waiting."""
+    client, root, repo = plan_client
+    doc = [d for d in repo.get_all_documents()
+           if d.original_filename == "a.txt"][0]
+    conn = get_connection(repo.db_path)
+    conn.execute("UPDATE documents SET folder_path = 'Prensa' WHERE id = ?",
+                 (doc.id,))
+    conn.commit()
+    conn.close()
+    client.put("/plan/leave", json={"folder": "Prensa", "leave": True})
+    assert client.get("/plan/count").get_json() == {"waiting": 1}
+
+
+def test_no_number_without_a_plan(flask_client):
+    """A project sorted by type has none."""
+    assert flask_client.get("/plan/count").get_json() == {"waiting": 0}
