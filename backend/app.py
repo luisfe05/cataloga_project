@@ -12,6 +12,7 @@ from backend.db.schema import DB_PATH, init_db
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.pipeline.organization_plan import OrganizationPlan
 from backend.routes.auth import auth_bp, require_login
+from backend.routes.browse import browse_bp
 from backend.routes.chat import chat_bp
 from backend.routes.plan import plan_bp
 from backend.routes.dashboard import dashboard_bp
@@ -39,6 +40,7 @@ def create_app(data_folder=projects.DATA_FOLDER, old_db_path=DB_PATH):
     app.register_blueprint(chat_bp)
     app.register_blueprint(scan_bp)
     app.register_blueprint(plan_bp)
+    app.register_blueprint(browse_bp)
 
     store = AccountStore(data_folder)
     app.config["ACCOUNTS"] = store
