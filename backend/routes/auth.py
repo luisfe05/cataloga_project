@@ -1,6 +1,7 @@
 """Account and session routes."""
 
 import math
+import re
 import secrets
 import time
 
@@ -14,6 +15,9 @@ auth_bp = Blueprint("auth", __name__)
 
 # The app needs these before login.
 PUBLIC_PATHS = ("/auth/status", "/auth/register", "/auth/login")
+
+# Recordings: the one route that takes the token in its URL.
+MEDIA_PATH = re.compile(r"/documents/\d+/media")
 
 MAX_FAILED_ATTEMPTS = 5
 LOCK_SECONDS = 30
@@ -48,12 +52,19 @@ def has_valid_token():
     return secrets.compare_digest(header[len("Bearer "):], saved)
 
 
+def has_valid_media_token():
+    """A player cannot send headers: recordings take the token in the URL."""
+    token = current_app.config.get("SESSION_TOKEN")
+    return bool(token and MEDIA_PATH.fullmatch(request.path) and
+                secrets.compare_digest(request.args.get("token", ""), token))
+
+
 def require_login():
     """Refuse any non-public request without a valid token."""
     # The browser sends OPTIONS first to check CORS, without headers.
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS:
         return None
-    if has_valid_token():
+    if has_valid_token() or has_valid_media_token():
         return None
     return error_response("unauthorized", "Log in to use Cataloga.", 401)
 

@@ -29,7 +29,11 @@ SKIPPED_FOLDERS = {CATALOG_FOLDER, ".git", "node_modules", "__pycache__",
 SKIPPED_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 TEMPORARY_ENDINGS = (".part", ".download", ".crdownload", ".tmp", "~lock~")
 
-STATUSES = ("idle", "running", "paused", "done", "stopped")
+STATUSES = ("idle", "running", "paused", "done", "stopped", "unread")
+
+# app_config.scan_state, saved per project.
+SCAN_RUNNING = "running"
+SCAN_DONE = "done"
 
 # With no file finished in this time, the scan pauses and says so. A file
 # that timed out does not count: an AI that is down stops the scan here.
@@ -135,6 +139,8 @@ def scan_folder(job, folder, repo, client, owner=None):
     job.folder = folder
     job.total = len(files)
     job.done = 0
+    # Saved in the catalog: a closed app leaves it as "running".
+    repo.save_config_value("scan_state", SCAN_RUNNING)
     # A job that starts paused waits for Resume before its first file.
     if job.status != "paused":
         job.status = "running"
@@ -171,6 +177,7 @@ def scan_folder(job, folder, repo, client, owner=None):
         job.done += 1
     job.current = ""
     job.status = "done"
+    repo.save_config_value("scan_state", SCAN_DONE)
 
 
 def read_new_files(folder, repo, client, owner=None):
@@ -258,6 +265,43 @@ def watch_once(folder, repo, client, owner=None):
         logger.warning("could not file the new files: %s", error)
         return documents
     return [filed.get(doc.id, doc) for doc in documents]
+
+
+def scan_counts(repo, folder):
+    """Return (files already read, files in the folder)."""
+    files = find_files(folder)
+    known = repo.index_paths()
+    return sum(1 for path in files if path in known), len(files)
+
+
+def needs_scan(repo, folder):
+    """Say whether a scan was never finished and files still wait for it."""
+    if repo.scan_state() == SCAN_DONE:
+        return False
+    read, total = scan_counts(repo, folder)
+    if read == total:
+        repo.save_config_value("scan_state", SCAN_DONE)
+        return False
+    return True
+
+
+def scan_view(job, repo, folder):
+    """What the screen shows for a project, whichever project the job read.
+
+    The job lives in memory and there is one per app: it says nothing
+    about another project, or about a scan from before the app started.
+    """
+    state = job.to_dict()
+    if job.folder == folder and (job.is_running() or job.status == "done"):
+        return state
+    state.update({"status": "idle", "folder": folder, "current": "",
+                  "error": "", "done": 0, "total": 0})
+    if not repo.reads_in_place():
+        return state
+    state["done"], state["total"] = scan_counts(repo, folder)
+    if needs_scan(repo, folder):
+        state["status"] = "stopped" if state["done"] else "unread"
+    return state
 
 
 def retryable_documents(repo):

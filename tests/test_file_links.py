@@ -1,4 +1,4 @@
-"""Tests for opening, revealing, and previewing a document's file."""
+"""Tests for opening and revealing a document's file."""
 
 import os
 
@@ -13,7 +13,6 @@ from backend.pipeline import file_organizer
 ACTIONS = [
     ("open", ["open", "{path}"]),
     ("reveal", ["open", "-R", "{path}"]),
-    ("preview", ["qlmanage", "-p", "{path}"]),
 ]
 
 

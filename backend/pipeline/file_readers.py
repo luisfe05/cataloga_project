@@ -379,15 +379,15 @@ def photo_date(file_path):
     return "-".join(match.groups())
 
 
-def pdf_page_data_uris(file_path):
-    """Return the first pages of a PDF as images on white, for the AI."""
+def pdf_page_data_uris(file_path, pages=MAX_SCANNED_PAGES):
+    """Return the first pages of a PDF as images on white."""
     uris = []
     try:
         pdf = pypdfium2.PdfDocument(file_path)
     except (pypdfium2.PdfiumError, OSError):
         return []
     try:
-        for index in range(min(MAX_SCANNED_PAGES, len(pdf))):
+        for index in range(min(pages, len(pdf))):
             # Scale 2 is about 144 dpi; the image is shrunk to 1600 px after.
             bitmap = pdf[index].render(scale=2,
                                        fill_color=(255, 255, 255, 255))

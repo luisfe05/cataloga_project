@@ -24,6 +24,11 @@ BASE_FOLDER = getattr(sys, "_MEIPASS",
 FRONTEND_PATH = os.path.join(BASE_FOLDER, "frontend", "index.html")
 
 
+ALREADY_OPEN_PAGE = ("<p style='font:15px sans-serif;margin:32px'>Cataloga is "
+                     "already open, maybe in another version. Close it and "
+                     "open this one again.</p>")
+
+
 class DesktopApi:
     """Python functions the frontend can call through pywebview."""
 
@@ -79,9 +84,21 @@ def wait_for_server(port, timeout=10):
             time.sleep(0.2)
 
 
+def port_in_use(port):
+    """Say whether something already listens on the port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        return probe.connect_ex(("127.0.0.1", port)) == 0
+
+
 def main():
     """Bootstrap the app: start Flask and the watcher, open the window."""
     setup_log(DATA_FOLDER)
+    # Another copy on the port would answer this window with its own data.
+    if port_in_use(PORT):
+        webview.create_window("Cataloga", html=ALREADY_OPEN_PAGE,
+                              width=520, height=240)
+        webview.start()
+        return
     app = create_app()
 
     flask_thread = threading.Thread(

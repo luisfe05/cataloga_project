@@ -59,6 +59,8 @@ function readFilters() {
 function makeCell(text, className) {
     const cell = document.createElement("td");
     cell.textContent = text || "";
+    // A long value ends in "…"; the mouse shows it whole.
+    cell.title = text || "";
     if (className) {
         cell.className = className;
     }
@@ -347,8 +349,13 @@ function makeFolderCell(doc) {
     const current = doc.folder_path
         || (doc.category
             ? [doc.category, doc.subcategory].filter(Boolean).join("/") : "");
-    cell.appendChild(document.createElement("span")).textContent = current
-        ? folderLabel(current) : t("catalog.in_drop_zone");
+    // Read in place, a file outside any folder is at the project's root.
+    const here = current ? folderLabel(current)
+        : t(catalogFolderMode === "place" ? "plan.root"
+            : "catalog.in_drop_zone");
+    const place = cell.appendChild(document.createElement("span"));
+    place.textContent = here;
+    place.title = here;
     // A duplicate stays in the Drop Zone until the user deletes it.
     if (doc.duplicate_of) {
         return cell;
@@ -361,6 +368,7 @@ function makeFolderCell(doc) {
             folder: doc.proposed_folder ? folderLabel(doc.proposed_folder)
                 : folderLabel(current || t("catalog.same_folder")),
             name: doc.proposed_name || doc.filename });
+        proposal.title = proposal.textContent;
         cell.appendChild(proposal);
     }
     if (doc.suggested_folder) {
@@ -450,9 +458,14 @@ function addArchiveCells(row, doc) {
 function makeFilenameCell(doc) {
     const cell = makeCell("", "filename-cell");
     if (editMode) {
+        cell.title = doc.filename;
         cell.appendChild(document.createTextNode(doc.filename));
     } else {
-        cell.appendChild(makeFileLink(doc));
+        const line = document.createElement("div");
+        line.className = "filename-line";
+        line.append(makeFileLink(doc), makeFileActions(doc.id));
+        cell.appendChild(line);
+        return cell;
     }
     cell.appendChild(makeFileActions(doc.id));
     return cell;
@@ -616,6 +629,9 @@ function renderProgress(classified, review) {
 
 // Polls GET /scan while the project folder is being read.
 let scanTimer = null;
+let scanStatus = "";
+// The active project's mode, for the words a row uses.
+let catalogFolderMode = "";
 
 /** Show how far the reading is; keep asking while it runs. */
 async function renderScan(settings) {
@@ -631,8 +647,10 @@ async function renderScan(settings) {
         return;
     }
     const active = ["running", "paused"].includes(scan.status);
-    box.classList.toggle("hidden",
-        !active && scan.status !== "done" && !scan.retryable);
+    const waiting = ["unread", "stopped"].includes(scan.status);
+    box.classList.toggle("hidden", !active && !waiting
+        && scan.status !== "done" && !scan.retryable);
+    scanStatus = scan.status;
     // A pause the scan made by itself says why.
     const message = scan.error === "stalled" ? "stalled" : scan.status;
     document.getElementById("scan-text").textContent = t(
@@ -641,15 +659,28 @@ async function renderScan(settings) {
     const retry = document.getElementById("scan-retry");
     retry.textContent = t("scan.retry", { count: scan.retryable });
     retry.classList.toggle("hidden", active || !scan.retryable);
+    document.getElementById("scan-catalog")
+        .classList.toggle("hidden", scan.status !== "unread");
     document.getElementById("scan-pause")
         .classList.toggle("hidden", scan.status !== "running");
     document.getElementById("scan-resume")
-        .classList.toggle("hidden", scan.status !== "paused");
+        .classList.toggle("hidden",
+            !["paused", "stopped"].includes(scan.status));
     clearTimeout(scanTimer);
     if (active) {
         // New rows appear as the scan goes: refresh the table too.
         scanTimer = setTimeout(loadCatalog, 5000);
     }
+}
+
+/** Start or resume the reading, then show how far it is. */
+async function startOrResumeScan(action) {
+    try {
+        await controlScan(action);
+    } catch (error) {
+        showToolbarMessage(errorText(error), true);
+    }
+    loadCatalog();
 }
 
 async function loadCatalog() {
@@ -673,6 +704,7 @@ async function loadCatalog() {
         const allDocuments = await getDocuments();
         projectCategories = settings.categories || [];
         projectTree = settings.folder_tree || [];
+        catalogFolderMode = settings.folder_mode;
         showFolderColumns(["tree", "place"].includes(settings.folder_mode));
         renderScan(settings);
         updateSourceFilter(allDocuments);
@@ -819,7 +851,7 @@ function spaceBelongsToControl(target) {
     return tags.includes(target.tagName) || target.isContentEditable;
 }
 
-// Space bar: Quick Look preview of the selected row, like in Finder.
+// Space bar: preview of the selected row, like in Finder.
 document.addEventListener("keydown", (event) => {
     const catalogOpen = !document.getElementById("view-catalog")
         .classList.contains("hidden");
@@ -829,7 +861,7 @@ document.addEventListener("keydown", (event) => {
     }
     // Otherwise the space bar also scrolls the page.
     event.preventDefault();
-    runFileAction(selectedDocumentId, "preview");
+    openPreview(selectedDocumentId);
 });
 
 document.getElementById("scan-pause").addEventListener("click", async () => {
@@ -841,6 +873,9 @@ document.getElementById("scan-retry").addEventListener("click", async () => {
     loadCatalog();
 });
 document.getElementById("scan-resume").addEventListener("click", async () => {
-    await controlScan("resume");
-    loadCatalog();
+    // A paused scan is still running; a stopped one has to start again.
+    await startOrResumeScan(scanStatus === "paused" ? "resume" : "start");
+});
+document.getElementById("scan-catalog").addEventListener("click", () => {
+    startOrResumeScan("start");
 });

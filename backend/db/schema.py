@@ -146,6 +146,8 @@ CREATE TABLE IF NOT EXISTS app_config (
 
 # Added after the first release; add_missing_columns() adds them.
 ADDED_APP_CONFIG_COLUMNS = {
+    # How the folder's scan stands; a closed app leaves "running".
+    "scan_state": "scan_state TEXT",
     "language": "language TEXT NOT NULL DEFAULT 'en'",
     "naming_template":
         "naming_template TEXT NOT NULL DEFAULT '{date}_{topic}'",

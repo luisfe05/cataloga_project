@@ -80,6 +80,9 @@ def scan_once(projects_path, owner=None, scan_busy=False):
         # The whole folder is watched; not while the first scan runs.
         if scan_busy:
             return []
+        # A scan that never finished waits for Resume or Catalog files.
+        if scanner.needs_scan(repo, folder):
+            return []
         client = project_client(repo)
         if client is None:
             return []

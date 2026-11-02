@@ -1,6 +1,6 @@
 /** files.js: open, preview, and reveal a file. Only the id goes to the backend. */
 
-/** Ask the backend to open, reveal, or preview a file. A missing file shows a toast. */
+/** Ask the backend to open or reveal a file. A missing file shows a toast. */
 async function runFileAction(id, action) {
     try {
         await runDocumentFileAction(id, action);
@@ -49,7 +49,7 @@ function makeFileActions(id) {
     actions.className = "file-actions";
     actions.append(
         makeIconButton("icon-eye", "files.preview",
-            () => runFileAction(id, "preview")),
+            () => openPreview(id)),
         makeIconButton("icon-catalog", "files.reveal",
             () => runFileAction(id, "reveal")),
     );

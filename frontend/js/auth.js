@@ -51,6 +51,35 @@ function newPasswordProblem(password, confirmation) {
     return "";
 }
 
+/** Say under the field when the passwords differ. True when they match. */
+function showConfirmProblem() {
+    const confirmation = document.getElementById("register-confirm").value;
+    const same = confirmation
+        === document.getElementById("register-password").value;
+    document.getElementById("register-confirm-message").textContent =
+        same ? "" : t("auth.password_mismatch");
+    return same;
+}
+
+/** Add the eye that shows or hides what was typed in a password field. */
+function addPasswordEye(field) {
+    const input = field.querySelector("input");
+    const eye = document.createElement("button");
+    eye.type = "button";
+    eye.className = "password-eye";
+    const icon = document.createElement("span");
+    eye.appendChild(icon);
+    const show = (visible) => {
+        input.type = visible ? "text" : "password";
+        icon.className = `icon ${visible ? "icon-eye-off" : "icon-eye"}`;
+        eye.setAttribute("aria-label",
+            t(visible ? "auth.hide_password" : "auth.show_password"));
+    };
+    eye.addEventListener("click", () => show(input.type === "password"));
+    show(false);
+    field.appendChild(eye);
+}
+
 /** Create an account, then go into the app (already logged in). */
 async function submitRegister(event) {
     event.preventDefault();
@@ -59,6 +88,9 @@ async function submitRegister(event) {
     const confirmation = document.getElementById("register-confirm").value;
     if (!username) {
         showAuthMessage("register-message", t("error.missing_field"));
+        return;
+    }
+    if (!showConfirmProblem()) {
         return;
     }
     const problem = newPasswordProblem(password, confirmation);
@@ -139,6 +171,13 @@ document.getElementById("register-form")
     .addEventListener("submit", submitRegister);
 document.getElementById("login-form")
     .addEventListener("submit", submitLogin);
+document.querySelectorAll(".password-field").forEach(addPasswordEye);
+// The message goes away as soon as the two match.
+document.getElementById("register-confirm").addEventListener("input", () => {
+    if (document.getElementById("register-confirm-message").textContent) {
+        showConfirmProblem();
+    }
+});
 document.getElementById("show-login-link")
     .addEventListener("click", showLoginScreen);
 document.getElementById("show-register-link")
