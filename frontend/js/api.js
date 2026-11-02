@@ -132,7 +132,7 @@ async function getScan() {
     return handleResponse(response);
 }
 
-/** POST /scan/start, /scan/pause, /scan/resume */
+/** POST /scan/start, /scan/pause, /scan/resume, /scan/retry */
 async function controlScan(action) {
     const response = await apiFetch(`${BASE_URL}/scan/${action}`,
         { method: "POST" });

@@ -218,6 +218,9 @@ function reviewNoteText(note) {
         "No topic could be found in the photo": "catalog.note_topic",
         "Could not read the scanned pages": "catalog.note_scan",
         "File is larger than 50 MB, so it was not read": "catalog.note_too_big",
+        "Timed out while reading": "catalog.note_timeout",
+        "AI answer was cut off": "catalog.note_cut_off",
+        "In iCloud, not downloaded": "catalog.note_icloud",
     };
     if (notes[note]) {
         return t(notes[note]);
@@ -628,10 +631,16 @@ async function renderScan(settings) {
         return;
     }
     const active = ["running", "paused"].includes(scan.status);
-    box.classList.toggle("hidden", !active && scan.status !== "done");
+    box.classList.toggle("hidden",
+        !active && scan.status !== "done" && !scan.retryable);
+    // A pause the scan made by itself says why.
+    const message = scan.error === "stalled" ? "stalled" : scan.status;
     document.getElementById("scan-text").textContent = t(
-        `scan.${scan.status}`, { done: scan.done, total: scan.total,
+        `scan.${message}`, { done: scan.done, total: scan.total,
             file: scan.current });
+    const retry = document.getElementById("scan-retry");
+    retry.textContent = t("scan.retry", { count: scan.retryable });
+    retry.classList.toggle("hidden", active || !scan.retryable);
     document.getElementById("scan-pause")
         .classList.toggle("hidden", scan.status !== "running");
     document.getElementById("scan-resume")
@@ -825,6 +834,10 @@ document.addEventListener("keydown", (event) => {
 
 document.getElementById("scan-pause").addEventListener("click", async () => {
     await controlScan("pause");
+    loadCatalog();
+});
+document.getElementById("scan-retry").addEventListener("click", async () => {
+    await controlScan("retry");
     loadCatalog();
 });
 document.getElementById("scan-resume").addEventListener("click", async () => {

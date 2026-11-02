@@ -6,6 +6,7 @@ import time
 import keyring
 
 from backend.models.document import MEDIA_TYPES
+from backend.pipeline import time_budget
 
 KEYRING_SERVICE = "cataloga"
 
@@ -17,7 +18,15 @@ MAX_SUMMARY_LENGTH = 100
 # Only the start of a document is sent, to stay inside free API limits.
 MAX_INPUT_CHARS = 20000
 
-MAX_ATTEMPTS = 3
+# One retry here, one inside the provider's library, inside the file's time.
+MAX_ATTEMPTS = 2
+
+# Longest answers, in tokens. Without a limit, a model that starts repeating
+# itself keeps writing for minutes. A dense newspaper page did that.
+IMAGE_TOKENS = 4096
+CARD_TOKENS = 1024
+DESCRIPTION_TOKENS = 600
+OTHER_TOKENS = 4096
 
 CLASSIFICATION_PROMPT = """You are organizing files in a research archive.
 Classify the document into exactly one of these media types:
@@ -52,6 +61,21 @@ Use null for text if there is no text. Do not invent anything.
 
 Respond with ONLY a JSON object in this exact format:
 {"text": "...", "description": "..."}"""
+
+# When the full reading was cut off: only what the pages show, no copying.
+DESCRIPTION_PROMPT = """You are helping a researcher catalog an archive.
+Look at the image or images. Do not copy the text. Find:
+- description: one or two sentences on what they show: the kind of
+  document, the people and the topic.
+- source: the name of the newspaper or magazine. On a newspaper page it is
+  printed in small type in the folio line, next to the page number and the
+  date, at the top or bottom edge (for example "EL NUEVO DIA" or "PRIMERA
+  HORA"). A big banner across the page names a section or an event, not
+  the publication. Use null if no publication name is printed.
+- printed_date: the date printed on the page, as written. Use null if none.
+
+Respond with ONLY a JSON object in this exact format:
+{"text": null, "description": "...", "source": "...", "printed_date": "..."}"""
 
 PHOTO_PROMPT = """You are helping a researcher catalog an archive of photos.
 The first image is a photo, maybe an old scanned print. The images after
@@ -99,6 +123,16 @@ Respond with ONLY a JSON list in this exact format:
 [{"name": "...", "subfolders": ["...", "..."]}]"""
 
 
+def text_tokens():
+    """Return the longest text answer: short for a file's card."""
+    return CARD_TOKENS if time_budget.current() else OTHER_TOKENS
+
+
+def image_tokens(prompt):
+    """Return the longest answer about images for this prompt."""
+    return DESCRIPTION_TOKENS if prompt == DESCRIPTION_PROMPT else IMAGE_TOKENS
+
+
 def save_api_key(provider_name, api_key):
     """Save a provider's API key in the OS keyring."""
     keyring.set_password(KEYRING_SERVICE, provider_name, api_key)
@@ -129,15 +163,27 @@ class AIProviderClient:
         """Call send_prompt(), trying again if the request fails."""
         if not self.api_key:
             return None
+        return self.send_with_retry("ai text", self.send_prompt,
+                                    system_prompt, text[:MAX_INPUT_CHARS])
+
+    def send_with_retry(self, step, send, *args):
+        """Send one request, and once more if it fails and time is left."""
         for attempt in range(1, MAX_ATTEMPTS + 1):
             try:
-                answer = self.send_prompt(system_prompt,
-                                          text[:MAX_INPUT_CHARS])
+                answer = time_budget.timed(step, send, *args)
                 return (answer or "").strip()
-            except Exception:
-                # Wait 5 s, then 10 s.
-                if attempt < MAX_ATTEMPTS:
-                    time.sleep(self.retry_delay * attempt)
+            except time_budget.TimedOut:
+                raise
+            except Exception as error:
+                # The kind of error only: its text could quote the request.
+                logger.warning("  %s failed, attempt %d: %s", step, attempt,
+                               type(error).__name__)
+                if attempt == MAX_ATTEMPTS:
+                    break
+                if not time_budget.can_retry():
+                    raise time_budget.TimedOut(step)
+                time.sleep(self.retry_delay * attempt)
+        time_budget.check()
         return None
 
     def send_images(self, prompt, image_uris):
@@ -148,15 +194,8 @@ class AIProviderClient:
         """Ask the AI to read and describe images. None if it cannot."""
         if not self.api_key or not self.supports_images or not image_uris:
             return None
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            try:
-                answer = self.send_images(prompt, image_uris)
-                return (answer or "").strip()
-            except Exception:
-                # Wait 5 s, then 10 s, like text requests.
-                if attempt < MAX_ATTEMPTS:
-                    time.sleep(self.retry_delay * attempt)
-        return None
+        return self.send_with_retry("ai images", self.send_images, prompt,
+                                    image_uris)
 
     def send_classification_request(self, text):
         """Send document text to the AI and return the media type label."""

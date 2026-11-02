@@ -2,7 +2,8 @@
 
 from groq import Groq
 
-from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline import time_budget
+from backend.pipeline.ai_providers.base import AIProviderClient, text_tokens
 
 
 class GroqClient(AIProviderClient):
@@ -15,9 +16,12 @@ class GroqClient(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         """Send one request to the Groq API and return its answer."""
-        client = Groq(api_key=self.api_key, base_url=self.base_url)
+        client = Groq(api_key=self.api_key, base_url=self.base_url,
+                      timeout=time_budget.call_seconds(),
+                      max_retries=time_budget.CLIENT_RETRIES)
         response = client.chat.completions.create(
             model=self.model,
+            max_tokens=text_tokens(),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text},

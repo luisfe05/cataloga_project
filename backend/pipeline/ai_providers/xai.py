@@ -2,7 +2,8 @@
 
 from openai import OpenAI
 
-from backend.pipeline.ai_providers.base import AIProviderClient
+from backend.pipeline import time_budget
+from backend.pipeline.ai_providers.base import AIProviderClient, OTHER_TOKENS
 
 XAI_BASE_URL = "https://api.x.ai/v1"
 
@@ -17,9 +18,12 @@ class XAIClient(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         """Send one request to the xAI API and return its answer."""
-        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url,
+                        timeout=time_budget.call_seconds(),
+                        max_retries=time_budget.CLIENT_RETRIES)
         response = client.chat.completions.create(
             model=self.model,
+            max_tokens=OTHER_TOKENS,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text},

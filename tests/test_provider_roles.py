@@ -92,12 +92,12 @@ def test_old_active_row_becomes_the_text_provider(tmp_path):
 # --- The client with a fallback ---
 
 def test_fallback_answers_when_the_main_one_fails():
-    """Three failures in a row, then the fallback answers."""
-    main = FakeClient("ollama", [RuntimeError("down")] * 3)
+    """Two failures in a row, then the fallback answers."""
+    main = FakeClient("ollama", [RuntimeError("down")] * 2)
     fallback = FakeClient("claude", ["Press"])
     client = ClientWithFallback(main, fallback)
     assert client.send_classification_request("text") == "Press"
-    assert main.calls == 3 and fallback.calls == 1
+    assert main.calls == 2 and fallback.calls == 1
 
 
 def test_fallback_answers_when_the_main_one_has_no_key():

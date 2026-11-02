@@ -637,6 +637,23 @@ class CatalogRepository:
         return self.folder_mode() in (folder_tree.PLACE_MODE,
                                       folder_tree.CATALOG_MODE)
 
+    def untouched_with_notes(self, notes):
+        """Return the rows with one of these notes nobody edited by hand.
+
+        Edit Mode and the chat leave Edited, Moved or Renamed in the log.
+        """
+        marks = ", ".join("?" for _ in notes)
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT id, file_path, review_note FROM documents "
+                "WHERE review_note IN (" + marks + ") AND id NOT IN ("
+                "SELECT document_id FROM activity_log WHERE action IN "
+                "('Edited', 'Moved', 'Renamed'))", list(notes)).fetchall()
+        finally:
+            conn.close()
+        return [dict(row) for row in rows]
+
     def index_get(self, path):
         """Return what the scan index knows about a path, or None."""
         conn = get_connection(self.db_path)
