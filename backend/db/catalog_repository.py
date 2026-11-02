@@ -25,7 +25,8 @@ STATUSES = ("Classified", "Manual Review")
 # Scope change of Oct 25 (was 500).
 MAX_SUMMARY_LENGTH = 100
 
-SINGLE_CONFIG_COLUMNS = ("language", "naming_template", "industry",
+SINGLE_CONFIG_COLUMNS = ("scan_state", "language", "naming_template",
+                         "industry",
                          "categories", "folder_mode", "project_description",
                          "folder_tree", "numbered_folders",
                          "project_sheet", "server_url", "naming_style",
@@ -538,7 +539,7 @@ class CatalogRepository:
                 "app_lock_password_hash, language, naming_template, "
                 "industry, categories, folder_mode, project_description, "
                 "folder_tree, numbered_folders, project_sheet, server_url, "
-                "naming_style, keep_accents, stamp_date_order "
+                "naming_style, keep_accents, stamp_date_order, scan_state "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -854,6 +855,19 @@ class CatalogRepository:
         finally:
             conn.close()
         return [dict(row) for row in rows]
+
+    def scan_state(self):
+        """Return how the folder's scan stands: running, done, or None."""
+        return (self.get_app_config() or {}).get("scan_state")
+
+    def index_paths(self):
+        """Return every path the scan has read."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute("SELECT path FROM scan_index").fetchall()
+        finally:
+            conn.close()
+        return {row[0] for row in rows}
 
     def index_get(self, path):
         """Return what the scan index knows about a path, or None."""

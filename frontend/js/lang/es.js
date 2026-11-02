@@ -56,7 +56,9 @@ const LANG_ES = {
     "scan.done": "Se leyeron los {total} archivos. Nada se movió ni se "
         + "renombró.",
     "scan.idle": "",
-    "scan.stopped": "La lectura se detuvo en {done} de {total} archivos.",
+    "scan.stopped": "Lectura detenida en {done} de {total}",
+    "scan.unread": "{total} archivos no se han leído todavía.",
+    "scan.catalog_files": "Catalogar archivos",
     "plan.summary": "{files} archivos leídos. {moves} movimientos, {renames} "
         + "renombres, {folders} carpetas nuevas.",
     "plan.summary_unchanged": "{n} archivos se quedan como están.",
@@ -78,7 +80,14 @@ const LANG_ES = {
     "plan.approve_all": "Aprobar todo",
     "plan.approve_selected": "Aprobar seleccionados",
     "plan.skip_selected": "Saltar seleccionados",
-    "plan.apply": "Aplicar",
+    "plan.apply": "Aplicar cambios",
+    "plan.apply_one": "Aplicar 1 cambio",
+    "plan.apply_many": "Aplicar {n} cambios",
+    "plan.tab_files": "Archivos",
+    "plan.unread": "{n} archivos no se han leído todavía. Usa Catalogar "
+        + "archivos en el Catálogo; las propuestas aparecen aquí.",
+    "plan.drop_zone": "Este proyecto archiva documentos desde su Drop Zone, "
+        + "así que no hay propuestas que aprobar.",
     "plan.resume": "Continuar",
     "plan.undo": "Deshacer este lote",
     "plan.col_file": "Archivo",
@@ -493,7 +502,13 @@ const LANG_ES = {
     "auth.create_account": "Crear cuenta",
     "auth.log_in": "Iniciar sesión",
     "auth.log_out": "Cerrar sesión",
-    "auth.password_mismatch": "Las contraseñas no coinciden.",
+        "auth.password_mismatch": "Las contraseñas no coinciden",
+    "auth.show_password": "Mostrar contraseña",
+    "auth.hide_password": "Ocultar contraseña",
+    "preview.close": "Cerrar vista previa",
+    "preview.unavailable": "Este archivo no se puede ver aquí. Usa Mostrar en "
+        + "la carpeta para verlo.",
+    "preview.loading": "Cargando…",
     "auth.need_account": "Crear una cuenta",
     "auth.have_account": "Ya tengo una cuenta",
     "auth.forgot": "¿Olvidaste tu contraseña?",

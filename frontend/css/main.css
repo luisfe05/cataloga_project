@@ -158,6 +158,16 @@ td.media-type::before,
     -webkit-mask-image: url("../assets/icons/layout-dashboard.svg");
 }
 
+.icon-eye-off {
+    mask-image: url("../assets/icons/eye-off.svg");
+    -webkit-mask-image: url("../assets/icons/eye-off.svg");
+}
+
+.icon-close {
+    mask-image: url("../assets/icons/x.svg");
+    -webkit-mask-image: url("../assets/icons/x.svg");
+}
+
 .icon-plan {
     mask-image: url("../assets/icons/check-circle.svg");
     -webkit-mask-image: url("../assets/icons/check-circle.svg");
@@ -718,6 +728,7 @@ code:empty {
 }
 
 .filter-row select {
+    max-width: 200px;
     height: 40px;
     border-radius: var(--radius-full);
     padding: 0 var(--spacing-16);
@@ -897,14 +908,55 @@ td.editable {
 
 /* ======== Login ======== */
 
+/* Three rows: the card sits in the exact middle, the logo above it. */
 .auth-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-32);
+    display: grid;
+    grid-template-rows: minmax(auto, 1fr) auto minmax(0, 1fr);
+    justify-items: center;
+    align-items: end;
+    row-gap: var(--spacing-24);
     min-height: 100vh;
-    padding: var(--spacing-64) var(--spacing-16);
+    padding: var(--spacing-16);
     background: var(--frame-gradient);
+}
+
+.auth-screen > .auth-form {
+    grid-row: 2;
+}
+
+/* The eye sits inside the field. */
+.password-field {
+    position: relative;
+    width: 100%;
+    margin-bottom: var(--spacing-16);
+}
+
+.password-field input {
+    width: 100%;
+    margin-bottom: 0;
+    padding-right: 44px;
+}
+
+.password-eye {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    border: 0;
+    background: none;
+    color: var(--color-dusk);
+    cursor: pointer;
+    transition: color 0.15s, filter 0.15s;
+}
+
+.password-eye:hover,
+.password-eye:focus-visible {
+    color: var(--color-violet);
+    filter: drop-shadow(0 0 6px rgba(73, 59, 178, 0.65));
 }
 
 .auth-logo {
@@ -966,8 +1018,9 @@ td.editable {
 .scan-status {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: var(--spacing-12);
-    margin-bottom: var(--spacing-12);
+    margin-bottom: var(--spacing-16);
     font-size: 0.9rem;
     color: var(--color-dusk);
 }
@@ -1165,9 +1218,308 @@ td.editable {
     margin-left: auto;
 }
 
-.plan-folders ul {
-    max-height: 320px;
-    overflow-y: auto;
+/* Catalog and Plan: the header stays put, only the list scrolls. */
+#app-main.fixed-view {
+    height: calc(100vh - var(--topbar-height) - var(--frame-gap) * 3);
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+}
+
+.fixed-view > .view:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding-bottom: var(--spacing-12);
+}
+
+.fixed-view .table-scroll,
+.fixed-view .plan-batches {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* Room for the chat button under the last row. */
+.fixed-view .catalog-table,
+.fixed-view .plan-batches ul {
+    margin-bottom: var(--chat-button-room);
+}
+
+.fixed-view .plan-batches {
+    margin-top: 0;
+}
+
+/* A short window keeps its room for the list. */
+@media (max-height: 800px) {
+    .fixed-view > .view:not(.hidden) {
+        padding-top: var(--spacing-16);
+    }
+
+    .fixed-view .view-title {
+        font-size: 28px;
+        line-height: 32px;
+        margin-bottom: var(--spacing-4);
+    }
+
+    .fixed-view .catalog-header,
+    .fixed-view .filter-row,
+    .fixed-view .scan-status,
+    .plan-tabs {
+        margin-bottom: var(--spacing-8);
+    }
+
+    .fixed-view .progress-numbers {
+        margin-bottom: var(--spacing-4);
+    }
+
+    .fixed-view .progress-number {
+        font-size: 24px;
+        line-height: 28px;
+    }
+
+    .fixed-view .filter-row {
+        gap: var(--spacing-8);
+    }
+}
+
+/* The small logo leaves the card in the exact middle of a laptop screen. */
+@media (max-height: 1000px) {
+    .auth-logo {
+        width: 96px;
+    }
+}
+
+.plan-tabs {
+    align-self: flex-start;
+    margin-bottom: var(--spacing-16);
+}
+
+/* The header row and the file name stay in sight while the list moves. */
+.fixed-view .catalog-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #f6f8fc;
+}
+
+.fixed-view .catalog-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fbfcfe;
+}
+
+.fixed-view .catalog-table thead th:first-child {
+    left: 0;
+    z-index: 4;
+}
+
+/* The whole table fits; a long value ends in "…", the mouse shows it all. */
+#catalog-table:not(.show-more) {
+    table-layout: fixed;
+}
+
+#catalog-table:not(.show-more) td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#catalog-table:not(.show-more) td.summary,
+#catalog-table:not(.show-more) td.folder-cell {
+    white-space: normal;
+}
+
+#catalog-table:not(.show-more) th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#catalog-table:not(.show-more) th:nth-child(1) { width: 13%; }
+#catalog-table:not(.show-more) th:nth-child(2) { width: 18%; }
+#catalog-table:not(.show-more) th:nth-child(3) { width: 9%; }
+#catalog-table:not(.show-more) th:nth-child(4) { width: 10%; }
+#catalog-table:not(.show-more) th:nth-child(5) { width: 8%; }
+#catalog-table:not(.show-more) th:nth-child(7) { width: 15%; }
+#catalog-table:not(.show-more) th:nth-child(9) { width: 8%; }
+#catalog-table:not(.show-more) th:last-child { width: 9%; }
+
+/* The name gives way; the eye and the folder are always there. */
+#catalog-table:not(.show-more) td.filename-cell {
+    display: table-cell;
+}
+
+#catalog-table:not(.show-more) .filename-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    min-width: 0;
+}
+
+#catalog-table:not(.show-more) .file-link {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* One line each, so a row stays short; the mouse shows the whole text. */
+#catalog-table:not(.show-more) .folder-cell > span,
+#catalog-table:not(.show-more) .folder-cell .review-note {
+    display: block;
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#catalog-table:not(.show-more) .folder-cell .folder-move {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Plan: checkbox and file name stay at the left, nothing runs off the side. */
+.plan-table {
+    table-layout: fixed;
+}
+
+.plan-table th:nth-child(1) { width: 44px; }
+.plan-table th:nth-child(2) { width: 20%; }
+.plan-table th:nth-child(3) { width: 12%; }
+.plan-table th:nth-child(4) { width: 17%; }
+.plan-table th:nth-child(5) { width: 18%; }
+.plan-table th:nth-child(7) { width: 100px; }
+.plan-table th:nth-child(8) { width: 96px; }
+
+.plan-table td,
+.plan-table td.plan-why {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fixed-view .plan-table tbody td:nth-child(2),
+.fixed-view .plan-table thead th:nth-child(2) {
+    position: sticky;
+    left: 44px;
+}
+
+.fixed-view .plan-table tbody td:nth-child(2) {
+    z-index: 1;
+    background: #fbfcfe;
+}
+
+.fixed-view .plan-table thead th:nth-child(2) {
+    z-index: 4;
+}
+
+.plan-table td.plan-file .review-note {
+    max-width: none;
+    white-space: normal;
+}
+
+.plan-table .status-select,
+.plan-table td.plan-name input {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Preview: over everything, inside the app. */
+.preview-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-32);
+    background: rgba(8, 5, 28, 0.85);
+}
+
+.preview-box {
+    display: flex;
+    flex-direction: column;
+    width: min(1100px, 100%);
+    max-height: 100%;
+    min-height: 0;
+    border-radius: var(--radius-lg);
+    background: var(--color-paper);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16) var(--spacing-12)
+        var(--spacing-24);
+    border-bottom: 1px solid var(--color-line);
+}
+
+.preview-header h2 {
+    overflow: hidden;
+    color: var(--color-midnight);
+    font-size: 16px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-close {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: none;
+    color: var(--color-midnight);
+    cursor: pointer;
+}
+
+.preview-close:hover {
+    background: rgba(73, 59, 178, 0.12);
+}
+
+.preview-content {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    overflow: auto;
+    padding: var(--spacing-16);
+}
+
+.preview-content img,
+.preview-content video {
+    max-width: 100%;
+    max-height: calc(100vh - 160px);
+    object-fit: contain;
+}
+
+.preview-content audio {
+    width: 100%;
+    max-width: 640px;
+}
+
+.preview-content pre {
+    width: 100%;
+    max-height: calc(100vh - 160px);
+    overflow: auto;
+    margin: 0;
+    color: var(--color-deep-space);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 22px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 /* Only the table scrolls sideways when long file names do not fit. */

@@ -160,7 +160,3 @@ class FileOrganizer:
     def reveal_file(self, file_path):
         """Show a file in Finder, selected."""
         self.run_command(["open", "-R", file_path])
-
-    def preview_file(self, file_path):
-        """Show a Quick Look preview, like the space bar in Finder."""
-        self.run_command(["qlmanage", "-p", file_path])

@@ -4,6 +4,7 @@ import threading
 
 from flask import Blueprint, current_app, jsonify, request
 
+from backend import scanner
 from backend.config import projects as project_list
 from backend.pipeline import folder_tree, organization_plan
 from backend.pipeline.file_organizer import FileOrganizer
@@ -110,6 +111,10 @@ def get_plan():
     else:
         batch_id = plan.draft()
     view = batch_view(repo, plan, batch_id)
+    if repo.reads_in_place():
+        read, total = scanner.scan_counts(
+            repo, project_list.active_folder(projects_path()))
+        view["unread"] = total - read
     view.update({"mode": repo.folder_mode(),
                  "busy": organization_plan.is_busy(),
                  "batches": batch_list(repo, plan)})

@@ -3,6 +3,7 @@
 // The last answer of GET /plan, so filters work without asking again.
 let planView = null;
 let planTimer = null;
+let planTab = "files";
 
 /** Folder path for the screen: "A / B", or the project folder. */
 function planFolderLabel(place) {
@@ -21,11 +22,26 @@ function planMessage(text) {
     message.classList.toggle("hidden", !text);
 }
 
+/** Show one panel of the Plan: only that part scrolls. */
+function showPlanTab(name) {
+    planTab = name || planTab;
+    const panels = { files: ["plan-filters", "plan-table-wrap"],
+        folders: ["plan-folders"], batches: ["plan-batches"] };
+    Object.keys(panels).forEach((tab) => {
+        panels[tab].forEach((id) => {
+            document.getElementById(id).classList
+                .toggle("hidden", tab !== name);
+        });
+    });
+    document.querySelectorAll("[data-plan-tab]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.planTab === name);
+    });
+}
+
 /** Show or hide the parts of the view that need a plan. */
 function showPlanParts(visible) {
-    ["plan-filters", "plan-table-wrap"].forEach((id) => {
-        document.getElementById(id).classList.toggle("hidden", !visible);
-    });
+    document.getElementById("plan-tabs").classList.toggle("hidden", !visible);
+    showPlanTab(visible ? planTab : "");
 }
 
 /** Read the three filters. */
@@ -136,13 +152,18 @@ function planRowOpen(row) {
 function renderPlanRows() {
     const body = document.getElementById("plan-rows");
     body.innerHTML = "";
-    filteredPlanRows().forEach((row) => {
+    // Files first: the folders to make are only what they need.
+    const rows = filteredPlanRows();
+    rows.filter((row) => row.action !== "create_folder")
+        .concat(rows.filter((row) => row.action === "create_folder"))
+        .forEach((row) => {
         const tr = document.createElement("tr");
         tr.dataset.id = row.id || "";
         if (row.status === "failed") {
             tr.classList.add("row-failed");
         }
         const check = document.createElement("td");
+        check.className = "plan-check-cell";
         if (planRowOpen(row)) {
             const box = document.createElement("input");
             box.type = "checkbox";
@@ -153,7 +174,8 @@ function renderPlanRows() {
         }
         tr.appendChild(check);
         const file = makeCell(row.action === "create_folder"
-            ? planLabel("action", "create_folder") : row.old_name, "nowrap");
+            ? planLabel("action", "create_folder") : row.old_name,
+            "plan-file");
         if (row.reason) {
             const note = document.createElement("p");
             note.className = "review-note";
@@ -162,14 +184,15 @@ function renderPlanRows() {
         }
         tr.appendChild(file);
         tr.appendChild(makeCell(row.action === "create_folder" ? ""
-            : planFolderLabel(row.old_folder), "nowrap"));
-        const proposed = makeCell("", "nowrap");
+            : planFolderLabel(row.old_folder), "plan-cut"));
+        const proposed = makeCell("", "plan-cut");
         if (planRowOpen(row) && planView.folders.length) {
             proposed.appendChild(planFolderSelect(row));
         } else {
             proposed.textContent = row.new_folder === row.old_folder
                 && row.action !== "create_folder" ? t("plan.same_folder")
                 : planFolderLabel(row.new_folder);
+            proposed.title = proposed.textContent;
         }
         tr.appendChild(proposed);
         const name = makeCell("", "plan-name");
@@ -179,6 +202,7 @@ function renderPlanRows() {
             name.textContent = row.action === "create_folder" ? ""
                 : (row.new_name === row.old_name || !row.new_name
                     ? t("plan.keep_name") : row.new_name);
+            name.title = name.textContent;
         }
         tr.appendChild(name);
         tr.appendChild(makeCell(row.why || row.review_note || "",
@@ -254,11 +278,9 @@ function planNote(note) {
 }
 
 function renderPlanBatches() {
-    const section = document.getElementById("plan-batches");
     const list = document.getElementById("plan-batch-list");
     list.innerHTML = "";
     const batches = planView.batches || [];
-    section.classList.toggle("hidden", batches.length === 0);
     batches.forEach((batch) => {
         const item = document.createElement("li");
         if (batch.origin === "watch") {
@@ -294,11 +316,9 @@ function renderPlanBatches() {
 
 /** Every folder of the tree with its Leave as is switch. */
 function renderPlanFolders() {
-    const section = document.getElementById("plan-folders");
     const list = document.getElementById("plan-folder-list");
     list.innerHTML = "";
     const folders = planView.tree_folders || [];
-    section.classList.toggle("hidden", folders.length === 0);
     folders.forEach((folder) => {
         const item = document.createElement("li");
         const name = document.createElement("span");
@@ -331,6 +351,24 @@ function renderPlanFolders() {
     });
 }
 
+/** Why a plan has no rows. */
+function emptyPlanText() {
+    if (planView.unread) {
+        return t("plan.unread", { n: planView.unread });
+    }
+    return planView.mode === "tree" ? t("plan.drop_zone") : t("plan.empty");
+}
+
+/** The main button says how many changes it applies. */
+function updateApplyButton() {
+    const count = planView.rows.filter((row) => row.document_id
+        && row.status === "approved").length;
+    const button = document.getElementById("plan-apply");
+    button.textContent = count === 1 ? t("plan.apply_one")
+        : count ? t("plan.apply_many", { n: count }) : t("plan.apply");
+    button.disabled = count === 0 || Boolean(planView.busy);
+}
+
 function renderPlan() {
     renderPlanSummary();
     fillPlanFolderFilter();
@@ -341,13 +379,10 @@ function renderPlan() {
     const running = (planView.batches || []).find((batch) =>
         ["applying", "undoing", "paused", "applied"].includes(batch.status));
     renderPlanProgress(running || null, running ? running.summary : null);
-    if (!planView.rows.length) {
-        planMessage(t("plan.empty"));
-    } else {
-        planMessage("");
-    }
+    planMessage(planView.rows.length ? "" : emptyPlanText());
+    updateApplyButton();
     // The table and the buttons wait while a batch runs.
-    document.querySelectorAll("#plan-filters .toolbar button")
+    document.querySelectorAll("#plan-filters .toolbar .pill-button")
         .forEach((button) => { button.disabled = Boolean(planView.busy); });
 }
 
@@ -359,8 +394,6 @@ async function loadPlan() {
             planView = null;
             showPlanParts(false);
             document.getElementById("plan-summary").textContent = "";
-            document.getElementById("plan-batches").classList.add("hidden");
-            document.getElementById("plan-folders").classList.add("hidden");
             document.getElementById("plan-progress").classList.add("hidden");
             planMessage(view.mode === "catalog" ? t("plan.catalog_only")
                 : t("plan.no_plan"));
@@ -424,6 +457,11 @@ document.getElementById("plan-check-all").addEventListener("change",
             box.checked = event.target.checked;
         });
     });
+document.querySelectorAll("[data-plan-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+        showPlanTab(button.dataset.planTab);
+    });
+});
 ["plan-filter-folder", "plan-filter-action"].forEach((id) => {
     document.getElementById(id).addEventListener("change", renderPlanRows);
 });

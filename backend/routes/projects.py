@@ -86,9 +86,11 @@ def create_project():
         init_db(db_path)
         config = CatalogRepository(db_path).get_app_config() or {}
         name = config.get("research_name") or name
-        organizer.migrate_old_inbox()
-        organizer.ensure_archive_structure(
-            CatalogRepository(db_path).get_folder_tree())
+        # Read in place nothing is made: the plan makes folders when applied.
+        if not CatalogRepository(db_path).reads_in_place():
+            organizer.migrate_old_inbox()
+            organizer.ensure_archive_structure(
+                CatalogRepository(db_path).get_folder_tree())
         projects.add_project(projects_path(), name, folder)
         return jsonify({"name": name, "folder": folder,
                         "opened_existing": True}), 201
