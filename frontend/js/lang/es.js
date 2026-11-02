@@ -40,6 +40,7 @@ const LANG_ES = {
     "home.why": "Por qué esta carpeta",
     "home.open": "Abrir",
     "home.show": "Mostrar en la carpeta",
+    "nav.projects": "Proyectos",
     "nav.plan": "Plan",
     "nav.dashboard": "Panel",
     "nav.settings": "Configuración",

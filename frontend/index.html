@@ -90,13 +90,16 @@
                 <a href="#" class="nav-link" data-view="plan">
                     <span class="icon icon-plan"></span>
                     <span data-i18n="nav.plan">Plan</span>
+                    <!-- How many proposals wait for a look (plan.js). -->
+                    <span class="nav-badge hidden" id="plan-badge"></span>
                 </a>
-                <!-- Projects and New project, filled by loadProjectHeader() in app.js. -->
-                <ul class="project-list" id="project-list"></ul>
                 <a href="#" class="nav-link" data-view="dashboard">
                     <span class="icon icon-dashboard"></span>
                     <span data-i18n="nav.dashboard">Dashboard</span>
                 </a>
+                <p class="side-label" data-i18n="nav.projects">Projects</p>
+                <!-- Projects and New project, filled by loadProjectHeader() in app.js. -->
+                <ul class="project-list" id="project-list"></ul>
             </div>
             <!-- Settings and the account, at the bottom of the block. -->
             <div class="side-bottom">

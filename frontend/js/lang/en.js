@@ -40,6 +40,7 @@ const LANG_EN = {
     "home.why": "Why this folder",
     "home.open": "Open",
     "home.show": "Show in folder",
+    "nav.projects": "Projects",
     "nav.plan": "Plan",
     "nav.dashboard": "Dashboard",
     "nav.settings": "Settings",

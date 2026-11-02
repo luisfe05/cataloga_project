@@ -276,6 +276,31 @@ code:empty {
         var(--color-violet));
 }
 
+.side-label {
+    padding: 16px 12px 6px;
+    color: var(--color-paper);
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    opacity: 0.75;
+    text-transform: uppercase;
+}
+
+/* The number next to Plan: proposals that wait for a look. */
+.nav-badge {
+    min-width: 22px;
+    margin-left: auto;
+    padding: 1px 7px;
+    border-radius: var(--radius-full);
+    background: var(--color-paper);
+    color: var(--color-midnight);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+}
+
 .side-bottom {
     display: grid;
     flex: none;
@@ -340,7 +365,7 @@ code:empty {
     min-height: 0;
 }
 
-/* Projects under Catalog, indented. Only this list scrolls. */
+/* Projects under their label. Only this list scrolls. */
 .project-list {
     list-style: none;
     display: flex;

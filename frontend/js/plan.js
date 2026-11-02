@@ -385,9 +385,23 @@ function renderPlan() {
     renderPlanProgress(running || null, running ? running.summary : null);
     planMessage(planView.rows.length ? "" : emptyPlanText());
     updateApplyButton();
+    refreshPlanBadge();
     // The table and the buttons wait while a batch runs.
     document.querySelectorAll("#plan-filters .toolbar .pill-button")
         .forEach((button) => { button.disabled = Boolean(planView.busy); });
+}
+
+/** The number next to Plan in the sidebar. */
+async function refreshPlanBadge() {
+    let count = 0;
+    try {
+        count = (await getPlanCount()).waiting;
+    } catch (error) {
+        // No project yet, or logged out: no number.
+    }
+    const badge = document.getElementById("plan-badge");
+    badge.textContent = count;
+    badge.classList.toggle("hidden", !count);
 }
 
 async function loadPlan() {
