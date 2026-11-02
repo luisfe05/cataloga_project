@@ -17,7 +17,7 @@ function folderMark(depth) {
     return depth === 2 ? 3 : 5;
 }
 
-function depthOf(place) {
+function homeDepth(place) {
     return place ? place.split("/").length : 0;
 }
 
@@ -197,7 +197,7 @@ function drawIcons(box) {
     const here = homeHere();
     const grid = document.createElement("div");
     grid.className = "home-grid";
-    const depth = depthOf(here.path) + 1;
+    const depth = homeDepth(here.path) + 1;
     here.folders.forEach((folder) => {
         grid.appendChild(makeIconItem("folder", folder,
             logomarkImage(folderMark(depth)),
@@ -261,7 +261,7 @@ function drawColumns(box) {
         const column = document.createElement("div");
         column.className = "home-col";
         const next = homeTrail[index + 1];
-        const depth = depthOf(level.path) + 1;
+        const depth = homeDepth(level.path) + 1;
         level.folders.forEach((folder) => {
             const open = Boolean(next) && next.path === folder.path;
             column.appendChild(makeColumnRow("folder", folder, index,
@@ -299,7 +299,7 @@ function statusPill(text, kind) {
 function drawFolderInfo(info, name, path, files) {
     const big = document.createElement("div");
     big.className = "home-big";
-    big.appendChild(logomarkImage(folderMark(depthOf(path))));
+    big.appendChild(logomarkImage(folderMark(homeDepth(path))));
     const title = document.createElement("h3");
     title.textContent = name;
     const facts = document.createElement("dl");
