@@ -26,7 +26,7 @@ class FakeAI(AIProviderClient):
         self.retry_delay = 0
 
     def send_prompt(self, system_prompt, text):
-        return card_answer('{"source": "Claridad", "document_date": "1980"}',
+        return card_answer('{"source": "Gazette", "document_date": "1980"}',
                            summary="A summary.")
 
 

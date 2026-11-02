@@ -139,7 +139,7 @@ These folders hold one folder per event, named Event_Year:
 {events}
 A file of an event goes into its event folder. For an event with no
 folder yet, answer "folder" with "<events folder>/<Event_Year>" (for
-example "{example}/Regata-Ponce_2003"): Cataloga will propose creating
+example "{example}/Harbor-Regatta_2003"): Cataloga will propose creating
 it. Never propose a new folder anywhere else."""
 
 # How many of the user's moves the AI reads before filing a document.
@@ -660,7 +660,7 @@ class ClassificationPipeline:
         """What is printed on a page beats what the AI made of it."""
         source = getattr(self.reading, "source", None)
         if source:
-            # Folio lines are in capitals: El Nuevo Dia, not EL NUEVO DIA.
+            # Folio lines are in capitals: Bay Post, not BAY POST.
             metadata["source"] = source.title() if source.isupper() \
                 else source
         printed = archive_rules.stamp_date(

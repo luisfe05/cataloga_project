@@ -110,24 +110,24 @@ def test_the_tables_of_a_catalog(tmp_path):
 def test_archive_fields_are_saved_and_read(repo):
     """Every new field comes back the same, keywords as a list."""
     doc = repo.add_document(make_doc(
-        topic="Malta Olímpica", keywords=["swimming", "malta", "1964"],
-        sha256="abc", counterparty="Jurutungo Films",
+        topic="Harbor Olímpica", keywords=["swimming", "harbor", "1964"],
+        sha256="abc", counterparty="Port Alder Films",
         confidentiality="Internal", owner="luis", category="Press"))
     saved = repo.get_document(doc.id)
-    assert saved.keywords == ["swimming", "malta", "1964"]
-    assert saved.topic == "Malta Olímpica"
-    assert saved.counterparty == "Jurutungo Films"
+    assert saved.keywords == ["swimming", "harbor", "1964"]
+    assert saved.topic == "Harbor Olímpica"
+    assert saved.counterparty == "Port Alder Films"
     assert saved.owner == "luis"
     assert saved.to_dict()["category"] == "Press"
 
 
 def test_search_finds_keywords_and_counterparty(repo):
     """Catalog search looks inside keywords and counterparty too."""
-    repo.add_document(make_doc("a.pdf", keywords=["oceanman"]))
+    repo.add_document(make_doc("a.pdf", keywords=["dawnswim"]))
     repo.add_document(make_doc("b.pdf", counterparty="Acme Corp"))
     repo.add_document(make_doc("c.pdf"))
     assert [d.filename for d in repo.get_all_documents(
-        {"search": "oceanman"})] == ["a.pdf"]
+        {"search": "dawnswim"})] == ["a.pdf"]
     assert [d.filename for d in repo.get_all_documents(
         {"search": "acme"})] == ["b.pdf"]
 
@@ -246,8 +246,8 @@ def test_sha256_of_matches_for_same_content(tmp_path):
 def test_clean_keywords_from_ai():
     """AI keywords: up to 5, 40 characters, no repeats, no blanks."""
     result = archive_rules.clean_keywords(
-        ["Malta", "malta", "", None, "x" * 50, "b", "c", "d", "e"])
-    assert result == ["Malta", "x" * 40, "b", "c", "d"]
+        ["Harbor", "harbor", "", None, "x" * 50, "b", "c", "d", "e"])
+    assert result == ["Harbor", "x" * 40, "b", "c", "d"]
     assert archive_rules.clean_keywords("not a list") == []
 
 
@@ -291,19 +291,19 @@ def test_match_category_without_a_list():
 def test_method_4_name():
     """Method 4: topic, source and date; a number only when a name repeats."""
     parts = naming.build_parts("scan.pdf", 7, document_date="2026-07-15",
-                               source="El Nuevo Día",
-                               topic="Oceanman Malta", topic_number=1)
+                               source="Gaceta Bahía",
+                               topic="Pier Swim", topic_number=1)
     assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
                                 ".pdf") == \
-        "oceanman-malta_el-nuevo-dia_2026-07-15.pdf"
+        "pier-swim_gaceta-bahia_2026-07-15.pdf"
 
 
 def test_method_4_without_source_or_date():
     """No source and no date leave those parts out."""
-    parts = naming.build_parts("scan.pdf", 7, topic="Oceanman Malta",
+    parts = naming.build_parts("scan.pdf", 7, topic="Pier Swim",
                                topic_number=12)
     assert naming.make_filename(naming.NEW_PROJECT_TEMPLATE, parts,
-                                ".pdf") == "oceanman-malta.pdf"
+                                ".pdf") == "pier-swim.pdf"
 
 
 def test_topic_number_goes_to_4_digits():
@@ -314,8 +314,8 @@ def test_topic_number_goes_to_4_digits():
 
 def test_next_topic_number_counts_the_same_topic():
     """Topics that give the same slug count together."""
-    saved = ["Oceanman Malta", "oceanman málta", "Other"]
-    assert naming.next_topic_number("Oceanman Malta", saved) == 3
+    saved = ["Pier Swim", "pier swím", "Other"]
+    assert naming.next_topic_number("Pier Swim", saved) == 3
     assert naming.next_topic_number("New topic", saved) == 1
 
 
@@ -333,10 +333,10 @@ def test_old_projects_keep_method_1_as_fallback():
 # --- Pipeline ---
 
 FULL_METADATA = json.dumps({
-    "source": "El Nuevo Día", "document_date": "2026-07-15",
-    "topic": "Oceanman Malta",
-    "keywords": ["swimming", "Malta", "malta", "x" * 60, "", "a", "b"],
-    "counterparty": "Jurutungo Films",
+    "source": "Gaceta Bahía", "document_date": "2026-07-15",
+    "topic": "Pier Swim",
+    "keywords": ["swimming", "Harbor", "harbor", "x" * 60, "", "a", "b"],
+    "counterparty": "Port Alder Films",
     "category": "contracts", "subcategory": "rights"})
 
 
@@ -383,9 +383,9 @@ def test_new_file_gets_all_archive_fields(pipe):
     pipe["repo"].save_categories(CATEGORIES)
     doc = pipe["pipeline"].classify_document(
         drop(pipe, "a.txt", "Contract text"))
-    assert doc.filename == "oceanman-malta_el-nuevo-dia_2026-07-15.txt"
-    assert doc.keywords == ["swimming", "Malta", "x" * 40, "a", "b"]
-    assert doc.counterparty == "Jurutungo Films"
+    assert doc.filename == "pier-swim_gaceta-bahia_2026-07-15.txt"
+    assert doc.keywords == ["swimming", "Harbor", "x" * 40, "a", "b"]
+    assert doc.counterparty == "Port Alder Films"
     assert (doc.category, doc.subcategory) == ("Contracts", "Rights")
     assert doc.confidentiality == "Internal"
     assert doc.owner == "luis"
@@ -608,9 +608,9 @@ def test_patch_route_edits_archive_fields(flask_client, app):
     """PATCH saves the new fields and refuses bad ones with 400."""
     doc = active_repo(app).add_document(make_doc())
     response = flask_client.patch("/documents/{}".format(doc.id), json={
-        "keywords": ["malta", "swim"], "confidentiality": "Public"})
+        "keywords": ["harbor", "swim"], "confidentiality": "Public"})
     assert response.status_code == 200
-    assert response.get_json()["keywords"] == ["malta", "swim"]
+    assert response.get_json()["keywords"] == ["harbor", "swim"]
     response = flask_client.patch("/documents/{}".format(doc.id), json={
         "confidentiality": "Top secret"})
     assert response.status_code == 400
@@ -627,18 +627,18 @@ def test_export_has_keywords_in_one_cell(flask_client, app):
 
 def test_chat_finds_documents_by_keyword():
     """The chat picks documents whose keywords match the message."""
-    match = make_doc("a.pdf", keywords=["oceanman"])
+    match = make_doc("a.pdf", keywords=["dawnswim"])
     match.id = 1
     other = make_doc("b.pdf")
     other.id = 2
     found = chat_assistant.find_documents([other, match],
-                                          "find oceanman files")
+                                          "find dawnswim files")
     assert found == [match]
 
 
 def test_chat_card_shows_keywords_and_category():
     """The cards sent to the model carry the new fields."""
-    doc = make_doc(keywords=["malta"], category="Press")
+    doc = make_doc(keywords=["harbor"], category="Press")
     card = chat_assistant.document_card(doc)
-    assert card["keywords"] == ["malta"]
+    assert card["keywords"] == ["harbor"]
     assert card["category"] == "Press"

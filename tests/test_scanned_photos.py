@@ -35,8 +35,8 @@ def test_stamp_date(text, order, expected):
 
 
 @pytest.mark.parametrize("path, year", [
-    ("/a/EVENTOS/Trialo-Isla-Verde_1998/IMG_0001.jpg", "1998"),
-    ("/a/Juegos_1997_3.tif", "1997"),
+    ("/a/EVENTOS/Harbor-Race_1998/IMG_0001.jpg", "1998"),
+    ("/a/Swim_1997_3.tif", "1997"),
     ("/a/b/IMG_0001.jpg", None),
     ("/a/2026-07-15_scan.pdf", "2026"),
 ])
@@ -126,7 +126,7 @@ class StampAI(FakeAI):
         # No date in the card: the photo's own dates decide.
         self.text_calls += 1
         return card_answer({"source": None, "document_date": None,
-                            "topic": "Juegos Nacionales"}, "Photos",
+                            "topic": "Harbor Swim"}, "Photos",
                            "Children at a track meet.")
 
     def send_images(self, prompt, image_uris):
@@ -145,7 +145,7 @@ class StampAI(FakeAI):
 
 def test_sideways_photo_is_turned_and_dated_from_its_stamp(setup):
     """Luis's 1997 photo: lying on its side, stamp 11 13 '97, no EXIF."""
-    path = stamped_photo(setup["drop"] / "Juegos_1997_1.tif", rotation=90)
+    path = stamped_photo(setup["drop"] / "Swim_1997_1.tif", rotation=90)
     ai = StampAI(rotation=270)
     doc = setup["build"](ai).classify_document(path)
     assert ai.prompts[0] == base.PHOTO_PROMPT
@@ -178,7 +178,7 @@ def test_year_in_the_name_when_the_photo_has_no_stamp(setup):
     """No stamp and a scanner's EXIF: the _1997 in the name gives 1997."""
     exif = Image.Exif()
     exif[306] = "2026:07:15 10:30:00"
-    path = str(setup["drop"] / "Juegos-Nacionales_1997_2.jpg")
+    path = str(setup["drop"] / "Dawn-Swim_1997_2.jpg")
     Image.new("RGB", (40, 40)).save(path, exif=exif)
     doc = setup["build"](StampAI(printed=None)).classify_document(path)
     assert doc.document_date == "1997"

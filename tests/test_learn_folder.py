@@ -5,21 +5,21 @@ import os
 from backend.pipeline import folder_tree, learn_folder, naming
 
 
-def delfin(root):
+def harbor_root(root):
     """Luis's photo archive: five levels, event folders, a catch-all."""
-    events = root / "INVESTIGACION" / "FOTOS" / "EVENTOS_DEPORTIVOS"
-    juegos = events / "Juegos-Nacionales-Olimpiadas-Especiales-PR_1997"
-    trialo = events / "Trialo-Isla-Verde_1998"
-    fotos = root / "INVESTIGACION" / "FOTOS"
-    for folder in (juegos, trialo, fotos / "ESCUELA", fotos / "SIN_TEMA",
-                   root / "INVESTIGACION" / "PRENSA", root / ".git"):
+    events = root / "HARBOR_SWIMMERS" / "FOTOS" / "EVENTOS_DEPORTIVOS"
+    dawn_swim = events / "Dawn-Swim-Harbor-Club-PR_1997"
+    trialo = events / "Harbor-Race_1998"
+    fotos = root / "HARBOR_SWIMMERS" / "FOTOS"
+    for folder in (dawn_swim, trialo, fotos / "ESCUELA", fotos / "SIN_TEMA",
+                   root / "HARBOR_SWIMMERS" / "PRENSA", root / ".git"):
         folder.mkdir(parents=True)
     for i in range(1, 14):
-        (juegos / "Juegos-Nacionales-Olimpiadas-Especiales-PR_1997_{}.tif"
+        (dawn_swim / "Dawn-Swim-Harbor-Club-PR_1997_{}.tif"
          .format(i)).write_bytes(b"x")
     for i in range(1, 10):
-        (trialo / "Trialo-Isla-Verde_1998_{}.tif".format(i)).write_bytes(b"x")
-    (root / "INVESTIGACION" / "PRENSA" / "Articulo.pdf").write_bytes(b"x")
+        (trialo / "Harbor-Race_1998_{}.tif".format(i)).write_bytes(b"x")
+    (root / "HARBOR_SWIMMERS" / "PRENSA" / "Articulo.pdf").write_bytes(b"x")
     (root / ".DS_Store").write_bytes(b"")
     (root / ".git" / "config").write_text("x")
     return root
@@ -27,35 +27,36 @@ def delfin(root):
 
 def test_the_tree_is_read_as_it_is(tmp_path):
     """Five levels, in order, without hidden or tool folders."""
-    result = learn_folder.learn(str(delfin(tmp_path / "EL DELFIN")))
+    result = learn_folder.learn(str(harbor_root(tmp_path / "HARBOR SWIMMERS")))
     tree = result["folder_tree"]
     assert folder_tree.all_paths(tree) == [
-        "INVESTIGACION", "INVESTIGACION/FOTOS",
-        "INVESTIGACION/FOTOS/ESCUELA",
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS",
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/"
-        "Juegos-Nacionales-Olimpiadas-Especiales-PR_1997",
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/Trialo-Isla-Verde_1998",
-        "INVESTIGACION/FOTOS/SIN_TEMA", "INVESTIGACION/PRENSA"]
+        "HARBOR_SWIMMERS", "HARBOR_SWIMMERS/FOTOS",
+        "HARBOR_SWIMMERS/FOTOS/ESCUELA",
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS",
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/"
+        "Dawn-Swim-Harbor-Club-PR_1997",
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/Harbor-Race_1998",
+        "HARBOR_SWIMMERS/FOTOS/SIN_TEMA", "HARBOR_SWIMMERS/PRENSA"]
     assert result["folders"] == 8
     assert result["files"] == 23
 
 
 def test_events_and_catch_all_are_marked(tmp_path):
     """EVENTOS_DEPORTIVOS holds Event_Year folders; SIN_TEMA catches all."""
-    tree = learn_folder.learn(str(delfin(tmp_path / "p")))["folder_tree"]
+    tree = learn_folder.learn(str(harbor_root(tmp_path / "p")))["folder_tree"]
     events = folder_tree.node_at(tree,
-                                 "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS")
+                                 "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS")
     assert events["events"] is True
-    assert folder_tree.node_at(tree, "INVESTIGACION/FOTOS/SIN_TEMA")[
+    assert folder_tree.node_at(tree, "HARBOR_SWIMMERS/FOTOS/SIN_TEMA")[
         "fallback"] is True
-    assert folder_tree.node_at(tree, "INVESTIGACION/FOTOS")["events"] is False
-    assert folder_tree.fallback_place(tree) == "INVESTIGACION/FOTOS/SIN_TEMA"
+    assert folder_tree.node_at(
+        tree, "HARBOR_SWIMMERS/FOTOS")["events"] is False
+    assert folder_tree.fallback_place(tree) == "HARBOR_SWIMMERS/FOTOS/SIN_TEMA"
 
 
 def test_the_naming_of_the_photo_archive(tmp_path):
     """Title-Case words, _ between parts, event name, year and a number."""
-    result = learn_folder.learn(str(delfin(tmp_path / "p")))
+    result = learn_folder.learn(str(harbor_root(tmp_path / "p")))
     assert result["naming_style"] == "title"
     assert "keep_accents" not in result
     assert result["event_numbering"] is True
@@ -92,7 +93,7 @@ def test_lowercase_names_with_accents(tmp_path):
 
 def test_nothing_on_disk_changes(tmp_path):
     """Learning only reads."""
-    root = delfin(tmp_path / "p")
+    root = harbor_root(tmp_path / "p")
     before = sorted(str(p) for p in root.rglob("*"))
     learn_folder.learn(str(root))
     assert sorted(str(p) for p in root.rglob("*")) == before
@@ -117,12 +118,12 @@ def test_limits(tmp_path):
 
 def test_learn_route(empty_client, tmp_path):
     """The route answers the tree and naming, and saves nothing."""
-    root = delfin(tmp_path / "p")
+    root = harbor_root(tmp_path / "p")
     response = empty_client.post("/projects/folders/learn",
                                  json={"folder": str(root)})
     assert response.status_code == 200
     data = response.get_json()
-    assert data["folder_tree"][0]["name"] == "INVESTIGACION"
+    assert data["folder_tree"][0]["name"] == "HARBOR_SWIMMERS"
     assert data["naming_style"] == "title"
     assert empty_client.get("/projects").get_json()["projects"] == []
     assert not (root / ".cataloga").exists()
@@ -140,21 +141,21 @@ def test_learn_route(empty_client, tmp_path):
 def test_learned_tree_creates_a_project_without_touching_folders(
         empty_client, tmp_path):
     """The learned tree can be the tree of an in-place project as it is."""
-    root = delfin(tmp_path / "p")
+    root = harbor_root(tmp_path / "p")
     learned = empty_client.post("/projects/folders/learn",
                                 json={"folder": str(root)}).get_json()
     response = empty_client.post("/projects", json={
-        "name": "Delfin", "folder": str(root), "folder_mode": "place",
+        "name": "Harbor", "folder": str(root), "folder_mode": "place",
         "folders": learned["folder_tree"],
         "naming_template": learned["naming_template"],
         "naming_style": learned["naming_style"]})
     assert response.status_code == 201
     settings = empty_client.get("/settings").get_json()
     assert folder_tree.node_at(settings["folder_tree"],
-                               "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS")[
+                               "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS")[
         "events"] is True
     assert settings["naming_template"] == naming.EVENT_TEMPLATE
     assert settings["naming_style"] == "title"
     visible = sorted(n for n in os.listdir(str(root)) if not n.startswith("."))
-    assert visible == ["INVESTIGACION"]
+    assert visible == ["HARBOR_SWIMMERS"]
     assert (root / ".cataloga").is_dir()

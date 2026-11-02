@@ -89,9 +89,9 @@ def test_patch_document(flask_client, repo):
     """An editable field is updated and the new document returned."""
     add_doc(repo, "D_001.pdf")
     response = flask_client.patch("/documents/1",
-                                  json={"source": "Claridad"})
+                                  json={"source": "Gazette"})
     assert response.status_code == 200
-    assert response.get_json()["source"] == "Claridad"
+    assert response.get_json()["source"] == "Gazette"
 
 
 def test_patch_locked_field(flask_client, repo):
@@ -201,12 +201,12 @@ def test_get_settings_with_no_project(empty_client):
 def test_put_settings_renames_the_project(flask_client, app):
     """The name changes in the catalog and in the project list."""
     response = flask_client.put("/settings", json={
-        "research_name": "El Delfin"})
+        "research_name": "Harbor Swimmers"})
     assert response.status_code == 200
-    assert response.get_json()["research_name"] == "El Delfin"
+    assert response.get_json()["research_name"] == "Harbor Swimmers"
     names = [p["name"] for p in
              flask_client.get("/projects").get_json()["projects"]]
-    assert names == ["El Delfin"]
+    assert names == ["Harbor Swimmers"]
 
 
 def test_put_settings_never_changes_the_folder(flask_client, app, tmp_path):
@@ -444,17 +444,17 @@ def test_patch_source_regenerates_summary(flask_client, repo, tmp_path,
 
     def fake_send(self, prompt, text):
         sent.append(text)
-        return "New summary that mentions Claridad."
+        return "New summary that mentions Gazette."
 
     monkeypatch.setattr(GeminiClient, "send_prompt", fake_send)
     response = flask_client.patch("/documents/{}".format(doc.id),
-                                  json={"source": "Claridad"})
+                                  json={"source": "Gazette"})
 
     assert response.status_code == 200
-    assert response.get_json()["source"] == "Claridad"
+    assert response.get_json()["source"] == "Gazette"
     assert response.get_json()["summary"] == \
-        "New summary that mentions Claridad."
-    assert "- source: Claridad" in sent[0]
+        "New summary that mentions Gazette."
+    assert "- source: Gazette" in sent[0]
 
 
 def test_patch_with_own_summary_is_not_overwritten(
@@ -466,7 +466,7 @@ def test_patch_with_own_summary_is_not_overwritten(
     monkeypatch.setattr(GeminiClient, "send_prompt",
                         lambda self, prompt, text: calls.append(1) or "AI")
     response = flask_client.patch("/documents/{}".format(doc.id), json={
-        "source": "Claridad", "summary": "My own summary."})
+        "source": "Gazette", "summary": "My own summary."})
     assert response.get_json()["summary"] == "My own summary."
     assert calls == []
 

@@ -27,10 +27,10 @@ def test_move_by_hand_is_remembered(flask_client, tmp_path):
                       "from_name": None, "to_name": None}]
     # A second move of the same file records where it came from now.
     flask_client.post("/documents/{}/move".format(doc.id),
-                      json={"folder": "Oceanman Malta/Prensa"})
+                      json={"folder": "Pier Swim/Prensa"})
     assert repo.recent_corrections()[0]["from_folder"] == "Contratos"
     assert repo.recent_corrections()[0]["to_folder"] == \
-        "Oceanman Malta/Prensa"
+        "Pier Swim/Prensa"
 
 
 def test_latest_moves_go_into_the_prompt(tree_project):

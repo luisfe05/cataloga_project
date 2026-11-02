@@ -51,7 +51,7 @@ def test_keep_original_names_classifies_and_moves_without_renaming(setup):
         make_text_file(setup["drop_zone"], "Carta de Ramón.txt"))
     assert doc.filename == "Carta de Ramón.txt"
     assert doc.status == "Classified"
-    assert doc.source == "El Nuevo Día"
+    assert doc.source == "Gaceta Bahía"
     assert os.path.dirname(doc.file_path).endswith("Press")
 
 

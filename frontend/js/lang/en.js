@@ -458,7 +458,7 @@ const LANG_EN = {
         + "then edit the tree before you create the project.",
     "folders.description": "What is this project about?",
     "folders.description_placeholder": "For example: documentary about a "
-        + "Puerto Rican swimmer who competes in Malta",
+        + "harbor swimming club from the 1950s",
     "folders.suggest": "Suggest folders",
     "folders.file_types": "Start from file types",
     "folders.learn": "Learn from my folder",

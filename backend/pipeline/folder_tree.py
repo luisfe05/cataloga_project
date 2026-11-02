@@ -307,7 +307,7 @@ def all_paths(tree, parent=""):
     return paths
 
 
-# A folder named like an event: Trialo-Isla-Verde_1998, Boda 2003.
+# A folder named like an event: Harbor-Race_1998, Boda 2003.
 EVENT_NAME = re.compile(r"^(.+?)[\s_-]((?:18|19|20)\d{2})$")
 
 
@@ -349,7 +349,7 @@ def left_alone(tree, place):
 def event_for_name(tree, filename):
     """Return the event folder whose name starts the file's name, or None.
 
-    Juegos-Nacionales_1997_7.tif belongs in Juegos-Nacionales_1997.
+    Dawn-Swim_1997_7.tif belongs in Dawn-Swim_1997.
     """
     stem = os.path.splitext(os.path.basename(str(filename or "")))[0].lower()
     best = None

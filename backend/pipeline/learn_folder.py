@@ -10,7 +10,7 @@ from backend.scanner import SKIPPED_FILES, SKIPPED_FOLDERS
 MAX_ENTRIES = 2000
 MAX_EXAMPLES = 3
 
-# A folder named like an event: Trialo-Isla-Verde_1998, Boda 2003.
+# A folder named like an event: Harbor-Race_1998, Boda 2003.
 EVENT_FOLDER = re.compile(r"^(.+?)[\s_-]((?:18|19|20)\d{2})$")
 
 # A file named after its event folder plus a number: ..._1997_13.tif.

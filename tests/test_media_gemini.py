@@ -299,11 +299,11 @@ def test_wav_id3_tags_are_read(tmp_path):
     audio = WAVE(path)
     audio.add_tags()
     audio.tags.add(TIT2(encoding=3, text="Ferry interview"))
-    audio.tags.add(TPE1(encoding=3, text="Radio Isla"))
+    audio.tags.add(TPE1(encoding=3, text="Radio Harbor"))
     audio.tags.add(TDRC(encoding=3, text="2001-05-02"))
     audio.save()
     meta = file_metadata.media_metadata(path)
     assert meta["title"] == "Ferry interview"
-    assert meta["author"] == "Radio Isla"
+    assert meta["author"] == "Radio Harbor"
     assert meta["date"] == "2001-05-02"
     assert meta["length"] == "0:01"

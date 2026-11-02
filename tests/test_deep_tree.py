@@ -12,11 +12,11 @@ from tests.test_project_folders import (  # noqa: F401
     add_file_doc, create_tree_project, drop, old_project, tree_project)
 
 # Luis's photo archive: five levels, an events folder, a catch-all.
-DEEP = [{"name": "INVESTIGACION", "children": [
+DEEP = [{"name": "HARBOR_SWIMMERS", "children": [
     {"name": "FOTOS", "children": [
         {"name": "EVENTOS_DEPORTIVOS", "events": True, "children": [
-            {"name": "Trialo-Isla-Verde_1998"},
-            {"name": "Juegos-Nacionales_1997"}]},
+            {"name": "Harbor-Race_1998"},
+            {"name": "Dawn-Swim_1997"}]},
         {"name": "ESCUELA"},
         {"name": "SIN_TEMA", "fallback": True}]},
     {"name": "PRENSA"}]},
@@ -32,12 +32,12 @@ def test_check_tree_keeps_every_level_and_mark():
     assert tree[0]["children"][0]["children"][0]["events"] is True
     assert tree[0]["subcategories"] == ["FOTOS", "PRENSA"]
     assert folder_tree.all_places(tree) == [
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/Trialo-Isla-Verde_1998",
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/Juegos-Nacionales_1997",
-        "INVESTIGACION/FOTOS/ESCUELA", "INVESTIGACION/FOTOS/SIN_TEMA",
-        "INVESTIGACION/PRENSA", "Contratos"]
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/Harbor-Race_1998",
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/Dawn-Swim_1997",
+        "HARBOR_SWIMMERS/FOTOS/ESCUELA", "HARBOR_SWIMMERS/FOTOS/SIN_TEMA",
+        "HARBOR_SWIMMERS/PRENSA", "Contratos"]
     assert folder_tree.to_categories(tree) == [
-        {"name": "INVESTIGACION", "subcategories": ["FOTOS", "PRENSA"]},
+        {"name": "HARBOR_SWIMMERS", "subcategories": ["FOTOS", "PRENSA"]},
         {"name": "Contratos", "subcategories": []}]
 
 
@@ -71,20 +71,20 @@ def test_find_place_and_paths():
     """Paths match ignoring case; only folders without subfolders count."""
     tree = folder_tree.check_tree(DEEP)
     assert folder_tree.find_place(
-        tree, "investigacion/fotos/eventos_deportivos/trialo-isla-verde_1998"
-    ) == "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/Trialo-Isla-Verde_1998"
-    assert folder_tree.find_place(tree, "INVESTIGACION/FOTOS") is None
+        tree, "harbor_swimmers/fotos/eventos_deportivos/harbor-race_1998"
+    ) == "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/Harbor-Race_1998"
+    assert folder_tree.find_place(tree, "HARBOR_SWIMMERS/FOTOS") is None
     assert folder_tree.find_place(tree, "Nada") is None
     assert folder_tree.first_two("A/B/C/D") == ("A", "B")
     assert folder_tree.first_two("A") == ("A", None)
-    assert folder_tree.node_at(tree, "INVESTIGACION/FOTOS/SIN_TEMA")[
+    assert folder_tree.node_at(tree, "HARBOR_SWIMMERS/FOTOS/SIN_TEMA")[
         "fallback"] is True
 
 
 def test_catch_all_by_mark_or_by_name():
     """The marked folder is the catch-all; else a name like Otros is."""
     assert folder_tree.fallback_place(folder_tree.check_tree(DEEP)) == \
-        "INVESTIGACION/FOTOS/SIN_TEMA"
+        "HARBOR_SWIMMERS/FOTOS/SIN_TEMA"
     by_name = folder_tree.check_tree([{"name": "Prensa"},
                                       {"name": "Otros"}])
     assert folder_tree.fallback_place(by_name) == "Otros"
@@ -96,8 +96,8 @@ def test_add_place_creates_every_missing_level():
     """Create folder and move can add a nested path at once."""
     tree = folder_tree.check_tree(DEEP)
     tree = folder_tree.add_place(tree,
-                                 "INVESTIGACION/FOTOS/FAMILIA/Boda_2003")
-    assert "INVESTIGACION/FOTOS/FAMILIA/Boda_2003" in \
+                                 "HARBOR_SWIMMERS/FOTOS/FAMILIA/Boda_2003")
+    assert "HARBOR_SWIMMERS/FOTOS/FAMILIA/Boda_2003" in \
         folder_tree.all_places(tree)
     with pytest.raises(ValueError):
         folder_tree.add_place(tree, "Contratos")
@@ -127,8 +127,8 @@ def test_structure_is_created_at_every_level(tmp_path):
     """ensure_archive_structure makes the nested folders."""
     organizer = FileOrganizer(str(tmp_path / "p"))
     organizer.ensure_archive_structure(folder_tree.check_tree(DEEP))
-    assert (tmp_path / "p" / "INVESTIGACION" / "FOTOS" /
-            "EVENTOS_DEPORTIVOS" / "Trialo-Isla-Verde_1998").is_dir()
+    assert (tmp_path / "p" / "HARBOR_SWIMMERS" / "FOTOS" /
+            "EVENTOS_DEPORTIVOS" / "Harbor-Race_1998").is_dir()
     assert organizer.tree_folder("A/B/C") == str(tmp_path / "p" / "A" /
                                                  "B" / "C")
     assert organizer.tree_folder("A", "B") == str(tmp_path / "p" / "A" / "B")
@@ -157,7 +157,7 @@ def test_two_level_project_reads_as_a_tree(tree_project):
     """A project saved with categories gives the same tree, with children."""
     tree = tree_project["repo"].get_folder_tree()
     assert tree[0]["children"][0]["name"] == "Prensa"
-    assert tree_project["repo"].count_in_path("Oceanman Malta") == 0
+    assert tree_project["repo"].count_in_path("Pier Swim") == 0
 
 
 # --- The pipeline ---
@@ -174,17 +174,17 @@ def test_file_goes_to_a_deep_folder(tree_project):
     """The AI answers a path; the file lands there, with the two columns."""
     project = deep_project(tree_project)
     project["ai"].metadata.update({
-        "folder": "investigacion/fotos/eventos_deportivos/"
-                  "trialo-isla-verde_1998"})
+        "folder": "harbor_swimmers/fotos/eventos_deportivos/"
+                  "harbor-race_1998"})
     doc = project["pipeline"].classify_document(drop(project, "a.txt", "x"))
     assert doc.folder_path == \
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/Trialo-Isla-Verde_1998"
-    assert (doc.category, doc.subcategory) == ("INVESTIGACION", "FOTOS")
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/Harbor-Race_1998"
+    assert (doc.category, doc.subcategory) == ("HARBOR_SWIMMERS", "FOTOS")
     assert doc.file_path.startswith(os.path.join(
-        str(project["folder"]), "INVESTIGACION", "FOTOS",
-        "EVENTOS_DEPORTIVOS", "Trialo-Isla-Verde_1998"))
+        str(project["folder"]), "HARBOR_SWIMMERS", "FOTOS",
+        "EVENTOS_DEPORTIVOS", "Harbor-Race_1998"))
     prompt = project["ai"].prompts[-1]
-    assert "INVESTIGACION/FOTOS/SIN_TEMA" in prompt
+    assert "HARBOR_SWIMMERS/FOTOS/SIN_TEMA" in prompt
 
 
 def test_file_that_fits_nowhere_goes_to_the_catch_all(tree_project):
@@ -192,7 +192,7 @@ def test_file_that_fits_nowhere_goes_to_the_catch_all(tree_project):
     project = deep_project(tree_project)
     project["ai"].metadata.update({"folder": None})
     doc = project["pipeline"].classify_document(drop(project, "a.txt", "x"))
-    assert doc.folder_path == "INVESTIGACION/FOTOS/SIN_TEMA"
+    assert doc.folder_path == "HARBOR_SWIMMERS/FOTOS/SIN_TEMA"
     assert doc.status == "Classified"
     assert doc.review_note is None
 
@@ -216,8 +216,8 @@ def test_settings_shows_the_deep_tree_and_its_counts(flask_client, tmp_path):
     assert settings["categories"] == folder_tree.to_categories(
         folder_tree.check_tree(DEEP))
     assert settings["folder_counts"][
-        "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS"] == 0
-    assert (folder / "INVESTIGACION" / "FOTOS" / "SIN_TEMA").is_dir()
+        "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS"] == 0
+    assert (folder / "HARBOR_SWIMMERS" / "FOTOS" / "SIN_TEMA").is_dir()
 
 
 def test_move_to_a_deep_folder_and_create_one(flask_client, tmp_path):
@@ -226,22 +226,22 @@ def test_move_to_a_deep_folder_and_create_one(flask_client, tmp_path):
     repo = CatalogRepository(os.path.join(str(folder), ".cataloga",
                                           "catalog.db"))
     doc = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"))
-    place = "INVESTIGACION/FOTOS/EVENTOS_DEPORTIVOS/Trialo-Isla-Verde_1998"
+    place = "HARBOR_SWIMMERS/FOTOS/EVENTOS_DEPORTIVOS/Harbor-Race_1998"
     moved = flask_client.post("/documents/{}/move".format(doc.id),
                               json={"folder": place}).get_json()
     assert moved["folder_path"] == place
-    assert moved["category"] == "INVESTIGACION"
-    assert os.path.isfile(str(folder / "INVESTIGACION" / "FOTOS" /
+    assert moved["category"] == "HARBOR_SWIMMERS"
+    assert os.path.isfile(str(folder / "HARBOR_SWIMMERS" / "FOTOS" /
                               "EVENTOS_DEPORTIVOS" /
-                              "Trialo-Isla-Verde_1998" / "a.txt"))
+                              "Harbor-Race_1998" / "a.txt"))
     response = flask_client.post("/documents/{}/move".format(doc.id), json={
-        "folder": "INVESTIGACION/FOTOS/FAMILIA/Boda_2003",
+        "folder": "HARBOR_SWIMMERS/FOTOS/FAMILIA/Boda_2003",
         "create_folder": True})
     assert response.status_code == 200
-    assert (folder / "INVESTIGACION" / "FOTOS" / "FAMILIA" /
+    assert (folder / "HARBOR_SWIMMERS" / "FOTOS" / "FAMILIA" /
             "Boda_2003" / "a.txt").is_file()
-    assert repo.count_in_path("INVESTIGACION/FOTOS") == 1
-    assert repo.count_in_path("INVESTIGACION/FOTOS/FAMILIA") == 1
+    assert repo.count_in_path("HARBOR_SWIMMERS/FOTOS") == 1
+    assert repo.count_in_path("HARBOR_SWIMMERS/FOTOS/FAMILIA") == 1
 
 
 def test_settings_keeps_folders_with_documents_and_numbers_new_ones(
@@ -252,8 +252,8 @@ def test_settings_keeps_folders_with_documents_and_numbers_new_ones(
                                           "catalog.db"))
     doc = add_file_doc(repo, str(folder / "Drop Zone" / "a.txt"))
     flask_client.post("/documents/{}/move".format(doc.id),
-                      json={"folder": "INVESTIGACION/PRENSA"})
-    without_prensa = [{"name": "INVESTIGACION", "children": [
+                      json={"folder": "HARBOR_SWIMMERS/PRENSA"})
+    without_prensa = [{"name": "HARBOR_SWIMMERS", "children": [
         {"name": "FOTOS"}]}, {"name": "Contratos"}]
     response = flask_client.put("/settings", json={
         "research_name": "Doc", "folder_tree": without_prensa})
@@ -266,7 +266,7 @@ def test_settings_keeps_folders_with_documents_and_numbers_new_ones(
         "numbered_folders": True})
     assert response.status_code == 200
     names = [n["name"] for n in response.get_json()["folder_tree"]]
-    assert names == ["INVESTIGACION", "Contratos", "03_Entrevistas"]
+    assert names == ["HARBOR_SWIMMERS", "Contratos", "03_Entrevistas"]
     assert response.get_json()["numbered_folders"] is True
     assert (folder / "03_Entrevistas" / "01_Radio").is_dir()
 

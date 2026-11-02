@@ -61,7 +61,7 @@ GENERIC_NAME = re.compile(
     r"cimg|wp|sam|p|document|doc|file|untitled|new)[\s_.-]*[\d\s_.:-]*"
     r"(at[\s\d_.:-]*)?(am|pm)?[\s\d()_.-]*$", re.IGNORECASE)
 
-# A year in a file name or a folder name: _1997, Trialo-Isla-Verde_1998.
+# A year in a file name or a folder name: _1997, Harbor-Race_1998.
 PATH_YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
 
 # How a date stamp reads: month first (11 13 '97, as cameras print) or

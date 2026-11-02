@@ -240,7 +240,7 @@ def test_the_short_answer_names_the_publication_and_the_date(
     path = scanned_pdf(tmp_path / "p", monkeypatch)
     repo = place_project(tmp_path / "p")
     ai = ImageAI(['{"text": "cut', '{"text": null, "description": "A page '
-                  'on a swim meet.", "source": "El Nuevo Dia", '
+                  'on a swim meet.", "source": "The Harbor Gazette", '
                   '"printed_date": "19 de julio de 2006"}'])
     seen = []
     original = ai.send_prompt
@@ -251,23 +251,23 @@ def test_the_short_answer_names_the_publication_and_the_date(
 
     ai.send_prompt = record
     doc = pipeline_for(tmp_path / "p", repo, ai).classify_document(str(path))
-    assert "Publication printed on the page: El Nuevo Dia." in seen[0]
+    assert "Publication printed on the page: The Harbor Gazette." in seen[0]
     assert "Date printed on the page: 19 de julio de 2006." in seen[0]
     # Whatever the card says, the page decides the source and the date.
-    assert doc.source == "El Nuevo Dia"
+    assert doc.source == "The Harbor Gazette"
     assert doc.document_date == "2006-07-19"
     assert "folio line" in base.DESCRIPTION_PROMPT
     assert "not\n  the publication" in base.DESCRIPTION_PROMPT
 
 
 def test_a_capitalized_publication_is_title_cased(tmp_path, monkeypatch):
-    """EL NUEVO DIA in the folio line is saved as El Nuevo Dia."""
+    """THE HARBOR GAZETTE in the folio line is saved as The Harbor Gazette."""
     path = scanned_pdf(tmp_path / "p", monkeypatch)
     repo = place_project(tmp_path / "p")
     ai = ImageAI(['{"text": "cut', '{"text": null, "description": "A page.",'
-                  ' "source": "EL NUEVO DIA", "printed_date": null}'])
+                  ' "source": "THE HARBOR GAZETTE", "printed_date": null}'])
     doc = pipeline_for(tmp_path / "p", repo, ai).classify_document(str(path))
-    assert doc.source == "El Nuevo Dia"
+    assert doc.source == "The Harbor Gazette"
 
 
 @pytest.mark.parametrize("text, expected", [

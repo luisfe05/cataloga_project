@@ -109,7 +109,7 @@ def test_username_taken(client, taken):
     ({"username": "", "password": PASSWORD}, "missing_field"),
     ({"username": USERNAME}, "missing_field"),
     ({"username": "ab", "password": PASSWORD}, "invalid_username"),
-    ({"username": "luis gonzalez", "password": PASSWORD},
+    ({"username": "edwin marsh", "password": PASSWORD},
      "invalid_username"),
     ({"username": "a" * 31, "password": PASSWORD}, "invalid_username"),
     ({"username": USERNAME, "password": "short"}, "password_too_short"),
@@ -178,7 +178,8 @@ def test_login_ignores_the_case_of_the_username(client):
 def test_old_account_and_projects_are_migrated(tmp_path, data_folder):
     """The account keeps its password and sees its projects of always."""
     old_projects = os.path.join(data_folder, "projects.json")
-    make_project(old_projects, tmp_path / "El Delfin", name="El Delfin")
+    make_project(old_projects, tmp_path / "Harbor Swimmers",
+                 name="Harbor Swimmers")
     projects.set_language(old_projects, "es")
     account.save_account(os.path.join(data_folder, "account.json"),
                          "Luis G", PASSWORD)
@@ -193,7 +194,7 @@ def test_old_account_and_projects_are_migrated(tmp_path, data_folder):
     token = response.get_json()["token"]
     names = [p["name"] for p in client.get(
         "/projects", headers=bearer(token)).get_json()["projects"]]
-    assert names == ["El Delfin"]
+    assert names == ["Harbor Swimmers"]
     assert client.get("/settings", headers=bearer(token)).get_json()[
         "username"] == "Luis G"
     # The old files are kept as backups, not read again.

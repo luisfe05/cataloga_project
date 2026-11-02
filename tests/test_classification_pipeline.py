@@ -16,8 +16,8 @@ from backend.pipeline.classification_pipeline import (
 from backend.pipeline.file_organizer import FileOrganizer
 from tests.conftest import card_answer
 
-GOOD_METADATA = ('{"source": "El Nuevo Día", "document_date": "1964-10-12",'
-                 ' "topic": "Malta Olímpica"}')
+GOOD_METADATA = ('{"source": "Gaceta Bahía", "document_date": "1964-10-12",'
+                 ' "topic": "Harbor Olímpica"}')
 
 # 2026-07-15 at noon, local time, used as a file's modified date.
 JULY_15 = time.mktime((2026, 7, 15, 12, 0, 0, 0, 0, -1))
@@ -95,10 +95,10 @@ def test_readable_file_is_fully_classified(setup):
 
     assert doc.id == 1
     assert doc.original_filename == "clipping.txt"
-    assert doc.filename == "1964-10-12_malta-olimpica.txt"
+    assert doc.filename == "1964-10-12_harbor-olimpica.txt"
     assert doc.media_type == "Press"
     assert doc.summary == "A news story."
-    assert doc.source == "El Nuevo Día"
+    assert doc.source == "Gaceta Bahía"
     assert doc.document_date == "1964-10-12"
     assert doc.status == "Classified"
     assert os.path.isfile(doc.file_path)
@@ -123,7 +123,7 @@ def test_missing_source_or_date_is_still_classified(setup):
 def test_no_summary_sends_to_manual_review(setup):
     """Without a summary the file was not really read."""
     replies = {"classify": "Documents", "summary": "",
-               "metadata": '{"source": "Claridad", "document_date": "1970"}'}
+               "metadata": '{"source": "Gazette", "document_date": "1970"}'}
     pipeline, ai = setup["build"](replies)
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "a.txt"))
@@ -158,7 +158,7 @@ def test_invalid_classification_uses_fallback_folder(setup):
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.media_type == "Documents"
-    assert doc.filename == "1964-10-12_malta-olimpica.txt"
+    assert doc.filename == "1964-10-12_harbor-olimpica.txt"
 
 
 def test_photo_is_sorted_without_ai(setup):
@@ -210,8 +210,8 @@ def test_process_batch_handles_every_file(setup):
     documents = pipeline.process_batch(paths)
     # Same date and topic, so the names get -2 and -3.
     assert [doc.filename for doc in documents] == [
-        "1964-10-12_malta-olimpica.txt", "1964-10-12_malta-olimpica_2.txt",
-        "1964-10-12_malta-olimpica_3.txt"]
+        "1964-10-12_harbor-olimpica.txt", "1964-10-12_harbor-olimpica_2.txt",
+        "1964-10-12_harbor-olimpica_3.txt"]
     assert len(setup["repo"].get_all_documents()) == 3
 
 
@@ -250,8 +250,8 @@ def test_each_method_names_the_file(setup):
     setup["repo"].save_naming_template("{number}_{topic}")
     second = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "b.txt"))
-    assert first.filename == "el-nuevo-dia_1964-10-12_malta-olimpica.txt"
-    assert second.filename == "0002_malta-olimpica.txt"
+    assert first.filename == "gaceta-bahia_1964-10-12_harbor-olimpica.txt"
+    assert second.filename == "0002_harbor-olimpica.txt"
 
 
 def test_missing_date_source_and_topic(setup):
@@ -298,9 +298,9 @@ def test_topic_comes_in_the_metadata_request(setup):
 
 
 @pytest.mark.parametrize("answer, expected", [
-    ('{"source": "Claridad"}', {"source": "Claridad"}),
-    ('```json\n{"source": "Claridad"}\n```', {"source": "Claridad"}),
-    ('Here it is: {"source": "Claridad"} Done.', {"source": "Claridad"}),
+    ('{"source": "Gazette"}', {"source": "Gazette"}),
+    ('```json\n{"source": "Gazette"}\n```', {"source": "Gazette"}),
+    ('Here it is: {"source": "Gazette"} Done.', {"source": "Gazette"}),
     ("not json at all", {}),
     ('["a list"]', {}),
     ('{"source": broken}', {}),
@@ -312,14 +312,14 @@ def test_parse_json_answer(answer, expected):
 
 
 @pytest.mark.parametrize("answer", [
-    '{"source": "Claridad"}\n{"source": "El Mundo"}',
-    '```json\n{"source": "Claridad"}\n```\n```json\n'
+    '{"source": "Gazette"}\n{"source": "El Mundo"}',
+    '```json\n{"source": "Gazette"}\n```\n```json\n'
     '{"source": "El Mundo"}\n```',
-    '{"source": broken}\n{"source": "Claridad"}\n{"source": "El Mundo"}',
+    '{"source": broken}\n{"source": "Gazette"}\n{"source": "El Mundo"}',
 ])
 def test_parse_json_answer_uses_the_first_valid_block(answer):
     """With several JSON blocks, the first valid one is read."""
-    assert parse_json_answer(answer) == {"source": "Claridad"}
+    assert parse_json_answer(answer) == {"source": "Gazette"}
 
 
 def test_extract_text_reads_txt(tmp_path):
@@ -337,13 +337,13 @@ def test_regenerate_summary_uses_the_users_facts(setup):
         make_text_file(setup["drop_zone"], "letter.txt"))
 
     # The user types the source by hand, then the summary is rewritten.
-    ai.replies["summary"] = "Letter from Claridad."
-    doc = setup["repo"].update_document(doc.id, {"source": "Claridad"})
+    ai.replies["summary"] = "Letter from Gazette."
+    doc = setup["repo"].update_document(doc.id, {"source": "Gazette"})
     doc = pipeline.regenerate_summary(doc)
 
-    assert doc.summary == "Letter from Claridad."
+    assert doc.summary == "Letter from Gazette."
     assert setup["repo"].get_document(doc.id).summary == \
-        "Letter from Claridad."
+        "Letter from Gazette."
 
 
 def test_regenerate_summary_skips_files_without_text(setup):
@@ -389,12 +389,12 @@ def test_context_says_when_the_name_is_a_camera_name(setup):
 
 
 def test_year_in_the_name_is_the_date_when_the_text_has_none(setup):
-    """Juegos-Nacionales_1997.txt with no date inside gives 1997."""
+    """Dawn-Swim_1997.txt with no date inside gives 1997."""
     replies = {"classify": "Documents", "summary": "A program.",
                "metadata": '{"source": null, "document_date": null}'}
     pipeline, ai = setup["build"](replies)
     doc = pipeline.classify_document(
-        make_text_file(setup["drop_zone"], "Juegos-Nacionales_1997.txt"))
+        make_text_file(setup["drop_zone"], "Dawn-Swim_1997.txt"))
     assert doc.document_date == "1997"
     assert doc.date_source == "name"
     assert doc.filename.startswith("1997_")
@@ -404,7 +404,7 @@ def test_why_and_confidence_are_saved(setup):
     """The AI's reason and confidence go to the catalog."""
     replies = {"classify": "Press", "summary": "A story.",
                "metadata": '{"source": "El Mundo", "document_date": "1964",'
-                           ' "topic": "Malta", "confidence": "medium",'
+                           ' "topic": "Harbor", "confidence": "medium",'
                            ' "folder_reason": "A news story about a race."}'}
     pipeline, ai = setup["build"](replies)
     doc = pipeline.classify_document(
