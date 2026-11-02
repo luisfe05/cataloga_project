@@ -526,7 +526,9 @@ class ClassificationPipeline:
                         self.db.get_folder_tree(),
                         metadata["suggested_folder"]):
                 proposed_folder = metadata["suggested_folder"]
-            if new_filename and new_filename != original_filename:
+            if new_filename and new_filename != original_filename and \
+                    not self.already_named(original_filename, folder,
+                                           proposed_folder):
                 proposed_name = new_filename
         elif new_filename is None:
             # Even a short name would not fit: a person must choose.
@@ -582,6 +584,28 @@ class ClassificationPipeline:
         if document.status == "Manual Review" and not document.review_note:
             document.review_note = missing_note(document)
         return self.db.add_document(document)
+
+    def already_named(self, filename, folder, proposed_folder):
+        """Say whether a file in its right folder already follows the rule.
+
+        Such a file never enters the plan: the pipeline's own name would
+        only differ in details (a number, a shorter topic).
+        """
+        if proposed_folder:
+            return False
+        template = self.db.get_naming_template()
+        event = None
+        if template == naming.EVENT_TEMPLATE:
+            event = folder_tree.event_of(self.db.get_folder_tree() or [],
+                                         self.organizer_place(folder))
+            if not event:
+                template = naming.NEW_PROJECT_TEMPLATE
+        return (naming.follows_template(filename, template, event) or
+                naming.follows_template(filename, naming.NO_TEXT_TEMPLATE))
+
+    def organizer_place(self, folder):
+        """Return a disk folder as its place in the tree."""
+        return self.file_organizer.place_of(folder)
 
     def relative_path(self, file_path):
         """Return where a file was first seen, relative to the project."""
@@ -749,9 +773,11 @@ class ClassificationPipeline:
         if template == naming.EVENT_TEMPLATE:
             # Event_Year_N: the event folder's name and the next number on
             # the disk. Outside an event folder, method 4 names the file.
+            # The AI's folder, or the folder the file already sits in.
             event = folder_tree.event_of(self.db.get_folder_tree() or [],
                                          metadata["folder_path"] or
-                                         metadata["suggested_folder"])
+                                         metadata["suggested_folder"] or
+                                         self.file_organizer.place_of(folder))
             if event:
                 has_text = True
                 event_number = naming.next_event_number(folder, event)

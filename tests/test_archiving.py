@@ -91,8 +91,8 @@ def test_old_catalog_gets_new_columns_and_keeps_rows(tmp_path):
 
 
 def test_the_tables_of_a_catalog(tmp_path):
-    """The four tables of the report, plus the scan index and the
-    corrections (PRs 9 and 14)."""
+    """The four tables of the report, plus the scan index, the
+    corrections and the plan's batches (PRs 9, 14 and 12)."""
     path = str(tmp_path / "new.db")
     init_db(path)
     conn = sqlite3.connect(path)
@@ -101,7 +101,8 @@ def test_the_tables_of_a_catalog(tmp_path):
         "AND name != 'sqlite_sequence'")}
     conn.close()
     assert names == {"documents", "activity_log", "app_config",
-                     "ai_provider_config", "scan_index", "corrections"}
+                     "ai_provider_config", "scan_index", "corrections",
+                     "batches", "batch_items"}
 
 
 # --- Saving and reading the new fields ---

@@ -23,7 +23,8 @@ def test_move_by_hand_is_remembered(flask_client, tmp_path):
     moves = repo.recent_corrections()
     assert moves == [{"original_filename": "receta.txt",
                       "summary": "Una receta de arroz.",
-                      "from_folder": "Drop Zone", "to_folder": "Contratos"}]
+                      "from_folder": "Drop Zone", "to_folder": "Contratos",
+                      "from_name": None, "to_name": None}]
     # A second move of the same file records where it came from now.
     flask_client.post("/documents/{}/move".format(doc.id),
                       json={"folder": "Oceanman Malta/Prensa"})

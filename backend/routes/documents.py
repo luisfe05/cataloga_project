@@ -10,7 +10,7 @@ from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, missing_note, needs_nothing)
 from backend.config import projects as project_list
-from backend.pipeline import folder_tree
+from backend.pipeline import folder_tree, organization_plan
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.pipeline import naming
 from backend.pipeline.naming import clean_new_name
@@ -169,9 +169,22 @@ def update_document(doc_id):
     return jsonify(doc.to_dict()), 200
 
 
+def batch_busy_response():
+    """Say that files are being moved by a batch right now, or None."""
+    if organization_plan.is_busy():
+        return error_response(
+            "plan_applying",
+            "A batch is being applied or undone. Wait for it to finish.",
+            409)
+    return None
+
+
 @documents_bp.route("/documents/<int:doc_id>/rename", methods=["POST"])
 def rename_document(doc_id):
     """Rename one document after the user clicked Confirm in the chat."""
+    busy = batch_busy_response()
+    if busy:
+        return busy
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
         return error_response("invalid_body",
@@ -227,6 +240,9 @@ def rename_document(doc_id):
 @documents_bp.route("/documents/<int:doc_id>/move", methods=["POST"])
 def move_document(doc_id):
     """Move one document to another folder of the project's tree."""
+    busy = batch_busy_response()
+    if busy:
+        return busy
     body = request.get_json(silent=True)
     if not isinstance(body, dict) or not isinstance(body.get("folder"), str):
         return error_response("missing_field", "folder is required.", 400)

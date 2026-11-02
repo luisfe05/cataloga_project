@@ -7,9 +7,13 @@ from flask_cors import CORS
 
 from backend.config import account, projects
 from backend.config.accounts import AccountStore
+from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import DB_PATH, init_db
+from backend.pipeline.file_organizer import FileOrganizer
+from backend.pipeline.organization_plan import OrganizationPlan
 from backend.routes.auth import auth_bp, require_login
 from backend.routes.chat import chat_bp
+from backend.routes.plan import plan_bp
 from backend.routes.dashboard import dashboard_bp
 from backend.routes.documents import documents_bp
 from backend.routes.projects import projects_bp
@@ -34,6 +38,7 @@ def create_app(data_folder=projects.DATA_FOLDER, old_db_path=DB_PATH):
     app.register_blueprint(projects_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(scan_bp)
+    app.register_blueprint(plan_bp)
 
     store = AccountStore(data_folder)
     app.config["ACCOUNTS"] = store
@@ -50,10 +55,14 @@ def create_app(data_folder=projects.DATA_FOLDER, old_db_path=DB_PATH):
     store.migrate_single_account(account.account_path_for(old_projects_path),
                                  old_projects_path)
 
-    # Add any column an older catalog is missing.
+    # Add any column an older catalog is missing, and settle a batch the
+    # app was applying when it closed.
     for username in store.usernames():
         folder = projects.active_folder(store.projects_path(username))
         if folder and os.path.isfile(projects.catalog_path(folder)):
             init_db(projects.catalog_path(folder))
+            repo = CatalogRepository(projects.catalog_path(folder))
+            if repo.is_tree_project():
+                OrganizationPlan(repo, FileOrganizer(folder)).recover()
 
     return app
