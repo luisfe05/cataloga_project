@@ -120,7 +120,9 @@ def test_catalog_only_never_applies(tmp_path):
 def test_watcher_skips_while_the_first_scan_runs(tmp_path, monkeypatch):
     """The watcher waits for the scan job instead of reading twice."""
     root = tmp_path / "p"
-    watched(root, TREE)
+    repo = watched(root, TREE)
+    # The first scan finished: from here on the watcher reads new files.
+    repo.save_config_value("scan_state", scanner.SCAN_DONE)
     (root / "a.txt").write_text("Article")
     from backend.config import projects
     projects_path = str(tmp_path / "app" / "projects.json")

@@ -10,6 +10,9 @@ function showView(name) {
     document.querySelectorAll(".view").forEach((view) => {
         view.classList.toggle("hidden", view.id !== `view-${name}`);
     });
+    // In these two the header stays put and only the list scrolls.
+    document.getElementById("app-main").classList
+        .toggle("fixed-view", ["catalog", "plan"].includes(name));
     document.querySelectorAll(".nav-link").forEach((link) => {
         link.classList.toggle("active", link.dataset.view === name);
     });

@@ -86,9 +86,9 @@ def create_project():
         init_db(db_path)
         config = CatalogRepository(db_path).get_app_config() or {}
         name = config.get("research_name") or name
-        organizer.migrate_old_inbox()
-        organizer.ensure_archive_structure(
-            CatalogRepository(db_path).get_folder_tree())
+        # Opening never makes a folder: only creating a project or Save do.
+        if not CatalogRepository(db_path).reads_in_place():
+            organizer.migrate_old_inbox()
         projects.add_project(projects_path(), name, folder)
         return jsonify({"name": name, "folder": folder,
                         "opened_existing": True}), 201
@@ -134,8 +134,6 @@ def create_project():
         new_repo.save_naming_template(template)
         if body.get("naming_style") in naming.STYLES:
             new_repo.save_config_value("naming_style", body["naming_style"])
-        if body.get("keep_accents") is True:
-            new_repo.save_config_value("keep_accents", 1)
         new_repo.save_folder_tree(description, tree)
         if in_place:
             new_repo.save_config_value("folder_mode", folder_tree.PLACE_MODE)

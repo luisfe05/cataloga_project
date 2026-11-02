@@ -377,7 +377,18 @@ async function moveDocument(id, folder, createFolder) {
 
 // --- File links: only the id is sent, never a path ---
 
-/** POST /documents/:id/<action> - open, reveal, or preview a file. */
+/** GET /documents/:id/preview: a picture or text for the overlay. */
+async function getDocumentPreview(id) {
+    const response = await apiFetch(`${BASE_URL}/documents/${id}/preview`);
+    return handleResponse(response);
+}
+
+/** The address of a recording. A player cannot send the token in a header. */
+function documentMediaUrl(id) {
+    return `${BASE_URL}/documents/${id}/media?token=${encodeURIComponent(sessionToken)}`;
+}
+
+/** POST /documents/:id/<action> - open or reveal a file. */
 async function runDocumentFileAction(id, action) {
     const response = await apiFetch(
         `${BASE_URL}/documents/${id}/${action}`, { method: "POST" });

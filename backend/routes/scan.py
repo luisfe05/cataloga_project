@@ -3,6 +3,7 @@
 from flask import Blueprint, current_app, jsonify
 
 from backend import scanner
+from backend.config import projects as project_list
 from backend.routes import (error_response, get_active_repo, projects_path,
                             session_user)
 
@@ -17,9 +18,12 @@ def current_job():
 @scan_bp.route("/scan", methods=["GET"])
 def scan_status():
     """Say how far the scan is, and how many files Retry would read."""
-    state = current_job().to_dict()
     repo, error = get_active_repo()
-    state["retryable"] = 0 if error else len(scanner.retryable_documents(repo))
+    if error:
+        return jsonify(dict(current_job().to_dict(), retryable=0)), 200
+    folder = project_list.active_folder(projects_path())
+    state = scanner.scan_view(current_job(), repo, folder)
+    state["retryable"] = len(scanner.retryable_documents(repo))
     return jsonify(state), 200
 
 
@@ -33,6 +37,11 @@ def scan_start():
         return error_response(
             "has_drop_zone",
             "This project reads its Drop Zone; nothing to scan.", 409)
+    # One scan at a time: another project may be the one being read.
+    if current_job().is_running() and current_job().folder != \
+            project_list.active_folder(projects_path()):
+        return error_response("scan_running",
+                              "Another folder is being read.", 409)
     job = scanner.start_scan(current_app._get_current_object(),
                              projects_path(), session_user() or None)
     if job.error == "no_provider":

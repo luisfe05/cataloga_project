@@ -22,12 +22,18 @@
                    autocomplete="username">
             <label for="register-password"
                    data-i18n="auth.password">Password</label>
-            <input type="password" id="register-password"
-                   autocomplete="new-password">
+            <div class="password-field">
+                <input type="password" id="register-password"
+                       autocomplete="new-password">
+            </div>
             <label for="register-confirm"
                    data-i18n="auth.confirm_password">Confirm password</label>
-            <input type="password" id="register-confirm"
-                   autocomplete="new-password">
+            <div class="password-field">
+                <input type="password" id="register-confirm"
+                       autocomplete="new-password"
+                       aria-describedby="register-confirm-message">
+            </div>
+            <p class="form-message error" id="register-confirm-message"></p>
             <button type="submit" class="primary-button"
                     data-i18n="auth.create_account">Create account</button>
             <p class="form-message error" id="register-message"></p>
@@ -45,8 +51,10 @@
             <input type="text" id="login-username" autocomplete="username">
             <label for="login-password"
                    data-i18n="auth.password">Password</label>
-            <input type="password" id="login-password"
-                   autocomplete="current-password">
+            <div class="password-field">
+                <input type="password" id="login-password"
+                       autocomplete="current-password">
+            </div>
             <button type="submit" class="primary-button"
                     data-i18n="auth.log_in">Log in</button>
             <p class="form-message error" id="login-message"></p>
@@ -138,16 +146,6 @@
                     <p class="view-subtitle"
                        data-i18n="nav.catalog">Catalog</p>
                 </div>
-                <!-- Reading the folder in place (projects without a Drop Zone) -->
-                <section class="scan-status hidden" id="scan-status">
-                    <p id="scan-text"></p>
-                    <button type="button" class="pill-button" id="scan-pause"
-                            data-i18n="scan.pause">Pause</button>
-                    <button type="button" class="pill-button hidden"
-                            id="scan-resume" data-i18n="scan.resume">Resume</button>
-                    <button type="button" class="pill-button hidden"
-                            id="scan-retry"></button>
-                </section>
                 <section class="catalog-progress">
                     <p class="progress-title"
                        data-i18n="catalog.progress">Catalog progress</p>
@@ -173,6 +171,20 @@
                     </div>
                 </section>
             </div>
+
+            <!-- Reading the folder in place: its own line, under the title. -->
+            <section class="scan-status hidden" id="scan-status">
+                <p id="scan-text"></p>
+                <button type="button" class="primary-button hidden"
+                        id="scan-catalog"
+                        data-i18n="scan.catalog_files">Catalog files</button>
+                <button type="button" class="pill-button" id="scan-pause"
+                        data-i18n="scan.pause">Pause</button>
+                <button type="button" class="pill-button hidden"
+                        id="scan-resume" data-i18n="scan.resume">Resume</button>
+                <button type="button" class="pill-button hidden"
+                        id="scan-retry"></button>
+            </section>
 
             <!-- Tabs, filters, Download, and Edit Mode. The search is in the top bar. -->
             <div class="filter-row">
@@ -290,6 +302,15 @@
                     batch</button>
             </section>
 
+            <div class="tabs plan-tabs hidden" id="plan-tabs">
+                <button type="button" class="tab active" data-plan-tab="files"
+                        data-i18n="plan.tab_files">Files</button>
+                <button type="button" class="tab" data-plan-tab="folders"
+                        data-i18n="plan.folders">Folders</button>
+                <button type="button" class="tab" data-plan-tab="batches"
+                        data-i18n="plan.batches">Batches</button>
+            </div>
+
             <div class="filter-row hidden" id="plan-filters">
                 <select id="plan-filter-folder">
                     <option value="" data-i18n="plan.filter_folder_all">Destination:
@@ -323,8 +344,8 @@
                     <button type="button" class="pill-button"
                             id="plan-skip-selected"
                             data-i18n="plan.skip_selected">Skip selected</button>
-                    <button type="button" class="pill-button primary-button"
-                            id="plan-apply" data-i18n="plan.apply">Apply</button>
+                    <button type="button" class="primary-button"
+                            id="plan-apply"></button>
                 </div>
             </div>
 
@@ -349,14 +370,12 @@
 
             <!-- Every folder of the tree with its Leave as is switch. -->
             <section class="plan-batches plan-folders hidden" id="plan-folders">
-                <h2 class="progress-title" data-i18n="plan.folders">Folders</h2>
                 <p class="view-subtitle" data-i18n="plan.folders_hint"></p>
                 <ul id="plan-folder-list"></ul>
             </section>
 
             <!-- Batches applied so far, newest first, each with Undo. -->
             <section class="plan-batches hidden" id="plan-batches">
-                <h2 class="progress-title" data-i18n="plan.batches">Batches</h2>
                 <ul id="plan-batch-list"></ul>
             </section>
         </div>
@@ -524,11 +543,8 @@
                 <!-- File names: 4 methods or a custom template. Saved with Save. -->
                 <section class="settings-section">
                     <div class="settings-intro">
-                        <h2 data-i18n="naming.title">File names</h2>
-                        <p class="hint" data-i18n="naming.hint">
-                            Choose how Cataloga names new files. Files already in the
-                            catalog keep their names.
-                        </p>
+                        <h2><span data-i18n="naming.title">File names</span>
+                            <span class="help-tip" data-help="naming.help_names"></span></h2>
                     </div>
                     <div class="settings-fields">
                         <div class="naming-options" id="naming-options">
@@ -588,11 +604,12 @@
                                 <label><input type="radio" name="naming-separator"
                                               value="-"> <code>-</code></label>
                             </div>
-                            <p class="hint" data-i18n="naming.extension_note"></p>
+                            <span class="help-tip" data-help="naming.extension_note"></span>
                         </div>
 
                         <div class="naming-separator naming-style">
                             <span data-i18n="naming.style">Style</span>
+                            <span class="help-tip" data-help="naming.help_style"></span>
                             <label><input type="radio" name="naming-style"
                                           value="lower" checked>
                                 <code>topic-name</code></label>
@@ -600,19 +617,16 @@
                                           value="title">
                                 <code>Topic-Name</code></label>
                         </div>
-                        <label class="naming-accents">
-                            <input type="checkbox" id="keep-accents">
-                            <span data-i18n="naming.keep_accents">Keep accents
-                                (Día, not Dia)</span>
-                        </label>
                         <p class="naming-preview">
                             <span data-i18n="naming.preview">Preview</span>:
                             <code id="naming-preview"></code>
+                            <span class="help-tip" data-help="naming.help_repeats"></span>
                         </p>
                         <!-- How a date stamped on a photo reads: 11 13 '97 -->
                         <div class="naming-separator stamp-order">
                             <span data-i18n="naming.stamp_order">Dates stamped on
                                 photos</span>
+                            <span class="help-tip" data-help="naming.help_dates"></span>
                             <label><input type="radio" name="stamp-order"
                                           value="month" checked>
                                 <span data-i18n="naming.stamp_month">Month first
@@ -623,14 +637,6 @@
                                     (13 11 97)</span></label>
                         </div>
                         <p class="form-message error" id="naming-error"></p>
-                        <ul class="naming-rules">
-                            <li data-i18n="naming.media_rule"></li>
-                            <li data-i18n="naming.duplicate_rule"></li>
-                            <li data-i18n="naming.photo_date_rule"></li>
-                            <li data-i18n="naming.version_rule"></li>
-                            <li data-i18n="naming.path_rule"></li>
-                            <li data-i18n="naming.changed_note"></li>
-                        </ul>
                     </div>
                 </section>
 
@@ -846,6 +852,21 @@
 
         <!-- Toast, outside the views so it shows on any screen. catalog.js clears it. -->
         <p class="toolbar-message" id="toolbar-message"></p>
+
+    <!-- Preview of a file, inside the app so it shows in a screen recording. -->
+    <div class="preview-overlay hidden" id="preview-overlay" role="dialog"
+         aria-modal="true" aria-labelledby="preview-title">
+        <div class="preview-box">
+            <header class="preview-header">
+                <h2 id="preview-title"></h2>
+                <button type="button" class="preview-close" id="preview-close"
+                        data-i18n-label="preview.close">
+                    <span class="icon icon-close"></span>
+                </button>
+            </header>
+            <div class="preview-content" id="preview-content"></div>
+        </div>
+    </div>
     </main>
 
     <!-- Floating chat window (chat.js). The conversation lives only in memory. -->
@@ -928,6 +949,8 @@
     <script src="js/auth.js"></script>
     <script src="js/motion.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/help.js"></script>
+    <script src="js/preview.js"></script>
     <script src="js/files.js"></script>
     <script src="js/summary.js"></script>
     <script src="js/catalog.js"></script>

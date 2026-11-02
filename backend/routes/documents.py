@@ -4,13 +4,13 @@ import csv
 import io
 import os
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, jsonify, request, Response, send_file
 
 from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, missing_note, needs_nothing)
 from backend.config import projects as project_list
-from backend.pipeline import folder_tree, organization_plan
+from backend.pipeline import folder_tree, organization_plan, previews
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.pipeline import naming
 from backend.pipeline.naming import clean_new_name
@@ -328,7 +328,6 @@ def run_file_action(doc_id, action):
     actions = {
         "open": organizer.open_file,
         "reveal": organizer.reveal_file,
-        "preview": organizer.preview_file,
     }
     actions[action](doc.file_path)
     return jsonify({"ok": True}), 200
@@ -346,7 +345,41 @@ def reveal_document(doc_id):
     return run_file_action(doc_id, "reveal")
 
 
-@documents_bp.route("/documents/<int:doc_id>/preview", methods=["POST"])
+def previewable_file(doc_id):
+    """Return (document, error) for a file that may be shown in the app."""
+    repo, error = get_active_repo()
+    if error:
+        return None, error
+    doc = repo.get_document(doc_id)
+    if doc is None:
+        return None, error_response(
+            "not_found", "Document {} does not exist.".format(doc_id), 404)
+    organizer = FileOrganizer(project_list.active_folder(projects_path()))
+    if not organizer.is_inside_project(doc.file_path) or \
+            not os.path.isfile(doc.file_path):
+        return None, error_response(
+            "file_missing",
+            "The file is missing or outside the project folder.", 409)
+    return doc, None
+
+
+@documents_bp.route("/documents/<int:doc_id>/preview", methods=["GET"])
 def preview_document(doc_id):
-    """Show a Quick Look preview of a document's file."""
-    return run_file_action(doc_id, "preview")
+    """Return what the preview overlay shows: a picture or text."""
+    doc, error = previewable_file(doc_id)
+    if error:
+        return error
+    return jsonify(dict(previews.build_preview(doc.file_path),
+                        filename=doc.filename)), 200
+
+
+@documents_bp.route("/documents/<int:doc_id>/media", methods=["GET"])
+def document_media(doc_id):
+    """Stream audio or video; conditional answers let the player seek."""
+    doc, error = previewable_file(doc_id)
+    if error:
+        return error
+    if previews.preview_kind(doc.file_path) not in ("audio", "video"):
+        return error_response("not_found", "This file is not a recording.",
+                              404)
+    return send_file(doc.file_path, conditional=True)

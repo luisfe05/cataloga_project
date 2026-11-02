@@ -56,7 +56,9 @@ const LANG_ES = {
     "scan.done": "Se leyeron los {total} archivos. Nada se movió ni se "
         + "renombró.",
     "scan.idle": "",
-    "scan.stopped": "La lectura se detuvo en {done} de {total} archivos.",
+    "scan.stopped": "Lectura detenida en {done} de {total}",
+    "scan.unread": "{total} archivos no se han leído todavía.",
+    "scan.catalog_files": "Catalogar archivos",
     "plan.summary": "{files} archivos leídos. {moves} movimientos, {renames} "
         + "renombres, {folders} carpetas nuevas.",
     "plan.summary_unchanged": "{n} archivos se quedan como están.",
@@ -78,7 +80,14 @@ const LANG_ES = {
     "plan.approve_all": "Aprobar todo",
     "plan.approve_selected": "Aprobar seleccionados",
     "plan.skip_selected": "Saltar seleccionados",
-    "plan.apply": "Aplicar",
+    "plan.apply": "Aplicar cambios",
+    "plan.apply_one": "Aplicar 1 cambio",
+    "plan.apply_many": "Aplicar {n} cambios",
+    "plan.tab_files": "Archivos",
+    "plan.unread": "{n} archivos no se han leído todavía. Usa Catalogar "
+        + "archivos en el Catálogo; las propuestas aparecen aquí.",
+    "plan.drop_zone": "Este proyecto archiva documentos desde su Drop Zone, "
+        + "así que no hay propuestas que aprobar.",
     "plan.resume": "Continuar",
     "plan.undo": "Deshacer este lote",
     "plan.col_file": "Archivo",
@@ -325,8 +334,6 @@ const LANG_ES = {
 
     // Settings: file names
     "naming.title": "Nombres de archivo",
-    "naming.hint": "Elige cómo Cataloga nombra los archivos nuevos. Los "
-        + "archivos que ya están en el catálogo conservan su nombre.",
     "naming.m1": "Fecha y tema",
     "naming.m1_example": "fecha_nombre-del-tema.pdf",
     "naming.m2": "Fuente, fecha y tema",
@@ -345,23 +352,12 @@ const LANG_ES = {
     "naming.stamp_order": "Fechas impresas en las fotos",
     "naming.stamp_month": "Mes primero (11 13 '97)",
     "naming.stamp_day": "Día primero (13 11 97)",
-    "naming.photo_date_rule": "La fecha de una foto sale de la fecha impresa "
-        + "o escrita en ella, luego del EXIF de una cámara (el de un escáner "
-        + "es el día del escaneo), y luego de un año en su nombre o carpeta.",
-    "naming.media_rule": "Las fotos se nombran con este método según lo "
-        + "que muestran, y el audio y el video según el título de sus "
-        + "etiquetas. Los archivos sin nada que leer usan su fecha y un "
-        + "número, por ejemplo 2026-07-15_0001.jpg, o solo el número si no "
-        + "se conoce la fecha.",
-    "naming.duplicate_rule": "Sin una fecha confiable el nombre no lleva "
-        + "fecha. Si el nombre ya existe, el archivo nuevo recibe _2, _3 y "
-        + "así; el primero conserva su nombre.",
-    "naming.version_rule": "Una marca de versión del nombre original (v01, "
-        + "v02) se conserva al final del nombre nuevo.",
-    "naming.path_rule": "Los nombres se acortan para que la ruta completa "
-        + "no pase de 240 caracteres, el límite de Windows.",
+    "naming.help_names": "Elige cómo Cataloga nombra los archivos nuevos; los nombres que ya existen no cambian. Se quitan los acentos y la marca de versión queda al final. Las fotos se nombran por lo que muestran. Ejemplo: Niña de la Playa v02 queda nina-de-la-playa_v02.jpg.",
+    "naming.help_style": "Cómo se ven las palabras del nombre. Ejemplo: tema-del-archivo, o Tema-Del-Archivo.",
+    "naming.help_repeats": "Sin una fecha confiable, el nombre no lleva fecha. Un nombre ya usado recibe _2, _3, y los nombres quedan bajo 240 caracteres. Ejemplo: carta.pdf, luego carta_2.pdf.",
+    "naming.help_dates": "La fecha de una foto sale de lo impreso en ella, luego del EXIF de una cámara, luego de un año en su nombre o carpeta. Esto dice cómo leer un sello. Ejemplo: 11 13 '97 es 1997-11-13.",
+    "help.open": "Ayuda",
     "naming.style": "Estilo",
-    "naming.keep_accents": "Conservar acentos (Día, no Dia)",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
     "naming.blocks_add": "Haz clic en las partes en orden",
     "naming.chosen": "Tu nombre de archivo",
@@ -493,7 +489,13 @@ const LANG_ES = {
     "auth.create_account": "Crear cuenta",
     "auth.log_in": "Iniciar sesión",
     "auth.log_out": "Cerrar sesión",
-    "auth.password_mismatch": "Las contraseñas no coinciden.",
+        "auth.password_mismatch": "Las contraseñas no coinciden",
+    "auth.show_password": "Mostrar contraseña",
+    "auth.hide_password": "Ocultar contraseña",
+    "preview.close": "Cerrar vista previa",
+    "preview.unavailable": "Este archivo no se puede ver aquí. Usa Mostrar en "
+        + "la carpeta para verlo.",
+    "preview.loading": "Cargando…",
     "auth.need_account": "Crear una cuenta",
     "auth.have_account": "Ya tengo una cuenta",
     "auth.forgot": "¿Olvidaste tu contraseña?",

@@ -146,6 +146,8 @@ CREATE TABLE IF NOT EXISTS app_config (
 
 # Added after the first release; add_missing_columns() adds them.
 ADDED_APP_CONFIG_COLUMNS = {
+    # How the folder's scan stands; a closed app leaves "running".
+    "scan_state": "scan_state TEXT",
     "language": "language TEXT NOT NULL DEFAULT 'en'",
     "naming_template":
         "naming_template TEXT NOT NULL DEFAULT '{date}_{topic}'",
@@ -287,6 +289,76 @@ def add_missing_columns(cursor):
                                definition)
 
 
+def move_prefix(cursor, table, column, old, new):
+    """Rewrite paths under one folder to the same place under another."""
+    # OR REPLACE: a path that exists twice leaves one row; the rest is below.
+    cursor.execute(
+        "UPDATE OR REPLACE " + table + " SET " + column + " = ? || substr(" +
+        column + ", ?) WHERE substr(" + column + ", 1, ?) = ?",
+        (new, len(old) + 1, len(old) + 1, old + os.sep))
+
+
+def follow_copied_folder(cursor, db_path):
+    """A project folder that was copied or moved keeps its catalog.
+
+    The rows still say where the files used to be, so every file looked new
+    and came back as a duplicate of its own old row. They move with it.
+    """
+    holder = os.path.dirname(db_path)
+    if os.path.basename(holder) != ".cataloga":
+        return
+    row = cursor.execute(
+        "SELECT target_directory FROM app_config ORDER BY id LIMIT 1"
+    ).fetchone()
+    root = os.path.dirname(holder)
+    if not row or not row[0]:
+        return
+    if os.path.realpath(row[0]) == os.path.realpath(root):
+        return
+    cursor.execute("DROP INDEX IF EXISTS one_row_per_path")
+    new = os.path.realpath(root)
+    for old in {row[0].rstrip(os.sep), os.path.realpath(row[0])}:
+        cursor.execute("UPDATE documents SET file_path = ? || substr("
+                       "file_path, ?) WHERE substr(file_path, 1, ?) = ?",
+                       (new, len(old) + 1, len(old) + 1, old + os.sep))
+        move_prefix(cursor, "scan_index", "path", old, new)
+        for column in ("old_path", "new_path"):
+            move_prefix(cursor, "batch_items", column, old, new)
+    cursor.execute("UPDATE app_config SET target_directory = ?", (new,))
+
+
+def remove_repeated_paths(cursor):
+    """Leave one row per path: the edited one, else the newest real one.
+
+    A row that says "duplicate of" its own copy is never the one to keep.
+    """
+    repeated = cursor.execute(
+        "SELECT file_path FROM documents GROUP BY file_path "
+        "HAVING COUNT(*) > 1").fetchall()
+    for repeat in repeated:
+        rows = cursor.execute(
+            "SELECT d.id, EXISTS (SELECT 1 FROM activity_log a WHERE "
+            "a.document_id = d.id AND a.action IN ('Edited', 'Moved', "
+            "'Renamed')), d.duplicate_of IS NULL FROM documents d "
+            "WHERE d.file_path = ?", (repeat[0],)).fetchall()
+        keep = max(rows, key=lambda row: (row[1], row[2], row[0]))[0]
+        for row in rows:
+            if row[0] != keep:
+                cursor.execute("DELETE FROM activity_log WHERE "
+                               "document_id = ?", (row[0],))
+                cursor.execute("DELETE FROM documents WHERE id = ?",
+                               (row[0],))
+    # The index follows the rows that stayed.
+    cursor.execute(
+        "UPDATE scan_index SET document_id = (SELECT d.id FROM documents d "
+        "WHERE d.file_path = scan_index.path) WHERE path IN "
+        "(SELECT file_path FROM documents)")
+    cursor.execute("DELETE FROM scan_index WHERE path NOT IN "
+                   "(SELECT file_path FROM documents)")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS one_row_per_path "
+                   "ON documents (file_path)")
+
+
 def repair_in_place_folders(cursor):
     """In a project read in place, folder_path is the file's own folder.
 
@@ -332,6 +404,8 @@ def init_db(db_path=DB_PATH):
     # The provider a project used before the roles is its text provider.
     cursor.execute("UPDATE ai_provider_config SET role = 'text' "
                    "WHERE is_active = 1 AND role IS NULL")
+    follow_copied_folder(cursor, db_path)
+    remove_repeated_paths(cursor)
     repair_in_place_folders(cursor)
     # Rows from before folder_path: the path is the two old columns.
     cursor.execute("UPDATE documents SET folder_path = CASE WHEN "

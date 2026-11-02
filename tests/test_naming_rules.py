@@ -10,19 +10,17 @@ from tests.test_classification_pipeline import (  # noqa: F401
     fake_keyring, make_text_file, setup)
 
 
-@pytest.mark.parametrize("text, style, accents, expected", [
-    ("Juegos Nacionales PR", "lower", False, "juegos-nacionales-pr"),
-    ("Juegos Nacionales PR", "title", False, "Juegos-Nacionales-PR"),
-    ("El Nuevo Día", "lower", False, "el-nuevo-dia"),
-    ("El Nuevo Día", "lower", True, "el-nuevo-día"),
-    ("El Nuevo Día", "title", True, "El-Nuevo-Día"),
-    ("año de la niña", "title", True, "Año-De-La-Niña"),
-    ("  --Hello___World--  ", "title", False, "Hello-World"),
+@pytest.mark.parametrize("text, style, expected", [
+    ("Juegos Nacionales PR", "lower", "juegos-nacionales-pr"),
+    ("Juegos Nacionales PR", "title", "Juegos-Nacionales-PR"),
+    ("El Nuevo Día", "lower", "el-nuevo-dia"),
+    ("El Nuevo Día", "title", "El-Nuevo-Dia"),
+    ("año de la niña", "title", "Ano-De-La-Nina"),
+    ("  --Hello___World--  ", "title", "Hello-World"),
 ])
-def test_slugify_styles_and_accents(text, style, accents, expected):
-    """lowercase or Title-Case, with or without accents."""
-    assert naming.slugify(text, style=style, keep_accents=accents) == \
-        expected
+def test_slugify_styles_never_keep_accents(text, style, expected):
+    """lowercase or Title-Case, always without accents."""
+    assert naming.slugify(text, style=style) == expected
 
 
 def test_method_four_has_no_number_and_examples_are_generic():
@@ -74,15 +72,15 @@ def test_fit_path_shortens_the_topic_then_the_source():
 
 # --- In the pipeline ---
 
-def test_pipeline_uses_the_project_style_and_accents(setup):
-    """Title-Case with accents: Malta-Olímpica_El-Nuevo-Día_1964-10-12."""
+def test_pipeline_uses_the_style_and_ignores_the_old_accents_option(setup):
+    """A project that had the option on gets names without accents now."""
     setup["repo"].save_config_value("naming_style", "title")
     setup["repo"].save_config_value("keep_accents", 1)
     setup["repo"].save_naming_template(naming.NEW_PROJECT_TEMPLATE)
     pipeline, ai = setup["build"]()
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "clipping.txt"))
-    assert doc.filename == "Malta-Olímpica_El-Nuevo-Día_1964-10-12.txt"
+    assert doc.filename == "Malta-Olimpica_El-Nuevo-Dia_1964-10-12.txt"
 
 
 def test_pipeline_never_writes_undated(setup):
