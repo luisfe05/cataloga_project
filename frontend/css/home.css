@@ -7,6 +7,22 @@
     padding: var(--spacing-12) var(--spacing-32) 0;
 }
 
+.home-top .search-box {
+    flex: 1 1 260px;
+    color: var(--color-dusk);
+}
+
+.home-top .search-box input {
+    height: 42px;
+    border: 1px solid rgba(70, 65, 123, 0.22);
+    background: none;
+    color: var(--color-deep-space);
+}
+
+.home-top .search-box .icon {
+    top: 12px;
+}
+
 .home-tabs {
     display: inline-flex;
     padding: 4px;
