@@ -1,15 +1,20 @@
 """ClassificationPipeline."""
 
 import json
+import logging
 import os
+import threading
+import time
 from datetime import datetime
 
 from pypdf import PdfReader
 
 from backend.models.document import Document
 from backend.pipeline import (archive_rules, file_metadata, file_readers,
-                              folder_tree, media_reader, naming)
+                              folder_tree, media_reader, naming, time_budget)
 from backend.pipeline.ai_providers import base
+
+logger = logging.getLogger(__name__)
 
 # Sorted by extension alone, without asking the AI.
 EXTENSION_MEDIA_TYPES = {
@@ -317,6 +322,9 @@ class ClassificationPipeline:
         the name the pipeline chooses are saved as proposals. The media
         client listens to audio and video; without one, only tags.
         """
+        # Per thread: work left behind must not touch the next file's.
+        self.reading = threading.local()
+        self.reading.cut_off = False
         self.ai_client = ai_client
         self.db = catalog_repo
         self.file_organizer = file_organizer
@@ -337,8 +345,28 @@ class ClassificationPipeline:
         # No folder fits: the file stays in the Drop Zone for a person.
         return os.path.dirname(file_path), False
 
+    def classify_within_limit(self, file_path):
+        """Run the pipeline on a file; if it takes too long, skip the file.
+
+        A skipped file gets one row, by name, in Manual Review, and the work
+        left behind can no longer write anything.
+        """
+        started = time.monotonic()
+        try:
+            document = time_budget.run_limited(
+                lambda: self.classify_document(file_path))
+        except time_budget.TimedOut as error:
+            logger.warning("timed out after %.0fs in step %s: %s",
+                           time.monotonic() - started, error,
+                           self.relative_path(file_path))
+            return self.add_unread(file_path, archive_rules.TIMEOUT_NOTE)
+        logger.info("done in %.1fs: %s", time.monotonic() - started,
+                    document.status)
+        return document
+
     def classify_document(self, file_path):
         """Run the full pipeline on a single file."""
+        self.reading.cut_off = False
         original_filename = os.path.basename(file_path)
         date_added = now_timestamp()
         extension = os.path.splitext(file_path)[1].lower()
@@ -347,8 +375,12 @@ class ClassificationPipeline:
         if archive_rules.is_secret(original_filename):
             return self.add_unread(file_path, archive_rules.SECRET_NOTE)
 
+        # Only in iCloud: opening it would download it, or hang.
+        if file_readers.in_cloud_only(file_path):
+            return self.add_unread(file_path, archive_rules.ICLOUD_NOTE)
+
         # Hash first: a duplicate never reaches the AI.
-        sha256 = archive_rules.sha256_of(file_path)
+        sha256 = time_budget.timed("hash", archive_rules.sha256_of, file_path)
         original = self.db.find_by_sha256(sha256)
         if original is not None:
             return self.add_duplicate(file_path, sha256, original)
@@ -375,8 +407,9 @@ class ClassificationPipeline:
             media_type = kind
             file_meta = file_metadata.media_metadata(file_path)
             if self.media_client is not None:
-                content, reason = media_reader.read_media(
-                    self.media_client, file_path, kind, file_meta["length"])
+                content, reason = time_budget.timed(
+                    "ai media", media_reader.read_media, self.media_client,
+                    file_path, kind, file_meta["length"])
             heard = bool(content)
             # Not listened to, but a title is enough to name it.
             if not content and file_meta["title"]:
@@ -395,12 +428,14 @@ class ClassificationPipeline:
                 taken = file_readers.photo_date(file_path)
         elif extension in READABLE_EXTENSIONS:
             file_meta = file_metadata.document_metadata(file_path)
-            content = extract_text(file_path)
+            content = time_budget.timed("text", extract_text, file_path)
             if (not content and extension == ".pdf" and
                     self.ai_client.supports_images):
                 # A scanned PDF: its first pages go to the AI as images.
                 content = self.read_images(
-                    file_readers.pdf_page_data_uris(file_path), "scan")
+                    time_budget.timed("render",
+                                      file_readers.pdf_page_data_uris,
+                                      file_path), "scan")
                 if not content:
                     reason = archive_rules.SCAN_NOTE
         elif extension in file_readers.DESIGN_EXTENSIONS:
@@ -409,7 +444,8 @@ class ClassificationPipeline:
             file_meta = file_readers.design_metadata(file_path)
             if self.ai_client.supports_images:
                 content = self.read_images(
-                    file_readers.design_views(file_path), "photo")
+                    time_budget.timed("render", file_readers.design_views,
+                                      file_path), "photo")
             content = content or UNREAD_TEXT
         elif extension in file_readers.ARCHIVE_EXTENSIONS:
             # A zip: the list of what it holds, never unpacked.
@@ -423,6 +459,9 @@ class ClassificationPipeline:
             # say something. Never Manual Review only for the format.
             media_type = FALLBACK_MEDIA_TYPE
             content = UNREAD_TEXT
+
+        if self.reading.cut_off:
+            reason = archive_rules.CUT_OFF_NOTE
 
         has_text = bool(content)
         if content:
@@ -464,6 +503,8 @@ class ClassificationPipeline:
         new_filename = self.build_filename(file_path, has_text, metadata,
                                            date_source, folder)
         proposed_folder = proposed_name = None
+        # From here on the file may move and a row is written.
+        time_budget.commit()
         if self.db.is_catalog_project():
             new_path = file_path
         elif self.in_place:
@@ -551,17 +592,32 @@ class ClassificationPipeline:
             return "{}. Duration {}".format(archive_rules.MEDIA_NOTE, length)
         return archive_rules.MEDIA_NOTE
 
+    def ask_images(self, image_uris, prompt):
+        """Ask about images; if the answer was cut off, ask for less."""
+        answer = self.ai_client.ask_about_images(image_uris, prompt)
+        result = parse_json_answer(answer)
+        if result or not answer or "{" not in answer:
+            return result
+        # A JSON that never closes: the answer hit its limit, usually because
+        # the model began repeating itself on a dense page.
+        logger.info("  answer cut off after %d characters; asking for a "
+                    "description only", len(answer))
+        result = parse_json_answer(self.ai_client.ask_about_images(
+            image_uris, base.DESCRIPTION_PROMPT))
+        self.reading.cut_off = not result
+        return result
+
     def read_photo(self, file_path):
         """Send a photo and its corners; return (text, stamp date)."""
-        views = file_readers.photo_views(file_path)
-        result = parse_json_answer(self.ai_client.ask_about_images(
-            views, base.PHOTO_PROMPT))
+        views = time_budget.timed("render", file_readers.photo_views,
+                                  file_path)
+        result = self.ask_images(views, base.PHOTO_PROMPT)
         rotation = result.get("rotation")
         if rotation in (90, 180, 270):
             # A scan lying on its side: turn the copy and look again.
-            turned = file_readers.photo_views(file_path, rotation)
-            again = parse_json_answer(self.ai_client.ask_about_images(
-                turned, base.PHOTO_PROMPT))
+            turned = time_budget.timed("render", file_readers.photo_views,
+                                       file_path, rotation)
+            again = self.ask_images(turned, base.PHOTO_PROMPT)
             if again:
                 result = again
         order = self.db.stamp_date_order()
@@ -582,7 +638,7 @@ class ClassificationPipeline:
     def read_images(self, image_uris, kind):
         """Ask the AI to read images; return them as text, or ''."""
         image_uris = [uri for uri in image_uris if uri]
-        result = parse_json_answer(self.ai_client.ask_about_images(image_uris))
+        result = self.ask_images(image_uris, base.IMAGE_PROMPT)
         found = archive_rules.clean_text(result.get("text"), 20000)
         description = archive_rules.clean_text(result.get("description"), 500)
         if not found and not description:
@@ -602,6 +658,7 @@ class ClassificationPipeline:
 
     def add_unread(self, file_path, note):
         """Record a file by its name only, in Manual Review, where it is."""
+        time_budget.commit()
         name = os.path.basename(file_path)
         extension = os.path.splitext(name)[1].lower()
         document = Document(
@@ -620,6 +677,7 @@ class ClassificationPipeline:
 
     def add_duplicate(self, file_path, sha256, original):
         """Record a duplicate in Manual Review. It stays in the Drop Zone."""
+        time_budget.commit()
         name = os.path.basename(file_path)
         extension = os.path.splitext(name)[1].lower()
         document = Document(
@@ -860,7 +918,8 @@ class ClassificationPipeline:
             if self.db.has_file_path(file_path):
                 continue
             try:
-                documents.append(self.classify_document(file_path))
+                logger.info("reading %s", self.relative_path(file_path))
+                documents.append(self.classify_within_limit(file_path))
             except (OSError, ValueError):
                 continue
         return documents

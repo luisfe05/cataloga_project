@@ -7,10 +7,11 @@ What the pipeline would have done is saved as a proposal for the plan.
 import logging
 import os
 import threading
+import time
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
-from backend.pipeline import folder_tree
+from backend.pipeline import archive_rules, file_readers, folder_tree
 from backend.pipeline.ai_providers import (create_client,
                                            ready_media_client)
 from backend.pipeline.classification_pipeline import ClassificationPipeline
@@ -28,6 +29,14 @@ SKIPPED_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 TEMPORARY_ENDINGS = (".part", ".download", ".crdownload", ".tmp", "~lock~")
 
 STATUSES = ("idle", "running", "paused", "done", "stopped")
+
+# With no file finished in this time, the scan pauses and says so. A file
+# that timed out does not count: an AI that is down stops the scan here.
+STALL_SECONDS = 5 * 60
+
+# What Retry reads again. Everything else in Manual Review was understood.
+RETRY_NOTES = (archive_rules.TIMEOUT_NOTE, archive_rules.CUT_OFF_NOTE,
+               archive_rules.SCAN_NOTE, archive_rules.ICLOUD_NOTE)
 
 
 def find_files(folder):
@@ -71,9 +80,26 @@ class ScanJob:
         self.resume_event.set()
         self.stop_requested = False
         self.thread = None
+        # Tests replace the clock.
+        self.clock = time.monotonic
+        self.last_progress = self.clock()
+
+    def note_progress(self):
+        """Remember that a file was finished just now."""
+        self.last_progress = self.clock()
+
+    def check_stalled(self):
+        """Pause with a warning when no file has finished for too long."""
+        if self.status == "running" and \
+                self.clock() - self.last_progress > STALL_SECONDS:
+            logger.warning("no progress in %d s, pausing on %s",
+                           STALL_SECONDS, self.current)
+            self.error = "stalled"
+            self.pause()
 
     def to_dict(self):
         """What the screen shows."""
+        self.check_stalled()
         return {"status": self.status, "folder": self.folder,
                 "total": self.total, "done": self.done,
                 "current": self.current, "error": self.error}
@@ -92,6 +118,8 @@ class ScanJob:
         """Let a paused thread go on."""
         if self.status == "paused":
             self.status = "running"
+            self.error = ""
+            self.note_progress()
             self.resume_event.set()
 
     def stop(self):
@@ -112,8 +140,9 @@ def scan_folder(job, folder, repo, client, owner=None):
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
                                       owner=owner, in_place=True,
                                       media_client=ready_media_client(repo))
-    for path in files:
+    for number, path in enumerate(files, start=1):
         # Pause holds here; stop ends here.
+        job.check_stalled()
         job.resume_event.wait()
         if job.stop_requested:
             job.status = "stopped"
@@ -125,14 +154,19 @@ def scan_folder(job, folder, repo, client, owner=None):
             # The same size and date: the file was read already.
             if known and (known["size"], known["mtime"]) == stamp:
                 job.done += 1
+                job.note_progress()
                 continue
             if known:
                 repo.delete_document(known["document_id"])
-            document = pipeline.classify_document(path)
+            logger.info("reading %d/%d %s", number, job.total, job.current)
+            document = pipeline.classify_within_limit(path)
             repo.index_put(path, stamp[0], stamp[1], document.id)
+            if document.review_note != archive_rules.TIMEOUT_NOTE:
+                job.note_progress()
         except Exception as error:
             # One bad file never stops the scan.
             logger.warning("could not read %s: %s", path, error)
+            job.note_progress()
         job.done += 1
     job.current = ""
     job.status = "done"
@@ -155,7 +189,8 @@ def read_new_files(folder, repo, client, owner=None):
                 continue
             if known:
                 repo.delete_document(known["document_id"])
-            document = pipeline.classify_document(path)
+            logger.info("reading %s", os.path.relpath(path, folder))
+            document = pipeline.classify_within_limit(path)
             repo.index_put(path, stamp[0], stamp[1], document.id)
             documents.append(document)
         except Exception as error:
@@ -229,6 +264,29 @@ def watch_once(folder, repo, client, owner=None):
         else:
             applied.append(doc)
     return applied
+
+
+def retryable_documents(repo):
+    """Return the rows Retry would read again, never one edited by hand."""
+    rows = []
+    for row in repo.untouched_with_notes(RETRY_NOTES):
+        if not os.path.isfile(row["file_path"]):
+            continue
+        # Still only in iCloud: reading it again would change nothing.
+        if row["review_note"] == archive_rules.ICLOUD_NOTE and \
+                file_readers.in_cloud_only(row["file_path"]):
+            continue
+        rows.append(row)
+    return rows
+
+
+def forget_retryable(repo):
+    """Forget those rows so the next scan reads only them; return how many."""
+    rows = retryable_documents(repo)
+    for row in rows:
+        # delete_document also removes its row in the scan index.
+        repo.delete_document(row["id"])
+    return len(rows)
 
 
 def start_scan(app, projects_path, owner=None):

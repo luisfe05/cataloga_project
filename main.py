@@ -11,6 +11,8 @@ import urllib.request
 import webview
 
 from backend.app import create_app
+from backend.config.app_log import setup_log
+from backend.config.projects import DATA_FOLDER
 from backend.folder_watcher import start_watcher
 
 # Not 5000: the macOS AirPlay Receiver already listens on it.
@@ -79,6 +81,7 @@ def wait_for_server(port, timeout=10):
 
 def main():
     """Bootstrap the app: start Flask and the watcher, open the window."""
+    setup_log(DATA_FOLDER)
     app = create_app()
 
     flask_thread = threading.Thread(
