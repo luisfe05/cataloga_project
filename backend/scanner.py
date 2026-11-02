@@ -115,6 +115,8 @@ class ScanJob:
         # Tests replace the clock.
         self.clock = time.monotonic
         self.last_progress = self.clock()
+        # When the file being read now was started, or None.
+        self.file_started = None
 
     def note_progress(self):
         """Remember that a file was finished just now."""
@@ -132,9 +134,12 @@ class ScanJob:
     def to_dict(self):
         """What the screen shows."""
         self.check_stalled()
+        seconds = 0 if self.file_started is None else \
+            int(self.clock() - self.file_started)
         return {"status": self.status, "folder": self.folder,
                 "total": self.total, "done": self.done,
-                "current": self.current, "error": self.error}
+                "current": self.current, "error": self.error,
+                "current_seconds": seconds}
 
     def is_running(self):
         """Say whether a thread is still working on this job."""
@@ -221,6 +226,7 @@ def scan_folder(job, folder, repo, client, owner=None):
                 job.note_progress()
                 continue
             logger.info("reading %d/%d %s", number, job.total, job.current)
+            job.file_started = job.clock()
             document = pipeline.classify_within_limit(path)
             repo.index_put(path, stamp[0], stamp[1], document.id)
             if document.review_note != archive_rules.TIMEOUT_NOTE:
@@ -229,6 +235,7 @@ def scan_folder(job, folder, repo, client, owner=None):
             # One bad file never stops the scan.
             logger.warning("could not read %s: %s", path, error)
             job.note_progress()
+        job.file_started = None
         job.done += 1
     job.current = ""
     job.status = "done"
@@ -347,7 +354,7 @@ def scan_view(job, repo, folder):
     if job.folder == folder and (job.is_running() or job.status == "done"):
         return state
     state.update({"status": "idle", "folder": folder, "current": "",
-                  "error": "", "done": 0, "total": 0})
+                  "error": "", "done": 0, "total": 0, "current_seconds": 0})
     if not repo.reads_in_place():
         return state
     state["done"], state["total"] = scan_counts(repo, folder)
