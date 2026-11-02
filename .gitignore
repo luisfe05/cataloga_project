@@ -22,3 +22,15 @@ dist/
 
 # Environment files (API keys never go in the repo)
 .env
+
+# Local notes and tools, never in the repo
+CLAUDE.md
+PROGRESS.md
+skills-lock.json
+.claude/
+
+# A project's own catalog
+.cataloga/
+
+# The QA answer key has real file names
+qa/answer_key.csv
