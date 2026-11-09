@@ -173,11 +173,28 @@ function drawProjectSummary(body, answer) {
             + project.last_date));
     }
     if (project.top_sources.length) {
-        const sources = project.top_sources
-            .map((item) => `${item.source} (${item.count})`).join(", ");
-        body.appendChild(chatElement("p", "chat-note",
-            `${t("chat.summary_sources")}: ${sources}`));
+        const note = chatElement("p", "chat-note",
+            `${t("chat.summary_sources")}: `);
+        project.top_sources.forEach((item, index) => {
+            if (index > 0) {
+                note.append(", ");
+            }
+            note.append(sourceLink(item.source), ` (${item.count})`);
+        });
+        body.appendChild(note);
     }
+}
+
+/** A source name that opens Catalog list with only its documents, newest first. */
+function sourceLink(source) {
+    const link = chatElement("button", "chat-link chat-source-link", source);
+    link.type = "button";
+    link.setAttribute("aria-label", t("chat.show_source", { source: source }));
+    link.addEventListener("click", () => {
+        showView("catalog");
+        applyCatalogFilters({ source: source, sort: "newest" });
+    });
+    return link;
 }
 
 /** propose_rename: "current → new" with Confirm and Cancel. Only Confirm renames. */

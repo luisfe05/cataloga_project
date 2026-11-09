@@ -3,6 +3,16 @@
 // Order of the bars, as in the wireframe.
 const BREAKDOWN_ORDER = ["Documents", "Audio", "Video", "Press", "Photos"];
 
+// One gradient per media type, bottom to top, from the brand palette. Fixed, so it never changes.
+// Paper is only a light accent at the very top.
+const BAR_GRADIENTS = {
+    Documents: "linear-gradient(to top, #08051c, #221854, #493bb2)",
+    Audio: "linear-gradient(to top, #221854, #342476)",
+    Video: "linear-gradient(to top, #342476, #493bb2 85%, #eef5fa)",
+    Press: "linear-gradient(to top, #08051c, #46417b)",
+    Photos: "linear-gradient(to top, #221854, #493bb2)",
+};
+
 // Last height of each bar, so a refresh grows it from there, not from zero.
 const lastBarHeights = {};
 
@@ -61,6 +71,7 @@ function renderBreakdown(breakdown) {
         track.className = "bar-track";
         const fill = document.createElement("div");
         fill.className = "bar-fill";
+        fill.style.backgroundImage = BAR_GRADIENTS[type];
         track.appendChild(fill);
 
         const header = document.createElement("div");

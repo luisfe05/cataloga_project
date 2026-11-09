@@ -122,7 +122,7 @@
         <!-- Floating chat button. Its name is only for screen readers. -->
         <button type="button" class="chat-toggle" id="chat-toggle"
                 aria-expanded="false" aria-controls="chat-panel">
-            <img class="chat-logomark" src="assets/logomark-paper.svg"
+            <img class="chat-logomark" src="assets/logomarks/logomark-7.svg"
                  alt="">
             <span class="visually-hidden"
                   data-i18n="chat.open_label">Open Cataloga
@@ -209,7 +209,7 @@
                     data-i18n="banner.learn">Learn from my folder</button>
             <button type="button" class="banner-button violet hidden"
                     id="scan-catalog"
-                    data-i18n="banner.catalog_now">Catalog now</button>
+                    data-i18n="banner.catalog_now">Archive now</button>
             <button type="button" class="banner-button line hidden"
                     id="scan-pause" data-i18n="scan.pause">Pause</button>
             <button type="button" class="banner-button violet hidden"
@@ -299,6 +299,13 @@
                 <select id="filter-subcategory">
                     <option value="">Subcategory: All</option>
                 </select>
+                <!-- After a source link in the chat: the list is newest first until × or any filter. -->
+                <span class="sort-chip hidden" id="sort-chip">
+                    <span data-i18n="catalog.newest_first">Newest first</span>
+                    <button type="button" class="sort-chip-clear"
+                            id="sort-chip-clear"
+                            data-i18n-label="catalog.newest_first_clear">×</button>
+                </span>
                 <div class="toolbar">
                     <button type="button" class="pill-button"
                             id="download-button">
@@ -590,12 +597,33 @@
                                 <code data-i18n="project.mode_tree_hint"></code>
                             </label>
                         </div>
+                        <!-- New project read where it is: its numbers, and when to read it (settings.js). -->
+                        <p class="folder-facts hidden" id="folder-facts"></p>
+                        <div class="archive-switch hidden" id="archive-switch">
+                            <span class="archive-switch-label" id="archive-switch-label"
+                                  data-i18n="project.archive_title">When should Cataloga
+                                read this folder?</span>
+                            <div class="archive-options" role="radiogroup"
+                                 aria-labelledby="archive-switch-label">
+                                <label><input type="radio" name="archive-when"
+                                              value="now">
+                                    <span data-i18n="project.archive_now">Archive
+                                        Now</span></label>
+                                <label><input type="radio" name="archive-when"
+                                              value="later" checked>
+                                    <span data-i18n="project.archive_later">Archive
+                                        Later</span></label>
+                            </div>
+                            <p class="hint" id="archive-hint"></p>
+                        </div>
                         <!-- Catalog only: read and catalog in place, never move or rename -->
                         <label class="catalog-only-row" id="catalog-only-row">
                             <input type="checkbox" id="catalog-only">
                             <span data-i18n="project.catalog_only">Catalog only:
                                 read and catalog the files where they are. Never
                                 move or rename them</span>
+                            <span class="help-tip opens-left"
+                                  data-help="help.catalog_only"></span>
                         </label>
                         <p class="hint hidden" id="catalog-only-hint"
                            data-i18n="project.catalog_only_hint"></p>
@@ -606,9 +634,10 @@
                 </section>
 
                 <!-- The project sheet: what the work is. Goes into every AI request. -->
-                <section class="settings-section">
+                <section class="settings-section" id="sheet-section">
                     <div class="settings-intro">
-                        <h2 data-i18n="sheet.title">About this project</h2>
+                        <h2><span data-i18n="sheet.title">About this project</span>
+                            <span class="help-tip" data-help="help.sheet"></span></h2>
                         <p class="hint" data-i18n="sheet.hint"></p>
                     </div>
                     <div class="settings-fields">
@@ -627,7 +656,7 @@
                 </section>
 
                 <!-- File names: 4 methods or a custom template. Saved with Save. -->
-                <section class="settings-section">
+                <section class="settings-section" id="naming-section">
                     <div class="settings-intro">
                         <h2><span data-i18n="naming.title">File names</span>
                             <span class="help-tip" data-help="naming.help_names"></span></h2>
@@ -789,9 +818,10 @@
                     </div>
                 </section>
 
-                <section class="settings-section">
+                <section class="settings-section" id="ai-section">
                     <div class="settings-intro">
-                        <h2 data-i18n="settings.ai_title">AI Provider</h2>
+                        <h2><span data-i18n="settings.ai_title">AI Provider</span>
+                            <span class="help-tip" data-help="help.ai_provider"></span></h2>
                         <p class="hint" id="ai-status"></p>
                     </div>
                     <div class="settings-fields">
@@ -888,7 +918,8 @@
             <form class="settings-form" id="password-form">
                 <section class="settings-section">
                     <div class="settings-intro">
-                        <h2 data-i18n="account.title">Account</h2>
+                        <h2><span data-i18n="account.title">Account</span>
+                            <span class="help-tip" data-help="help.account"></span></h2>
                         <p class="hint" data-i18n="account.hint">One account for
                             the whole app, for every project.</p>
                     </div>
@@ -925,7 +956,8 @@
             <section class="settings-section remove-project hidden"
                      id="remove-project-section">
                 <div class="settings-intro">
-                    <h2 data-i18n="project.remove">Remove project</h2>
+                    <h2><span data-i18n="project.remove">Remove project</span>
+                        <span class="help-tip" data-help="help.remove_project"></span></h2>
                     <p class="hint" data-i18n="project.remove_text"></p>
                 </div>
                 <div class="settings-fields">
@@ -938,32 +970,6 @@
 
         <!-- Toast, outside the views so it shows on any screen. catalog.js clears it. -->
         <p class="toolbar-message" id="toolbar-message"></p>
-
-    <!-- A new project's folder was only listed: read it now, or later. -->
-    <div class="ask-overlay hidden" id="ask-overlay">
-        <div class="ask-box" role="dialog" aria-modal="true"
-             aria-labelledby="ask-title">
-            <h2 id="ask-title" data-i18n="ask.title">Catalog this folder now?</h2>
-            <p data-i18n="ask.found">Cataloga found this folder. Nothing has
-                been read or sent to the AI yet.</p>
-            <div class="ask-facts">
-                <div><strong id="ask-files">0</strong>
-                    <span data-i18n="ask.files">files</span></div>
-                <div><strong id="ask-folders">0</strong>
-                    <span data-i18n="ask.folders">folders</span></div>
-                <div><strong id="ask-size">0</strong>
-                    <span data-i18n="ask.total">total</span></div>
-            </div>
-            <p class="ask-note" data-i18n="ask.note"></p>
-            <p class="form-message error" id="ask-message"></p>
-            <div class="ask-actions">
-                <button type="button" class="banner-button line" id="ask-later"
-                        data-i18n="ask.later">Later</button>
-                <button type="button" class="banner-button violet" id="ask-now"
-                        data-i18n="banner.catalog_now">Catalog now</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Preview of a file, inside the app so it shows in a screen recording. -->
     <div class="preview-overlay hidden" id="preview-overlay" role="dialog"

@@ -112,6 +112,8 @@ def main():
           "Close the window to quit.".format(PORT))
 
     # min_size keeps room for the sidebar, the toolbar, and the table.
+    # text_select lets any text be copied with Cmd+C; pywebview's default
+    # Edit menu already gives Copy, Paste and Select All.
     webview.create_window(
         "Cataloga",
         FRONTEND_PATH,
@@ -119,6 +121,7 @@ def main():
         height=720,
         min_size=(1100, 680),
         js_api=DesktopApi(),
+        text_select=True,
     )
     webview.start()
 

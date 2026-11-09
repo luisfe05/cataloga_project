@@ -177,9 +177,21 @@ function renderPlanRows() {
             check.appendChild(box);
         }
         tr.appendChild(check);
-        const file = makeCell(row.action === "create_folder"
-            ? planLabel("action", "create_folder") : row.old_name,
-            "plan-file");
+        const fileText = row.action === "create_folder"
+            ? planLabel("action", "create_folder") : row.old_name;
+        const file = makeCell("", "plan-file");
+        file.title = fileText;
+        const line = document.createElement("div");
+        line.className = "plan-file-line";
+        const fileName = document.createElement("span");
+        fileName.className = "plan-file-name";
+        fileName.textContent = fileText;
+        line.appendChild(fileName);
+        // A file row has its document: the eye previews it, the folder shows it in Finder.
+        if (row.document_id && row.action !== "create_folder") {
+            line.appendChild(makeFileActions(row.document_id));
+        }
+        file.appendChild(line);
         if (row.reason) {
             const note = document.createElement("p");
             note.className = "review-note";

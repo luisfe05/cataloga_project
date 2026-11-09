@@ -84,8 +84,8 @@ def test_the_watcher_does_not_read_a_folder_left_for_later(
     assert repo.get_all_documents() == []
 
 
-def test_catalog_now_asks_the_ai_for_folders_when_there_are_none(tmp_path):
-    """A project made with Later gets its tree, once, before reading."""
+def test_archive_now_gives_the_folder_a_tree_from_what_it_holds(tmp_path):
+    """Its own folders stay; a loose file may bring one; empty ones never."""
     root = a_folder(tmp_path / "p")
     (root / ".cataloga").mkdir()
     from backend.db.schema import init_db
@@ -98,13 +98,17 @@ def test_catalog_now_asks_the_ai_for_folders_when_there_are_none(tmp_path):
     class Folders(FakeAI):
         asked = 0
 
-        def send_folders_request(self, description, hints=""):
+        def send_prompt(self, system_prompt, text):
+            if "loose at the top" not in system_prompt:
+                return FakeAI.send_prompt(self, system_prompt, text)
             Folders.asked += 1
-            assert "a.txt" in description
-            return '[{"name": "Prensa", "subfolders": ["Recortes"]}]'
+            assert "a.txt" in text and "Fotos/1997" in text
+            return ('[{"name": "Notas", "files": ["a.txt"]},'
+                    ' {"name": "Contratos", "files": ["contrato.pdf"]}]')
 
     scanner.scan_folder(scanner.ScanJob(), str(root), repo, Folders())
-    assert [node["name"] for node in repo.get_folder_tree()] == ["Prensa"]
+    assert [node["name"] for node in repo.get_folder_tree()] == ["Fotos",
+                                                                 "Notas"]
     assert Folders.asked == 1
     assert len(repo.get_all_documents()) == 2
     scanner.scan_folder(scanner.ScanJob(), str(root), repo, Folders())

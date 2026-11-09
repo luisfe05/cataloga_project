@@ -108,6 +108,19 @@ textarea {
     display: none !important;
 }
 
+/* Scrolling stops at the end of the page or list, with no bounce. */
+* {
+    overscroll-behavior: none;
+}
+
+/* Any text can be selected and copied. Controls are not, so a double click does not highlight them. */
+button,
+.nav-link,
+.icon {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* Keyboard focus: a Violet ring on everything that can be focused. */
 :focus-visible {
     outline: 2px solid var(--color-violet);
@@ -467,6 +480,11 @@ code:empty {
 
 .view {
     padding: var(--spacing-32);
+}
+
+/* Dashboard and Settings end at the chat room above; more padding was blank space. */
+#app-main:not(.fixed-view) > .view {
+    padding-bottom: 0;
 }
 
 /* Screen titles: Archivo SemiBold. */
@@ -1142,6 +1160,34 @@ td.editable {
     margin-bottom: var(--spacing-24);
 }
 
+/* Newest first, with a × that goes back to the normal order. */
+.sort-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    padding: 4px 4px 4px var(--spacing-12);
+    border-radius: var(--radius-full);
+    background: var(--color-violet);
+    color: var(--color-white);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sort-chip-clear {
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: none;
+    color: inherit;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.sort-chip-clear:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 /* Catalog: Download and Edit Mode, at the right end of the filters */
 .toolbar {
     display: flex;
@@ -1453,6 +1499,21 @@ td.editable {
     max-width: 100%;
 }
 
+/* Plan file cell: the name gives way, the eye and the folder are always there. */
+.plan-file-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    min-width: 0;
+}
+
+.plan-file-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Help: a "?" next to a field; a small balloon on hover, click or focus. */
 .help-tip {
     position: relative;
@@ -1505,6 +1566,12 @@ td.editable {
 .help-tip.open .help-bubble,
 .help-tip:hover:not(.dismissed) .help-bubble {
     display: block;
+}
+
+/* A "?" near the right edge opens its balloon to the left, so it stays on screen. */
+.help-tip.opens-left .help-bubble {
+    right: -8px;
+    left: auto;
 }
 
 /* Preview: over everything, inside the app. */
@@ -2005,20 +2072,16 @@ td.edit-error {
     height: 160px;
 }
 
-/* The top border stays at 0%, so an empty type still shows a thin bar. */
+/* The top border stays at 0%, so an empty type still shows a thin bar. The gradient comes from dashboard.js. */
 .bar-fill {
     width: 100%;
     height: var(--share, 0%);
     border-top: 3px solid var(--color-dusk);
-    background-image: repeating-linear-gradient(135deg,
-        rgba(70, 65, 123, 0.32) 0 1.5px, transparent 1.5px 7px);
     transition: height 0.6s ease-out;
 }
 
 .is-top .bar-fill {
     border-top-color: var(--color-violet);
-    background-image: repeating-linear-gradient(135deg,
-        rgba(73, 59, 178, 0.55) 0 1.5px, transparent 1.5px 7px);
 }
 
 .is-top .breakdown-count {
@@ -2435,6 +2498,75 @@ td.edit-error {
     margin-top: 4px;
 }
 
+/* The chosen folder's numbers, before anything is read. */
+.folder-facts {
+    margin-top: var(--spacing-12);
+    font-size: 14px;
+    color: var(--color-dusk);
+}
+
+/* Archive Now / Archive Later: two pills; the chosen one is Violet. */
+.archive-switch {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-8);
+    margin-top: var(--spacing-12);
+}
+
+.archive-switch-label {
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-dusk);
+}
+
+.archive-options {
+    display: inline-flex;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-full);
+    background: rgba(70, 65, 123, 0.1);
+}
+
+/* Not the uppercase field label of the form: the choice reads as a button. */
+.archive-options label {
+    position: relative;
+    margin: 0;
+    padding: 6px var(--spacing-16);
+    border-radius: var(--radius-full);
+    color: var(--color-midnight);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+}
+
+/* The radio stays for the keyboard and screen readers; the pill shows the choice. */
+.archive-options input {
+    position: absolute;
+    opacity: 0;
+}
+
+.archive-options label:has(input:checked) {
+    background: var(--color-violet);
+    color: var(--color-white);
+}
+
+.archive-options label:has(input:focus-visible) {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 2px;
+}
+
+/* A section Archive Later turns off: still visible, but it cannot be used. */
+.settings-section.is-off {
+    opacity: 0.45;
+}
+
 .naming-custom .hint {
     margin: 0 0 var(--spacing-16);
 }
@@ -2466,7 +2598,7 @@ td.edit-error {
 
 /* ======== Chat ======== */
 
-/* Chat button: a 56 px Violet circle fixed at the bottom right, with the Paper logomark. */
+/* Chat button: a 56 px circle of Nebula glass fixed at the bottom right, with the Nebula logomark. */
 .chat-toggle {
     position: fixed;
     right: var(--spacing-24);
@@ -2479,14 +2611,17 @@ td.edit-error {
     height: 56px;
     border: none;
     border-radius: var(--radius-full);
-    background: var(--color-violet);
-    box-shadow: var(--shadow-md);
+    background: rgba(52, 36, 118, 0.2);
+    /* The inner line on top is the glass shine. */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), var(--shadow-md);
+    -webkit-backdrop-filter: blur(8px) saturate(160%);
+    backdrop-filter: blur(8px) saturate(160%);
     cursor: pointer;
 }
 
 .chat-toggle:hover,
 .chat-toggle[aria-expanded="true"] {
-    background: var(--color-nebula);
+    background: rgba(52, 36, 118, 0.32);
 }
 
 /* 28 px wide keeps the logomark above the 16 px minimum of BRAND.md. */
@@ -2507,13 +2642,13 @@ td.edit-error {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* Glass at 60% with a stronger blur. Everything with text inside is solid. */
-    border: 1px solid var(--glass-border);
+    /* The same Nebula glass as the chat button, with a stronger blur. Everything with text inside is solid. */
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.6);
-    box-shadow: var(--shadow-lg);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    background: rgba(52, 36, 118, 0.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--shadow-lg);
+    -webkit-backdrop-filter: blur(40px) saturate(160%);
+    backdrop-filter: blur(40px) saturate(160%);
     transform-origin: bottom right;
     animation: chat-open 180ms ease-out;
 }
@@ -2537,6 +2672,8 @@ td.edit-error {
     gap: var(--spacing-12);
     padding: var(--spacing-12) var(--spacing-16);
     border-bottom: 1px solid var(--color-line);
+    /* A white frost over the glass keeps the title and × at 4.5:1 over dark banners. */
+    background: rgba(255, 255, 255, 0.45);
 }
 
 .chat-header h2 {
@@ -2819,6 +2956,13 @@ td.edit-error {
     cursor: pointer;
 }
 
+/* A source name inside the summary note: a link in the line of text. */
+.chat-source-link {
+    padding: 0;
+    font-family: inherit;
+    line-height: inherit;
+}
+
 .chat-stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2830,7 +2974,7 @@ td.edit-error {
     flex-direction: column;
     padding: 10px;
     border-radius: var(--radius-md);
-    background: var(--color-paper);
+    background: #dcd9ec;
 }
 
 .chat-stat-value {
@@ -2908,6 +3052,8 @@ td.edit-error {
 
 .chat-form textarea {
     flex: 1;
+    /* Two lines. */
+    height: 62px;
     resize: none;
     padding: 10px var(--spacing-12);
     border: 1px solid var(--color-line);

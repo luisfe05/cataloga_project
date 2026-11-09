@@ -35,9 +35,6 @@ STATUSES = ("idle", "running", "paused", "done", "stopped", "unread")
 SCAN_RUNNING = "running"
 SCAN_DONE = "done"
 
-# How many file names the AI sees to suggest the folders of a new project.
-MAX_NAMES_FOR_TREE = 60
-
 # With no file finished in this time, the scan pauses and says so. A file
 # that timed out does not count: an AI that is down stops the scan here.
 STALL_SECONDS = 5 * 60
@@ -178,18 +175,18 @@ def folder_facts(folder):
             "size": sum(os.path.getsize(path) for path in files)}
 
 
-def suggest_tree_if_empty(repo, folder, files, client):
-    """A project made with Later may have no folders yet: ask the AI once."""
+def suggest_tree_if_empty(repo, folder, client):
+    """A project with no folders yet gets them, once, from what it holds."""
+    # Imported here: folder_proposal reads the folder with learn_folder,
+    # which imports this module.
+    from backend.pipeline import folder_proposal
     if not repo.is_tree_project() or repo.get_folder_tree():
         return
     config = repo.get_app_config() or {}
-    names = [os.path.basename(path) for path in files[:MAX_NAMES_FOR_TREE]]
-    description = "{}. {} Some files: {}".format(
-        config.get("research_name") or os.path.basename(folder),
-        config.get("project_description") or "", ", ".join(names))
     try:
-        tree = folder_tree.parse_tree_answer(
-            client.send_folders_request(description))
+        tree = folder_proposal.propose(
+            client, folder, config.get("project_description") or "")[
+                "folder_tree"]
         if tree:
             repo.save_tree(tree)
     except (ValueError, OSError) as error:
@@ -204,7 +201,7 @@ def scan_folder(job, folder, repo, client, owner=None):
     job.done = 0
     # Saved in the catalog: a closed app leaves it as "running".
     repo.save_config_value("scan_state", SCAN_RUNNING)
-    suggest_tree_if_empty(repo, folder, files, client)
+    suggest_tree_if_empty(repo, folder, client)
     # A job that starts paused waits for Resume before its first file.
     if job.status != "paused":
         job.status = "running"

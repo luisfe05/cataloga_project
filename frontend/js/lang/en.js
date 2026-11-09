@@ -53,6 +53,8 @@ const LANG_EN = {
     "catalog.search": "Search the catalog",
     "catalog.filter_type_all": "Media Type: All",
     "catalog.filter_source_all": "Source: All",
+    "catalog.newest_first": "Newest first",
+    "catalog.newest_first_clear": "Back to the normal order",
     "catalog.download": "Download Worksheet",
     "catalog.edit_mode": "Edit Mode",
     "catalog.col_original": "Original Filename",
@@ -91,15 +93,8 @@ const LANG_EN = {
     "banner.not_cataloged": "This folder is not cataloged yet.",
     "banner.listed": "Cataloga listed {total} files without reading them. Start when you are ready.",
     "banner.learn": "Learn from my folder",
-    "banner.catalog_now": "Catalog now",
+    "banner.catalog_now": "Archive now",
     "banner.learned": "Learned {n} folders from your folder.",
-    "ask.title": "Catalog this folder now?",
-    "ask.found": "Cataloga found this folder. Nothing has been read or sent to the AI yet.",
-    "ask.files": "files",
-    "ask.folders": "folders",
-    "ask.total": "total",
-    "ask.note": "Before you start, you can browse the folders, choose Catalog only, or use Learn from my folder. You can start anytime from Home.",
-    "ask.later": "Later",
     "scan.retry_title": "Some files could not be read.",
     "plan.summary": "{files} files read. {moves} moves, {renames} renames, "
         + "{folders} new folders.",
@@ -125,7 +120,7 @@ const LANG_EN = {
     "plan.apply_one": "Apply 1 change",
     "plan.apply_many": "Apply {n} changes",
     "plan.tab_files": "Files",
-    "plan.unread": "{n} files have not been read yet. Use Catalog now in "
+    "plan.unread": "{n} files have not been read yet. Use Archive now in "
         + "Home; the proposals appear here.",
     "plan.drop_zone": "This project files new documents from its Drop Zone, "
         + "so there are no proposals to approve.",
@@ -279,6 +274,7 @@ const LANG_EN = {
     "chat.summary_total": "Documents",
     "chat.summary_dates": "Dates",
     "chat.summary_sources": "Top sources",
+    "chat.show_source": "Show documents from {source}",
     "chat.notice_invalid_reply": "Sorry, I could not understand that. Try "
         + "asking in a different way.",
     "chat.notice_ai_unavailable": "The AI provider did not answer. Check "
@@ -393,6 +389,11 @@ const LANG_EN = {
     "naming.help_repeats": "Without a reliable date the name has no date part. A name already taken gets _2, _3, and names stay under 240 characters. Example: carta.pdf, then carta_2.pdf.",
     "naming.help_dates": "A photo's date comes from what is printed on it, then a camera's EXIF, then a year in its name or folder. This says how to read a stamp. Example: 11 13 '97 is 1997-11-13.",
     "help.open": "Help",
+    "help.catalog_only": "Cataloga reads and describes each file where it is. Nothing is ever moved or renamed.",
+    "help.sheet": "A short text about the work. Cataloga reads it before every file, so it understands what the files are about.",
+    "help.ai_provider": "The service that reads your files. Only the provider you choose receives them, and your keys stay in the Mac Keychain.",
+    "help.account": "Your account lives only on this computer. There is no email, so a lost password cannot be recovered.",
+    "help.remove_project": "Takes the project out of the list. Its folder, files and catalog stay on the disk, so you can add it again.",
     "naming.style": "Style",
     "naming.changed_note": "Only new files will use this method.",
     "naming.blocks_add": "Click the parts in order",
@@ -469,6 +470,9 @@ const LANG_EN = {
         + "create the project: nothing on the disk changes.",
     "folders.suggesting": "Asking Ollama Cloud for folders...",
     "folders.suggested": "Edit the folders, then create the project.",
+    "folders.reading": "Reading what is in the folder to propose its folders...",
+    "folders.from_files": "Folders for the files already in this folder, and only for them. Edit them, then create the project.",
+    "folders.from_organized": "This folder is already organized: its folders stay as they are. A new folder appears only for loose files that fit none.",
     "folders.need_description": "Describe the project first.",
     "folders.add": "Add folder",
     "folders.remove": "Remove folder",
@@ -558,6 +562,12 @@ const LANG_EN = {
         + "what you drop into Drop Zone",
     "project.catalog_only": "Catalog only: read and catalog the files where "
         + "they are. Never move or rename them",
+    "project.archive_title": "When should Cataloga read this folder?",
+    "project.archive_now": "Archive Now",
+    "project.archive_later": "Archive Later",
+    "project.archive_now_hint": "Cataloga reads the files when you save and proposes where each one goes. Nothing moves until you approve the plan.",
+    "project.archive_later_hint": "Cataloga only lists the folder. Nothing is read or sent to the AI until you press Archive now in Home. You can fill in the other sections then, in Settings.",
+    "project.folder_facts": "This folder has {files} files in {folders} folders ({size}). Nothing has been read yet.",
     "project.catalog_only_hint": "For websites, code, and edits that link "
         + "their files by path (InDesign, Premiere, After Effects, Final "
         + "Cut). Cataloga reads, summarizes and catalogs each file in "
@@ -568,6 +578,7 @@ const LANG_EN = {
     "project.creating":
         "Creating the project and testing the AI connection...",
     "project.created": "Project created. The AI connection works.",
+    "project.created_later": "Project created. Nothing has been read yet: press Archive now in Home when you are ready.",
     "project.opened_existing": "This folder already had a Cataloga "
         + "catalog, so it was added to your projects.",
     "project.cancel": "Cancel",

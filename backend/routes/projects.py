@@ -8,8 +8,8 @@ from backend import scanner
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import (archive_rules, conventions, folder_tree,
-                              naming, project_sheet)
+from backend.pipeline import (archive_rules, conventions, folder_proposal,
+                              folder_tree, naming, project_sheet)
 from backend.pipeline import learn_folder as learn_folder_module
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            create_client)
@@ -94,11 +94,13 @@ def create_project():
                         "opened_existing": True}), 201
 
     catalog_only = body.get("catalog_only") is True
-    # Later: the folder is only listed. Its tree can come with Learn from my
-    # folder, or from the AI when the reading starts.
+    # Archive Later: the folder is only listed. Its tree can come with Learn
+    # from my folder, or from the AI when the reading starts.
     later = body.get("defer_scan") is True
+    # A folder read in place can start without a tree: reading proposes it.
+    reads_files = later or body.get("folder_mode") == folder_tree.PLACE_MODE
     tree = []
-    if not catalog_only and not (later and not body.get("folders")):
+    if not catalog_only and not (reads_files and not body.get("folders")):
         # Every new project files documents in its own folder tree.
         try:
             tree = folder_tree.check_tree(body.get("folders"))
@@ -110,7 +112,7 @@ def create_project():
 
     # Read in place or Catalog only: the folder's files are expected, and
     # nothing is made.
-    in_place = later or body.get("folder_mode") == folder_tree.PLACE_MODE
+    in_place = reads_files
     existing = 0 if (in_place or catalog_only) \
         else organizer.count_existing_items(tree)
     if existing and body.get("confirm_folder") is not True:
@@ -145,7 +147,10 @@ def create_project():
             new_repo.save_config_value("folder_mode", folder_tree.PLACE_MODE)
         if numbered:
             new_repo.save_config_value("numbered_folders", 1)
-    sheet = project_sheet.clean_sheet(body.get("project_sheet"))
+    # Archive Later leaves About this project and the AI provider off, so
+    # nothing from them is saved; Settings can fill them in before reading.
+    sheet = "" if later else project_sheet.clean_sheet(
+        body.get("project_sheet"))
     if sheet:
         new_repo.save_config_value("project_sheet", sheet)
     if body.get("stamp_date_order") in archive_rules.STAMP_ORDERS:
@@ -153,7 +158,7 @@ def create_project():
                                    body["stamp_date_order"])
     # Ollama Cloud works without typing a key.
     new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)
-    server_url = clean_server_url(body.get("server_url"))
+    server_url = "" if later else clean_server_url(body.get("server_url"))
     if server_url:
         new_repo.save_config_value("server_url", server_url)
     projects.add_project(projects_path(), name, folder)
@@ -169,9 +174,18 @@ def create_project():
 def suggest_folders():
     """Ask Ollama Cloud for a folder tree for a project. Saves nothing."""
     body = request.get_json(silent=True)
-    description = body.get("description") if isinstance(body, dict) \
-        else None
-    if not isinstance(description, str) or not description.strip():
+    if not isinstance(body, dict):
+        body = {}
+    description = body.get("description")
+    if not isinstance(description, str):
+        description = ""
+    folder = body.get("folder")
+    folder = projects.normalize_folder(folder) \
+        if isinstance(folder, str) and folder.strip() else ""
+    if folder and not os.path.isdir(folder):
+        return error_response("invalid_directory",
+                              "The folder does not exist: " + folder, 400)
+    if not folder and not description.strip():
         return error_response("missing_field",
                               "description is required.", 400)
     # The project does not exist yet, so the default provider is used.
@@ -180,6 +194,21 @@ def suggest_folders():
         return error_response(
             "no_api_key", "Ollama Cloud has no API key yet. Add one in "
             "Advanced settings, or build the folders by hand.", 400)
+    if folder:
+        # A folder with files: only what is there, and the description is
+        # context. An organized folder keeps its own tree.
+        result = folder_proposal.propose(
+            client, folder,
+            description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH])
+        if not result["folder_tree"]:
+            return error_response(
+                "suggest_folders_failed",
+                "The AI provider did not suggest any folders.", 502)
+        learned = result["learned"]
+        return jsonify({"folders": result["folder_tree"],
+                        "organized": result["organized"],
+                        "naming_style": learned["naming_style"],
+                        "naming_template": learned["naming_template"]}), 200
     # The industry, when known, brings the folders that field always has.
     industry = body.get("industry") if isinstance(body.get("industry"),
                                                   str) else ""

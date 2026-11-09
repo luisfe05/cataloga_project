@@ -53,6 +53,8 @@ const LANG_ES = {
     "catalog.search": "Buscar en el catálogo",
     "catalog.filter_type_all": "Tipo de medio: todos",
     "catalog.filter_source_all": "Fuente: todas",
+    "catalog.newest_first": "Más recientes primero",
+    "catalog.newest_first_clear": "Volver al orden normal",
     "catalog.download": "Descargar hoja de cálculo",
     "catalog.edit_mode": "Modo edición",
     "catalog.col_original": "Nombre original",
@@ -92,15 +94,8 @@ const LANG_ES = {
     "banner.not_cataloged": "Esta carpeta todavía no está catalogada.",
     "banner.listed": "Cataloga listó {total} archivos sin leerlos. Empieza cuando quieras.",
     "banner.learn": "Aprender de mi carpeta",
-    "banner.catalog_now": "Catalogar ahora",
+    "banner.catalog_now": "Archivar ahora",
     "banner.learned": "Se aprendieron {n} carpetas de tu carpeta.",
-    "ask.title": "¿Catalogar esta carpeta ahora?",
-    "ask.found": "Cataloga encontró esta carpeta. Todavía no se ha leído nada ni se ha enviado a la AI.",
-    "ask.files": "archivos",
-    "ask.folders": "carpetas",
-    "ask.total": "total",
-    "ask.note": "Antes de empezar puedes ver las carpetas, elegir Solo catalogar o usar Aprender de mi carpeta. Puedes empezar cuando quieras desde Inicio.",
-    "ask.later": "Después",
     "scan.retry_title": "Algunos archivos no se pudieron leer.",
     "plan.summary": "{files} archivos leídos. {moves} movimientos, {renames} "
         + "renombres, {folders} carpetas nuevas.",
@@ -127,7 +122,7 @@ const LANG_ES = {
     "plan.apply_one": "Aplicar 1 cambio",
     "plan.apply_many": "Aplicar {n} cambios",
     "plan.tab_files": "Archivos",
-    "plan.unread": "{n} archivos no se han leído todavía. Usa Catalogar "
+    "plan.unread": "{n} archivos no se han leído todavía. Usa Archivar "
         + "ahora en Inicio; las propuestas aparecen aquí.",
     "plan.drop_zone": "Este proyecto archiva documentos desde su Drop Zone, "
         + "así que no hay propuestas que aprobar.",
@@ -284,6 +279,7 @@ const LANG_ES = {
     "chat.summary_total": "Documentos",
     "chat.summary_dates": "Fechas",
     "chat.summary_sources": "Fuentes principales",
+    "chat.show_source": "Ver documentos de {source}",
     "chat.notice_invalid_reply": "Perdón, no entendí eso. Intenta preguntarlo "
         + "de otra forma.",
     "chat.notice_ai_unavailable": "El proveedor de IA no respondió. Revisa "
@@ -403,6 +399,11 @@ const LANG_ES = {
     "naming.help_repeats": "Sin una fecha confiable, el nombre no lleva fecha. Un nombre ya usado recibe _2, _3, y los nombres quedan bajo 240 caracteres. Ejemplo: carta.pdf, luego carta_2.pdf.",
     "naming.help_dates": "La fecha de una foto sale de lo impreso en ella, luego del EXIF de una cámara, luego de un año en su nombre o carpeta. Esto dice cómo leer un sello. Ejemplo: 11 13 '97 es 1997-11-13.",
     "help.open": "Ayuda",
+    "help.catalog_only": "Cataloga lee y describe cada archivo donde está. Nunca mueve ni cambia el nombre de nada.",
+    "help.sheet": "Un texto corto sobre el trabajo. Cataloga lo lee antes de cada archivo para entender de qué tratan.",
+    "help.ai_provider": "El servicio que lee tus archivos. Solo el proveedor que elijas los recibe, y tus llaves se quedan en el Llavero de la Mac.",
+    "help.account": "Tu cuenta existe solo en esta computadora. No hay correo, así que una contraseña perdida no se puede recuperar.",
+    "help.remove_project": "Quita el proyecto de la lista. Su carpeta, sus archivos y su catálogo se quedan en el disco, así que puedes agregarlo otra vez.",
     "naming.style": "Estilo",
     "naming.changed_note": "Solo los archivos nuevos usarán este método.",
     "naming.blocks_add": "Haz clic en las partes en orden",
@@ -481,6 +482,9 @@ const LANG_ES = {
         + "crea el proyecto: nada cambia en el disco.",
     "folders.suggesting": "Pidiendo carpetas a Ollama Cloud...",
     "folders.suggested": "Edita las carpetas y luego crea el proyecto.",
+    "folders.reading": "Leyendo lo que hay en la carpeta para proponer sus carpetas...",
+    "folders.from_files": "Carpetas para los archivos que ya están en esta carpeta, y solo para ellos. Edítalas y luego crea el proyecto.",
+    "folders.from_organized": "Esta carpeta ya está organizada: sus carpetas se quedan como están. Solo aparece una carpeta nueva para archivos sueltos que no encajan en ninguna.",
     "folders.need_description": "Primero describe el proyecto.",
     "folders.add": "Agregar carpeta",
     "folders.remove": "Quitar carpeta",
@@ -576,6 +580,12 @@ const LANG_ES = {
         + "que dejes en Drop Zone",
     "project.catalog_only": "Solo catalogar: leer y catalogar los archivos "
         + "donde están. Nunca moverlos ni renombrarlos",
+    "project.archive_title": "¿Cuándo debe Cataloga leer esta carpeta?",
+    "project.archive_now": "Archivar ahora",
+    "project.archive_later": "Archivar después",
+    "project.archive_now_hint": "Cataloga lee los archivos al guardar y propone dónde va cada uno. Nada se mueve hasta que apruebes el plan.",
+    "project.archive_later_hint": "Cataloga solo cuenta lo que hay en la carpeta. No se lee ni se envía nada a la IA hasta que pulses Archivar ahora en Inicio. Las otras secciones las puedes llenar después en Configuración.",
+    "project.folder_facts": "Esta carpeta tiene {files} archivos en {folders} carpetas ({size}). Todavía no se ha leído nada.",
     "project.catalog_only_hint": "Para páginas web, código y ediciones que "
         + "enlazan sus archivos por ruta (InDesign, Premiere, After Effects, "
         + "Final Cut). Cataloga lee, resume y cataloga cada archivo en su "
@@ -587,6 +597,7 @@ const LANG_ES = {
     "project.creating":
         "Creando el proyecto y probando la conexión con la IA...",
     "project.created": "Proyecto creado. La conexión con la IA funciona.",
+    "project.created_later": "Proyecto creado. Todavía no se ha leído nada: pulsa Archivar ahora en Inicio cuando quieras.",
     "project.opened_existing": "Esta carpeta ya tenía un catálogo de "
         + "Cataloga, así que se agregó a tus proyectos.",
     "project.cancel": "Cancelar",

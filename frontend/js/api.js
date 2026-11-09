@@ -261,13 +261,14 @@ async function createProject(data) {
     return handleResponse(response);
 }
 
-/** POST /projects/folders/suggest: a folder tree from Ollama Cloud. Saves nothing. */
-async function suggestFolders(description, industry) {
+/** POST /projects/folders/suggest: a folder tree from Ollama Cloud. Saves nothing.
+ *  With a folder, only for the files already in it; the description is context. */
+async function suggestFolders(description, industry, folder) {
     const response = await apiFetch(`${BASE_URL}/projects/folders/suggest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description: description,
-            industry: industry || "" }),
+            industry: industry || "", folder: folder || "" }),
     });
     return handleResponse(response);
 }

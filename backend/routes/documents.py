@@ -10,6 +10,7 @@ from backend.pipeline.ai_providers import project_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, missing_note, needs_nothing)
 from backend.config import projects as project_list
+from backend.db.catalog_repository import NEWEST_FIRST
 from backend.pipeline import folder_tree, organization_plan, previews
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.pipeline import naming
@@ -76,6 +77,9 @@ def read_filters():
         value = request.args.get(name)
         if value:
             filters[name] = value
+    # Only one order besides the default; anything else is ignored.
+    if request.args.get("sort") == NEWEST_FIRST:
+        filters["sort"] = NEWEST_FIRST
     return filters
 
 

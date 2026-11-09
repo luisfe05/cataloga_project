@@ -336,17 +336,34 @@ function sheetIndustry() {
 async function suggestProjectFolders() {
     const description = document.getElementById("project-description")
         .value.trim();
+    // Archive Now with a folder: the tree comes from the files already there.
+    const folder = archiveChoice() === "now"
+        ? document.getElementById("target-directory").value.trim() : "";
     const button = document.getElementById("suggest-folders");
-    if (!description) {
+    if (!description && !folder) {
         showFoldersMessage(t("folders.need_description"), "error");
         return;
     }
     button.disabled = true;
-    showFoldersMessage(t("folders.suggesting"), "");
+    showFoldersMessage(t(folder ? "folders.reading" : "folders.suggesting"),
+        "");
     try {
-        const result = await suggestFolders(description, sheetIndustry());
+        const result = await suggestFolders(description, sheetIndustry(),
+            folder);
         showFolderTree(result.folders, {}, false);
-        showFoldersMessage(t("folders.suggested"), "success");
+        if (result.organized) {
+            // An organized folder also keeps how its files are named.
+            document.querySelector(`input[name="naming-style"][value="${
+                result.naming_style}"]`).checked = true;
+            showSavedTemplate(result.naming_template);
+            updateNamingPreview();
+        }
+        let key = "folders.suggested";
+        if (folder) {
+            key = result.organized ? "folders.from_organized"
+                : "folders.from_files";
+        }
+        showFoldersMessage(t(key), "success");
     } catch (error) {
         showFoldersMessage(errorText(error), "error");
     } finally {

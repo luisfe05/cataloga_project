@@ -37,6 +37,13 @@ DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
 
 RECENT_ACTIVITY_LIMIT = 10
 
+# How many sources the chat's project summary lists.
+TOP_SOURCES = 3
+
+# GET /documents?sort=newest: the newest date first, documents with no date
+# last.
+NEWEST_FIRST = "newest"
+
 
 def now_timestamp():
     """Return the current time as an ISO string, e.g. 2026-10-21T16:55:00."""
@@ -137,7 +144,12 @@ class CatalogRepository:
         query = "SELECT * FROM documents"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-        query += " ORDER BY id"
+        if filters.get("sort") == NEWEST_FIRST:
+            # YYYY-MM-DD text sorts like the dates; empty dates go last.
+            query += (" ORDER BY COALESCE(document_date, '') = '', "
+                      "document_date DESC, id DESC")
+        else:
+            query += " ORDER BY id"
 
         conn = get_connection(self.db_path)
         try:
@@ -462,10 +474,16 @@ class CatalogRepository:
                 "SELECT media_type, COUNT(*) AS total FROM documents "
                 "GROUP BY media_type"
             ).fetchall()
+            # Most documents first; a tie goes to the source with the newest
+            # document date, then to the one added last.
             source_rows = conn.execute(
-                "SELECT source, COUNT(*) AS total FROM documents "
+                "SELECT source, COUNT(*) AS total, "
+                "MAX(COALESCE(document_date, '')) AS newest, "
+                "MAX(id) AS last_id FROM documents "
                 "WHERE source IS NOT NULL AND source != '' "
-                "GROUP BY source ORDER BY total DESC, source LIMIT 5"
+                "GROUP BY source "
+                "ORDER BY total DESC, newest DESC, last_id DESC LIMIT ?",
+                (TOP_SOURCES,)
             ).fetchall()
             dates = conn.execute(
                 "SELECT MIN(document_date), MAX(document_date) "

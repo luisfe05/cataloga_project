@@ -37,9 +37,13 @@ let projectTree = [];
 // True when the project files documents in its own folder tree.
 let catalogTreeMode = false;
 
+// "newest" after a source link in the chat; empty is the normal order.
+let catalogSort = "";
+
 /** Current tab, search, and filters for GET /documents. Empty values are left out. */
 function readFilters() {
     const filters = {
+        sort: catalogSort,
         status: currentStatus,
         search: document.getElementById("search-input").value.trim(),
         media_type: document.getElementById("filter-media-type").value,
@@ -808,7 +812,20 @@ async function applyCatalogFilters(filters) {
     document.getElementById("filter-category").value = "";
     document.getElementById("filter-subcategory").value = "";
     selectStatus(filters.status || "");
+    setCatalogSort(filters.sort === "newest" ? "newest" : "");
     await loadCatalog();
+}
+
+/** Keep the order of the list and show the Newest first chip while it is on. */
+function setCatalogSort(sort) {
+    catalogSort = sort;
+    document.getElementById("sort-chip").classList.toggle("hidden", !sort);
+}
+
+/** A filter, tab or search changed by hand: back to the normal order. */
+function reloadInNormalOrder() {
+    setCatalogSort("");
+    loadCatalog();
 }
 
 /** Clear the filters, scroll to a document's row, and highlight it for two seconds. */
@@ -829,7 +846,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
         document.querySelectorAll(".tab").forEach((other) => {
             other.classList.toggle("active", other === tab);
         });
-        loadCatalog();
+        reloadInNormalOrder();
     });
 });
 
@@ -842,17 +859,19 @@ document.getElementById("search-input").addEventListener("input", () => {
         showView("catalog");
     }
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(loadCatalog, 300);
+    searchTimer = setTimeout(reloadInNormalOrder, 300);
 });
 
 document.getElementById("filter-media-type")
-    .addEventListener("change", loadCatalog);
+    .addEventListener("change", reloadInNormalOrder);
 document.getElementById("filter-source")
-    .addEventListener("change", loadCatalog);
+    .addEventListener("change", reloadInNormalOrder);
 document.getElementById("filter-category")
-    .addEventListener("change", loadCatalog);
+    .addEventListener("change", reloadInNormalOrder);
 document.getElementById("filter-subcategory")
-    .addEventListener("change", loadCatalog);
+    .addEventListener("change", reloadInNormalOrder);
+document.getElementById("sort-chip-clear")
+    .addEventListener("click", reloadInNormalOrder);
 
 // More columns: show Counterparty, Confidentiality, Owner, and the effective dates.
 document.getElementById("more-columns").addEventListener("change", (event) => {

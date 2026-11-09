@@ -77,6 +77,10 @@ let customSeparator = "_";
 // A saved custom template that is not made of parts, like "archivo-{date}".
 let legacyTemplate = "";
 
+// The sections Archive Later turns off in a new project; Archive Now turns them on.
+const ARCHIVE_SECTIONS = ["sheet-section", "naming-section", "folders-section",
+    "ai-section"];
+
 // Generic values for the live preview, not real data.
 const PREVIEW_PARTS = {
     date: "date",
@@ -163,6 +167,49 @@ function setProjectMode(mode) {
     applyCatalogOnly();
     updateBrowseButton();
     resetFolderWarning();
+    hideArchiveSwitch();
+}
+
+/** "now" or "later" while the switch shows, else "" (an existing project, or a Drop Zone). */
+function archiveChoice() {
+    if (document.getElementById("archive-switch").classList
+        .contains("hidden")) {
+        return "";
+    }
+    return document.querySelector('input[name="archive-when"]:checked').value;
+}
+
+/** Archive Later turns off About this project, File names, Folders and AI provider. */
+function applyArchiveChoice() {
+    const choice = archiveChoice();
+    ARCHIVE_SECTIONS.forEach((id) => {
+        const section = document.getElementById(id);
+        // inert: the section cannot be clicked, typed in or reached with Tab.
+        section.inert = choice === "later";
+        section.classList.toggle("is-off", choice === "later");
+    });
+    document.getElementById("archive-hint").textContent = choice
+        ? t(`project.archive_${choice}_hint`) : "";
+}
+
+/** Archive Now: read the folder and propose its tree, unless the user already has one. */
+function proposeFromFolder() {
+    if (archiveChoice() === "now" && !readFolderTree().length) {
+        suggestProjectFolders();
+    }
+}
+
+function hideArchiveSwitch() {
+    document.getElementById("folder-facts").classList.add("hidden");
+    document.getElementById("archive-switch").classList.add("hidden");
+    applyArchiveChoice();
+}
+
+/** Only a new project read where it is (in place or Catalog only) can wait. */
+function readsNewFolder() {
+    const mode = document.querySelector('input[name="folder-mode"]:checked');
+    return projectMode === "new" && (mode.value === "place"
+        || document.getElementById("catalog-only").checked);
 }
 
 /** Catalog only hides the folders and fixes the names: nothing moves. */
@@ -199,6 +246,10 @@ function startNewProject() {
     showSheetMessage("", "");
     document.getElementById("catalog-only").checked = false;
     applyCatalogOnly();
+    // Archive Later by default: nothing is read or sent until the user says so.
+    document.querySelector('input[name="archive-when"][value="later"]')
+        .checked = true;
+    hideArchiveSwitch();
     // New projects start with method 4, lowercase, no accents, and
     // month-first photo stamps.
     showSavedTemplate(NAMING_METHODS.m4);
@@ -661,7 +712,12 @@ async function saveSettings(event) {
     const catalogOnly = document.getElementById("catalog-only").checked;
     const isTree = !catalogOnly && (projectMode === "new"
         || ["tree", "place"].includes(projectFolderMode));
-    const treeProblem = isTree ? folderTreeProblem() : "";
+    const archive = archiveChoice();
+    const later = archive === "later";
+    // Later leaves Folders off; Now may start with no folders, reading proposes them.
+    const checkTree = isTree && !later
+        && !(archive === "now" && !readFolderTree().length);
+    const treeProblem = checkTree ? folderTreeProblem() : "";
     if (treeProblem) {
         showFoldersMessage(treeProblem, "error");
         showSettingsMessage(treeProblem, "error");
@@ -679,27 +735,34 @@ async function saveSettings(event) {
         "");
     try {
         if (isNew) {
+            // Archive Later sends only what its switch leaves on; nothing is read.
             const created = await createProject({
-                name: document.getElementById("research-name").value,
+                name: document.getElementById("research-name").value
+                    || folderName(),
                 folder: document.getElementById("target-directory").value,
+                defer_scan: later,
                 naming_template: chosenTemplate(),
                 stamp_date_order: readStampOrder(),
                 naming_style: readNamingStyle(),
-                description: document.getElementById("project-description")
-                    .value.trim(),
-                project_sheet: document.getElementById("project-sheet")
-                    .value.trim(),
-                folders: readFolderTree(),
+                description: later ? "" : document.getElementById(
+                    "project-description").value.trim(),
+                project_sheet: later ? "" : document.getElementById(
+                    "project-sheet").value.trim(),
+                folders: later ? [] : readFolderTree(),
                 folder_mode: document.querySelector(
                     'input[name="folder-mode"]:checked').value,
                 catalog_only: document.getElementById("catalog-only").checked,
                 numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,
-                server_url: readServerUrl(),
+                server_url: later ? "" : readServerUrl(),
             });
             projectCreated = true;
-            doneMessage = t(created.opened_existing
-                ? "project.opened_existing" : "project.created");
+            // Later tests no AI, so its message does not say the connection works.
+            let createdKey = later ? "project.created_later" : "project.created";
+            if (created.opened_existing) {
+                createdKey = "project.opened_existing";
+            }
+            doneMessage = t(createdKey);
         } else {
             await updateSettings({
                 research_name:
@@ -719,9 +782,16 @@ async function saveSettings(event) {
             });
         }
         resetFolderWarning();
-        await saveProviderRows(providerRows);
+        // Later keeps Ollama Cloud; the provider can change in Settings before reading.
+        if (!later) {
+            await saveProviderRows(providerRows);
+        }
         await refreshAfterProjectChange();
         showSettingsMessage(doneMessage, "success");
+        if (archive) {
+            // Home shows the folder and how far the reading is, or Archive now.
+            showView("home");
+        }
     } catch (error) {
         if (projectCreated) {
             // The project exists now: show it, then explain the error.
@@ -775,15 +845,22 @@ async function browseFolder() {
         document.getElementById("target-directory").value = folder;
         await adviseOnFolder();
         resetFolderWarning();
-        askAboutNewFolder();
+        showFolderFacts();
     }
 }
 
-/** The folder of a project read in place: list it, then ask now or later. */
-async function askAboutNewFolder() {
+/** The last part of the chosen folder, the name when none is typed. */
+function folderName() {
+    const parts = document.getElementById("target-directory").value
+        .split("/").filter(Boolean);
+    return parts[parts.length - 1] || "";
+}
+
+/** After a folder is chosen: list it (nothing is read), then show its numbers and the switch. */
+async function showFolderFacts() {
     const folder = document.getElementById("target-directory").value.trim();
-    const mode = document.querySelector('input[name="folder-mode"]:checked');
-    if (projectMode !== "new" || !folder || mode.value !== "place") {
+    hideArchiveSwitch();
+    if (!folder || !readsNewFolder()) {
         return;
     }
     let facts;
@@ -793,45 +870,32 @@ async function askAboutNewFolder() {
         return;
     }
     if (facts.has_catalog) {
-        // Already a project: it opens as it is, with nothing to ask.
-        finishNewProject(false);
+        // Already a project: it opens as it is, with nothing to choose.
+        openExistingFolder();
         return;
     }
-    document.getElementById("ask-files").textContent = facts.files;
-    document.getElementById("ask-folders").textContent = facts.folders;
-    document.getElementById("ask-size").textContent = humanSize(facts.size);
-    document.getElementById("ask-message").textContent = "";
-    document.getElementById("ask-overlay").classList.remove("hidden");
-    document.getElementById("ask-now").focus();
+    const line = document.getElementById("folder-facts");
+    line.textContent = t("project.folder_facts", { files: facts.files,
+        folders: facts.folders, size: humanSize(facts.size) });
+    line.classList.remove("hidden");
+    document.getElementById("archive-switch").classList.remove("hidden");
+    applyArchiveChoice();
+    proposeFromFolder();
 }
 
-/** Make the project from what the form has, and read it now or not. */
-async function finishNewProject(readNow) {
-    const folder = document.getElementById("target-directory").value.trim();
-    const typed = document.getElementById("research-name").value.trim();
-    const parts = folder.split("/").filter(Boolean);
+/** A folder that already has a catalog opens as it is, in Home. */
+async function openExistingFolder() {
     try {
         await createProject({
-            name: typed || parts[parts.length - 1],
-            folder: folder,
+            name: document.getElementById("research-name").value.trim()
+                || folderName(),
+            folder: document.getElementById("target-directory").value.trim(),
             defer_scan: true,
-            naming_template: chosenTemplate(),
-            stamp_date_order: readStampOrder(),
-            naming_style: readNamingStyle(),
-            description: document.getElementById("project-description")
-                .value.trim(),
-            folders: readFolderTree(),
-            catalog_only: document.getElementById("catalog-only").checked,
         });
-        if (readNow) {
-            await controlScan("start");
-        }
     } catch (error) {
-        document.getElementById("ask-message").textContent = errorText(error);
-        document.getElementById("ask-overlay").classList.remove("hidden");
+        showSettingsMessage(errorText(error), "error");
         return;
     }
-    document.getElementById("ask-overlay").classList.add("hidden");
     await refreshAfterProjectChange();
     showView("home");
 }
@@ -898,8 +962,19 @@ document.getElementById("target-directory")
 document.getElementById("target-directory")
     .addEventListener("change", async () => {
         await adviseOnFolder();
-        askAboutNewFolder();
+        showFolderFacts();
     });
+// Only Archive Now reads the folder and asks the AI; Later sends nothing.
+document.querySelectorAll('input[name="archive-when"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+        applyArchiveChoice();
+        proposeFromFolder();
+    });
+});
+// Drop Zone has nothing to read now or later; in place and Catalog only do.
+document.querySelectorAll('input[name="folder-mode"]').forEach((radio) => {
+    radio.addEventListener("change", showFolderFacts);
+});
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 document.getElementById("suggest-sheet")
@@ -909,7 +984,10 @@ document.getElementById("language-select")
 document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
 document.getElementById("catalog-only")
-    .addEventListener("change", applyCatalogOnly);
+    .addEventListener("change", () => {
+        applyCatalogOnly();
+        showFolderFacts();
+    });
 document.querySelectorAll('input[name="naming-style"]').forEach((radio) => {
     radio.addEventListener("change", updateNamingPreview);
 });
@@ -922,16 +1000,3 @@ document.querySelectorAll('input[name="naming-separator"]')
     });
 
 // startApp() in app.js calls fillProviders() and loadSettings() after the language loads.
-
-document.getElementById("ask-later").addEventListener("click", () => {
-    finishNewProject(false);
-});
-document.getElementById("ask-now").addEventListener("click", () => {
-    finishNewProject(true);
-});
-// Esc goes back to the form, for those who want to fill it in first.
-document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-        document.getElementById("ask-overlay").classList.add("hidden");
-    }
-});
