@@ -2,12 +2,51 @@
 
 import json
 import os
+import re
 
 from backend.pipeline import (archive_rules, folder_tree, learn_folder,
                               project_sheet)
 
 # File names sent to the AI, at most, so a big disk stays cheap.
 MAX_FILES = 80
+
+# Names a system or a hurry gives a folder. They say nothing about how the
+# archive is organized, so their files count as loose. Catch-all names like
+# "Otros" or "Sin tema" are a choice of the user and are not here.
+GENERIC_FOLDER_NAMES = ("new folder", "untitled folder", "untitled",
+                        "stuff", "misc", "miscellaneous", "nueva carpeta",
+                        "carpeta nueva", "carpeta sin titulo", "sin titulo",
+                        "cosas", "varios")
+
+# "New folder 2", "untitled folder (3)", "Nueva carpeta copia".
+NAME_SUFFIX = re.compile(r"[\s_-]*(\(\d+\)|\d+|copy|copia)$")
+
+
+def is_generic_folder(name):
+    """Say whether a folder name is one a system or a hurry gives."""
+    folded = archive_rules.fold(name).replace("_", " ")
+    return NAME_SUFFIX.sub("", folded).strip() in GENERIC_FOLDER_NAMES
+
+
+def without_generic(tree):
+    """The tree without generic folders, at any level, marks kept."""
+    kept = []
+    for node in tree:
+        if is_generic_folder(node["name"]):
+            continue
+        flags = {flag: node.get(flag) for flag in folder_tree.FLAGS}
+        kept.append(folder_tree.make_node(
+            node["name"], without_generic(node.get("children") or []),
+            flags))
+    return kept
+
+
+def is_loose(relative):
+    """A file at the top, or anywhere inside a generic folder, is loose."""
+    if not relative:
+        return True
+    return any(is_generic_folder(part) for part in relative.split(os.sep))
+
 
 # A folder with no subfolders: the AI sorts the files that are there.
 FROM_FILES_PROMPT = """You are an archivist. A researcher connected a folder
@@ -105,22 +144,25 @@ def keep_folders_with_files(items, known_names):
 
 def propose(client, folder, description=""):
     """Folders for what this folder holds. Saves nothing."""
-    # An organized folder keeps its tree (Learn from my folder); only the
-    # loose files at its top can bring a new folder.
+    # An organized folder keeps its tree (Learn from my folder); only loose
+    # files (at the top, or in a generic folder) can bring a new folder.
     learned = learn_folder.learn(folder)
-    paths = folder_tree.all_paths(learned["folder_tree"])
+    own_tree = without_generic(learned["folder_tree"])
+    paths = folder_tree.all_paths(own_tree)
     names, loose = [], []
     for relative, name in learn_folder.read_structure(folder)[1]:
-        names.append(os.path.join(relative, name) if relative else name)
-        if not relative:
-            loose.append(name)
+        path = os.path.join(relative, name) if relative else name
+        names.append(path)
+        if is_loose(relative):
+            loose.append(path)
     extracts = project_sheet.project_sample(folder)["extracts"]
     if paths:
-        tree = list(learned["folder_tree"])
+        tree = list(own_tree)
         if loose:
             # Only the loose files' extracts: the filed ones need no place.
+            loose_names = {os.path.basename(path) for path in loose}
             loose_extracts = [(name, text) for name, text in extracts
-                              if name in loose]
+                              if name in loose_names]
             answer = client.ask(LOOSE_FILES_PROMPT, sample_text(
                 description, loose, loose_extracts, existing=paths))
             taken = {archive_rules.fold(node["name"]) for node in tree}

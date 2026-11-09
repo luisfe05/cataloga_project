@@ -210,10 +210,13 @@ function makeFolderRow(row) {
     name.maxLength = MAX_FOLDER_NAME_LENGTH;
     name.placeholder = t("folders.name_placeholder");
     name.setAttribute("aria-label", t("folders.name_placeholder"));
+    // The whole name on hover, for one longer than the field.
+    name.title = row.name;
     // Folders on disk are never renamed.
     name.readOnly = row.saved;
     name.addEventListener("input", () => {
         row.name = name.value;
+        name.title = name.value;
         name.classList.remove("input-error");
         document.getElementById("folders-message").textContent = "";
     });
@@ -316,7 +319,7 @@ function showFolderSection(settings, isNew) {
     document.querySelectorAll(".folders-new-only").forEach((element) => {
         element.classList.toggle("hidden", !isNew);
     });
-    document.getElementById("mode-options").classList.toggle("hidden",
+    document.getElementById("drop-zone-row").classList.toggle("hidden",
         !isNew);
     document.getElementById("numbered-folders").checked =
         Boolean(!isNew && settings.numbered_folders);

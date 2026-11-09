@@ -29,7 +29,6 @@ const LANG_ES = {
     "home.kind_folder": "Carpeta",
     "home.kind_photo": "Foto",
     "home.contains": "Contiene",
-    "home.size": "Tamaño",
     "home.status": "Estado",
     "home.cataloged": "Catalogado",
     "home.date": "Fecha",
@@ -44,7 +43,6 @@ const LANG_ES = {
     "nav.plan": "Plan",
     "nav.dashboard": "Panel",
     "nav.settings": "Configuración",
-    "header.project": "Proyecto",
     "header.no_project": "Todavía no hay proyecto",
 
     // Catalog
@@ -72,12 +70,10 @@ const LANG_ES = {
         "Guardando y actualizando el resumen con tu cambio...",
     "catalog.saved": "Guardado.",
     "catalog.saved_summary": "Guardado. El resumen se actualizó con tu cambio.",
-    "catalog.save_failed": "No se pudo guardar.",
     "catalog.edit_banner": "Editando. Haz clic en una celda para cambiarla. "
         + "Se guarda al salir de la celda o al presionar Enter. La "
         + "actualización automática está en pausa.",
     "catalog.summary_limit": "El resumen puede tener hasta 100 caracteres.",
-    "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Tu carpeta Inbox vieja todavía tiene "
         + "archivos. Muévelos a la Drop Zone para catalogarlos.",
     "catalog.no_folder": "Ve a Configuración para elegir el proveedor de IA.",
@@ -86,11 +82,7 @@ const LANG_ES = {
     "catalog.no_match": "Ningún archivo coincide con tu búsqueda.",
     "catalog.progress": "Progreso del catálogo",
     "scan.paused": "En pausa en {done} de {total} archivos.",
-    "scan.done": "Se leyeron los {total} archivos. Nada se movió ni se "
-        + "renombró.",
-    "scan.idle": "",
     "scan.stopped": "Lectura detenida en {done} de {total}",
-    "scan.unread": "{total} archivos no se han leído todavía.",
     "banner.not_cataloged": "Esta carpeta todavía no está catalogada.",
     "banner.listed": "Cataloga listó {total} archivos sin leerlos. Empieza cuando quieras.",
     "banner.learn": "Aprender de mi carpeta",
@@ -256,9 +248,7 @@ const LANG_ES = {
     "chat.title": "Asistente de Cataloga",
     "chat.close": "Cerrar",
     "chat.empty_title": "¿En qué te ayudo con este proyecto?",
-    "chat.empty_hint": "Puedo buscar archivos, filtrar el catálogo, resumir "
-        + "el proyecto y proponer nombres nuevos. Nunca renombro un archivo "
-        + "sin tu confirmación.",
+    "chat.empty_hint": "Nunca renombro un archivo sin tu confirmación.",
     "chat.example_summary": "Resume este proyecto",
     "chat.example_press": "Busca recortes de prensa",
     "chat.example_review": "Muestra lo que está en revisión manual",
@@ -315,20 +305,15 @@ const LANG_ES = {
     "time.days": "hace {n} días",
 
     // Settings
-    "settings.research_title": "Configuración de la investigación",
-    "settings.research_hint": "Configura tu proyecto de investigación y "
-        + "dónde se guardan los archivos. Cataloga crea una carpeta Drop "
-        + "Zone dentro: pon ahí los archivos nuevos para catalogarlos.",
-    "settings.research_name": "Nombre de la investigación",
-    "settings.folder": "Carpeta del proyecto",
+    "settings.research_name": "Nombre del proyecto",
+    "settings.folder": "Selecciona una carpeta o disco",
     "settings.browse": "Buscar carpeta",
     "settings.ai_title": "Proveedor de IA",
     "settings.ai_using": "Cataloga usa {provider} ({model}).",
     "settings.ai_needs_key": "{provider} necesita una clave de API. "
         + "Agrégala en Configuración avanzada.",
     "settings.advanced": "Configuración avanzada",
-    "settings.ai_hint": "Elige otro proveedor o modelo de IA. Tus claves "
-        + "de API se guardan en el Llavero de macOS.",
+    "settings.ai_hint": "Elige otro proveedor o modelo de IA.",
     "settings.ai_text_title": "Texto e imágenes",
     "settings.ai_fallback_title": "Respaldo (opcional)",
     "settings.ai_fallback_hint": "Responde cuando el proveedor principal "
@@ -356,17 +341,10 @@ const LANG_ES = {
     "settings.saving": "Guardando y probando la conexión con la IA...",
     "settings.saved":
         "Configuración guardada. La conexión con la IA funciona.",
-    "settings.save_failed": "No se pudo guardar la configuración.",
     "settings.load_failed": "No se pudo cargar la configuración: {message}",
 
     // Drop Zone (not shown on screen yet). "Drop Zone" stays in English
     // because it is the folder's real name on disk.
-    "dropzone.title": "Drop Zone",
-    "dropzone.instruction": "Copia o arrastra los archivos nuevos a la "
-        + "carpeta Drop Zone. Cataloga los procesa y deja tus otros "
-        + "archivos donde están.",
-    "dropzone.short": "Los archivos nuevos van aquí",
-
     // Settings: language. Each language name is in its own language.
     "lang.title": "Idioma",
     "lang.hint": "Cambia los botones, etiquetas y mensajes de la app. "
@@ -399,13 +377,14 @@ const LANG_ES = {
     "naming.help_repeats": "Sin una fecha confiable, el nombre no lleva fecha. Un nombre ya usado recibe _2, _3, y los nombres quedan bajo 240 caracteres. Ejemplo: carta.pdf, luego carta_2.pdf.",
     "naming.help_dates": "La fecha de una foto sale de lo impreso en ella, luego del EXIF de una cámara, luego de un año en su nombre o carpeta. Esto dice cómo leer un sello. Ejemplo: 11 13 '97 es 1997-11-13.",
     "help.open": "Ayuda",
-    "help.catalog_only": "Cataloga lee y describe cada archivo donde está. Nunca mueve ni cambia el nombre de nada.",
+    "help.catalog_only": "Lee y cataloga cada archivo donde está, sin moverlo ni renombrarlo. Para sitios web, código y ediciones que enlazan archivos por su ruta (InDesign, Premiere, After Effects, Final Cut).",
+    "help.folder": "Cada archivo se lee donde está, con sus subcarpetas. Nada se mueve ni se renombra hasta que apruebes un plan.",
+    "help.drop_zone": "Cataloga crea las carpetas ahora y archiva lo que sueltes en la carpeta Drop Zone.",
     "help.sheet": "Un texto corto sobre el trabajo. Cataloga lo lee antes de cada archivo para entender de qué tratan.",
     "help.ai_provider": "El servicio que lee tus archivos. Solo el proveedor que elijas los recibe, y tus llaves se quedan en el Llavero de la Mac.",
     "help.account": "Tu cuenta existe solo en esta computadora. No hay correo, así que una contraseña perdida no se puede recuperar.",
     "help.remove_project": "Quita el proyecto de la lista. Su carpeta, sus archivos y su catálogo se quedan en el disco, así que puedes agregarlo otra vez.",
     "naming.style": "Estilo",
-    "naming.changed_note": "Solo los archivos nuevos usarán este método.",
     "naming.blocks_add": "Haz clic en las partes en orden",
     "naming.chosen": "Tu nombre de archivo",
     "naming.chosen_empty": "Todavía no hay partes. Haz clic en Tema, Fuente, "
@@ -454,10 +433,7 @@ const LANG_ES = {
 
     // Folder tree of a project
     "sheet.title": "Sobre este proyecto",
-    "sheet.hint": "Una ficha corta de qué trabajo es. Cataloga la lee "
-        + "antes de cada archivo, para que la clasificación entienda el "
-        + "trabajo. Escríbela, o deja que la IA la escriba a partir de una "
-        + "muestra de la carpeta, y luego edítala.",
+    "sheet.hint": "Escríbela, o haz clic en Escríbela por mí.",
     "sheet.label": "Ficha del proyecto",
     "sheet.placeholder": "Trabajo: ...\nIndustria: ...\nPartes: ...\n"
         + "Tipos de archivo: ...\nEstilo de nombres: ...",
@@ -466,9 +442,9 @@ const LANG_ES = {
     "sheet.suggesting": "Leyendo una muestra de la carpeta...",
     "sheet.suggested": "Edita la ficha si quieres y luego pulsa Guardar.",
     "folders.title": "Carpetas",
-    "folders.hint": "Cataloga guarda cada documento nuevo en la carpeta que "
-        + "encaja con su contenido. Describe el proyecto y haz clic en "
-        + "Sugerir carpetas; luego edita el árbol antes de crear el proyecto.",
+    "folders.hint": "Con Ahora, Cataloga propone carpetas solo para los "
+        + "archivos que ya están en la carpeta. Edítalas antes de crear el "
+        + "proyecto.",
     "folders.description": "¿De qué trata este proyecto?",
     "folders.description_placeholder": "Por ejemplo: documental sobre un "
         + "club de natación del puerto en los años 50",
@@ -571,25 +547,13 @@ const LANG_ES = {
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
         + "porque el catálogo se guarda dentro de ella.",
     "project.create": "Crear proyecto",
-    "project.mode_place": "Leer la carpeta en su lugar",
-    "project.mode_place_hint": "Cada archivo se lee donde está, con sus "
-        + "subcarpetas. Nada se mueve ni se renombra hasta que apruebes un "
-        + "plan",
-    "project.mode_tree": "Drop Zone",
-    "project.mode_tree_hint": "Cataloga crea las carpetas ahora y archiva lo "
-        + "que dejes en Drop Zone",
-    "project.catalog_only": "Solo catalogar: leer y catalogar los archivos "
-        + "donde están. Nunca moverlos ni renombrarlos",
+    "project.mode_tree": "Usar un Drop Zone",
+    "project.catalog_only": "Solo catalogar",
     "project.archive_title": "¿Cuándo debe Cataloga leer esta carpeta?",
-    "project.archive_now": "Archivar ahora",
-    "project.archive_later": "Archivar después",
-    "project.archive_now_hint": "Cataloga lee los archivos al guardar y propone dónde va cada uno. Nada se mueve hasta que apruebes el plan.",
-    "project.archive_later_hint": "Cataloga solo cuenta lo que hay en la carpeta. No se lee ni se envía nada a la IA hasta que pulses Archivar ahora en Inicio. Las otras secciones las puedes llenar después en Configuración.",
-    "project.folder_facts": "Esta carpeta tiene {files} archivos en {folders} carpetas ({size}). Todavía no se ha leído nada.",
-    "project.catalog_only_hint": "Para páginas web, código y ediciones que "
-        + "enlazan sus archivos por ruta (InDesign, Premiere, After Effects, "
-        + "Final Cut). Cataloga lee, resume y cataloga cada archivo en su "
-        + "lugar. No hay árbol de carpetas ni Drop Zone.",
+    "project.archive_now": "Ahora",
+    "project.archive_later": "Después",
+    "project.archive_later_hint": "No se lee ni se envía nada a la IA hasta que pulses Archivar ahora en Inicio.",
+    "project.folder_facts": "Esta carpeta tiene {files} archivos en {folders} carpetas ({size}).",
     "project.linked_advice": "Esta carpeta parece una página web o un "
         + "proyecto enlazado ({markers}). Mover o renombrar sus archivos "
         + "lo rompería. Catalog only, que llega pronto, mantendrá todos los "

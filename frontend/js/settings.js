@@ -184,12 +184,26 @@ function applyArchiveChoice() {
     const choice = archiveChoice();
     ARCHIVE_SECTIONS.forEach((id) => {
         const section = document.getElementById(id);
-        // inert: the section cannot be clicked, typed in or reached with Tab.
-        section.inert = choice === "later";
-        section.classList.toggle("is-off", choice === "later");
+        const off = choice === "later";
+        section.classList.toggle("is-off", off);
+        // The fields are off, but the "?" still opens. Only what the switch
+        // turned off is turned on again, so Catalog only keeps its own rules.
+        section.querySelectorAll("input, select, textarea, button")
+            .forEach((control) => {
+                if (control.classList.contains("help-button")) {
+                    return;
+                }
+                if (off && !control.disabled) {
+                    control.disabled = true;
+                    control.dataset.archiveOff = "1";
+                } else if (!off && control.dataset.archiveOff) {
+                    control.disabled = false;
+                    delete control.dataset.archiveOff;
+                }
+            });
     });
-    document.getElementById("archive-hint").textContent = choice
-        ? t(`project.archive_${choice}_hint`) : "";
+    document.getElementById("archive-hint").textContent =
+        choice === "later" ? t("project.archive_later_hint") : "";
 }
 
 /** Archive Now: read the folder and propose its tree, unless the user already has one. */
@@ -205,10 +219,14 @@ function hideArchiveSwitch() {
     applyArchiveChoice();
 }
 
+/** "tree" with Use a Drop Zone ticked; otherwise the folder is read in place. */
+function chosenFolderMode() {
+    return document.getElementById("use-drop-zone").checked ? "tree" : "place";
+}
+
 /** Only a new project read where it is (in place or Catalog only) can wait. */
 function readsNewFolder() {
-    const mode = document.querySelector('input[name="folder-mode"]:checked');
-    return projectMode === "new" && (mode.value === "place"
+    return projectMode === "new" && (chosenFolderMode() === "place"
         || document.getElementById("catalog-only").checked);
 }
 
@@ -216,10 +234,8 @@ function readsNewFolder() {
 function applyCatalogOnly() {
     const on = document.getElementById("catalog-only").checked;
     const isNew = projectMode === "new";
-    document.getElementById("catalog-only-hint")
-        .classList.toggle("hidden", !on);
-    document.getElementById("mode-options")
-        .classList.toggle("hidden", on || !isNew);
+    document.getElementById("drop-zone-row")
+        .classList.toggle("hidden", !isNew);
     document.getElementById("folders-section")
         .classList.toggle("hidden", on || !(isNew
             || projectFolderMode === "tree"));
@@ -239,8 +255,7 @@ function startNewProject() {
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
-    document.querySelector('input[name="folder-mode"][value="place"]')
-        .checked = true;
+    document.getElementById("use-drop-zone").checked = false;
     document.getElementById("folder-advice").classList.add("hidden");
     document.getElementById("project-sheet").value = "";
     showSheetMessage("", "");
@@ -567,6 +582,7 @@ async function adviseOnFolder() {
             advice.classList.remove("hidden");
             // The box is ticked, not forced: the user can untick it.
             document.getElementById("catalog-only").checked = true;
+            document.getElementById("use-drop-zone").checked = false;
             applyCatalogOnly();
         }
     } catch (error) {
@@ -749,8 +765,7 @@ async function saveSettings(event) {
                 project_sheet: later ? "" : document.getElementById(
                     "project-sheet").value.trim(),
                 folders: later ? [] : readFolderTree(),
-                folder_mode: document.querySelector(
-                    'input[name="folder-mode"]:checked').value,
+                folder_mode: chosenFolderMode(),
                 catalog_only: document.getElementById("catalog-only").checked,
                 numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,
@@ -972,9 +987,15 @@ document.querySelectorAll('input[name="archive-when"]').forEach((radio) => {
     });
 });
 // Drop Zone has nothing to read now or later; in place and Catalog only do.
-document.querySelectorAll('input[name="folder-mode"]').forEach((radio) => {
-    radio.addEventListener("change", showFolderFacts);
-});
+// The two boxes exclude each other: ticking one unticks the other.
+document.getElementById("use-drop-zone")
+    .addEventListener("change", () => {
+        if (document.getElementById("use-drop-zone").checked) {
+            document.getElementById("catalog-only").checked = false;
+            applyCatalogOnly();
+        }
+        showFolderFacts();
+    });
 document.getElementById("settings-form")
     .addEventListener("submit", saveSettings);
 document.getElementById("suggest-sheet")
@@ -985,6 +1006,9 @@ document.getElementById("naming-options")
     .addEventListener("change", updateNamingPreview);
 document.getElementById("catalog-only")
     .addEventListener("change", () => {
+        if (document.getElementById("catalog-only").checked) {
+            document.getElementById("use-drop-zone").checked = false;
+        }
         applyCatalogOnly();
         showFolderFacts();
     });

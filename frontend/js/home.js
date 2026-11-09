@@ -110,6 +110,8 @@ async function enterHomeFolder(place, keepSelected) {
 function drawCrumbs() {
     const crumbs = document.getElementById("home-crumbs");
     crumbs.innerHTML = "";
+    // At the project's root the path is only the title again, so it hides.
+    crumbs.classList.toggle("hidden", homeTrail.length <= 1);
     homeTrail.forEach((level, index) => {
         if (index) {
             const arrow = document.createElement("span");

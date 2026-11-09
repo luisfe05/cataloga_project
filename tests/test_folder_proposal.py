@@ -176,3 +176,71 @@ def test_only_archive_now_reads_the_folder_from_the_form():
     request = ("suggestFolders(description, sheetIndustry(),\n"
                "            folder)")
     assert request in folders
+
+
+@pytest.mark.parametrize("name", [
+    "New folder", "New Folder (2)", "untitled folder", "Untitled folder 3",
+    "Stuff", "MISC", "Miscellaneous", "Nueva carpeta", "nueva_carpeta",
+    "Carpeta sin título", "Sin título", "Cosas", "Varios",
+    "Nueva carpeta copia"])
+def test_generic_folder_names(name):
+    """Names a system or a hurry gives, in English and Spanish."""
+    assert folder_proposal.is_generic_folder(name)
+
+
+@pytest.mark.parametrize("name", [
+    "Press", "Fotos", "Harbor-Race_1998", "from Mike", "Otros", "Sin tema",
+    "New York Times", "Stuffed animals", "Miscelánea de prensa"])
+def test_real_folder_names_are_not_generic(name):
+    """Real names, and the catch-all names the user chose, stay."""
+    assert not folder_proposal.is_generic_folder(name)
+
+
+def test_generic_folders_alone_do_not_make_an_organized_folder(tmp_path):
+    """Only New folder and Stuff: every file is sorted as if loose."""
+    root = tmp_path / "Messy"
+    (root / "New folder").mkdir(parents=True)
+    (root / "Stuff").mkdir()
+    (root / "New folder" / "gazette.txt").write_text("Harbor Gazette.")
+    (root / "Stuff" / "IMG_0001.jpg").write_bytes(b"jpg")
+    (root / "notes.txt").write_text("Notes.")
+    ai = FolderAI([{"name": "Press", "files": ["gazette.txt"]},
+                   {"name": "Photos", "files": ["IMG_0001.jpg"]}])
+    result = folder_proposal.propose(ai, str(root))
+    assert result["organized"] is False
+    assert names(result["folder_tree"]) == ["Press", "Photos"]
+    prompt, text = ai.asked[0]
+    assert prompt == folder_proposal.FROM_FILES_PROMPT
+    assert "New folder/gazette.txt" in text
+
+
+def test_files_in_generic_folders_count_as_loose(tmp_path):
+    """A real folder stays; files in Stuff are asked about like loose ones."""
+    root = tmp_path / "Mixed"
+    (root / "Press").mkdir(parents=True)
+    (root / "Stuff").mkdir()
+    (root / "Press" / "gazette.txt").write_text("x")
+    (root / "Stuff" / "coach_interview.txt").write_text("Coach talk.")
+    ai = FolderAI([{"name": "Interviews",
+                    "files": ["coach_interview.txt"]}])
+    result = folder_proposal.propose(ai, str(root))
+    assert result["organized"] is True
+    assert names(result["folder_tree"]) == ["Press", "Interviews"]
+    prompt, text = ai.asked[0]
+    assert prompt == folder_proposal.LOOSE_FILES_PROMPT
+    assert "Stuff/coach_interview.txt" in text
+    assert "Existing folders:\n  Press\nFiles:" in text
+
+
+def test_a_generic_subfolder_is_dropped_but_its_parent_stays(tmp_path):
+    """Press keeps its real subfolder; its Untitled folder is not a place."""
+    root = tmp_path / "Deep"
+    (root / "Press" / "Gazette").mkdir(parents=True)
+    (root / "Press" / "untitled folder").mkdir()
+    (root / "Press" / "Gazette" / "a.txt").write_text("x")
+    (root / "Press" / "untitled folder" / "b.txt").write_text("y")
+    ai = FolderAI([])
+    tree = folder_proposal.propose(ai, str(root))["folder_tree"]
+    assert names(tree) == ["Press"]
+    assert names(tree[0]["children"]) == ["Gazette"]
+    assert "Press/untitled folder/b.txt" in ai.asked[0][1]

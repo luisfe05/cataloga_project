@@ -560,19 +560,15 @@
                     <div class="settings-intro">
                         <!-- "Project settings" or "New project", set by settings.js -->
                         <h2 id="project-form-title">Project settings</h2>
-                        <p class="hint" data-i18n="settings.research_hint">
-                            Configure your research project and where files are stored.
-                            Cataloga creates a Drop Zone folder inside it: drop new
-                            files there to have them cataloged.
-                        </p>
                     </div>
                     <div class="settings-fields">
                         <label for="research-name"
-                               data-i18n="settings.research_name">Research Name</label>
+                               data-i18n="settings.research_name">Project Name</label>
                         <input type="text" id="research-name" required>
 
-                        <label for="target-directory"
-                               data-i18n="settings.folder">Target Data Folder</label>
+                        <label for="target-directory"><span
+                               data-i18n="settings.folder">Select a folder or drive</span>
+                            <span class="help-tip" data-help="help.folder"></span></label>
                         <div class="folder-row">
                             <input type="text" id="target-directory" required>
                             <button type="button" class="secondary-button"
@@ -582,21 +578,13 @@
                         <!-- Shown for an existing project, whose folder is fixed -->
                         <p class="hint folder-locked hidden" id="folder-locked"
                            data-i18n="project.folder_locked"></p>
-                        <!-- How files reach the catalog (new projects only) -->
-                        <div class="naming-options folders-new-only" id="mode-options">
-                            <label class="naming-option">
-                                <input type="radio" name="folder-mode" value="place"
-                                       checked>
-                                <span data-i18n="project.mode_place">Read the folder
-                                    in place</span>
-                                <code data-i18n="project.mode_place_hint"></code>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="folder-mode" value="tree">
-                                <span data-i18n="project.mode_tree">Drop Zone</span>
-                                <code data-i18n="project.mode_tree_hint"></code>
-                            </label>
-                        </div>
+                        <!-- New projects only. Unticked, the folder is read in place. -->
+                        <label class="catalog-only-row folders-new-only"
+                               id="drop-zone-row">
+                            <input type="checkbox" id="use-drop-zone">
+                            <span data-i18n="project.mode_tree">Use a Drop Zone</span>
+                            <span class="help-tip" data-help="help.drop_zone"></span>
+                        </label>
                         <!-- New project read where it is: its numbers, and when to read it (settings.js). -->
                         <p class="folder-facts hidden" id="folder-facts"></p>
                         <div class="archive-switch hidden" id="archive-switch">
@@ -607,26 +595,19 @@
                                  aria-labelledby="archive-switch-label">
                                 <label><input type="radio" name="archive-when"
                                               value="now">
-                                    <span data-i18n="project.archive_now">Archive
-                                        Now</span></label>
+                                    <span data-i18n="project.archive_now">Now</span></label>
                                 <label><input type="radio" name="archive-when"
                                               value="later" checked>
-                                    <span data-i18n="project.archive_later">Archive
-                                        Later</span></label>
+                                    <span data-i18n="project.archive_later">Later</span></label>
                             </div>
                             <p class="hint" id="archive-hint"></p>
                         </div>
                         <!-- Catalog only: read and catalog in place, never move or rename -->
                         <label class="catalog-only-row" id="catalog-only-row">
                             <input type="checkbox" id="catalog-only">
-                            <span data-i18n="project.catalog_only">Catalog only:
-                                read and catalog the files where they are. Never
-                                move or rename them</span>
-                            <span class="help-tip opens-left"
-                                  data-help="help.catalog_only"></span>
+                            <span data-i18n="project.catalog_only">Catalog only</span>
+                            <span class="help-tip" data-help="help.catalog_only"></span>
                         </label>
-                        <p class="hint hidden" id="catalog-only-hint"
-                           data-i18n="project.catalog_only_hint"></p>
                         <!-- What the chosen folder looks like (projects.js inspect) -->
                         <p class="form-message hidden" id="folder-advice"
                            aria-live="polite"></p>
@@ -958,7 +939,6 @@
                 <div class="settings-intro">
                     <h2><span data-i18n="project.remove">Remove project</span>
                         <span class="help-tip" data-help="help.remove_project"></span></h2>
-                    <p class="hint" data-i18n="project.remove_text"></p>
                 </div>
                 <div class="settings-fields">
                     <button type="button" class="secondary-button"

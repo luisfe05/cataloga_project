@@ -118,3 +118,30 @@ def test_archive_is_the_one_word_on_buttons():
         text = read_frontend("js", "lang", name)
         assert "Catalog now" not in text
         assert "Catalogar ahora" not in text
+
+
+def test_drop_zone_is_a_box_and_read_in_place_is_the_default():
+    """No mode choice left: one Use a Drop Zone box, unticked by default."""
+    html = read_frontend("index.html")
+    assert 'name="folder-mode"' not in html
+    box = html.index('id="use-drop-zone"')
+    assert html.index('id="target-directory"') < box
+    assert box < html.index('id="archive-switch"')
+    assert 'data-help="help.drop_zone"' in html[box:html.index(
+        'id="archive-switch"')]
+    settings = read_frontend("js", "settings.js")
+    assert 'checked ? "tree" : "place"' in settings
+    assert 'getElementById("use-drop-zone").checked = false' in settings
+
+
+def test_drop_zone_and_catalog_only_exclude_each_other():
+    """Ticking one unticks the other, in both directions."""
+    settings = read_frontend("js", "settings.js")
+    drop_zone = settings.index('getElementById("use-drop-zone")\n'
+                               '    .addEventListener')
+    catalog = settings.index('getElementById("catalog-only")\n'
+                             '    .addEventListener')
+    assert 'getElementById("catalog-only").checked = false' in \
+        settings[drop_zone:drop_zone + 400]
+    assert 'getElementById("use-drop-zone").checked = false' in \
+        settings[catalog:catalog + 400]

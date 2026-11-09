@@ -960,7 +960,30 @@ td.editable {
     row-gap: var(--spacing-24);
     min-height: 100vh;
     padding: var(--spacing-16);
-    background: var(--frame-gradient);
+    /* A gradient three times the screen drifts slowly across it. Hidden after
+       login (display: none), so it stops and costs nothing. */
+    background: linear-gradient(135deg, var(--color-deep-space),
+        var(--color-midnight) 30%, var(--color-nebula) 60%,
+        var(--color-violet));
+    background-size: 300% 300%;
+    animation: auth-drift 24s ease-in-out infinite alternate;
+}
+
+@keyframes auth-drift {
+    from {
+        background-position: 0% 0%;
+    }
+
+    to {
+        background-position: 100% 100%;
+    }
+}
+
+/* Less motion asked by the system: the gradient stays still. */
+@media (prefers-reduced-motion: reduce) {
+    .auth-screen {
+        animation: none;
+    }
 }
 
 .auth-screen > .auth-form {
@@ -1566,12 +1589,6 @@ td.editable {
 .help-tip.open .help-bubble,
 .help-tip:hover:not(.dismissed) .help-bubble {
     display: block;
-}
-
-/* A "?" near the right edge opens its balloon to the left, so it stays on screen. */
-.help-tip.opens-left .help-bubble {
-    right: -8px;
-    left: auto;
 }
 
 /* Preview: over everything, inside the app. */
@@ -2262,11 +2279,18 @@ td.edit-error {
     display: none;
 }
 
+/* Name, parent and ×; the marks go on a second line, so the name keeps its width. */
 .tree-row {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) auto 32px;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr) 32px;
     gap: var(--spacing-8);
     align-items: center;
+}
+
+.tree-row .folder-flags {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-wrap: wrap;
 }
 
 /* Each level steps in by --depth (set by folders.js). */
@@ -2487,15 +2511,17 @@ td.edit-error {
     accent-color: var(--color-violet);
 }
 
+/* One short line: the box, "Catalog only" and its "?", centered. */
 .catalog-only-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--spacing-8);
     margin-top: var(--spacing-12);
 }
 
-.catalog-only-row input {
-    margin-top: 4px;
+.catalog-only-row input,
+.catalog-only-row span {
+    margin: 0;
 }
 
 /* The chosen folder's numbers, before anything is read. */
@@ -2562,8 +2588,11 @@ td.edit-error {
     outline-offset: 2px;
 }
 
-/* A section Archive Later turns off: still visible, but it cannot be used. */
-.settings-section.is-off {
+/* A section Later turns off: its fields are dimmed, but the title and every
+   "?" keep their full color, so the help still reads well. */
+.settings-section.is-off .settings-intro .hint,
+.settings-section.is-off .settings-fields > :not(:has(.help-tip)),
+.settings-section.is-off .settings-fields > :has(.help-tip) > :not(.help-tip) {
     opacity: 0.45;
 }
 

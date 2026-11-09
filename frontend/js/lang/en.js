@@ -29,7 +29,6 @@ const LANG_EN = {
     "home.kind_folder": "Folder",
     "home.kind_photo": "Photo",
     "home.contains": "Contains",
-    "home.size": "Size",
     "home.status": "Status",
     "home.cataloged": "Cataloged",
     "home.date": "Date",
@@ -44,7 +43,6 @@ const LANG_EN = {
     "nav.plan": "Plan",
     "nav.dashboard": "Dashboard",
     "nav.settings": "Settings",
-    "header.project": "Project",
     "header.no_project": "No project yet",
 
     // Catalog
@@ -72,12 +70,10 @@ const LANG_EN = {
         "Saving and updating the summary with your edit...",
     "catalog.saved": "Saved.",
     "catalog.saved_summary": "Saved. The summary was updated using your edit.",
-    "catalog.save_failed": "Could not save.",
     "catalog.edit_banner": "Editing. Click a cell to change it. It saves "
         + "when you leave the cell or press Enter. Automatic refresh is "
         + "paused.",
     "catalog.summary_limit": "Summaries can have up to 100 characters.",
-    "catalog.summary_count": "{n} / 100",
     "catalog.old_inbox_warning": "Your old Inbox folder still has files. "
         + "Move them to Drop Zone to catalog them.",
     "catalog.no_folder": "Go to Settings to choose the AI provider.",
@@ -86,10 +82,7 @@ const LANG_EN = {
     "catalog.no_match": "No files match your search.",
     "catalog.progress": "Catalog progress",
     "scan.paused": "Paused at {done} of {total} files.",
-    "scan.done": "All {total} files were read. Nothing was moved or renamed.",
-    "scan.idle": "",
     "scan.stopped": "Scan stopped at {done} of {total}",
-    "scan.unread": "{total} files have not been read yet.",
     "banner.not_cataloged": "This folder is not cataloged yet.",
     "banner.listed": "Cataloga listed {total} files without reading them. Start when you are ready.",
     "banner.learn": "Learn from my folder",
@@ -251,9 +244,7 @@ const LANG_EN = {
     "chat.title": "Cataloga assistant",
     "chat.close": "Close",
     "chat.empty_title": "How can I help with this project?",
-    "chat.empty_hint": "I can find files, filter the catalog, summarize the "
-        + "project, and propose new names. I never rename a file without your "
-        + "OK.",
+    "chat.empty_hint": "I never rename a file without your OK.",
     "chat.example_summary": "Summarize this project",
     "chat.example_press": "Find press clippings",
     "chat.example_review": "Show items in Manual Review",
@@ -310,20 +301,15 @@ const LANG_EN = {
     "time.days": "{n} days ago",
 
     // Settings
-    "settings.research_title": "Research Settings",
-    "settings.research_hint": "Configure your research project and where "
-        + "files are stored. Cataloga creates a Drop Zone folder inside it: "
-        + "drop new files there to have them cataloged.",
-    "settings.research_name": "Research Name",
-    "settings.folder": "Target Data Folder",
+    "settings.research_name": "Project Name",
+    "settings.folder": "Select a folder or drive",
     "settings.browse": "Browse",
     "settings.ai_title": "AI Provider",
     "settings.ai_using": "Cataloga uses {provider} ({model}).",
     "settings.ai_needs_key": "{provider} needs an API key. Add it in "
         + "Advanced settings.",
     "settings.advanced": "Advanced settings",
-    "settings.ai_hint": "Choose another AI provider or model. Your API "
-        + "keys are saved in the macOS Keychain.",
+    "settings.ai_hint": "Choose another AI provider or model.",
     "settings.ai_text_title": "Text and images",
     "settings.ai_fallback_title": "Fallback (optional)",
     "settings.ai_fallback_hint": "Answers when the main provider fails or "
@@ -347,16 +333,9 @@ const LANG_EN = {
     "settings.save_anyway": "Save anyway",
     "settings.saving": "Saving and testing the AI connection...",
     "settings.saved": "Settings saved. The AI connection works.",
-    "settings.save_failed": "Could not save settings.",
     "settings.load_failed": "Could not load settings: {message}",
 
     // Drop Zone (not shown on screen yet)
-    "dropzone.title": "Drop Zone",
-    "dropzone.instruction": "Copy or drag new files into the Drop Zone "
-        + "folder. Cataloga processes them and leaves your other files "
-        + "where they are.",
-    "dropzone.short": "New files go here",
-
     // Settings: language
     "lang.title": "Language",
     "lang.hint": "Changes the app's buttons, labels and messages. "
@@ -389,13 +368,14 @@ const LANG_EN = {
     "naming.help_repeats": "Without a reliable date the name has no date part. A name already taken gets _2, _3, and names stay under 240 characters. Example: carta.pdf, then carta_2.pdf.",
     "naming.help_dates": "A photo's date comes from what is printed on it, then a camera's EXIF, then a year in its name or folder. This says how to read a stamp. Example: 11 13 '97 is 1997-11-13.",
     "help.open": "Help",
-    "help.catalog_only": "Cataloga reads and describes each file where it is. Nothing is ever moved or renamed.",
+    "help.catalog_only": "Reads and catalogs each file where it is and never moves or renames it. For websites, code and edits that link files by path (InDesign, Premiere, After Effects, Final Cut).",
+    "help.folder": "Every file is read where it is, subfolders included. Nothing moves or is renamed until you approve a plan.",
+    "help.drop_zone": "Cataloga creates the folders now and files what you drop into the Drop Zone folder.",
     "help.sheet": "A short text about the work. Cataloga reads it before every file, so it understands what the files are about.",
     "help.ai_provider": "The service that reads your files. Only the provider you choose receives them, and your keys stay in the Mac Keychain.",
     "help.account": "Your account lives only on this computer. There is no email, so a lost password cannot be recovered.",
     "help.remove_project": "Takes the project out of the list. Its folder, files and catalog stay on the disk, so you can add it again.",
     "naming.style": "Style",
-    "naming.changed_note": "Only new files will use this method.",
     "naming.blocks_add": "Click the parts in order",
     "naming.chosen": "Your file name",
     "naming.chosen_empty": "No parts yet. Click Topic, Source, Date or "
@@ -442,10 +422,7 @@ const LANG_EN = {
 
     // Folder tree of a project
     "sheet.title": "About this project",
-    "sheet.hint": "A short sheet of what this work is. Cataloga reads it "
-        + "before every file, so the classification understands the work. "
-        + "Write it, or let the AI write it from a sample of the folder, "
-        + "then edit it.",
+    "sheet.hint": "Write it, or click Write it for me.",
     "sheet.label": "Project sheet",
     "sheet.placeholder": "Work: ...\nIndustry: ...\nParts: ...\nFile "
         + "types: ...\nNaming style: ...",
@@ -454,9 +431,9 @@ const LANG_EN = {
     "sheet.suggesting": "Reading a sample of the folder...",
     "sheet.suggested": "Edit the sheet if you like, then click Save.",
     "folders.title": "Folders",
-    "folders.hint": "Cataloga files each new document in the folder that "
-        + "fits its content. Describe the project and click Suggest folders, "
-        + "then edit the tree before you create the project.",
+    "folders.hint": "With Now, Cataloga proposes folders only for the "
+        + "files already in the folder. Edit them before you create the "
+        + "project.",
     "folders.description": "What is this project about?",
     "folders.description_placeholder": "For example: documentary about a "
         + "harbor swimming club from the 1950s",
@@ -554,24 +531,13 @@ const LANG_EN = {
     "project.folder_locked": "The project folder can't change, because the "
         + "catalog is saved inside it.",
     "project.create": "Create project",
-    "project.mode_place": "Read the folder in place",
-    "project.mode_place_hint": "Every file is read where it is, subfolders "
-        + "included. Nothing moves or renames until you approve a plan",
-    "project.mode_tree": "Drop Zone",
-    "project.mode_tree_hint": "Cataloga creates the folders now and files "
-        + "what you drop into Drop Zone",
-    "project.catalog_only": "Catalog only: read and catalog the files where "
-        + "they are. Never move or rename them",
+    "project.mode_tree": "Use a Drop Zone",
+    "project.catalog_only": "Catalog only",
     "project.archive_title": "When should Cataloga read this folder?",
-    "project.archive_now": "Archive Now",
-    "project.archive_later": "Archive Later",
-    "project.archive_now_hint": "Cataloga reads the files when you save and proposes where each one goes. Nothing moves until you approve the plan.",
-    "project.archive_later_hint": "Cataloga only lists the folder. Nothing is read or sent to the AI until you press Archive now in Home. You can fill in the other sections then, in Settings.",
-    "project.folder_facts": "This folder has {files} files in {folders} folders ({size}). Nothing has been read yet.",
-    "project.catalog_only_hint": "For websites, code, and edits that link "
-        + "their files by path (InDesign, Premiere, After Effects, Final "
-        + "Cut). Cataloga reads, summarizes and catalogs each file in "
-        + "place. There is no folder tree and no Drop Zone.",
+    "project.archive_now": "Now",
+    "project.archive_later": "Later",
+    "project.archive_later_hint": "Nothing is read or sent to the AI until you press Archive now in Home.",
+    "project.folder_facts": "This folder has {files} files in {folders} folders ({size}).",
     "project.linked_advice": "This folder looks like a website or a linked "
         + "project ({markers}). Moving or renaming its files would break "
         + "it. Catalog only is ticked for you: it keeps every link working.",
