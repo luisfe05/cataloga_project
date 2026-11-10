@@ -380,6 +380,39 @@ async function continueRecovery() {
         loadRecoveryStatus);
 }
 
+/** Settings > Account > Delete account: the dialog, empty, with Delete off. */
+function openDeleteDialog() {
+    const field = document.getElementById("delete-password");
+    field.value = "";
+    document.getElementById("delete-confirm").disabled = true;
+    showAuthMessage("delete-message", "");
+    document.getElementById("delete-account-dialog").showModal();
+    field.focus();
+}
+
+/** Delete the account after the password. A wrong one deletes nothing. */
+async function submitDeleteAccount(event) {
+    event.preventDefault();
+    const field = document.getElementById("delete-password");
+    const button = document.getElementById("delete-confirm");
+    if (!field.value) {
+        showAuthMessage("delete-message", t("error.missing_field"));
+        return;
+    }
+    button.disabled = true;
+    try {
+        await deleteAccount(field.value);
+    } catch (error) {
+        showAuthMessage("delete-message", errorText(error));
+        button.disabled = false;
+        return;
+    }
+    field.value = "";
+    document.getElementById("delete-account-dialog").close();
+    // The account is gone: the reload lands on the login screen.
+    leaveApp();
+}
+
 /** Change the password from Settings > Account. The session stays open. */
 async function submitPasswordChange(event) {
     event.preventDefault();
@@ -469,6 +502,18 @@ document.getElementById("logout-button")
     .addEventListener("click", submitLogout);
 document.getElementById("password-form")
     .addEventListener("submit", submitPasswordChange);
+document.getElementById("delete-account-open")
+    .addEventListener("click", openDeleteDialog);
+document.getElementById("delete-account-form")
+    .addEventListener("submit", submitDeleteAccount);
+document.getElementById("delete-cancel").addEventListener("click", () => {
+    document.getElementById("delete-account-dialog").close();
+});
+// Delete turns on only with a password typed, so Enter alone does nothing.
+document.getElementById("delete-password").addEventListener("input", () => {
+    document.getElementById("delete-confirm").disabled =
+        !document.getElementById("delete-password").value;
+});
 document.getElementById("recovery-current")
     .addEventListener("click", () => askRecoveryPassword("current"));
 document.getElementById("recovery-new")

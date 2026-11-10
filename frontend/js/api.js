@@ -294,6 +294,16 @@ async function suggestFolders(projectSheet, industry, folder) {
     return handleResponse(response);
 }
 
+/** POST /projects/folders/learn: the tree and the naming of a folder the user organized. Saves nothing. */
+async function learnFolder(folder) {
+    const response = await apiFetch(`${BASE_URL}/projects/folders/learn`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder: folder }),
+    });
+    return handleResponse(response);
+}
+
 /** POST /projects/folders/inspect: does the folder look like a website or a linked project? */
 async function inspectFolder(folder) {
     const response = await apiFetch(`${BASE_URL}/projects/folders/inspect`, {
@@ -391,6 +401,11 @@ async function postAccount(path, body) {
 /** POST /auth/terms - accept the current terms after a login that asked. */
 function acceptTerms(version) {
     return postAccount("/auth/terms", { version: version });
+}
+
+/** POST /auth/delete-account - needs the password. Project folders are never touched. */
+function deleteAccount(password) {
+    return postAccount("/auth/delete-account", { password: password });
 }
 
 /** GET /auth/recovery - the day the key was saved to a file, or "". */

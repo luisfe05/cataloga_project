@@ -99,8 +99,9 @@ def create_project():
     # A folder read in place can start without a tree: reading proposes it.
     reads_files = later or body.get("folder_mode") == folder_tree.PLACE_MODE
     tree = []
-    if not catalog_only and not (reads_files and not body.get("folders")):
-        # Every new project files documents in its own folder tree.
+    if body.get("folders") or not (catalog_only or reads_files):
+        # Every new project files documents in its own folder tree. Catalog
+        # only keeps the tree for the day the mode is turned off.
         try:
             tree = folder_tree.check_tree(body.get("folders"))
         except ValueError as error:
@@ -134,6 +135,8 @@ def create_project():
         new_repo.save_naming_template(naming.KEEP_NAMES)
         new_repo.save_config_value("folder_mode", folder_tree.CATALOG_MODE)
         new_repo.save_config_value("project_description", description)
+        if tree:
+            new_repo.save_tree(tree)
     else:
         new_repo.save_naming_template(template)
         if body.get("naming_style") in naming.STYLES:

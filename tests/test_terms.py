@@ -92,7 +92,8 @@ def test_the_legal_pages_carry_the_final_text(name, title):
     assert "Effective date: November 9, 2026" in page
     assert "not published yet" not in page
     assert "Temporary" not in page
-    assert not re.search(r"\[[^\]]*\]", page)
+    # No [...] placeholder; "[REDACTED]" is the one mark the text names.
+    assert not re.search(r"\[(?!REDACTED\])[^\]]*\]", page)
     # Self-contained: the app's own stylesheet, no scripts, no internet.
     assert 'href="../css/main.css"' in page
     assert "<script" not in page and "http" not in page.split("<body")[1]
@@ -127,3 +128,30 @@ def test_the_overlay_points_say_what_the_terms_say():
     assert "their content is sent to the AI" in en
     assert "The developer is not liable" in en
     assert "↗" not in en
+
+
+LANDING = os.path.join(os.path.dirname(__file__), "..", "..", "Design",
+                       "cataloga-landing")
+
+
+def test_the_privacy_policy_says_what_happens_to_secrets_and_accounts():
+    """Hidden secrets, their limit and Delete account, in both copies."""
+    for folder in (os.path.join(FRONTEND, "legal"), LANDING):
+        with open(os.path.join(folder, "privacy.html"),
+                  encoding="utf-8") as file:
+            privacy = file.read()
+        assert "never read or sent" in privacy
+        assert "replaces each one with &quot;[REDACTED]&quot;" in privacy
+        assert "keeps only how many were hidden, never the secret" in privacy
+        assert "cannot recognize every password written in free text" \
+            in privacy
+        assert "Delete your account in Settings › Account" in privacy
+        assert "project folders stay exactly where they are" in privacy
+        assert "Effective date: November 9, 2026" in privacy
+        with open(os.path.join(folder, "terms.html"),
+                  encoding="utf-8") as file:
+            page = file.read()
+        assert "delete your account at any time in Settings › Account" \
+            in page
+        assert "never touches your project folders" in page
+        assert "Effective date: November 9, 2026" in page

@@ -27,8 +27,10 @@ def read_structure(folder):
     names = []
     entries = 0
     for current, dirs, files in os.walk(folder):
+        # Drop Zone is Cataloga's, not a folder of the archive.
         dirs[:] = sorted(d for d in dirs if not d.startswith(".") and
                          d not in SKIPPED_FOLDERS and
+                         d.lower() not in folder_tree.OWN_NAMES and
                          not os.path.islink(os.path.join(current, d)))
         relative = os.path.relpath(current, folder)
         depth = 0 if relative == "." else relative.count(os.sep) + 1

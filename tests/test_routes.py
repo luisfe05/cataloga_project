@@ -186,6 +186,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "folder_tree": [], "numbered_folders": False,
         "project_sheet": "",
         "folder_counts": {},
+        "files_read": 0, "refiling": False,
     }
 
 

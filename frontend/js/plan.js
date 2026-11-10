@@ -276,6 +276,12 @@ function renderPlanRows() {
     list.classList.toggle("hidden", groups.size === 0);
 }
 
+/** Folders taken out of the tree, to remove at Apply if they are empty. */
+function removalRows() {
+    return planView.rows.filter((row) => row.action === "remove_folder"
+        && row.status === "approved");
+}
+
 /** "30 changes · 18 renames · 12 moves. Nothing changes until you apply." */
 function renderPlanSummary() {
     const rows = changeRows();
@@ -284,6 +290,12 @@ function renderPlanSummary() {
         ["plan.summary_renames", rows.filter(renamesFile).length],
         ["plan.summary_moves", rows.filter(movesFile).length]]
         .filter(([, n]) => n > 0).map(([key, n]) => t(key, { n: n }));
+    // Folders taken out of the tree: removed only if they end up empty.
+    const removals = removalRows().length;
+    if (removals) {
+        parts.push(t(removals === 1 ? "plan.summary_removal_one"
+            : "plan.summary_removals", { n: removals }));
+    }
     document.getElementById("plan-summary").textContent = parts.length
         ? `${parts.join(" · ")}. ${t("plan.summary_note")}` : "";
 }
@@ -419,7 +431,7 @@ function emptyPlanText() {
 /** The main button says how many changes it applies. */
 function updateApplyButton() {
     const count = planView.rows.filter((row) => row.document_id
-        && row.status === "approved").length;
+        && row.status === "approved").length + removalRows().length;
     const button = document.getElementById("plan-apply");
     button.textContent = count === 1 ? t("plan.apply_one")
         : count ? t("plan.apply_many", { n: count }) : t("plan.apply");
@@ -440,7 +452,8 @@ function renderPlan() {
     const running = (planView.batches || []).find((batch) =>
         ["applying", "undoing", "paused", "applied"].includes(batch.status));
     renderPlanProgress(running || null, running ? running.summary : null);
-    planMessage(changeRows().length ? "" : emptyPlanText());
+    planMessage(changeRows().length || removalRows().length
+        ? "" : emptyPlanText());
     updateApplyButton();
     refreshPlanBadge();
 }

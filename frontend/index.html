@@ -155,6 +155,40 @@
         </div>
     </dialog>
 
+    <!-- Delete account: what goes, what stays, and the password to confirm. -->
+    <dialog class="confirm-dialog account-dialog" id="delete-account-dialog"
+            aria-labelledby="delete-account-title">
+        <form class="settings-form" id="delete-account-form">
+            <h2 id="delete-account-title" data-i18n="delete.title">Delete your
+                account?</h2>
+            <p class="hint" data-i18n="delete.lead"></p>
+            <ul class="delete-points">
+                <li data-i18n="delete.goes_account"></li>
+                <li data-i18n="delete.goes_recovery"></li>
+                <li data-i18n="delete.goes_keys"></li>
+                <li data-i18n="delete.goes_settings"></li>
+            </ul>
+            <p class="delete-stays" data-i18n="delete.stays"></p>
+            <p class="hint" data-i18n="delete.catalogs"></p>
+            <label for="delete-password"
+                   data-i18n="delete.password">Type your password to confirm</label>
+            <div class="password-field">
+                <input type="password" id="delete-password"
+                       autocomplete="current-password">
+            </div>
+            <p class="form-message error" id="delete-message"
+               aria-live="polite"></p>
+            <!-- Cancel first; Delete turns on only once the password is typed. -->
+            <div class="form-buttons">
+                <button type="button" class="secondary-button" id="delete-cancel"
+                        data-i18n="project.cancel">Cancel</button>
+                <button type="submit" class="primary-button danger-button"
+                        id="delete-confirm" disabled
+                        data-i18n="delete.confirm">Delete account</button>
+            </div>
+        </form>
+    </dialog>
+
     <!-- Forgot password: the username and the recovery key. -->
     <dialog class="confirm-dialog account-dialog" id="forgot-dialog"
             aria-labelledby="forgot-title">
@@ -960,7 +994,7 @@
                     <p class="card-placeholder" id="folders-placeholder"
                        data-i18n="folders.title">Folder Names</p>
 
-                    <!-- The project's folder tree (folders.js). New projects and tree projects only. -->
+                    <!-- The project's folder tree (folders.js), in every project: a new one waits for its folder. -->
                     <section class="settings-card hidden" id="folders-section">
                         <div class="card-fold card-closed">
                             <div class="card-row">
@@ -976,17 +1010,44 @@
                             <div>
                                 <h2><span data-i18n="folders.title">Folder Names</span>
                                     <span class="help-tip" data-help="help.folders"></span></h2>
+                                <!-- Files already read: a change here never moves them by itself. -->
+                                <p class="hint folders-note hidden" id="folders-plan-note"
+                                   data-i18n="folders.plan_note">Changes to folders wait in
+                                    To Approve.</p>
+                                <!-- Saved without a provider: nobody can propose the moves (B2). -->
+                                <p class="hint folders-note hidden" id="folders-provider-note">
+                                    <span data-i18n="folders.no_provider">Folders saved. Connect
+                                        an AI provider to get move proposals, or move files
+                                        yourself with Move to…</span>
+                                    <button type="button" class="link-button"
+                                            id="open-ai-provider"
+                                            data-i18n="folders.open_provider">Open AI
+                                        Provider</button>
+                                </p>
+                                <!-- Catalog only: the folders are kept for when it is turned off. -->
+                                <p class="hint folders-note hidden" id="folders-catalog-note">
+                                    <span data-i18n="folders.catalog_note">Catalog only is on, so
+                                        nothing moves. These folders are used when you turn it
+                                        off.</span>
+                                    <button type="button" class="link-button"
+                                            id="turn-off-catalog"
+                                            data-i18n="folders.turn_off">Turn off Catalog
+                                        only</button>
+                                </p>
                                 <!-- Later: the reading proposes them, so a note replaces the buttons. -->
                                 <p class="hint later-note hidden" id="folders-later"
                                    data-i18n="folders.later">Folders are proposed when
                                     Cataloga reads the folder.</p>
-                                <div class="form-buttons folders-new-only" id="folder-buttons">
+                                <div class="form-buttons" id="folder-buttons">
                                     <button type="button" class="secondary-button"
                                             id="suggest-folders"
                                             data-i18n="folders.suggest">Suggest folders</button>
                                     <button type="button" class="secondary-button"
                                             id="file-type-folders"
                                             data-i18n="folders.file_types">Start from file types</button>
+                                    <button type="button" class="secondary-button"
+                                            id="learn-folders"
+                                            data-i18n="folders.learn">Learn from my folder</button>
                                 </div>
                                 <p class="form-message" id="folders-message"
                                    aria-live="polite"></p>
@@ -1221,6 +1282,13 @@
                                 <p class="form-message error"
                                    id="recovery-confirm-message"></p>
                             </div>
+
+                            <!-- Delete account: last, apart from the rest, in the error color. -->
+                            <div class="delete-account-row">
+                                <button type="button" class="link-button danger-link"
+                                        id="delete-account-open"
+                                        data-i18n="delete.open">Delete account</button>
+                            </div>
                         </section>
                     </form>
 
@@ -1371,6 +1439,28 @@
                 answers about the files in this project.</p>
         </form>
     </aside>
+
+    <!-- Remove a folder that holds files: where they go. Nothing is deleted. -->
+    <dialog class="confirm-dialog account-dialog" id="folder-remove-dialog"
+            aria-labelledby="folder-remove-title">
+        <form class="settings-form" id="folder-remove-form">
+            <h2 id="folder-remove-title"></h2>
+            <p class="hint" id="folder-remove-lead"></p>
+            <label for="folder-remove-target"
+                   data-i18n="folders.remove_where">Where do the files go?</label>
+            <select id="folder-remove-target"></select>
+            <p class="hint folder-remove-note"
+               data-i18n="folders.remove_note"></p>
+            <div class="form-buttons">
+                <button type="button" class="secondary-button"
+                        id="folder-remove-cancel"
+                        data-i18n="project.cancel">Cancel</button>
+                <button type="submit" class="primary-button"
+                        id="folder-remove-confirm"
+                        data-i18n="folders.remove_confirm">Remove folder</button>
+            </div>
+        </form>
+    </dialog>
 
     <!-- Remove project dialog. showModal() blocks the page until it closes. -->
     <dialog class="confirm-dialog" id="remove-project-dialog">

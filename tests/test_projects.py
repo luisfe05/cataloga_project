@@ -167,7 +167,7 @@ def test_create_project_twice(flask_client, app):
 
 def test_create_project_warns_about_user_files(flask_client, tmp_path):
     """A folder with user files needs confirmation; files never move."""
-    folder = tmp_path / "PEDRO_NAVAJA"
+    folder = tmp_path / "HARBOR_FILES"
     folder.mkdir()
     (folder / "poster.png").write_text("x")
     (folder / "notes.txt").write_text("x")

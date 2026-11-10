@@ -158,6 +158,35 @@ class AccountStore:
         terms = entry.get("terms") if entry else None
         return terms.get("version", "") if isinstance(terms, dict) else ""
 
+    def user_folder(self, username):
+        """Return the real path of this account's folder in users/."""
+        return os.path.realpath(os.path.join(
+            self.data_folder, USERS_FOLDER, folder_name(username)))
+
+    def delete(self, username):
+        """Remove an account and its folder. Projects on disk stay as they are.
+
+        Only the folder inside users/ goes; its real path is checked first,
+        so nothing outside the app data folder is ever removed.
+        """
+        entry = self.find(username)
+        if entry is None:
+            return False
+        users_root = os.path.realpath(os.path.join(self.data_folder,
+                                                   USERS_FOLDER))
+        folder = self.user_folder(entry["username"])
+        if os.path.dirname(folder) == users_root and os.path.isdir(folder):
+            shutil.rmtree(folder)
+        data = self.load()
+        data["accounts"] = [item for item in data["accounts"]
+                            if item["username"].lower() !=
+                            entry["username"].lower()]
+        if data["last_username"].lower() == entry["username"].lower():
+            data["last_username"] = data["accounts"][-1]["username"] \
+                if data["accounts"] else ""
+        self.save(data)
+        return True
+
     def remember_last(self, username):
         """Save who logged in last; the login screen uses their language."""
         data = self.load()

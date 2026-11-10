@@ -4,9 +4,10 @@ import logging
 import time
 
 import keyring
+from keyring.errors import KeyringError
 
 from backend.models.document import MEDIA_TYPES
-from backend.pipeline import assistant_guard, time_budget
+from backend.pipeline import assistant_guard, secrets, time_budget
 
 KEYRING_SERVICE = "cataloga"
 
@@ -150,6 +151,14 @@ def save_api_key(provider_name, api_key):
     keyring.set_password(KEYRING_SERVICE, provider_name, api_key)
 
 
+def forget_api_key(provider_name):
+    """Remove a provider's API key from the OS keyring, if it is there."""
+    try:
+        keyring.delete_password(KEYRING_SERVICE, provider_name)
+    except KeyringError:
+        pass
+
+
 class AIProviderClient:
     """Base class for AI provider integrations."""
 
@@ -172,11 +181,17 @@ class AIProviderClient:
         raise NotImplementedError
 
     def ask(self, system_prompt, text):
-        """Call send_prompt(), trying again if the request fails."""
+        """Call send_prompt(), trying again if the request fails.
+
+        The one exit for text: keys, tokens and passwords are hidden here,
+        in the system prompt (the sheet, the catalog cards) and the text.
+        """
         if not self.api_key:
             return None
+        system_prompt = secrets.redact(system_prompt)
+        text = secrets.redact(text[:MAX_INPUT_CHARS])
         return self.send_with_retry("ai text", self.send_prompt,
-                                    system_prompt, text[:MAX_INPUT_CHARS])
+                                    system_prompt, text)
 
     def send_with_retry(self, step, send, *args):
         """Send one request, and once more if it fails and time is left."""

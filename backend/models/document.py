@@ -11,7 +11,8 @@ ARCHIVE_FIELDS = ("topic", "keywords", "sha256", "duplicate_of",
                   "effective_start", "effective_end", "category",
                   "subcategory", "date_source", "suggested_folder",
                   "folder_reason", "confidence", "original_path",
-                  "folder_path", "proposed_folder", "proposed_name")
+                  "folder_path", "proposed_folder", "proposed_name",
+                  "secrets_hidden")
 
 
 class Document:

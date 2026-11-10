@@ -71,7 +71,8 @@ CREATE TABLE IF NOT EXISTS documents (
     original_path     TEXT,
     folder_path       TEXT,
     proposed_folder   TEXT,
-    proposed_name     TEXT
+    proposed_name     TEXT,
+    secrets_hidden    INTEGER
 );
 """
 
@@ -105,6 +106,9 @@ ADDED_DOCUMENTS_COLUMNS = {
     # What the pipeline would do to a file read in place (the plan).
     "proposed_folder": "proposed_folder TEXT",
     "proposed_name": "proposed_name TEXT",
+    # How many keys or passwords were hidden before the text was sent.
+    # Only the number is kept, never the secret itself.
+    "secrets_hidden": "secrets_hidden INTEGER",
 }
 
 CREATE_ACTIVITY_LOG = """
@@ -140,7 +144,8 @@ CREATE TABLE IF NOT EXISTS app_config (
     server_url              TEXT,
     naming_style            TEXT,
     keep_accents            INTEGER,
-    stamp_date_order        TEXT
+    stamp_date_order        TEXT,
+    removed_folders         TEXT
 );
 """
 
@@ -171,6 +176,9 @@ ADDED_APP_CONFIG_COLUMNS = {
     "keep_accents": "keep_accents INTEGER",
     # How a date stamped on a photo reads: 'month' first or 'day' first.
     "stamp_date_order": "stamp_date_order TEXT",
+    # Folders taken out of the tree whose files go elsewhere (JSON list of
+    # 'A/B'). The plan removes each one from the disk once it is empty.
+    "removed_folders": "removed_folders TEXT",
 }
 
 # Each move the user made by hand: the AI reads the latest ones before

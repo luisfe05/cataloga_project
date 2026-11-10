@@ -209,6 +209,8 @@ const LANG_ES = {
     "catalog.note_timeout": "Se acabó el tiempo al leerlo",
     "catalog.note_cut_off": "La respuesta de la AI quedó cortada",
     "catalog.note_icloud": "En iCloud, sin descargar",
+    "catalog.secret_hidden": "1 secreto tapado antes de enviar",
+    "catalog.secrets_hidden": "{n} secretos tapados antes de enviar",
     "catalog.note_too_big": "El archivo pesa más de 50 MB y no se leyó",
     "catalog.note_topic": "No se encontró un tema en la foto",
     "catalog.note_missing": "Falta: {fields}",
@@ -443,6 +445,44 @@ const LANG_ES = {
     "folders.numbered": "Numerar carpetas nuevas (01_, 02_)",
     "folders.err_depth": "Las carpetas pueden tener seis niveles como máximo.",
     "folders.err_subs": "Una carpeta puede tener 10 subcarpetas como máximo.",
+    "folders.learn": "Aprender de mi carpeta",
+    "folders.learning": "Leyendo las carpetas que ya tienes...",
+    "folders.learned": "Se aprendieron {n} carpetas de tu carpeta. Edítalas "
+        + "y guarda.",
+    "folders.need_folder": "Elige una carpeta primero.",
+    "folders.has_documents_plan": "{n} archivos están aquí. Si la quitas, "
+        + "reciben otra carpeta en Por aprobar.",
+    "folders.plan_note": "Los cambios de carpetas esperan en Por aprobar.",
+    "folders.catalog_note": "Solo catalogar está activo, así que nada se "
+        + "mueve. Estas carpetas se usan cuando lo desactives.",
+    "folders.turn_off": "Desactivar Solo catalogar",
+    "folders.turn_off_confirm": "¿Desactivar Solo catalogar? Cataloga "
+        + "propondrá una carpeta para cada archivo en Por aprobar. Nada se "
+        + "mueve hasta que lo apruebes.",
+    "folders.turned_off": "Solo catalogar está desactivado. Los movimientos "
+        + "esperan en Por aprobar.",
+    "folders.no_provider": "Carpetas guardadas. Conecta un proveedor de AI "
+        + "para recibir propuestas de movimiento, o mueve los archivos tú "
+        + "con Mover a…",
+    "folders.open_provider": "Abrir Proveedor de AI",
+    "folders.remove_title": "¿Quitar \"{name}\" de las carpetas?",
+    "folders.remove_lead": "{n} archivos están en esta carpeta. No se borra "
+        + "nada: elige a dónde van.",
+    "folders.remove_lead_one": "1 archivo está en esta carpeta. No se borra "
+        + "nada: elige a dónde va.",
+    "folders.remove_where": "¿A dónde van los archivos?",
+    "folders.remove_leave": "Dejarlos donde están",
+    "folders.remove_note": "Los movimientos esperan en Por aprobar. La "
+        + "carpeta sale del disco solo cuando queda vacía, después de "
+        + "aplicar, y Deshacer la devuelve.",
+    "folders.remove_confirm": "Quitar carpeta",
+    "folders.remove_saved_later": "Guarda para mandar los movimientos a Por "
+        + "aprobar.",
+    "folders.moves_waiting": "Carpetas guardadas. Los movimientos esperan en "
+        + "Por aprobar.",
+    "folders.refiling": "Carpetas guardadas. Cataloga está proponiendo una "
+        + "carpeta para cada archivo; los movimientos esperan en Por "
+        + "aprobar.",
 
     // Account and login
     "auth.register_title": "Crear una cuenta",
@@ -582,6 +622,8 @@ const LANG_ES = {
         + "que aprender.",
     "error.invalid_folders":
         "El árbol de carpetas no es válido. Revisa los nombres.",
+    "error.invalid_folder_moves": "Una carpeta elegida para los "
+        + "archivos no está en el árbol. Elige otra.",
     "error.invalid_sheet": "La ficha del proyecto es demasiado larga. Usa "
         + "1,500 caracteres o menos.",
     "error.invalid_description":
@@ -622,7 +664,7 @@ const LANG_ES = {
     "dash.mix_open": "{type}: {n}. Verlos en la lista del Catálogo",
     "help.language": "Cambia los botones, etiquetas y mensajes de la app. Los nombres de archivo y los resúmenes no se traducen.",
     "help.archive": "Ahora lee la carpeta enseguida y propone sus carpetas y nombres. Después solo la lista: nada va a la IA hasta que pulses Archivar ahora en Inicio. Solo catalogar lee cada archivo donde está y nunca mueve ni renombra nada.",
-    "help.folders": "Opcional · Sugerido: llenarlo ayuda a que Cataloga clasifique tus archivos con más precisión. Con Ahora, Cataloga propone carpetas solo para los archivos que ya están en la carpeta. Hasta 6 niveles, 20 carpetas principales y 10 subcarpetas en cada una. Las carpetas ya creadas no se renombran, y una carpeta que quitas se queda en el disco.",
+    "help.folders": "Opcional · Sugerido: llenarlo ayuda a que Cataloga clasifique tus archivos con más precisión. Con Ahora, Cataloga propone carpetas solo para los archivos que ya están en la carpeta. Hasta 6 niveles, 20 carpetas principales y 10 subcarpetas en cada una. Las carpetas ya creadas no se renombran, y una carpeta que quitas se queda en el disco. Un cambio que mueva archivos espera en Por aprobar.",
     "categories.hint": "Cataloga clasifica cada documento nuevo en una de estas categorías. Escribe tu industria y haz clic en Sugerir categorías; después edita la lista. Hasta 10 categorías. Un documento que no encaje en ninguna va a Revisión manual. Los documentos conservan su categoría si cambias la lista.",
     "sheet.later": "Cataloga lo escribirá cuando lea la carpeta.",
     "folders.later": "Las carpetas se proponen cuando Cataloga lea la carpeta.",
@@ -637,11 +679,27 @@ const LANG_ES = {
     "plan.need_approval": "Aprueba al menos un cambio.",
     "catalog.filter_source_one": "Fuente: {source}",
     "plan.summary_moves": "{n} movimientos",
+    "plan.summary_removal_one": "1 carpeta se quita si queda vacía",
+    "plan.summary_removals": "{n} carpetas se quitan si quedan vacías",
     "plan.summary_renames": "{n} renombres",
     "settings.wait_line": "Aparecen cuando eliges una carpeta.",
     "catalog.empty_place": "Todavía no hay actividad. Pulsa Archivar ahora en Inicio.",
 
     // Calm frame, first way in, accounts (Nov 9)
+    "delete.open": "Borrar cuenta",
+    "delete.title": "¿Borrar tu cuenta?",
+    "delete.lead": "Esto borra de esta Mac:",
+    "delete.goes_account": "tu cuenta y tu contraseña;",
+    "delete.goes_recovery": "tu recovery key;",
+    "delete.goes_keys": "tus API keys guardadas;",
+    "delete.goes_settings": "tus ajustes y la lista de proyectos de esta "
+        + "cuenta.",
+    "delete.stays": "Tus archivos y carpetas de proyectos se quedan donde "
+        + "están.",
+    "delete.catalogs": "Cada proyecto conserva su carpeta de catálogo "
+        + ".cataloga. Bórrala a mano si también quieres quitarla.",
+    "delete.password": "Escribe tu contraseña para confirmar",
+    "delete.confirm": "Borrar cuenta",
     "legal.title": "Legal",
     "legal.terms": "Términos y condiciones",
     "legal.privacy": "Política de privacidad",

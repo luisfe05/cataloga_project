@@ -92,6 +92,20 @@ def clear_role(path, role):
     save(path, ai)
 
 
+def providers_used(path):
+    """Return the provider names an account's roles point to. Reads only."""
+    saved = projects.load_projects(path).get(AI_KEY)
+    if not isinstance(saved, dict):
+        # Never migrated: the default provider.
+        saved = default_ai()
+    names = set()
+    for role in ("text", "fallback", "media"):
+        chosen = saved.get(role)
+        if isinstance(chosen, dict) and chosen.get("provider_name"):
+            names.add(chosen["provider_name"])
+    return names
+
+
 def set_server_url(path, server_url):
     """Save the relay server URL, '' for none."""
     ai = load(path)

@@ -30,7 +30,8 @@ SINGLE_CONFIG_COLUMNS = ("scan_state", "language", "naming_template",
                          "categories", "folder_mode", "project_description",
                          "folder_tree", "numbered_folders",
                          "project_sheet", "server_url", "naming_style",
-                         "keep_accents", "stamp_date_order")
+                         "keep_accents", "stamp_date_order",
+                         "removed_folders")
 
 # Method 1. Same as naming.DEFAULT_TEMPLATE and schema.py.
 DEFAULT_NAMING_TEMPLATE = "{date}_{topic}"
@@ -584,7 +585,8 @@ class CatalogRepository:
                 "app_lock_password_hash, language, naming_template, "
                 "industry, categories, folder_mode, project_description, "
                 "folder_tree, numbered_folders, project_sheet, server_url, "
-                "naming_style, keep_accents, stamp_date_order, scan_state "
+                "naming_style, keep_accents, stamp_date_order, scan_state, "
+                "removed_folders "
                 "FROM app_config "
                 "ORDER BY id LIMIT 1"
             ).fetchone()
@@ -1005,6 +1007,29 @@ class CatalogRepository:
         # Projects saved before deep trees: the two-level list is the tree.
         return folder_tree.check_tree(self.get_categories()) \
             if self.get_categories() else []
+
+    def saved_tree(self):
+        """Return the tree saved in app_config, whatever the folder mode.
+
+        Catalog only projects keep one too: it is used when the mode ends.
+        """
+        config = self.get_app_config() or {}
+        return folder_tree.tree_from_text(config.get("folder_tree")) or []
+
+    def removed_folders(self):
+        """Return the folders left out of the tree, to remove when empty."""
+        config = self.get_app_config() or {}
+        try:
+            saved = json.loads(config.get("removed_folders") or "[]")
+        except ValueError:
+            return []
+        return [path for path in saved if isinstance(path, str) and path]
+
+    def set_removed_folders(self, paths):
+        """Save that list, without repeats, deepest folder first."""
+        unique = sorted(set(paths), key=lambda path: (-path.count("/"), path))
+        self.save_config_value("removed_folders",
+                               json.dumps(unique, ensure_ascii=False))
 
     def save_tree(self, tree):
         """Save the whole tree, and its first two levels as categories."""

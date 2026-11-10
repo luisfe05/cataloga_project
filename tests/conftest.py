@@ -79,6 +79,9 @@ def fake_keychain(monkeypatch):
     monkeypatch.setattr(recovery, "read_from_keychain",
                         lambda username: saved.get(
                             recovery.keychain_name(username), ""))
+    monkeypatch.setattr(recovery, "forget_keychain",
+                        lambda username: saved.pop(
+                            recovery.keychain_name(username), None))
     return saved
 
 

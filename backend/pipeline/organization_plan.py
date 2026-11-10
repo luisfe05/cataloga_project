@@ -23,7 +23,9 @@ BATCH_STATUSES = ("draft", "applying", "paused", "applied", "undoing",
                   "undone")
 ITEM_STATUSES = ("proposed", "approved", "skipped", "pending", "applied",
                  "failed", "undo_pending", "undone")
-ACTIONS = ("move", "rename", "move_rename", "create_folder")
+# remove_folder: a folder taken out of the tree, removed from the disk
+# only when the batch left it empty. Undo makes it again.
+ACTIONS = ("move", "rename", "move_rename", "create_folder", "remove_folder")
 
 # A copy to another disk is written here first, then named.
 PART_SUFFIX = ".cataloga-part"
@@ -37,6 +39,8 @@ UNSAFE_REASON = "Unsafe name or folder: not applied"
 MOVED_SINCE_REASON = "File moved or changed since it was applied"
 TOO_LONG_REASON = archive_rules.TOO_LONG_NOTE
 NOT_EMPTY_REASON = "Folder is not empty"
+# A folder put back in the tree after it was taken out: it stays.
+IN_TREE_REASON = "Folder is in the tree again"
 DISK_MISSING_NOTE = "The project folder is not available"
 INTERRUPTED_NOTE = "The app closed while this batch was being applied"
 
@@ -280,8 +284,32 @@ class OrganizationPlan:
             file_items.append(item)
         batch_id = self.repo.create_batch("plan")
         self.repo.add_batch_items(batch_id,
-                                  self.folder_items(file_items) + file_items)
+                                  self.folder_items(file_items) + file_items +
+                                  self.removal_items())
         return batch_id
+
+    def removal_items(self):
+        """One remove_folder row per folder taken out of the tree, last.
+
+        It runs after the moves; it removes the folder only if they left it
+        empty. A folder that is gone, or back in the tree, gets no row.
+        """
+        tree = self.repo.get_folder_tree() or []
+        items = []
+        for place in self.repo.removed_folders():
+            path = self.organizer.tree_folder(place)
+            if not os.path.isdir(path) or folder_tree.node_at(tree, place) \
+                    or not self.organizer.is_inside_project(path) or \
+                    os.path.realpath(path) == os.path.realpath(self.root):
+                continue
+            items.append({"document_id": None, "action": "remove_folder",
+                          "status": "approved", "old_path": path,
+                          "new_path": None, "old_folder": place,
+                          "new_folder": None,
+                          "old_name": os.path.basename(path),
+                          "new_name": None, "size": None, "mtime": None,
+                          "reason": None, "created": 0})
+        return items
 
     def draft(self):
         """Return the current draft batch, building it when needed."""
@@ -296,7 +324,7 @@ class OrganizationPlan:
         counts = {"files_read": len(self.repo.get_all_documents()),
                   "moves": 0, "renames": 0, "new_folders": 0, "approved": 0,
                   "skipped": 0, "applied": 0, "failed": 0, "undone": 0,
-                  "pending": 0}
+                  "pending": 0, "removed_folders": 0}
         for item in items:
             if item["action"] in ("move", "move_rename"):
                 counts["moves"] += 1
@@ -304,6 +332,8 @@ class OrganizationPlan:
                 counts["renames"] += 1
             if item["action"] == "create_folder":
                 counts["new_folders"] += 1
+            if item["action"] == "remove_folder":
+                counts["removed_folders"] += 1
             if item["status"] in counts:
                 counts[item["status"]] += 1
         with_change = {item["document_id"] for item in items
@@ -379,6 +409,23 @@ class OrganizationPlan:
         os.makedirs(path, exist_ok=True)
         self.repo.set_item(item["id"], status="applied",
                            created=0 if existed else 1)
+
+    def remove_folder(self, item):
+        """Apply a remove_folder row: only an empty folder leaves the disk."""
+        place = item["old_folder"]
+        if folder_tree.node_at(self.repo.get_folder_tree() or [], place):
+            self.repo.set_item(item["id"], status="skipped",
+                               reason=IN_TREE_REASON)
+            return
+        self.repo.set_item(item["id"], status="pending")
+        if remove_if_empty(item["old_path"]):
+            self.repo.set_item(item["id"], status="applied", created=1)
+            self.repo.set_removed_folders(
+                [p for p in self.repo.removed_folders() if p != place])
+        else:
+            # Files the user skipped, or left there, keep it on the disk.
+            self.repo.set_item(item["id"], status="skipped",
+                               reason=NOT_EMPTY_REASON)
 
     def document_fields(self, doc, place, new_path):
         """What a document row becomes after its file moved."""
@@ -462,6 +509,8 @@ class OrganizationPlan:
                             self.make_folder(item)
                         else:
                             self.repo.set_item(item["id"], status="skipped")
+                    elif item["action"] == "remove_folder":
+                        self.remove_folder(item)
                     else:
                         self.apply_file(item)
                     if progress:
@@ -542,7 +591,16 @@ class OrganizationPlan:
             try:
                 for item in reversed(self.repo.get_items(batch_id,
                                                          ["applied"])):
-                    if item["action"] == "create_folder":
+                    if item["action"] == "remove_folder":
+                        # Made again before its files come back into it.
+                        self.repo.set_item(item["id"],
+                                           status="undo_pending")
+                        os.makedirs(item["old_path"], exist_ok=True)
+                        self.repo.set_item(item["id"], status="undone")
+                        self.repo.set_removed_folders(
+                            self.repo.removed_folders() +
+                            [item["old_folder"]])
+                    elif item["action"] == "create_folder":
                         if not item["created"]:
                             self.repo.set_item(item["id"], status="undone")
                         elif remove_if_empty(item["new_path"]):
@@ -603,6 +661,17 @@ class OrganizationPlan:
             self.repo.set_item(item["id"], status="failed",
                                reason="File not found after the app closed")
 
+    def settle_removal(self, item, undoing):
+        """A folder removal cut short: the disk says what happened."""
+        there = os.path.isdir(item["old_path"])
+        if undoing:
+            os.makedirs(item["old_path"], exist_ok=True)
+            self.repo.set_item(item["id"], status="undone")
+        else:
+            self.repo.set_item(item["id"],
+                               status="approved" if there else "applied",
+                               created=0 if there else 1)
+
     def recover(self):
         """Settle batches the app was applying or undoing when it closed."""
         settled = []
@@ -614,7 +683,10 @@ class OrganizationPlan:
                 continue
             for item in self.repo.get_items(
                     batch["id"], ["undo_pending" if undoing else "pending"]):
-                self.settle_item(item, undoing)
+                if item["action"] == "remove_folder":
+                    self.settle_removal(item, undoing)
+                else:
+                    self.settle_item(item, undoing)
             left = self.repo.get_items(
                 batch["id"], ["applied" if undoing else "approved"])
             if left:

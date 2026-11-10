@@ -12,7 +12,7 @@ from pypdf import PdfReader
 from backend.models.document import Document
 from backend.pipeline import (archive_rules, assistant_guard, file_metadata,
                               file_readers, folder_tree, media_reader,
-                              naming, time_budget)
+                              naming, secrets, time_budget)
 from backend.pipeline.ai_providers import base
 
 logger = logging.getLogger(__name__)
@@ -340,6 +340,7 @@ class ClassificationPipeline:
         self.reading = threading.local()
         self.reading.cut_off = False
         self.reading.blocked = False
+        self.reading.secrets_hidden = 0
         self.ai_client = ai_client
         self.db = catalog_repo
         self.file_organizer = file_organizer
@@ -388,6 +389,8 @@ class ClassificationPipeline:
         self.reading.cut_off = False
         # Set when the file's content must not be described (D3).
         self.reading.blocked = False
+        # How many secrets were hidden in what the AI got about this file.
+        self.reading.secrets_hidden = 0
         self.reading.source = self.reading.printed_date = None
         original_filename = os.path.basename(file_path)
         date_added = now_timestamp()
@@ -613,6 +616,7 @@ class ClassificationPipeline:
             original_path=self.relative_path(file_path),
             date_source=date_source,
             sha256=sha256,
+            secrets_hidden=self.reading.secrets_hidden or None,
             confidentiality=archive_rules.DEFAULT_CONFIDENTIALITY,
             owner=self.owner,
         )
@@ -936,6 +940,13 @@ class ClassificationPipeline:
         nonce = assistant_guard.new_nonce()
         text = file_context(file_path, self.file_organizer.target_directory,
                             media_type, file_meta, content, nonce)
+        # Keys and passwords inside the file (or its metadata) are hidden
+        # here, so the catalog can keep how many; ask() hides them again.
+        text, hidden = secrets.redact_secrets(text)
+        self.reading.secrets_hidden = hidden
+        if hidden:
+            # The number only: never the secret or its line.
+            logger.info("  %d secrets hidden before sending", hidden)
         result = parse_json_answer(self.ai_client.ask(self.card_prompt(nonce),
                                                       text))
 

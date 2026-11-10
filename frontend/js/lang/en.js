@@ -208,6 +208,8 @@ const LANG_EN = {
     "catalog.note_timeout": "Timed out while reading",
     "catalog.note_cut_off": "AI answer was cut off",
     "catalog.note_icloud": "In iCloud, not downloaded",
+    "catalog.secret_hidden": "1 secret hidden before sending",
+    "catalog.secrets_hidden": "{n} secrets hidden before sending",
     "catalog.note_too_big": "File is larger than 50 MB, so it was not read",
     "catalog.note_topic": "No topic could be found in the photo",
     "catalog.note_missing": "Missing: {fields}",
@@ -432,6 +434,40 @@ const LANG_EN = {
         + "Windows.",
     "folders.err_twin": "Two folders are named \"{name}\" in the same place.",
     "folders.err_subs": "A folder can have 10 subfolders at most.",
+    "folders.learn": "Learn from my folder",
+    "folders.learning": "Reading the folders you already have...",
+    "folders.learned": "Learned {n} folders from your folder. Edit them, "
+        + "then save.",
+    "folders.need_folder": "Choose a folder first.",
+    "folders.has_documents_plan": "{n} files are here. If you remove it, "
+        + "they get a new folder in To Approve.",
+    "folders.plan_note": "Changes to folders wait in To Approve.",
+    "folders.catalog_note": "Catalog only is on, so nothing moves. These "
+        + "folders are used when you turn it off.",
+    "folders.turn_off": "Turn off Catalog only",
+    "folders.turn_off_confirm": "Turn off Catalog only? Cataloga will "
+        + "propose a folder for each file in To Approve. Nothing moves "
+        + "until you approve it.",
+    "folders.turned_off": "Catalog only is off. The moves wait in To "
+        + "Approve.",
+    "folders.no_provider": "Folders saved. Connect an AI provider to get "
+        + "move proposals, or move files yourself with Move to…",
+    "folders.open_provider": "Open AI Provider",
+    "folders.remove_title": "Remove \"{name}\" from the folders?",
+    "folders.remove_lead": "{n} files are in this folder. Nothing is "
+        + "deleted: choose where they go.",
+    "folders.remove_lead_one": "1 file is in this folder. Nothing is "
+        + "deleted: choose where it goes.",
+    "folders.remove_where": "Where do the files go?",
+    "folders.remove_leave": "Leave them where they are",
+    "folders.remove_note": "The moves wait in To Approve. The folder leaves "
+        + "the disk only once it is empty, after you apply, and Undo brings "
+        + "it back.",
+    "folders.remove_confirm": "Remove folder",
+    "folders.remove_saved_later": "Save to send the moves to To Approve.",
+    "folders.moves_waiting": "Folders saved. The moves wait in To Approve.",
+    "folders.refiling": "Folders saved. Cataloga is proposing a folder for "
+        + "each file; the moves wait in To Approve.",
 
     // Account and login
     "auth.register_title": "Create an Account",
@@ -564,6 +600,8 @@ const LANG_EN = {
     "error.no_provider": "Choose an AI provider in Settings first.",
     "error.nothing_to_learn": "This folder has no subfolders to learn from.",
     "error.invalid_folders": "The folder tree is not valid. Check the names.",
+    "error.invalid_folder_moves": "A folder chosen for the files is not in "
+        + "the tree. Choose another one.",
     "error.invalid_sheet": "The project sheet is too long. Use 1,500 "
         + "characters or fewer.",
     "error.invalid_description":
@@ -604,7 +642,7 @@ const LANG_EN = {
     "dash.mix_open": "{type}: {n}. Show them in Catalog list",
     "help.language": "Changes the app's buttons, labels and messages. File names and summaries are not translated.",
     "help.archive": "Now reads the folder right away and proposes its folders and names. Later only lists it: nothing goes to the AI until you press Archive now in Home. Catalog only reads every file where it is and never moves or renames anything.",
-    "help.folders": "Optional · Suggested: filling this in helps Cataloga classify your files more accurately. With Now, Cataloga proposes folders only for the files already in the folder. Up to 6 levels deep, 20 top folders and 10 subfolders in each. Folders already created can't be renamed, and a folder you remove stays on the disk.",
+    "help.folders": "Optional · Suggested: filling this in helps Cataloga classify your files more accurately. With Now, Cataloga proposes folders only for the files already in the folder. Up to 6 levels deep, 20 top folders and 10 subfolders in each. Folders already created can't be renamed, and a folder you remove stays on the disk. A change that moves files waits in To Approve.",
     "categories.hint": "Cataloga sorts each new document into one of these categories. Write your industry and click Suggest categories, then edit the list. Up to 10 categories. A document that fits none goes to Manual Review. Documents keep their category if you change the list.",
     "sheet.later": "Cataloga will write this when it reads the folder.",
     "folders.later": "Folders are proposed when Cataloga reads the folder.",
@@ -619,11 +657,27 @@ const LANG_EN = {
     "plan.need_approval": "Approve at least one change.",
     "catalog.filter_source_one": "Source: {source}",
     "plan.summary_moves": "{n} moves",
+    "plan.summary_removal_one": "1 folder removed if it ends up empty",
+    "plan.summary_removals": "{n} folders removed if they end up empty",
     "plan.summary_renames": "{n} renames",
     "settings.wait_line": "These appear when you choose a folder.",
     "catalog.empty_place": "No activity yet. Press Archive now in Home.",
 
     // Calm frame, first way in, accounts (Nov 9)
+    "delete.open": "Delete account",
+    "delete.title": "Delete your account?",
+    "delete.lead": "This deletes from this Mac:",
+    "delete.goes_account": "your account and your password;",
+    "delete.goes_recovery": "your recovery key;",
+    "delete.goes_keys": "your saved API keys;",
+    "delete.goes_settings": "your settings and the list of projects of this "
+        + "account.",
+    "delete.stays": "Your files and project folders stay exactly where they "
+        + "are.",
+    "delete.catalogs": "Each project keeps its .cataloga catalog folder. "
+        + "Delete that folder by hand if you want it gone too.",
+    "delete.password": "Type your password to confirm",
+    "delete.confirm": "Delete account",
     "legal.title": "Legal",
     "legal.terms": "Terms and Conditions",
     "legal.privacy": "Privacy Policy",

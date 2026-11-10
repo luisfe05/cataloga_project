@@ -12,6 +12,7 @@ from flask import Blueprint, current_app, jsonify, request
 from backend.config import account, ai_settings, projects, recovery
 from backend.config.accounts import username_problem
 from backend.config.terms import TERMS_VERSION
+from backend.pipeline.ai_providers.base import forget_api_key
 from backend.routes import error_response, session_user
 from backend.routes.settings import status_cache
 
@@ -286,6 +287,45 @@ def update_password():
                               "follow the rules.", 400)
     store().change_password(username, new)
     return jsonify({"changed": True}), 200
+
+
+def forget_api_keys(username):
+    """Remove the API keys of this account's providers from the Keychain.
+
+    A key is saved per provider, so one another account also uses stays.
+    """
+    mine = ai_settings.providers_used(store().projects_path(username))
+    others = set()
+    for other in store().usernames():
+        if other.lower() != username.lower():
+            others |= ai_settings.providers_used(store().projects_path(other))
+    for provider in mine - others:
+        forget_api_key(provider)
+
+
+@auth_bp.route("/auth/delete-account", methods=["POST"])
+def delete_account():
+    """Delete the account after its password. Project folders are not touched.
+
+    Goes: the account, its password hash, its recovery key (hash and
+    Keychain entry), the API keys no other account uses, its settings and
+    its project list. Stays: every project folder, its files and its
+    .cataloga catalog.
+    """
+    username = session_user()
+    body = request.get_json(silent=True)
+    problem = checked_password(username, body)
+    if problem:
+        return problem
+    recovery.forget_keychain(username)
+    forget_api_keys(username)
+    store().delete(username)
+    # The session ends here; the screen reloads to the login.
+    forget_account_state()
+    current_app.config["SESSION_TOKEN"] = None
+    current_app.config["SESSION_USER"] = None
+    return jsonify({"deleted": True,
+                    "accounts_left": len(store().usernames())}), 200
 
 
 @auth_bp.route("/auth/terms", methods=["POST"])

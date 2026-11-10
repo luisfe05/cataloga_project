@@ -249,6 +249,15 @@ function makeStatusCell(doc) {
             note.textContent = reviewNoteText(doc.review_note);
             statusCell.appendChild(note);
         }
+        // Only the count is kept: the catalog never holds the secret.
+        if (doc.secrets_hidden > 0) {
+            const hidden = document.createElement("p");
+            hidden.className = "review-note";
+            hidden.textContent = doc.secrets_hidden === 1
+                ? t("catalog.secret_hidden")
+                : t("catalog.secrets_hidden", { n: doc.secrets_hidden });
+            statusCell.appendChild(hidden);
+        }
         return statusCell;
     }
     const cell = makeCell("", "nowrap");

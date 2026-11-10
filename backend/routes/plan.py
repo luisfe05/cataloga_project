@@ -247,8 +247,10 @@ def start_batch(action, batch_id=None):
                                   "applied" if action == "apply"
                                   else "undone"), 409)
     approved = repo.get_items(batch_id, ["approved"])
-    if action == "apply" and not any(item["document_id"]
-                                     for item in approved):
+    # A file to move, or an empty folder to remove.
+    if action == "apply" and not any(
+            item["document_id"] or item["action"] == "remove_folder"
+            for item in approved):
         return error_response("nothing_approved",
                               "Approve at least one row first.", 409)
     app = current_app._get_current_object()

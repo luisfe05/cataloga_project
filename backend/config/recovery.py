@@ -11,6 +11,7 @@ import secrets
 from datetime import date
 
 import keyring
+from keyring.errors import KeyringError
 
 from backend.config import account
 
@@ -87,6 +88,14 @@ def read_from_keychain(username):
     """Return the key saved in the Keychain, or ''."""
     return keyring.get_password(KEYCHAIN_SERVICE,
                                 keychain_name(username)) or ""
+
+
+def forget_keychain(username):
+    """Remove the key from the Keychain. No entry is not an error."""
+    try:
+        keyring.delete_password(KEYCHAIN_SERVICE, keychain_name(username))
+    except KeyringError:
+        pass
 
 
 def file_text(username, key, day=None):

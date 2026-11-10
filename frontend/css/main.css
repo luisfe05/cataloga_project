@@ -3259,6 +3259,18 @@ td.edit-error {
     font-weight: 400;
 }
 
+/* Not field labels: a box and its word, in the card's normal text (B1). */
+.settings-form .folder-flags label,
+.settings-form .naming-style label,
+.settings-form .stamp-order label {
+    color: var(--color-deep-space);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
 .folder-flags input {
     margin: 0;
 }
@@ -3567,8 +3579,23 @@ td.edit-error {
     display: none !important;
 }
 
-.later-note {
+.later-note,
+.folders-note {
     margin: 0 0 var(--spacing-12);
+}
+
+/* Remove a folder with files: the note under the choice. */
+.folder-remove-note {
+    margin-top: var(--spacing-12);
+}
+
+#folder-remove-dialog select {
+    width: 100%;
+}
+
+/* Catalog only: the sentence and its link on one line. */
+.folders-note .link-button {
+    margin-left: var(--spacing-8);
 }
 
 .naming-custom .hint {
@@ -4661,6 +4688,51 @@ input.plan-new-name:focus {
 .recovery-confirm-row input {
     flex: 1;
     margin-bottom: 0;
+}
+
+/* Delete account: last in the card, after a line, in the error color. */
+.delete-account-row {
+    margin-top: var(--spacing-16);
+    padding-top: var(--spacing-16);
+    border-top: 1px solid var(--surface-line);
+}
+
+.danger-link {
+    color: var(--color-danger);
+}
+
+.danger-link:hover {
+    color: #8a1b12;
+}
+
+/* The dialog's lists: what goes, then what stays, in one short block. */
+.delete-points {
+    margin: 0 0 var(--spacing-16) var(--spacing-24);
+    padding: 0;
+    color: var(--color-midnight);
+    font-size: 15px;
+    line-height: 22px;
+}
+
+.delete-stays {
+    margin-bottom: var(--spacing-8);
+    color: var(--color-deep-space);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+#delete-account-dialog label {
+    display: block;
+    margin-top: var(--spacing-16);
+}
+
+/* Delete account is the one red primary button of the app. */
+#delete-confirm {
+    background: var(--color-danger);
+}
+
+#delete-confirm:hover:not(:disabled) {
+    background: #8a1b12;
 }
 
 /* Legal: one row, the version at the right. */

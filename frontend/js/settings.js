@@ -285,12 +285,12 @@ function updateCardVisibility() {
     const waiting = isNew
         && !document.getElementById("target-directory").value.trim();
     const catalogOnly = document.getElementById("catalog-only").checked;
-    // A place project keeps its folders in the Plan tab, not here.
+    // Folder Names is part of every project: making the folders is the
+    // archivist's work, whatever the mode. Only a new project waits.
     const wanted = {
         "sheet-section": true,
         "naming-section": true,
-        "folders-section": !catalogOnly
-            && (isNew || projectFolderMode === "tree"),
+        "folders-section": true,
     };
     const revealed = [];
     // One line above the dotted places says when they appear.
@@ -559,6 +559,7 @@ function applyCatalogOnly() {
             .checked = true;
         updateNamingPreview();
     }
+    updateFolderNotes();
     updateCardVisibility();
 }
 
@@ -1220,9 +1221,9 @@ async function loadSettings() {
         updateNamingPreview();
         projectFolderMode = settings.folder_mode;
         showCategories(settings.industry, settings.categories);
-        if (["tree", "place"].includes(projectFolderMode)) {
-            showFolderSection(settings, false);
-        }
+        // Every project: the saved tree, the type folders of an old
+        // project already read, or an empty editor.
+        showFolderSection(settings, false);
 
         providersWithKey = settings.providers_with_key;
         // A project with no provider saved yet gets Ollama Cloud.
@@ -1266,11 +1267,15 @@ async function saveSettings(event) {
     const catalogOnly = document.getElementById("catalog-only").checked;
     const isTree = !catalogOnly && (projectMode === "new"
         || ["tree", "place"].includes(projectFolderMode));
+    // Sorted by type, or Catalog only: the folders go only once the user
+    // changed them. Saved, a type project becomes one with its own folders.
+    const sendTree = isTree || foldersTouched;
     const archive = archiveChoice();
     const later = archive === "later";
     // A tree typed by hand is checked; read in place it may be empty, the
     // reading proposes it. A Drop Zone (no switch) always needs one.
-    const checkTree = isTree && (readFolderTree().length > 0 || !archive);
+    const checkTree = sendTree && (readFolderTree().length > 0
+        || (isTree && !archive));
     const treeProblem = checkTree ? folderTreeProblem() : "";
     if (treeProblem) {
         showFoldersMessage(treeProblem, "error");
@@ -1280,6 +1285,8 @@ async function saveSettings(event) {
     }
 
     const isNew = projectMode === "new";
+    // Set when the folders were saved but no provider can propose moves.
+    let needsProvider = false;
     // True once a new project exists, even if something fails later.
     let projectCreated = false;
     let doneMessage = t("settings.saved");
@@ -1314,7 +1321,7 @@ async function saveSettings(event) {
             }
             doneMessage = t(createdKey);
         } else {
-            await updateSettings({
+            const saved = await updateSettings({
                 research_name:
                     document.getElementById("research-name").value,
                 naming_template: chosenTemplate(),
@@ -1323,16 +1330,35 @@ async function saveSettings(event) {
                 project_sheet: document.getElementById("project-sheet")
                     .value.trim(),
                 industry: document.getElementById("industry").value,
-                // In a tree project the folders are the tree.
-                ...(isTree
+                // The tree, when the project has one or the user made one.
+                ...(sendTree
                     ? { folder_tree: readFolderTree(),
-                        numbered_folders: readNumberedFolders() }
-                    : { categories: readCategories() }),
+                        numbered_folders: readNumberedFolders(),
+                        folder_moves: readFolderMoves() }
+                    : {}),
+                // Categories belong to projects sorted by type.
+                ...(isTree ? {} : { categories: readCategories() }),
             });
+            if (saved.refile_started) {
+                // Files already read: the AI proposes their folders now.
+                doneMessage = t("folders.refiling");
+            }
+            needsProvider = Boolean(saved.needs_provider);
+            if (saved.folder_moves && !saved.refile_started) {
+                // The folders the user chose need no AI.
+                doneMessage = t("folders.moves_waiting");
+            }
         }
         resetFolderWarning();
         await refreshAfterProjectChange();
         showSettingsMessage(doneMessage, "success");
+        if (needsProvider) {
+            // The note sits in Folder Names, so that card opens to show it.
+            showProviderNote(true);
+            const card = document.getElementById("folders-section");
+            setCardDone(card, false);
+            card.scrollIntoView({ block: "start" });
+        }
         if (archive) {
             // Home shows the folder and how far the reading is, or Archive now.
             showView("home");
