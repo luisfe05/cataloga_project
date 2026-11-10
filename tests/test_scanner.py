@@ -43,7 +43,8 @@ def place_project(root):
     repo.save_app_config("Place", str(root))
     repo.save_folder_tree("Research", TREE)
     repo.save_config_value("folder_mode", folder_tree.PLACE_MODE)
-    repo.set_active_provider("ollama", "gemma4:31b")
+    # A sheet is there, so a scan asks the AI about the files only.
+    repo.save_config_value("project_sheet", "Work: invented letters.")
     return repo
 
 

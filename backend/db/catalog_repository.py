@@ -462,6 +462,22 @@ class CatalogRepository:
             conn.close()
         return self.get_document(doc_id)
 
+    def top_sources(self, conn):
+        """Return the sources with the most documents, as source and count."""
+        # Most documents first; a tie goes to the source with the newest
+        # document date, then to the one added last.
+        rows = conn.execute(
+            "SELECT source, COUNT(*) AS total, "
+            "MAX(COALESCE(document_date, '')) AS newest, "
+            "MAX(id) AS last_id FROM documents "
+            "WHERE source IS NOT NULL AND source != '' "
+            "GROUP BY source "
+            "ORDER BY total DESC, newest DESC, last_id DESC LIMIT ?",
+            (TOP_SOURCES,)
+        ).fetchall()
+        return [{"source": row["source"], "count": row["total"]}
+                for row in rows]
+
     def get_project_summary(self):
         """Return the numbers the chat uses to describe the project."""
         conn = get_connection(self.db_path)
@@ -474,17 +490,7 @@ class CatalogRepository:
                 "SELECT media_type, COUNT(*) AS total FROM documents "
                 "GROUP BY media_type"
             ).fetchall()
-            # Most documents first; a tie goes to the source with the newest
-            # document date, then to the one added last.
-            source_rows = conn.execute(
-                "SELECT source, COUNT(*) AS total, "
-                "MAX(COALESCE(document_date, '')) AS newest, "
-                "MAX(id) AS last_id FROM documents "
-                "WHERE source IS NOT NULL AND source != '' "
-                "GROUP BY source "
-                "ORDER BY total DESC, newest DESC, last_id DESC LIMIT ?",
-                (TOP_SOURCES,)
-            ).fetchall()
+            top_sources = self.top_sources(conn)
             dates = conn.execute(
                 "SELECT MIN(document_date), MAX(document_date) "
                 "FROM documents WHERE document_date IS NOT NULL "
@@ -503,9 +509,7 @@ class CatalogRepository:
             "classified": by_status.get("Classified", 0),
             "manual_review": by_status.get("Manual Review", 0),
             "by_type": by_type,
-            "top_sources": [{"source": row["source"],
-                             "count": row["total"]}
-                            for row in source_rows],
+            "top_sources": top_sources,
             "first_date": dates[0],
             "last_date": dates[1],
         }
@@ -529,6 +533,7 @@ class CatalogRepository:
                 "SELECT media_type, COUNT(*) AS total FROM documents "
                 "GROUP BY media_type"
             ).fetchall()
+            top_sources = self.top_sources(conn)
             activity_rows = conn.execute(
                 "SELECT documents.filename, activity_log.action, "
                 "activity_log.timestamp FROM activity_log "
@@ -554,6 +559,7 @@ class CatalogRepository:
             "documents_classified": classified,
             "needs_manual_review": manual_review,
             "sources_tracked": sources,
+            "top_sources": top_sources,
             "media_type_breakdown": breakdown,
             "recent_activity": recent,
         }

@@ -531,11 +531,10 @@ def open_place_project(client, root, monkeypatch):
                             "SCAN", scanner.ScanJob()))
     response = client.post("/projects", json={
         "name": "Place", "folder": str(root), "folders": TREE,
-        "folder_mode": "place"})
+        "folder_mode": "place", "project_sheet": "Work: invented letters."})
     assert response.status_code == 201
     monkeypatch.setattr(scanner, "start_scan", start_scan)
-    monkeypatch.setattr(scanner, "create_client",
-                        lambda name, model: FakeAI())
+    monkeypatch.setattr(scanner, "text_client", lambda ai: FakeAI())
     return CatalogRepository(projects.catalog_path(str(root)))
 
 

@@ -150,53 +150,50 @@ def test_photo_prompt_reaches_the_client_that_reads_images():
 
 # --- Building the project's clients ---
 
-def test_project_client_uses_claude_when_its_key_exists(tmp_path,
-                                                        monkeypatch):
+def account_ai(**roles):
+    """The account's AI settings, as ai_settings.load returns them."""
+    ai = {"text": {"provider_name": "ollama", "model": "gemma4:31b"},
+          "fallback": None, "media": None, "server_url": ""}
+    ai.update(roles)
+    return ai
+
+
+def test_text_client_uses_claude_when_its_key_exists(monkeypatch):
     """With no fallback chosen, a saved Claude key makes Claude step in."""
-    db = str(tmp_path / "c.db")
-    init_db(db)
-    repo = CatalogRepository(db)
-    repo.set_active_provider("ollama", "gemma4:31b")
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: "k" if name == "claude"
                         else None)
-    client = ai_providers.project_client(repo)
+    client = ai_providers.text_client(account_ai())
     assert isinstance(client, ClientWithFallback)
     assert client.fallback.provider_name == "claude"
     assert client.fallback.model == "claude-sonnet-5-5"
 
     # The chosen fallback wins over the automatic one.
-    repo.set_provider("fallback", "groq", "llama-3.1-8b-instant")
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: "k")
-    assert ai_providers.project_client(repo).fallback.provider_name == "groq"
+    chosen = account_ai(fallback={"provider_name": "groq",
+                                  "model": "llama-3.1-8b-instant"})
+    assert ai_providers.text_client(chosen).fallback.provider_name == "groq"
 
 
-def test_project_client_without_keys_has_no_fallback(tmp_path):
+def test_text_client_without_keys_has_no_fallback():
     """No Claude key, no fallback chosen: the main client stands alone."""
-    db = str(tmp_path / "c.db")
-    init_db(db)
-    repo = CatalogRepository(db)
-    repo.set_active_provider("ollama", "gemma4:31b")
-    client = ai_providers.project_client(repo)
+    client = ai_providers.text_client(account_ai())
     assert client.fallback is None
-    assert ai_providers.media_client(repo) is None
-    repo.set_provider("media", "gemini", "gemini-3.5-flash-lite")
-    assert ai_providers.media_client(repo).provider_name == "gemini"
+    assert ai_providers.media_client(account_ai()) is None
+    media = account_ai(media={"provider_name": "gemini",
+                              "model": "gemini-3.5-flash-lite"})
+    assert ai_providers.media_client(media).provider_name == "gemini"
 
 
-def test_server_url_reaches_every_client(tmp_path, monkeypatch):
+def test_server_url_reaches_every_client():
     """A saved server URL replaces each provider's own address."""
-    db = str(tmp_path / "c.db")
-    init_db(db)
-    repo = CatalogRepository(db)
-    repo.save_app_config("Research", str(tmp_path))
-    repo.set_active_provider("ollama", "gemma4:31b")
-    repo.set_provider("media", "gemini", "gemini-3.5-flash-lite")
-    repo.save_config_value("server_url", "https://relay.example")
-    client = ai_providers.project_client(repo)
+    ai = account_ai(media={"provider_name": "gemini",
+                           "model": "gemini-3.5-flash-lite"},
+                    server_url="https://relay.example")
+    client = ai_providers.text_client(ai)
     assert client.main.base_url == "https://relay.example"
-    assert ai_providers.media_client(repo).base_url == "https://relay.example"
+    assert ai_providers.media_client(ai).base_url == "https://relay.example"
     # Without a server, Ollama Cloud keeps its own address.
     assert OllamaCloudClient().base_url == "https://ollama.com/v1"
 
@@ -215,7 +212,7 @@ def test_put_ai_provider_with_roles(flask_client, fake_keyring):
     assert response.status_code == 200
     assert fake_keyring == {"claude": "claude-key", "gemini": "gemini-key"}
     settings = flask_client.get("/settings").get_json()
-    assert settings["active_provider"] is None
+    assert settings["active_provider"] == "ollama"
     assert settings["fallback_provider"] == "claude"
     assert settings["media_model"] == "gemini-3.5-flash-lite"
     assert "claude-key" not in str(settings)

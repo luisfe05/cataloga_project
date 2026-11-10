@@ -24,6 +24,9 @@ const FILE_TYPE_FOLDERS = ["Press", "Documents", "Photos", "Audio", "Video"];
 // "media" for old projects sorted by type, "tree" for projects with their own folders.
 let projectFolderMode = "media";
 
+// True while the AI proposes folders, so Folder names is not ready yet.
+let foldersBusy = false;
+
 // One entry per folder: { key, name, parent (a key or null), saved, count, flags }.
 let folderRows = [];
 let nextFolderKey = 1;
@@ -252,6 +255,8 @@ function renderFolderRows() {
     draw(topRows());
     document.getElementById("add-folder").disabled =
         topRows().length >= MAX_TOP_FOLDERS;
+    // The folded Folder names row counts the folders.
+    refreshCards();
 }
 
 /** The tree as the backend saves it: [{ name, children, events, fallback, auto_apply, leave }]. */
@@ -313,9 +318,6 @@ function showFoldersMessage(text, kind) {
 
 /** Fill the section for a new project, or for the active project. */
 function showFolderSection(settings, isNew) {
-    const description = document.getElementById("project-description");
-    description.value = isNew ? "" : settings.project_description;
-    description.readOnly = !isNew;
     document.querySelectorAll(".folders-new-only").forEach((element) => {
         element.classList.toggle("hidden", !isNew);
     });
@@ -335,24 +337,25 @@ function sheetIndustry() {
     return found ? found[1].trim().toLowerCase() : "";
 }
 
-/** Ask Ollama Cloud for a tree. It replaces the editor; nothing is saved yet. */
+/** Ask the AI for a tree. It replaces the editor; nothing is saved yet. */
 async function suggestProjectFolders() {
-    const description = document.getElementById("project-description")
-        .value.trim();
+    // The one text about the project: About this project.
+    const sheet = document.getElementById("project-sheet").value.trim();
     // Archive Now with a folder: the tree comes from the files already there.
     const folder = archiveChoice() === "now"
         ? document.getElementById("target-directory").value.trim() : "";
     const button = document.getElementById("suggest-folders");
-    if (!description && !folder) {
+    if (!sheet && !folder) {
         showFoldersMessage(t("folders.need_description"), "error");
         return;
     }
     button.disabled = true;
+    foldersBusy = true;
+    refreshCards();
     showFoldersMessage(t(folder ? "folders.reading" : "folders.suggesting"),
         "");
     try {
-        const result = await suggestFolders(description, sheetIndustry(),
-            folder);
+        const result = await suggestFolders(sheet, sheetIndustry(), folder);
         showFolderTree(result.folders, {}, false);
         if (result.organized) {
             // An organized folder also keeps how its files are named.
@@ -371,42 +374,13 @@ async function suggestProjectFolders() {
         showFoldersMessage(errorText(error), "error");
     } finally {
         button.disabled = false;
-    }
-}
-
-/** Read the chosen folder as it is: its tree, marks and naming fill the form. */
-async function learnProjectFolders() {
-    const folder = document.getElementById("target-directory").value.trim();
-    const button = document.getElementById("learn-folders");
-    if (!folder) {
-        showFoldersMessage(t("folders.need_folder"), "error");
-        return;
-    }
-    button.disabled = true;
-    showFoldersMessage(t("folders.learning"), "");
-    try {
-        const result = await learnFolder(folder);
-        showFolderTree(result.folder_tree, {}, false);
-        // The names: style and the method they follow.
-        document.querySelector(`input[name="naming-style"][value="${
-            result.naming_style}"]`).checked = true;
-        showSavedTemplate(result.naming_template);
-        updateNamingPreview();
-        showFoldersMessage(t("folders.learned", {
-            folders: result.folders, files: result.files,
-            description: result.description,
-            examples: result.examples.join(", ") }), "success");
-    } catch (error) {
-        showFoldersMessage(errorText(error), "error");
-    } finally {
-        button.disabled = false;
+        foldersBusy = false;
+        refreshCards();
     }
 }
 
 document.getElementById("suggest-folders")
     .addEventListener("click", suggestProjectFolders);
-document.getElementById("learn-folders")
-    .addEventListener("click", learnProjectFolders);
 
 document.getElementById("file-type-folders").addEventListener("click", () => {
     showFolderTree(FILE_TYPE_FOLDERS

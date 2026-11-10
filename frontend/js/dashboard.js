@@ -1,24 +1,23 @@
-/** dashboard.js: stat cards, circles, breakdown bars, and activity from GET /dashboard/stats. */
+/** dashboard.js: stat cards, the ring, Media Mix and activity from GET /dashboard/stats. */
 
-// Order of the bars, as in the wireframe.
-const BREAKDOWN_ORDER = ["Documents", "Audio", "Video", "Press", "Photos"];
+// Order of the Media Mix segments and chips.
+const MIX_ORDER = ["Documents", "Press", "Photos", "Audio", "Video"];
 
-// One gradient per media type, bottom to top, from the brand palette. Fixed, so it never changes.
-// Paper is only a light accent at the very top.
-const BAR_GRADIENTS = {
-    Documents: "linear-gradient(to top, #08051c, #221854, #493bb2)",
-    Audio: "linear-gradient(to top, #221854, #342476)",
-    Video: "linear-gradient(to top, #342476, #493bb2 85%, #eef5fa)",
-    Press: "linear-gradient(to top, #08051c, #46417b)",
-    Photos: "linear-gradient(to top, #221854, #493bb2)",
+// One brand color per type, from darkest to lightest, so the types also
+// differ by lightness and not only by hue. Each one is a token in main.css
+// and keeps 3:1 against the bar's Paper rail.
+const MIX_COLORS = {
+    Documents: "var(--color-deep-space)",
+    Press: "var(--color-nebula)",
+    Photos: "var(--color-violet)",
+    Audio: "var(--color-iris)",
+    Video: "var(--color-lilac)",
 };
 
-// Last height of each bar, so a refresh grows it from there, not from zero.
-const lastBarHeights = {};
-
-// Smallest and largest circle in the Manual Review card, in pixels.
-const ORB_MIN = 24;
-const ORB_MAX = 96;
+// What is on screen now, so a refresh with the same numbers does not
+// play the ring or the Media Mix again from zero.
+let ringLeft = "100";
+let drawnMix = "";
 
 /** Say how long ago a timestamp was. One text key per case: word order changes by language. */
 function timeAgo(timestamp) {
@@ -42,87 +41,102 @@ function timeAgo(timestamp) {
     return t("time.days", { n: days });
 }
 
-/** Draw one bar per media type, with its count and share. The tallest is Violet. */
-function renderBreakdown(breakdown) {
-    const container = document.getElementById("media-breakdown");
-    container.innerHTML = "";
-    const counts = BREAKDOWN_ORDER.map((type) => breakdown[type] || 0);
+/** Media Mix: one bar split by type, and a chip per type that filters the Catalog. */
+function renderMediaMix(breakdown) {
+    const key = JSON.stringify([MIX_ORDER.map((type) => breakdown[type] || 0),
+        currentLanguage]);
+    if (key === drawnMix) {
+        return;
+    }
+    drawnMix = key;
+    const bar = document.getElementById("mix-bar");
+    const chips = document.getElementById("mix-chips");
+    bar.innerHTML = "";
+    chips.innerHTML = "";
+    const counts = MIX_ORDER.map((type) => breakdown[type] || 0);
     const total = counts.reduce((sum, count) => sum + count, 0);
-    const largest = Math.max(...counts);
-    // Only one bar is marked, even when two have the same count.
-    const topType = largest > 0
-        ? BREAKDOWN_ORDER[counts.indexOf(largest)] : null;
+    const described = [];
 
-    BREAKDOWN_ORDER.forEach((type, index) => {
+    MIX_ORDER.forEach((type, index) => {
         const count = counts[index];
         const percent = total ? Math.round((count / total) * 100) : 0;
-        // Bars are measured against the largest one, so it fills the track.
-        const height = largest ? Math.round((count / largest) * 100) : 0;
+        described.push(`${valueLabel(type)} ${percent}%`);
+        if (count) {
+            const segment = document.createElement("span");
+            segment.className = "mix-segment";
+            segment.style.flexGrow = count;
+            segment.style.backgroundColor = MIX_COLORS[type];
+            segment.title = `${valueLabel(type)}: ${count} (${percent}%)`;
+            bar.appendChild(segment);
+        }
 
-        const item = document.createElement("div");
-        item.className = type === topType
-            ? "breakdown-item is-top" : "breakdown-item";
-
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "mix-chip";
+        chip.dataset.type = type;
+        chip.style.setProperty("--chip-color", MIX_COLORS[type]);
+        const dot = document.createElement("span");
+        dot.className = "mix-dot";
+        dot.setAttribute("aria-hidden", "true");
+        const name = document.createElement("span");
+        name.textContent = valueLabel(type);
         const number = document.createElement("strong");
-        number.className = "breakdown-count";
         number.textContent = count;
-
-        const track = document.createElement("div");
-        track.className = "bar-track";
-        const fill = document.createElement("div");
-        fill.className = "bar-fill";
-        fill.style.backgroundImage = BAR_GRADIENTS[type];
-        track.appendChild(fill);
-
-        const header = document.createElement("div");
-        header.className = "breakdown-header";
-        const label = document.createElement("span");
-        label.className = "breakdown-type";
-        label.textContent = valueLabel(type);
-        // The full name on hover, for a name split in a narrow card.
-        label.title = label.textContent;
-        const value = document.createElement("span");
-        value.textContent = `${percent}%`;
-        header.append(label, value);
-
-        item.append(number, track, header);
-        container.appendChild(item);
-
-        growBar(fill, "--share", lastBarHeights[type] || "0%", `${height}%`);
-        lastBarHeights[type] = `${height}%`;
+        const share = document.createElement("span");
+        share.className = "mix-share";
+        share.textContent = `${percent}%`;
+        chip.append(dot, name, number, share);
+        chip.setAttribute("aria-label", t("dash.mix_open",
+            { type: valueLabel(type), n: count }));
+        chip.addEventListener("click", () => {
+            showView("catalog");
+            applyCatalogFilters({ media_type: type });
+        });
+        chips.appendChild(chip);
     });
+    bar.setAttribute("aria-label", described.join(", "));
+    // The segments grow from the left (CSS) each time the numbers change.
+    bar.classList.remove("is-growing");
+    bar.getBoundingClientRect();
+    bar.classList.add("is-growing");
 }
 
-/** Size the two circles by their share, and write the total under Documents Classified. */
-function renderShares(classified, review) {
+/** The ring of Documents Classified and the line under the number. */
+function renderClassified(classified, review) {
     const total = classified + review;
     document.getElementById("stat-total").textContent = total
         ? t("dash.of_total", { n: total }) : t("dash.no_documents");
-
-    // With no documents both circles keep the smallest size.
-    const orbSize = (count) => {
-        const share = total ? count / total : 0;
-        return `${Math.round(ORB_MIN + (ORB_MAX - ORB_MIN) * share)}px`;
-    };
-    document.getElementById("orb-classified").style
-        .setProperty("--size", orbSize(classified));
-    document.getElementById("orb-review").style
-        .setProperty("--size", orbSize(review));
+    const percent = total ? Math.round((classified / total) * 100) : 0;
+    document.getElementById("classified-percent").textContent = `${percent}%`;
+    // pathLength is 100, so the offset is what is left to fill.
+    const ring = document.querySelector("#classified-ring .ring-fill");
+    growBar(ring, "--ring-left", ringLeft, String(100 - percent));
+    ringLeft = String(100 - percent);
 }
 
-/** Write the finding under the title, with a button to the Manual Review tab. */
-function renderFinding(classified, review) {
-    document.getElementById("dash-finding")
-        .classList.toggle("hidden", classified + review === 0);
-    let text = t("dash.finding_done");
-    if (review === 1) {
-        text = t("dash.finding_review_one");
-    } else if (review > 1) {
-        text = t("dash.finding_review", { n: review });
-    }
-    document.getElementById("dash-finding-text").textContent = text;
-    document.getElementById("dash-review-button")
-        .classList.toggle("hidden", review === 0);
+/** The three sources with the most documents, each a link to its documents. */
+function renderTopSources(sources) {
+    const list = document.getElementById("top-sources");
+    list.innerHTML = "";
+    sources.forEach((item) => {
+        const row = document.createElement("li");
+        const link = document.createElement("button");
+        link.type = "button";
+        link.className = "link-button source-link";
+        link.textContent = item.source;
+        link.setAttribute("aria-label", t("chat.show_source",
+            { source: item.source }));
+        link.addEventListener("click", () => {
+            showView("catalog");
+            applyCatalogFilters({ source: item.source, sort: "newest" });
+        });
+        const count = document.createElement("span");
+        count.className = "source-count";
+        count.textContent = item.count;
+        row.append(link, count);
+        list.appendChild(row);
+    });
+    list.closest(".top-sources").classList.toggle("hidden", !sources.length);
 }
 
 function renderActivity(activity) {
@@ -146,7 +160,10 @@ function renderActivity(activity) {
     });
 
     const message = document.getElementById("dashboard-message");
-    message.textContent = activity.length ? "" : t("dash.empty");
+    // A project read where it is has no Drop Zone: it says how to start.
+    const inPlace = ["place", "catalog"].includes(projectFolderMode);
+    message.textContent = activity.length ? ""
+        : t(inPlace ? "catalog.empty_place" : "dash.empty");
     message.classList.toggle("hidden", activity.length > 0);
 }
 
@@ -159,19 +176,24 @@ async function loadDashboard() {
             stats.needs_manual_review);
         countUp(document.getElementById("stat-sources"),
             stats.sources_tracked);
-        renderShares(stats.documents_classified, stats.needs_manual_review);
-        renderFinding(stats.documents_classified, stats.needs_manual_review);
-        renderBreakdown(stats.media_type_breakdown);
+        renderClassified(stats.documents_classified,
+            stats.needs_manual_review);
+        document.getElementById("dash-review-button").classList
+            .toggle("hidden", stats.needs_manual_review === 0);
+        renderTopSources(stats.top_sources || []);
+        renderMediaMix(stats.media_type_breakdown);
         renderActivity(stats.recent_activity);
     } catch (error) {
         // Clear the previous project's numbers so they never mix with this one.
         ["stat-classified", "stat-review", "stat-sources"].forEach((id) => {
             countUp(document.getElementById(id), 0);
         });
-        renderShares(0, 0);
-        renderFinding(0, 0);
+        renderClassified(0, 0);
+        renderTopSources([]);
         document.getElementById("stat-total").textContent = "";
-        document.getElementById("media-breakdown").innerHTML = "";
+        document.getElementById("mix-bar").innerHTML = "";
+        document.getElementById("mix-chips").innerHTML = "";
+        drawnMix = "";
         document.getElementById("activity-list").innerHTML = "";
         const message = document.getElementById("dashboard-message");
         message.textContent = t("dash.load_failed",
@@ -180,7 +202,7 @@ async function loadDashboard() {
     }
 }
 
-// Review in Catalog: the Manual Review tab, with the other filters cleared.
+// Go Review: the Manual Review tab, with the other filters cleared.
 document.getElementById("dash-review-button").addEventListener("click", () => {
     showView("catalog");
     applyCatalogFilters({ status: "Manual Review" });

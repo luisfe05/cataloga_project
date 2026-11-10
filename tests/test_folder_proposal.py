@@ -126,8 +126,8 @@ def test_route_proposes_from_the_folder_with_no_description(
     """POST /projects/folders/suggest with folder: only what is there."""
     ai = FolderAI([{"name": "Press", "files": ["gazette_1998_race.txt"]},
                    {"name": "Editing", "files": []}])
-    monkeypatch.setattr("backend.routes.projects.create_client",
-                        lambda name, model, base_url=None: ai)
+    monkeypatch.setattr("backend.routes.projects.text_client",
+                        lambda settings: ai)
     root = research_folder(tmp_path / "Research")
     answer = empty_client.post("/projects/folders/suggest",
                                json={"folder": str(root)})
@@ -144,8 +144,8 @@ def test_route_says_so_when_nothing_fits(empty_client, tmp_path,
                                          monkeypatch):
     """Every proposed folder was empty: no tree, and an error to show."""
     ai = FolderAI([{"name": "Editing", "files": []}])
-    monkeypatch.setattr("backend.routes.projects.create_client",
-                        lambda name, model, base_url=None: ai)
+    monkeypatch.setattr("backend.routes.projects.text_client",
+                        lambda settings: ai)
     answer = empty_client.post("/projects/folders/suggest", json={
         "folder": str(research_folder(tmp_path / "Research"))})
     assert answer.status_code == 502
@@ -173,8 +173,7 @@ def test_only_archive_now_reads_the_folder_from_the_form():
         in settings
     folders = read_js("folders.js")
     assert 'const folder = archiveChoice() === "now"' in folders
-    request = ("suggestFolders(description, sheetIndustry(),\n"
-               "            folder)")
+    request = "suggestFolders(sheet, sheetIndustry(), folder)"
     assert request in folders
 
 

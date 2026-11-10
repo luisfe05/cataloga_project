@@ -85,20 +85,20 @@ def test_create_project(flask_client, app, tmp_path):
     assert settings["naming_template"] == "{number}_{topic}"
 
 
-def test_create_project_starts_with_ollama_cloud(flask_client, app,
-                                                 tmp_path):
-    """A new project always starts with Ollama Cloud."""
-    repo = CatalogRepository(
-        projects.catalog_path(app.config["PROJECT_FOLDER"]))
-    repo.set_active_provider("groq", "llama-3.1-8b-instant")
+def test_a_new_project_keeps_the_account_provider(flask_client, app,
+                                                  tmp_path):
+    """The provider belongs to the account: a new project does not reset it."""
+    flask_client.put("/settings/ai-provider", json={
+        "provider_name": "groq", "model": "llama-3.1-8b-instant"})
     folder = tmp_path / "Second"
     folder.mkdir()
     flask_client.post("/projects", json={"name": "Second",
                                          "folder": str(folder),
                                          "folders": FOLDERS})
     settings = flask_client.get("/settings").get_json()
-    assert settings["active_provider"] == "ollama"
-    assert settings["active_model"] == "gemma4:31b"
+    assert settings["research_name"] == "Second"
+    assert settings["active_provider"] == "groq"
+    assert settings["active_model"] == "llama-3.1-8b-instant"
 
 
 def test_projects_keep_separate_catalogs(flask_client, app, tmp_path):

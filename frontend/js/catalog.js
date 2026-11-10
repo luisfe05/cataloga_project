@@ -418,19 +418,24 @@ function addArchiveCells(row, doc) {
     if (catalogTreeMode) {
         // The folder is the file's place, so it only changes with Move.
         row.appendChild(makeFolderCell(doc));
-        row.appendChild(editMode ? makeEditableCell(doc, "keywords")
-            : makeCell(fieldText(doc, "keywords"), "keywords"));
+        const keywords = editMode ? makeEditableCell(doc, "keywords")
+            : makeCell(fieldText(doc, "keywords"), "keywords");
+        keywords.classList.add("more-col");
+        row.appendChild(keywords);
     } else if (editMode) {
         row.appendChild(makeSelectCell(doc, "category",
             projectCategories.map((item) => item.name),
             (value) => value || "—"));
         row.appendChild(makeSelectCell(doc, "subcategory",
             subcategoriesOf(doc.category), (value) => value || "—"));
-        row.appendChild(makeEditableCell(doc, "keywords"));
+        const keywords = makeEditableCell(doc, "keywords");
+        keywords.classList.add("more-col");
+        row.appendChild(keywords);
     } else {
         row.appendChild(makeCell(doc.category));
         row.appendChild(makeCell(doc.subcategory));
-        row.appendChild(makeCell(fieldText(doc, "keywords"), "keywords"));
+        row.appendChild(makeCell(fieldText(doc, "keywords"),
+            "keywords more-col"));
     }
     MORE_COLUMNS.forEach((field) => {
         let cell;
@@ -494,8 +499,17 @@ function renderTable(documents) {
         // The chat finds a row by its id to highlight it.
         row.dataset.id = doc.id;
         row.addEventListener("click", () => selectRow(doc.id));
+        // Reached with Tab: Enter selects the row, the space bar previews it
+        // (the space bar's preview is handled for the whole page below).
+        row.tabIndex = 0;
+        row.addEventListener("keydown", (event) => {
+            if (event.target === row && (event.key === "Enter"
+                    || event.key === " ")) {
+                selectRow(doc.id);
+            }
+        });
         // The two filename columns are locked, even in Edit Mode.
-        row.appendChild(makeCell(doc.original_filename));
+        row.appendChild(makeCell(doc.original_filename, "more-col"));
         row.appendChild(makeFilenameCell(doc));
         const typeCell = makeCell(valueLabel(doc.media_type), "media-type");
         // The stored value picks the icon in CSS, so it works in both languages.
@@ -552,7 +566,8 @@ function updateSourceFilter(allDocuments) {
     sources.forEach((source) => {
         const option = document.createElement("option");
         option.value = source;
-        option.textContent = source;
+        // "Source: Harbor Gazette", like "Media Type: All" beside it.
+        option.textContent = t("catalog.filter_source_one", { source: source });
         select.appendChild(option);
     });
     select.value = sources.includes(chosen) ? chosen : "";
@@ -770,9 +785,14 @@ async function loadCatalog() {
 
         if (allDocuments.length === 0) {
             // Without an AI provider, nothing can be classified yet.
-            showMessage(settings.active_provider
-                ? t("catalog.empty", { path: settings.target_directory })
-                : t("catalog.no_folder"));
+            // Read in place there is no Drop Zone to drop files into.
+            const inPlace = ["place", "catalog"].includes(settings.folder_mode);
+            let empty = t("catalog.no_folder");
+            if (settings.active_provider) {
+                empty = inPlace ? t("catalog.empty_place")
+                    : t("catalog.empty", { path: settings.target_directory });
+            }
+            showMessage(empty);
             return;
         }
 
@@ -804,7 +824,8 @@ async function applyCatalogFilters(filters) {
             .some((option) => option.value === filters.source)) {
         const option = document.createElement("option");
         option.value = filters.source;
-        option.textContent = filters.source;
+        option.textContent = t("catalog.filter_source_one",
+            { source: filters.source });
         source.appendChild(option);
     }
     source.value = filters.source || "";

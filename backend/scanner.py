@@ -11,10 +11,11 @@ import time
 
 from backend.config import projects
 from backend.db.catalog_repository import CatalogRepository
+from backend.config import ai_settings
 from backend.pipeline import (archive_rules, file_readers, folder_tree,
-                              organization_plan)
-from backend.pipeline.ai_providers import (create_client,
-                                           ready_media_client)
+                              naming, organization_plan, project_sheet,
+                              time_budget)
+from backend.pipeline.ai_providers import ready_media_client, text_client
 from backend.pipeline.classification_pipeline import ClassificationPipeline
 from backend.pipeline.file_organizer import CATALOG_FOLDER, FileOrganizer
 
@@ -163,7 +164,7 @@ class ScanJob:
 
 
 def folder_facts(folder):
-    """Count a folder's files and subfolders, and how much they weigh."""
+    """Count a folder's files and subfolders, and guess how they are named."""
     files = find_files(folder)
     folders = 0
     for current, dirs, names in os.walk(os.path.realpath(folder)):
@@ -172,7 +173,9 @@ def folder_facts(folder):
                    not os.path.islink(os.path.join(current, d))]
         folders += len(dirs)
     return {"files": len(files), "folders": folders,
-            "size": sum(os.path.getsize(path) for path in files)}
+            "size": sum(os.path.getsize(path) for path in files),
+            # Only the names: no file is opened and no AI is asked.
+            "naming_suggestion": naming.suggest_naming_style(files)}
 
 
 def suggest_tree_if_empty(repo, folder, client):
@@ -193,7 +196,24 @@ def suggest_tree_if_empty(repo, folder, client):
         logger.warning("could not suggest folders: %s", error)
 
 
-def scan_folder(job, folder, repo, client, owner=None):
+def write_sheet_if_empty(repo, folder, client):
+    """A project with no sheet gets one, once, when its reading starts.
+
+    A sheet the user wrote is never replaced.
+    """
+    if repo.get_project_sheet():
+        return
+    try:
+        # A provider that hangs must not hold the scan: same limit as a file.
+        sheet = time_budget.run_limited(
+            lambda: project_sheet.write_sheet(client, folder))
+        if sheet:
+            repo.save_config_value("project_sheet", sheet)
+    except (ValueError, OSError, time_budget.TimedOut) as error:
+        logger.warning("could not write the project sheet: %s", error)
+
+
+def scan_folder(job, folder, repo, client, owner=None, media_client=None):
     """Read every new or changed file of a folder in place, one by one."""
     files = find_files(folder)
     job.folder = folder
@@ -201,13 +221,15 @@ def scan_folder(job, folder, repo, client, owner=None):
     job.done = 0
     # Saved in the catalog: a closed app leaves it as "running".
     repo.save_config_value("scan_state", SCAN_RUNNING)
+    # Later left these empty: the reading fills them now, if still empty.
+    write_sheet_if_empty(repo, folder, client)
     suggest_tree_if_empty(repo, folder, client)
     # A job that starts paused waits for Resume before its first file.
     if job.status != "paused":
         job.status = "running"
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
                                       owner=owner, in_place=True,
-                                      media_client=ready_media_client(repo))
+                                      media_client=media_client)
     for number, path in enumerate(files, start=1):
         # Pause holds here; stop ends here.
         job.check_stalled()
@@ -239,14 +261,14 @@ def scan_folder(job, folder, repo, client, owner=None):
     repo.save_config_value("scan_state", SCAN_DONE)
 
 
-def read_new_files(folder, repo, client, owner=None):
+def read_new_files(folder, repo, client, owner=None, media_client=None):
     """Read the new or changed files of a folder in place, without a job.
 
     The watcher calls this every few seconds; the index makes it cheap.
     """
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
                                       owner=owner, in_place=True,
-                                      media_client=ready_media_client(repo))
+                                      media_client=media_client)
     documents = []
     for path in find_files(folder):
         try:
@@ -306,9 +328,9 @@ def apply_proposal(repo, organizer, doc):
     return apply_proposals(repo, organizer, [doc])[0]
 
 
-def watch_once(folder, repo, client, owner=None):
+def watch_once(folder, repo, client, owner=None, media_client=None):
     """Read what is new in an in-place project and apply the marked moves."""
-    documents = read_new_files(folder, repo, client, owner)
+    documents = read_new_files(folder, repo, client, owner, media_client)
     if repo.is_catalog_project():
         return documents
     marked = [doc for doc in documents if auto_apply_place(repo, doc)]
@@ -393,15 +415,17 @@ def start_scan(app, projects_path, owner=None):
         job.status = "idle"
         return job
     repo = CatalogRepository(projects.catalog_path(folder))
-    provider = repo.get_active_provider()
-    if not provider:
+    # One provider for every project: the account's, from General.
+    ai = ai_settings.load(projects_path)
+    client = text_client(ai)
+    if client is None:
         job.status = "idle"
         job.error = "no_provider"
         return job
-    client = create_client(provider["provider_name"], provider["model"])
     job.__init__()
     job.thread = threading.Thread(
-        target=scan_folder, args=(job, folder, repo, client, owner),
+        target=scan_folder,
+        args=(job, folder, repo, client, owner, ready_media_client(ai)),
         daemon=True)
     job.status = "running"
     job.thread.start()

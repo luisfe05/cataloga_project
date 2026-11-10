@@ -11,12 +11,11 @@ from backend.db.schema import init_db
 from backend.pipeline import (archive_rules, conventions, folder_proposal,
                               folder_tree, naming, project_sheet)
 from backend.pipeline import learn_folder as learn_folder_module
-from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
-                                           create_client)
+from backend.config import ai_settings
+from backend.pipeline.ai_providers import text_client
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import (error_response, project_status, projects_path,
                             session_user)
-from backend.routes.settings import clean_server_url
 
 projects_bp = Blueprint("projects", __name__)
 
@@ -147,20 +146,16 @@ def create_project():
             new_repo.save_config_value("folder_mode", folder_tree.PLACE_MODE)
         if numbered:
             new_repo.save_config_value("numbered_folders", 1)
-    # Archive Later leaves About this project and the AI provider off, so
-    # nothing from them is saved; Settings can fill them in before reading.
-    sheet = "" if later else project_sheet.clean_sheet(
-        body.get("project_sheet"))
+    # A sheet the user typed is kept, with Later too; with Later and none,
+    # the reading writes it when it starts.
+    sheet = project_sheet.clean_sheet(body.get("project_sheet"))
     if sheet:
         new_repo.save_config_value("project_sheet", sheet)
     if body.get("stamp_date_order") in archive_rules.STAMP_ORDERS:
         new_repo.save_config_value("stamp_date_order",
                                    body["stamp_date_order"])
-    # Ollama Cloud works without typing a key.
-    new_repo.set_active_provider(DEFAULT_PROVIDER, DEFAULT_MODEL)
-    server_url = "" if later else clean_server_url(body.get("server_url"))
-    if server_url:
-        new_repo.save_config_value("server_url", server_url)
+    # The AI provider and the server belong to the account (Settings >
+    # General), so nothing about them is saved in the project.
     projects.add_project(projects_path(), name, folder)
     if (in_place or catalog_only) and not later:
         # Reading starts now; the Catalog shows how far it is.
@@ -172,34 +167,34 @@ def create_project():
 
 @projects_bp.route("/projects/folders/suggest", methods=["POST"])
 def suggest_folders():
-    """Ask Ollama Cloud for a folder tree for a project. Saves nothing."""
+    """Ask the AI for a folder tree for a project. Saves nothing.
+
+    The context is About this project (project_sheet), the one text that
+    says what the project is. Without it, a folder is read on its own.
+    """
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
         body = {}
-    description = body.get("description")
-    if not isinstance(description, str):
-        description = ""
+    sheet = project_sheet.clean_sheet(body.get("project_sheet")) or ""
     folder = body.get("folder")
     folder = projects.normalize_folder(folder) \
         if isinstance(folder, str) and folder.strip() else ""
     if folder and not os.path.isdir(folder):
         return error_response("invalid_directory",
                               "The folder does not exist: " + folder, 400)
-    if not folder and not description.strip():
+    if not folder and not sheet:
         return error_response("missing_field",
-                              "description is required.", 400)
-    # The project does not exist yet, so the default provider is used.
-    client = create_client(DEFAULT_PROVIDER, DEFAULT_MODEL)
-    if not client.api_key:
+                              "project_sheet is required.", 400)
+    # The account's provider: the project does not exist yet.
+    client = text_client(ai_settings.load(projects_path()))
+    if client is None or not client.api_key:
         return error_response(
-            "no_api_key", "Ollama Cloud has no API key yet. Add one in "
+            "no_api_key", "The AI provider has no API key yet. Add one in "
             "Advanced settings, or build the folders by hand.", 400)
     if folder:
-        # A folder with files: only what is there, and the description is
+        # A folder with files: only what is there, and the sheet is
         # context. An organized folder keeps its own tree.
-        result = folder_proposal.propose(
-            client, folder,
-            description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH])
+        result = folder_proposal.propose(client, folder, sheet)
         if not result["folder_tree"]:
             return error_response(
                 "suggest_folders_failed",
@@ -213,8 +208,7 @@ def suggest_folders():
     industry = body.get("industry") if isinstance(body.get("industry"),
                                                   str) else ""
     tree = folder_tree.parse_tree_answer(client.send_folders_request(
-        description.strip()[:folder_tree.MAX_DESCRIPTION_LENGTH],
-        conventions.folder_hints(industry)))
+        sheet, conventions.folder_hints(industry)))
     if not tree:
         return error_response(
             "suggest_folders_failed",

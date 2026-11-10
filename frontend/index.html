@@ -144,10 +144,11 @@
                        data-i18n-placeholder="catalog.search">
             </div>
             <div class="home-tabs" role="tablist">
+                <!-- The same two names as the sidebar. -->
                 <button type="button" class="on" data-home-tab="home"
-                        data-i18n="home.tab_folders">Folders</button>
+                        data-i18n="nav.home">Home</button>
                 <button type="button" data-home-tab="catalog"
-                        data-i18n="home.tab_list">List</button>
+                        data-i18n="nav.catalog">Catalog List</button>
             </div>
             <div class="home-views" id="home-views">
                 <button type="button" class="on" data-home-view="icons"
@@ -222,7 +223,6 @@
         <div id="view-home" class="view">
             <div class="home-head">
                 <div>
-                    <small data-i18n="home.project">Project</small>
                     <h1 id="home-title"></h1>
                     <nav class="home-crumbs" id="home-crumbs"
                          data-i18n-label="home.path"></nav>
@@ -243,8 +243,6 @@
                 <div class="catalog-heading">
                     <h1 class="view-title project-title"
                         id="catalog-title"></h1>
-                    <p class="view-subtitle"
-                       data-i18n="nav.catalog">Catalog</p>
                 </div>
                 <section class="catalog-progress">
                     <p class="progress-title"
@@ -339,17 +337,21 @@
                 <table class="catalog-table" id="catalog-table">
                     <thead>
                         <tr>
-                            <th data-i18n="catalog.col_original">Original Filename</th>
-                            <th data-i18n="catalog.col_filename">Filename</th>
-                            <th data-i18n="catalog.col_type">Media Type</th>
-                            <th data-i18n="catalog.col_source">Source</th>
-                            <th data-i18n="catalog.col_date">Date</th>
-                            <th data-i18n="catalog.col_summary">Summary</th>
-                            <th id="col-category"
+                            <!-- Seven columns by default; the rest (more-col) come with More columns. -->
+                            <th class="more-col"
+                                data-i18n="catalog.col_original">Original Filename</th>
+                            <th class="col-filename"
+                                data-i18n="catalog.col_filename">Filename</th>
+                            <th class="col-type" data-i18n="catalog.col_type">Media Type</th>
+                            <th class="col-source" data-i18n="catalog.col_source">Source</th>
+                            <th class="col-date" data-i18n="catalog.col_date">Date</th>
+                            <th class="col-summary" data-i18n="catalog.col_summary">Summary</th>
+                            <th id="col-category" class="col-folder"
                                 data-i18n="catalog.col_category">Category</th>
                             <th class="sub-col"
                                 data-i18n="catalog.col_subcategory">Subcategory</th>
-                            <th data-i18n="catalog.col_keywords">Keywords</th>
+                            <th class="more-col"
+                                data-i18n="catalog.col_keywords">Keywords</th>
                             <th class="more-col"
                                 data-i18n="catalog.col_counterparty">Counterparty</th>
                             <th class="more-col"
@@ -366,7 +368,7 @@
                                 folder</th>
                             <th class="more-col"
                                 data-i18n="catalog.col_confidence">Confidence</th>
-                            <th data-i18n="catalog.col_status">Status</th>
+                            <th class="col-status" data-i18n="catalog.col_status">Status</th>
                         </tr>
                     </thead>
                     <tbody id="catalog-body"></tbody>
@@ -437,6 +439,9 @@
                     <button type="button" class="pill-button"
                             id="plan-skip-selected"
                             data-i18n="plan.skip_selected">Skip selected</button>
+                    <!-- Says what is missing while Apply is off. -->
+                    <span class="action-hint" id="plan-apply-hint"
+                          aria-live="polite"></span>
                     <button type="button" class="primary-button"
                             id="plan-apply"></button>
                 </div>
@@ -446,8 +451,9 @@
                 <table class="catalog-table plan-table" id="plan-table">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" id="plan-check-all"
-                                       aria-label="Select all"></th>
+                            <th class="plan-check-cell"><label class="check-hit"><input
+                                type="checkbox" id="plan-check-all"
+                                data-i18n-label="plan.select_all"></label></th>
                             <th data-i18n="plan.col_file">File</th>
                             <th data-i18n="plan.col_current">Current folder</th>
                             <th data-i18n="plan.col_proposed">Proposed folder</th>
@@ -477,54 +483,53 @@
             <div class="dashboard">
                 <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
 
-                <!-- The finding and its action (dashboard.js). Hidden with no documents. -->
-                <div class="dash-finding hidden" id="dash-finding">
-                    <p id="dash-finding-text"></p>
-                    <button type="button" class="primary-button hidden"
-                            id="dash-review-button"
-                            data-i18n="dash.review_button">Review in
-                        Catalog</button>
-                </div>
-
-                <!-- Wide cards take two of four columns. Numbers come from /dashboard/stats. -->
+                <!-- Four columns: two small cards and one wide card, then two full rows. -->
                 <div class="dash-grid">
-                    <section class="stat-card">
+                    <!-- The ring fills to the share of classified documents (dashboard.js). -->
+                    <section class="stat-card classified-card">
                         <p class="stat-label" data-i18n="dash.classified">Documents Classified</p>
-                        <p class="stat-number stat-hero"
-                           id="stat-classified">0</p>
+                        <div class="classified-row">
+                            <p class="stat-number" id="stat-classified">0</p>
+                            <div class="progress-ring" id="classified-ring">
+                                <svg viewBox="0 0 64 64" aria-hidden="true">
+                                    <circle class="ring-rail" cx="32" cy="32" r="28"></circle>
+                                    <circle class="ring-fill" cx="32" cy="32" r="28"
+                                            pathLength="100"></circle>
+                                </svg>
+                                <span class="ring-percent" id="classified-percent">0%</span>
+                            </div>
+                        </div>
                         <p class="stat-sub" id="stat-total"></p>
                     </section>
 
-                    <!-- Two blurred circles sized by their share of all documents. -->
-                    <section class="stat-card review-card card-wide">
+                    <!-- Violet to Midnight, drifting slowly. White and Ice text on it. -->
+                    <section class="stat-card review-card">
                         <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
-                        <div class="review-orbs" aria-hidden="true">
-                            <div class="orb-slot">
-                                <span class="orb orb-classified"
-                                      id="orb-classified"></span>
-                                <span class="orb-label"
-                                      data-i18n="value.Classified">Classified</span>
-                            </div>
-                            <div class="orb-slot">
-                                <span class="orb orb-review"
-                                      id="orb-review"></span>
-                                <span class="orb-label"
-                                      data-i18n="value.Manual Review">Manual Review</span>
-                            </div>
-                        </div>
                         <p class="stat-number stat-hero" id="stat-review">0</p>
+                        <button type="button" class="review-go" id="dash-review-button"
+                                data-i18n="dash.review_button">Go Review</button>
                     </section>
 
-                    <section class="stat-card">
-                        <p class="stat-label" data-i18n="dash.sources">Sources Tracked</p>
-                        <p class="stat-number" id="stat-sources">0</p>
+                    <section class="stat-card sources-card card-wide">
+                        <div class="stat-text">
+                            <p class="stat-label" data-i18n="dash.sources">Sources Tracked</p>
+                            <p class="stat-number stat-hero" id="stat-sources">0</p>
+                        </div>
+                        <!-- Top 3, each opens Catalog list with only its documents, newest first. -->
+                        <div class="top-sources">
+                            <p class="top-sources-title"
+                               data-i18n="dash.top_sources">Top sources</p>
+                            <ol class="top-sources-list" id="top-sources"></ol>
+                        </div>
                     </section>
 
-                    <section class="panel card-wide">
-                        <h2 data-i18n="dash.breakdown">Media Type Breakdown</h2>
-                        <div class="breakdown" id="media-breakdown"></div>
+                    <!-- One bar split by media type, and a chip per type that filters the Catalog. -->
+                    <section class="panel card-full">
+                        <h2 data-i18n="dash.media_mix">Media Mix</h2>
+                        <div class="mix-bar" id="mix-bar" role="img"></div>
+                        <div class="mix-chips" id="mix-chips"></div>
                     </section>
-                    <section class="panel card-wide">
+                    <section class="panel card-full">
                         <h2 data-i18n="dash.activity">Recent Activity</h2>
                         <ul class="activity-list" id="activity-list"></ul>
                         <p class="empty-message hidden"
@@ -535,251 +540,323 @@
         </div>
         <div id="view-settings" class="view hidden">
             <h1 class="view-title" data-i18n="nav.settings">Settings</h1>
-            <!-- One row per section: title and text on the left, fields on the right. -->
-            <form class="settings-form" id="settings-form">
+            <!-- Project: this project's sections. General: set once, for the whole app. -->
+            <div class="tabs settings-tabs" role="tablist">
+                <button type="button" class="tab active" role="tab"
+                        id="settings-tab-project" data-settings-tab="project"
+                        aria-selected="true" aria-controls="settings-project"
+                        data-i18n="settings.tab_project">Project</button>
+                <button type="button" class="tab" role="tab"
+                        id="settings-tab-general" data-settings-tab="general"
+                        aria-selected="false" aria-controls="settings-general"
+                        data-i18n="settings.tab_general">General</button>
+            </div>
 
-                <!-- Saved as soon as it changes, not with the Save button -->
-                <section class="settings-section">
-                    <div class="settings-intro">
-                        <h2 data-i18n="lang.title">Language</h2>
-                        <p class="hint" data-i18n="lang.hint">
-                            Changes the app's buttons, labels and messages. File names
-                            and summaries are not translated.
-                        </p>
+            <div class="settings-panel" id="settings-project" role="tabpanel"
+                 aria-labelledby="settings-tab-project">
+                <!-- New project only: how many sections are ready (settings.js). -->
+                <div class="settings-progress hidden" id="settings-progress">
+                    <p id="settings-progress-text" aria-live="polite"></p>
+                    <div class="progress-thin" aria-hidden="true">
+                        <span id="settings-progress-fill"></span>
                     </div>
-                    <div class="settings-fields">
-                        <select id="language-select" aria-label="Language">
-                            <option value="en" data-i18n="lang.en">English</option>
-                            <option value="es" data-i18n="lang.es">Español
-                                (Latinoamérica)</option>
-                        </select>
-                    </div>
-                </section>
+                </div>
 
-                <section class="settings-section">
-                    <div class="settings-intro">
-                        <!-- "Project settings" or "New project", set by settings.js -->
-                        <h2 id="project-form-title">Project settings</h2>
-                    </div>
-                    <div class="settings-fields">
-                        <label for="research-name"
-                               data-i18n="settings.research_name">Project Name</label>
-                        <input type="text" id="research-name" required>
-
-                        <label for="target-directory"><span
-                               data-i18n="settings.folder">Select a folder or drive</span>
-                            <span class="help-tip" data-help="help.folder"></span></label>
-                        <div class="folder-row">
-                            <input type="text" id="target-directory" required>
-                            <button type="button" class="secondary-button"
-                                    id="browse-button"
-                                    data-i18n="settings.browse">Browse</button>
-                        </div>
-                        <!-- Shown for an existing project, whose folder is fixed -->
-                        <p class="hint folder-locked hidden" id="folder-locked"
-                           data-i18n="project.folder_locked"></p>
-                        <!-- New projects only. Unticked, the folder is read in place. -->
-                        <label class="catalog-only-row folders-new-only"
-                               id="drop-zone-row">
-                            <input type="checkbox" id="use-drop-zone">
-                            <span data-i18n="project.mode_tree">Use a Drop Zone</span>
-                            <span class="help-tip" data-help="help.drop_zone"></span>
-                        </label>
-                        <!-- New project read where it is: its numbers, and when to read it (settings.js). -->
-                        <p class="folder-facts hidden" id="folder-facts"></p>
-                        <div class="archive-switch hidden" id="archive-switch">
-                            <span class="archive-switch-label" id="archive-switch-label"
-                                  data-i18n="project.archive_title">When should Cataloga
-                                read this folder?</span>
-                            <div class="archive-options" role="radiogroup"
-                                 aria-labelledby="archive-switch-label">
-                                <label><input type="radio" name="archive-when"
-                                              value="now">
-                                    <span data-i18n="project.archive_now">Now</span></label>
-                                <label><input type="radio" name="archive-when"
-                                              value="later" checked>
-                                    <span data-i18n="project.archive_later">Later</span></label>
+                <!-- One glass card per section. A finished card folds into one row with Change. -->
+                <form class="settings-form settings-cards" id="settings-form">
+                    <section class="settings-card" id="project-section">
+                        <div class="card-fold card-closed">
+                            <div class="card-row">
+                                <span class="card-check" aria-hidden="true"><span class="icon icon-check"></span></span>
+                                <strong class="card-row-title"
+                                        id="project-row-title">New Project</strong>
+                                <span class="card-row-text" id="project-summary"></span>
+                                <button type="button" class="link-button card-change"
+                                        data-i18n="settings.change">Change</button>
                             </div>
-                            <p class="hint" id="archive-hint"></p>
                         </div>
-                        <!-- Catalog only: read and catalog in place, never move or rename -->
-                        <label class="catalog-only-row" id="catalog-only-row">
-                            <input type="checkbox" id="catalog-only">
-                            <span data-i18n="project.catalog_only">Catalog only</span>
-                            <span class="help-tip" data-help="help.catalog_only"></span>
-                        </label>
-                        <!-- What the chosen folder looks like (projects.js inspect) -->
-                        <p class="form-message hidden" id="folder-advice"
-                           aria-live="polite"></p>
-                    </div>
-                </section>
-
-                <!-- The project sheet: what the work is. Goes into every AI request. -->
-                <section class="settings-section" id="sheet-section">
-                    <div class="settings-intro">
-                        <h2><span data-i18n="sheet.title">About this project</span>
-                            <span class="help-tip" data-help="help.sheet"></span></h2>
-                        <p class="hint" data-i18n="sheet.hint"></p>
-                    </div>
-                    <div class="settings-fields">
-                        <label for="project-sheet"
-                               data-i18n="sheet.label">Project sheet</label>
-                        <textarea id="project-sheet" rows="6" maxlength="1500"
-                                  data-i18n-placeholder="sheet.placeholder"></textarea>
-                        <div class="form-buttons">
-                            <button type="button" class="secondary-button"
-                                    id="suggest-sheet"
-                                    data-i18n="sheet.suggest">Write it for me</button>
-                        </div>
-                        <p class="form-message" id="sheet-message"
-                           aria-live="polite"></p>
-                    </div>
-                </section>
-
-                <!-- File names: 4 methods or a custom template. Saved with Save. -->
-                <section class="settings-section" id="naming-section">
-                    <div class="settings-intro">
-                        <h2><span data-i18n="naming.title">File names</span>
-                            <span class="help-tip" data-help="naming.help_names"></span></h2>
-                    </div>
-                    <div class="settings-fields">
-                        <div class="naming-options" id="naming-options">
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method" value="m1">
-                                <span data-i18n="naming.m1">Date and topic</span>
-                                <code data-i18n="naming.m1_example"></code>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method" value="m2">
-                                <span data-i18n="naming.m2">Source, date and topic</span>
-                                <code data-i18n="naming.m2_example"></code>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method" value="m3">
-                                <span data-i18n="naming.m3">Number and topic</span>
-                                <code data-i18n="naming.m3_example"></code>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method" value="m4">
-                                <span data-i18n="naming.m4">Topic, source, date and number</span>
-                                <code data-i18n="naming.m4_example"></code>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method" value="m5">
-                                <span data-i18n="naming.m5">Event and year, plus a
-                                    number</span>
-                                <code data-i18n="naming.m5_example"></code>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method"
-                                       value="custom">
-                                <span data-i18n="naming.custom">Custom</span>
-                            </label>
-                            <label class="naming-option">
-                                <input type="radio" name="naming-method"
-                                       value="keep">
-                                <span data-i18n="naming.keep">Keep original
-                                    names</span>
-                                <code data-i18n="naming.keep_example"></code>
-                            </label>
-                        </div>
-
-                        <!-- Custom: parts added in order by clicking, no braces to type (settings.js). -->
-                        <div class="naming-custom hidden" id="naming-custom">
-                            <span class="field-label" data-i18n="naming.blocks_add">Click the
-                                parts in order</span>
-                            <div class="naming-blocks" id="naming-blocks"></div>
-                            <span class="field-label" data-i18n="naming.chosen">Your file
-                                name</span>
-                            <div class="naming-chosen" id="naming-chosen"></div>
-                            <p class="hint hidden" id="naming-legacy"></p>
-                            <div class="naming-separator">
-                                <span data-i18n="naming.separator">Separator</span>
-                                <label><input type="radio" name="naming-separator"
-                                              value="_" checked> <code>_</code></label>
-                                <label><input type="radio" name="naming-separator"
-                                              value="-"> <code>-</code></label>
+                        <div class="card-fold card-open">
+                            <div>
+                                <!-- "Project Settings" or "New Project", set by settings.js -->
+                                <h2 id="project-form-title">Project Settings</h2>
+                                <div class="field-row">
+                                    <div class="field">
+                                        <label for="target-directory"
+                                               data-i18n="settings.folder">Select a folder or drive</label>
+                                        <div class="folder-row">
+                                            <input type="text" id="target-directory" required>
+                                            <button type="button" class="secondary-button"
+                                                    id="browse-button"
+                                                    data-i18n="settings.browse">Browse</button>
+                                        </div>
+                                        <!-- Project settings only: why the folder is fixed -->
+                                        <p class="hint folder-locked hidden" id="folder-locked"
+                                           data-i18n="project.folder_locked"></p>
+                                    </div>
+                                    <div class="field">
+                                        <label for="research-name"
+                                               data-i18n="settings.research_name">Project Name</label>
+                                        <input type="text" id="research-name" required>
+                                    </div>
+                                </div>
+                                <div class="field-row option-row">
+                                    <!-- New projects only. Unticked, the folder is read in place. -->
+                                    <label class="catalog-only-row folders-new-only"
+                                           id="drop-zone-row">
+                                        <input type="checkbox" id="use-drop-zone">
+                                        <span data-i18n="project.mode_tree">Use a Drop Zone</span>
+                                        <span class="help-tip" data-help="help.drop_zone"></span>
+                                    </label>
+                                    <!-- New project read where it is: when to read it (settings.js). -->
+                                    <div class="archive-switch hidden" id="archive-switch">
+                                        <span class="archive-switch-label" id="archive-switch-label"><span
+                                              data-i18n="project.archive_title">When should
+                                                Cataloga read this folder?</span>
+                                            <span class="help-tip" data-help="help.archive"></span></span>
+                                        <div class="archive-options" role="radiogroup"
+                                             aria-labelledby="archive-switch-label">
+                                            <label><input type="radio" name="archive-when"
+                                                          value="now">
+                                                <span data-i18n="project.archive_now">Now</span></label>
+                                            <label><input type="radio" name="archive-when"
+                                                          value="later" checked>
+                                                <span data-i18n="project.archive_later">Later</span></label>
+                                        </div>
+                                    </div>
+                                    <!-- Catalog only: read and catalog in place, never move or rename -->
+                                    <label class="catalog-only-row" id="catalog-only-row">
+                                        <input type="checkbox" id="catalog-only">
+                                        <span data-i18n="project.catalog_only">Catalog only</span>
+                                    </label>
+                                </div>
+                                <p class="folder-facts hidden" id="folder-facts"></p>
+                                <!-- What the chosen folder looks like (inspect) -->
+                                <p class="form-message hidden" id="folder-advice"
+                                   aria-live="polite"></p>
+                                <div class="card-foot">
+                                    <button type="button" class="link-button card-confirm"
+                                            data-i18n="settings.done">Done</button>
+                                </div>
                             </div>
-                            <span class="help-tip" data-help="naming.extension_note"></span>
                         </div>
+                    </section>
 
-                        <div class="naming-separator naming-style">
-                            <span data-i18n="naming.style">Style</span>
-                            <span class="help-tip" data-help="naming.help_style"></span>
-                            <label><input type="radio" name="naming-style"
-                                          value="lower" checked>
-                                <code>topic-name</code></label>
-                            <label><input type="radio" name="naming-style"
-                                          value="title">
-                                <code>Topic-Name</code></label>
-                        </div>
-                        <p class="naming-preview">
-                            <span data-i18n="naming.preview">Preview</span>:
-                            <code id="naming-preview"></code>
-                            <span class="help-tip" data-help="naming.help_repeats"></span>
-                        </p>
-                        <!-- How a date stamped on a photo reads: 11 13 '97 -->
-                        <div class="naming-separator stamp-order">
-                            <span data-i18n="naming.stamp_order">Dates stamped on
-                                photos</span>
-                            <span class="help-tip" data-help="naming.help_dates"></span>
-                            <label><input type="radio" name="stamp-order"
-                                          value="month" checked>
-                                <span data-i18n="naming.stamp_month">Month first
-                                    (11 13 '97)</span></label>
-                            <label><input type="radio" name="stamp-order"
-                                          value="day">
-                                <span data-i18n="naming.stamp_day">Day first
-                                    (13 11 97)</span></label>
-                        </div>
-                        <p class="form-message error" id="naming-error"></p>
-                    </div>
-                </section>
+                    <!-- Dotted places for the next three cards, until a folder is chosen. -->
+                    <p class="card-wait-line" id="cards-wait-line"
+                       data-i18n="settings.wait_line">These appear when you choose a
+                        folder.</p>
+                    <p class="card-placeholder" id="sheet-placeholder"
+                       data-i18n="sheet.title">About This Project</p>
 
-                <!-- The project's folder tree (folders.js). New projects and tree projects only. -->
-                <section class="settings-section hidden" id="folders-section">
-                    <div class="settings-intro">
-                        <h2 data-i18n="folders.title">Folders</h2>
-                        <p class="hint" data-i18n="folders.hint"></p>
-                    </div>
-                    <div class="settings-fields">
-                        <label for="project-description"
-                               data-i18n="folders.description">What is this project about?</label>
-                        <textarea id="project-description" rows="2" maxlength="300"
-                                  data-i18n-placeholder="folders.description_placeholder"></textarea>
-                        <div class="form-buttons folders-new-only">
-                            <button type="button" class="secondary-button"
-                                    id="suggest-folders"
-                                    data-i18n="folders.suggest">Suggest folders</button>
-                            <button type="button" class="secondary-button"
-                                    id="file-type-folders"
-                                    data-i18n="folders.file_types">Start from file types</button>
-                            <button type="button" class="secondary-button"
-                                    id="learn-folders"
-                                    data-i18n="folders.learn">Learn from my folder</button>
+                    <!-- The project sheet: what the work is. Goes into every AI request. -->
+                    <section class="settings-card" id="sheet-section">
+                        <div class="card-fold card-closed">
+                            <div class="card-row">
+                                <span class="card-check" aria-hidden="true"><span class="icon icon-check"></span></span>
+                                <strong class="card-row-title" data-i18n="sheet.title">About
+                                    This Project</strong>
+                                <span class="card-row-text" id="sheet-summary"></span>
+                                <button type="button" class="link-button card-change"
+                                        data-i18n="settings.change">Change</button>
+                            </div>
                         </div>
-                        <p class="form-message" id="folders-message"
-                           aria-live="polite"></p>
-                        <div class="folder-list" id="folder-list"></div>
-                        <button type="button" class="secondary-button add-category"
-                                id="add-folder"
-                                data-i18n="folders.add">Add folder</button>
-                        <label class="checkbox-row">
-                            <input type="checkbox" id="numbered-folders">
-                            <span data-i18n="folders.numbered">Number new folders
-                                (01_, 02_)</span>
-                        </label>
-                        <p class="hint" data-i18n="folders.rules"></p>
-                    </div>
-                </section>
+                        <div class="card-fold card-open">
+                            <div>
+                                <h2 id="sheet-title" data-i18n="sheet.title">About This Project</h2>
+                                <!-- Named by the card's title: one name for this text. -->
+                                <textarea id="project-sheet" rows="6" maxlength="1500"
+                                          aria-labelledby="sheet-title"
+                                          data-i18n-placeholder="sheet.placeholder"></textarea>
+                                <!-- Later: the reading writes it, so a note replaces the button. -->
+                                <p class="hint later-note hidden" id="sheet-later"
+                                   data-i18n="sheet.later">Cataloga will write this when it
+                                    reads the folder.</p>
+                                <div class="form-buttons" id="sheet-buttons">
+                                    <button type="button" class="secondary-button"
+                                            id="suggest-sheet"
+                                            data-i18n="sheet.suggest">Write it for me</button>
+                                </div>
+                                <p class="form-message" id="sheet-message"
+                                   aria-live="polite"></p>
+                                <div class="card-foot">
+                                    <button type="button" class="link-button card-confirm"
+                                            data-i18n="settings.done">Done</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- Industry and categories of the active project. Saved with Save. -->
-                <section class="settings-section" id="categories-section">
-                    <div class="settings-intro">
+                    <p class="card-placeholder" id="naming-placeholder"
+                       data-i18n="naming.title">File Names</p>
+
+                    <!-- File names: 5 methods, Custom, or keep. Saved with Save. -->
+                    <section class="settings-card" id="naming-section">
+                        <div class="card-fold card-closed">
+                            <div class="card-row">
+                                <span class="card-check" aria-hidden="true"><span class="icon icon-check"></span></span>
+                                <strong class="card-row-title" data-i18n="naming.title">File
+                                    Names</strong>
+                                <span class="card-row-text" id="naming-summary"></span>
+                                <button type="button" class="link-button card-change"
+                                        data-i18n="settings.change">Change</button>
+                            </div>
+                        </div>
+                        <div class="card-fold card-open">
+                            <div>
+                                <h2><span data-i18n="naming.title">File Names</span>
+                                    <span class="help-tip" data-help="naming.help_names"></span></h2>
+                                <div class="naming-options" id="naming-options">
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method" value="m1">
+                                        <span data-i18n="naming.m1">Date and topic</span>
+                                        <code data-i18n="naming.m1_example"></code>
+                                    </label>
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method" value="m2">
+                                        <span data-i18n="naming.m2">Source, date and topic</span>
+                                        <code data-i18n="naming.m2_example"></code>
+                                    </label>
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method" value="m3">
+                                        <span data-i18n="naming.m3">Number and topic</span>
+                                        <code data-i18n="naming.m3_example"></code>
+                                    </label>
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method" value="m4">
+                                        <span data-i18n="naming.m4">Topic, source, date and number</span>
+                                        <code data-i18n="naming.m4_example"></code>
+                                    </label>
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method" value="m5">
+                                        <span data-i18n="naming.m5">Event and year, plus a
+                                            number</span>
+                                        <code data-i18n="naming.m5_example"></code>
+                                    </label>
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method"
+                                               value="custom">
+                                        <span data-i18n="naming.custom">Custom</span>
+                                    </label>
+                                    <label class="naming-option">
+                                        <input type="radio" name="naming-method"
+                                               value="keep">
+                                        <span data-i18n="naming.keep">Keep original
+                                            names</span>
+                                        <code data-i18n="naming.keep_example"></code>
+                                    </label>
+                                </div>
+
+                                <!-- Custom: parts added in order by clicking, no braces to type (settings.js). -->
+                                <div class="naming-custom hidden" id="naming-custom">
+                                    <span class="field-label" data-i18n="naming.blocks_add">Click the
+                                        parts in order</span>
+                                    <div class="naming-blocks" id="naming-blocks"></div>
+                                    <span class="field-label" data-i18n="naming.chosen">Your file
+                                        name</span>
+                                    <div class="naming-chosen" id="naming-chosen"></div>
+                                    <p class="hint hidden" id="naming-legacy"></p>
+                                    <div class="naming-separator">
+                                        <span data-i18n="naming.separator">Separator</span>
+                                        <label><input type="radio" name="naming-separator"
+                                                      value="_" checked> <code>_</code></label>
+                                        <label><input type="radio" name="naming-separator"
+                                                      value="-"> <code>-</code></label>
+                                    </div>
+                                </div>
+
+                                <div class="naming-separator naming-style">
+                                    <span data-i18n="naming.style">Style</span>
+                                    <label><input type="radio" name="naming-style"
+                                                  value="lower" checked>
+                                        <code>topic-name</code></label>
+                                    <label><input type="radio" name="naming-style"
+                                                  value="title">
+                                        <code>Topic-Name</code></label>
+                                </div>
+                                <p class="naming-preview">
+                                    <span data-i18n="naming.preview">Preview</span>:
+                                    <code id="naming-preview"></code>
+                                </p>
+                                <!-- How a date stamped on a photo reads: 11 13 '97 -->
+                                <div class="naming-separator stamp-order">
+                                    <span data-i18n="naming.stamp_order">Dates stamped on
+                                        photos</span>
+                                    <label><input type="radio" name="stamp-order"
+                                                  value="month" checked>
+                                        <span data-i18n="naming.stamp_month">Month first
+                                            (11 13 '97)</span></label>
+                                    <label><input type="radio" name="stamp-order"
+                                                  value="day">
+                                        <span data-i18n="naming.stamp_day">Day first
+                                            (13 11 97)</span></label>
+                                </div>
+                                <p class="form-message error" id="naming-error"></p>
+                                <div class="card-foot">
+                                    <button type="button" class="link-button card-confirm"
+                                            data-i18n="settings.done">Done</button>
+                                    <span class="card-optional"
+                                          data-i18n="settings.optional">Optional · Suggested</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <p class="card-placeholder" id="folders-placeholder"
+                       data-i18n="folders.title">Folder Names</p>
+
+                    <!-- The project's folder tree (folders.js). New projects and tree projects only. -->
+                    <section class="settings-card hidden" id="folders-section">
+                        <div class="card-fold card-closed">
+                            <div class="card-row">
+                                <span class="card-check" aria-hidden="true"><span class="icon icon-check"></span></span>
+                                <strong class="card-row-title" data-i18n="folders.title">Folder
+                                    Names</strong>
+                                <span class="card-row-text" id="folders-summary"></span>
+                                <button type="button" class="link-button card-change"
+                                        data-i18n="settings.change">Change</button>
+                            </div>
+                        </div>
+                        <div class="card-fold card-open">
+                            <div>
+                                <h2><span data-i18n="folders.title">Folder Names</span>
+                                    <span class="help-tip" data-help="help.folders"></span></h2>
+                                <!-- Later: the reading proposes them, so a note replaces the buttons. -->
+                                <p class="hint later-note hidden" id="folders-later"
+                                   data-i18n="folders.later">Folders are proposed when
+                                    Cataloga reads the folder.</p>
+                                <div class="form-buttons folders-new-only" id="folder-buttons">
+                                    <button type="button" class="secondary-button"
+                                            id="suggest-folders"
+                                            data-i18n="folders.suggest">Suggest folders</button>
+                                    <button type="button" class="secondary-button"
+                                            id="file-type-folders"
+                                            data-i18n="folders.file_types">Start from file types</button>
+                                </div>
+                                <p class="form-message" id="folders-message"
+                                   aria-live="polite"></p>
+                                <div class="folder-list" id="folder-list"></div>
+                                <button type="button" class="secondary-button add-category"
+                                        id="add-folder"
+                                        data-i18n="folders.add">Add folder</button>
+                                <label class="checkbox-row">
+                                    <input type="checkbox" id="numbered-folders">
+                                    <span data-i18n="folders.numbered">Number new folders
+                                        (01_, 02_)</span>
+                                </label>
+                                <div class="card-foot">
+                                    <button type="button" class="link-button card-confirm"
+                                            data-i18n="settings.done">Done</button>
+                                    <span class="card-optional"
+                                          data-i18n="settings.optional">Optional · Suggested</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Industry and categories of a project made before folder trees. -->
+                    <section class="settings-card" id="categories-section">
                         <h2 data-i18n="categories.title">Categories</h2>
                         <p class="hint" data-i18n="categories.hint"></p>
-                    </div>
-                    <div class="settings-fields">
                         <label for="industry"
                                data-i18n="categories.industry">Industry</label>
                         <div class="folder-row">
@@ -795,157 +872,173 @@
                         <button type="button" class="secondary-button add-category"
                                 id="add-category"
                                 data-i18n="categories.add">Add category</button>
-                        <p class="hint" data-i18n="categories.rules"></p>
+                    </section>
+
+                    <!-- Always at the bottom of the panel. Create works with a folder and a name. -->
+                    <div class="settings-actions">
+                        <p class="form-message" id="settings-message"></p>
+                        <!-- Says what is missing while Create project is off. -->
+                        <span class="action-hint" id="save-hint"
+                              aria-live="polite"></span>
+                        <div class="form-buttons">
+                            <button type="button" class="secondary-button"
+                                    id="cancel-new-project"
+                                    data-i18n="project.cancel">Cancel</button>
+                            <button type="submit" class="primary-button"
+                                    id="save-button">Save</button>
+                        </div>
                     </div>
-                </section>
+                </form>
 
-                <section class="settings-section" id="ai-section">
-                    <div class="settings-intro">
-                        <h2><span data-i18n="settings.ai_title">AI Provider</span>
-                            <span class="help-tip" data-help="help.ai_provider"></span></h2>
-                        <p class="hint" id="ai-status"></p>
-                    </div>
-                    <div class="settings-fields">
-                        <!-- Closed unless the provider still needs an API key (settings.js). -->
-                        <details class="advanced-settings" id="ai-advanced">
-                            <summary data-i18n="settings.advanced">Advanced
-                                settings</summary>
-                            <div class="advanced-fields">
-                                <p class="hint" data-i18n="settings.ai_hint">Use
-                                    another AI provider with your own API key.</p>
-
-                                <h3 data-i18n="settings.ai_text_title">Text and
-                                    images</h3>
-                                <label for="ai-provider"
-                                       data-i18n="settings.ai_provider">AI
-                                    Provider</label>
-                                <select id="ai-provider"></select>
-
-                                <label for="api-key"
-                                       data-i18n="settings.api_key">API Key</label>
-                                <input type="password" id="api-key"
-                                       autocomplete="off">
-
-                                <label for="ai-model"
-                                       data-i18n="settings.model">Model</label>
-                                <select id="ai-model"></select>
-
-                                <h3 data-i18n="settings.ai_fallback_title">Fallback
-                                    (optional)</h3>
-                                <p class="hint"
-                                   data-i18n="settings.ai_fallback_hint"></p>
-                                <label for="fallback-provider"
-                                       data-i18n="settings.ai_provider">AI
-                                    Provider</label>
-                                <select id="fallback-provider"></select>
-
-                                <label for="fallback-key"
-                                       data-i18n="settings.api_key">API Key</label>
-                                <input type="password" id="fallback-key"
-                                       autocomplete="off">
-
-                                <label for="fallback-model"
-                                       data-i18n="settings.model">Model</label>
-                                <select id="fallback-model"></select>
-
-                                <h3 data-i18n="settings.ai_media_title">Audio and
-                                    video</h3>
-                                <p class="hint"
-                                   data-i18n="settings.ai_media_hint"></p>
-                                <label for="media-provider"
-                                       data-i18n="settings.ai_provider">AI
-                                    Provider</label>
-                                <select id="media-provider"></select>
-
-                                <label for="media-key"
-                                       data-i18n="settings.api_key">API Key</label>
-                                <input type="password" id="media-key"
-                                       autocomplete="off">
-
-                                <label for="media-model"
-                                       data-i18n="settings.model">Model</label>
-                                <select id="media-model"></select>
-
-                                <h3 data-i18n="settings.server_title">Server
-                                    (optional)</h3>
-                                <p class="hint"
-                                   data-i18n="settings.server_hint"></p>
-                                <label for="server-url"
-                                       data-i18n="settings.server_url">Server
-                                    URL</label>
-                                <input type="url" id="server-url"
-                                       placeholder="https://"
-                                       autocomplete="off">
-                            </div>
-                        </details>
-                    </div>
-                </section>
-
-                <!-- Save applies to every section above except Language. -->
-                <div class="settings-actions">
-                    <div class="form-buttons">
-                        <button type="submit" class="primary-button"
-                                id="save-button">Save</button>
-                        <!-- Only while creating a project -->
-                        <button type="button" class="secondary-button hidden"
-                                id="cancel-new-project"
-                                data-i18n="project.cancel">Cancel</button>
-                    </div>
-                    <p class="form-message" id="settings-message"></p>
-                </div>
-            </form>
-
-            <!-- Account: one for the whole app. Its own form, so Save never sends it. -->
-            <form class="settings-form" id="password-form">
-                <section class="settings-section">
-                    <div class="settings-intro">
-                        <h2><span data-i18n="account.title">Account</span>
-                            <span class="help-tip" data-help="help.account"></span></h2>
-                        <p class="hint" data-i18n="account.hint">One account for
-                            the whole app, for every project.</p>
-                    </div>
-                    <div class="settings-fields">
-                        <label for="account-username"
-                               data-i18n="auth.username">Username</label>
-                        <input type="text" id="account-username" readonly>
-
-                        <h3 data-i18n="account.change_password">Change password</h3>
-                        <label for="current-password"
-                               data-i18n="account.current_password">Current
-                            password</label>
-                        <input type="password" id="current-password"
-                               autocomplete="current-password">
-                        <label for="new-password"
-                               data-i18n="account.new_password">New password</label>
-                        <input type="password" id="new-password"
-                               autocomplete="new-password">
-                        <label for="confirm-new-password"
-                               data-i18n="auth.confirm_password">Confirm
-                            password</label>
-                        <input type="password" id="confirm-new-password"
-                               autocomplete="new-password">
-                        <button type="submit" class="primary-button"
-                                id="change-password-button"
-                                data-i18n="account.change_password">Change
-                            password</button>
-                        <p class="form-message" id="password-message"></p>
-                    </div>
-                </section>
-            </form>
-
-            <!-- Only for the active project, always last. The text explains what Remove does. -->
-            <section class="settings-section remove-project hidden"
-                     id="remove-project-section">
-                <div class="settings-intro">
-                    <h2><span data-i18n="project.remove">Remove project</span>
-                        <span class="help-tip" data-help="help.remove_project"></span></h2>
-                </div>
-                <div class="settings-fields">
+                <!-- Only for the active project, always last. -->
+                <section class="settings-card remove-project hidden"
+                         id="remove-project-section">
+                    <h2 data-i18n="project.remove_heading">Remove Project</h2>
                     <button type="button" class="secondary-button"
                             id="remove-project-button"
                             data-i18n="project.remove">Remove project</button>
+                </section>
+            </div>
+
+            <!-- General: Language, AI Provider and Account. Each field saves on its own. -->
+            <div class="settings-panel hidden" id="settings-general" role="tabpanel"
+                 aria-labelledby="settings-tab-general">
+                <div class="settings-form settings-cards">
+                    <div class="card-pair">
+                        <section class="settings-card" id="language-section">
+                            <h2><span data-i18n="lang.title">Language</span>
+                                <span class="help-tip" data-help="help.language"></span></h2>
+                            <div class="field-with-note">
+                                <select id="language-select" aria-label="Language"
+                                        data-i18n-label="lang.title">
+                                    <option value="en" data-i18n="lang.en">English</option>
+                                    <option value="es" data-i18n="lang.es">Español
+                                        (Latinoamérica)</option>
+                                </select>
+                            </div>
+                        </section>
+
+                        <section class="settings-card" id="ai-section">
+                            <h2 data-i18n="settings.ai_title">AI Provider</h2>
+                            <!-- Filled from GET /settings/ai-status. Never the key itself. -->
+                            <p class="ai-status-line" id="ai-status" data-state="loading">
+                                <span class="status-dot" aria-hidden="true"></span>
+                                <span id="ai-status-text"></span>
+                                <button type="button" class="link-button hidden"
+                                        id="ai-status-open"
+                                        data-i18n="settings.ai_add_key">Add a key</button>
+                            </p>
+                            <details class="advanced-settings" id="ai-advanced">
+                                <summary data-i18n="settings.advanced">Advanced
+                                    settings</summary>
+                                <div class="advanced-fields">
+                                    <h3 data-i18n="settings.ai_text_title">Text and
+                                        images</h3>
+                                    <label for="ai-provider"
+                                           data-i18n="settings.ai_provider">AI
+                                        Provider</label>
+                                    <select id="ai-provider"></select>
+
+                                    <label for="api-key"
+                                           data-i18n="settings.api_key">API Key</label>
+                                    <input type="password" id="api-key"
+                                           autocomplete="off">
+                                    <p class="key-status hidden" id="api-key-status"
+                                       data-i18n="settings.key_saved_line">A key is saved.</p>
+
+                                    <label for="ai-model"
+                                           data-i18n="settings.model">Model</label>
+                                    <select id="ai-model"></select>
+
+                                    <h3 data-i18n="settings.ai_fallback_title">Fallback
+                                        (optional)</h3>
+                                    <p class="hint" data-i18n="settings.ai_fallback_hint"></p>
+                                    <label for="fallback-provider"
+                                           data-i18n="settings.ai_provider">AI
+                                        Provider</label>
+                                    <select id="fallback-provider"></select>
+
+                                    <label for="fallback-key"
+                                           data-i18n="settings.api_key">API Key</label>
+                                    <input type="password" id="fallback-key"
+                                           autocomplete="off">
+                                    <p class="key-status hidden" id="fallback-key-status"
+                                       data-i18n="settings.key_saved_line">A key is saved.</p>
+
+                                    <label for="fallback-model"
+                                           data-i18n="settings.model">Model</label>
+                                    <select id="fallback-model"></select>
+
+                                    <h3 data-i18n="settings.ai_media_title">Audio and
+                                        video</h3>
+                                    <p class="hint" data-i18n="settings.ai_media_hint"></p>
+                                    <label for="media-provider"
+                                           data-i18n="settings.ai_provider">AI
+                                        Provider</label>
+                                    <select id="media-provider"></select>
+
+                                    <label for="media-key"
+                                           data-i18n="settings.api_key">API Key</label>
+                                    <input type="password" id="media-key"
+                                           autocomplete="off">
+                                    <p class="key-status hidden" id="media-key-status"
+                                       data-i18n="settings.key_saved_line">A key is saved.</p>
+
+                                    <label for="media-model"
+                                           data-i18n="settings.model">Model</label>
+                                    <select id="media-model"></select>
+
+                                    <h3 data-i18n="settings.server_title">Server
+                                        (optional)</h3>
+                                    <p class="hint" data-i18n="settings.server_hint"></p>
+                                    <label for="server-url"
+                                           data-i18n="settings.server_url">Server
+                                        URL</label>
+                                    <input type="url" id="server-url"
+                                           placeholder="https://"
+                                           autocomplete="off">
+                                </div>
+                            </details>
+                        </section>
+                    </div>
+
+                    <!-- Account: its own form, so nothing else sends the password. -->
+                    <form id="password-form">
+                        <section class="settings-card" id="account-section">
+                            <h2 data-i18n="account.title">Account</h2>
+                            <label for="account-username"
+                                   data-i18n="auth.username">Username</label>
+                            <input type="text" id="account-username" readonly>
+                            <button type="button" class="secondary-button"
+                                    id="open-password"
+                                    aria-expanded="false" aria-controls="password-fields"
+                                    data-i18n="account.change_password">Change
+                                password</button>
+                            <div class="password-fields hidden" id="password-fields">
+                                <label for="current-password"
+                                       data-i18n="account.current_password">Current
+                                    password</label>
+                                <input type="password" id="current-password"
+                                       autocomplete="current-password">
+                                <label for="new-password"
+                                       data-i18n="account.new_password">New password</label>
+                                <input type="password" id="new-password"
+                                       autocomplete="new-password">
+                                <label for="confirm-new-password"
+                                       data-i18n="auth.confirm_password">Confirm
+                                    password</label>
+                                <input type="password" id="confirm-new-password"
+                                       autocomplete="new-password">
+                                <button type="submit" class="primary-button"
+                                        id="change-password-button"
+                                        data-i18n="account.save_password">Save new
+                                    password</button>
+                            </div>
+                            <p class="form-message" id="password-message"></p>
+                        </section>
+                    </form>
                 </div>
-            </section>
+            </div>
         </div>
 
         <!-- Toast, outside the views so it shows on any screen. catalog.js clears it. -->

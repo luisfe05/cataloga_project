@@ -41,21 +41,20 @@ def create(client, folder, **extra):
     """POST /projects for a folder read in place."""
     body = {"name": "Harbor Swimmers", "folder": str(folder),
             "folder_mode": "place",
-            "project_sheet": "Work: a documentary about a swim club.",
-            "server_url": "https://relay.example.org"}
+            "project_sheet": "Work: a documentary about a swim club."}
     body.update(extra)
     return client.post("/projects", json=body)
 
 
-def test_archive_later_reads_nothing_and_saves_nothing_it_turned_off(
+def test_archive_later_reads_nothing_and_keeps_what_was_typed(
         empty_client, folder, scans):
-    """Later: no scan, no sheet, no server URL, no folders made."""
+    """Later: no scan, no folders made; a sheet typed by hand is kept."""
     response = create(empty_client, folder, defer_scan=True)
     assert response.status_code == 201
     assert scans == []
     config = CatalogRepository(projects.catalog_path(str(folder))) \
         .get_app_config()
-    assert not config.get("project_sheet")
+    assert config["project_sheet"].startswith("Work:")
     assert not config.get("server_url")
     assert sorted(os.listdir(folder)) == [".cataloga", "IMG_0001.jpg",
                                           "notes.txt"]
@@ -70,7 +69,6 @@ def test_archive_now_starts_reading_with_no_folders_yet(empty_client, folder,
     repo = CatalogRepository(projects.catalog_path(str(folder)))
     config = repo.get_app_config()
     assert config["project_sheet"].startswith("Work:")
-    assert config["server_url"] == "https://relay.example.org"
     assert repo.get_folder_tree() == []
 
 
@@ -100,16 +98,18 @@ def test_the_old_now_or_later_dialog_is_gone():
     assert ".ask-" not in read_frontend("css", "home.css")
 
 
-def test_later_turns_off_the_four_sections():
-    """About this project, File names, Folders and AI provider."""
+def test_later_only_swaps_the_ai_buttons_for_a_note():
+    """Nothing is dimmed; Write it for me and the folder buttons step aside."""
     settings = read_frontend("js", "settings.js")
-    listed = re.search(r"ARCHIVE_SECTIONS = \[(.*?)\];", settings, re.S)
-    ids = re.findall(r'"([a-z-]+)"', listed.group(1))
-    assert ids == ["sheet-section", "naming-section", "folders-section",
-                   "ai-section"]
+    assert "ARCHIVE_SECTIONS" not in settings
+    assert "is-off" not in settings
+    assert '["sheet-buttons", "sheet-later"]' in settings
+    assert '["folder-buttons", "folders-later"]' in settings
     html = read_frontend("index.html")
-    for section_id in ids:
-        assert 'id="{}"'.format(section_id) in html
+    for element_id in ("sheet-buttons", "sheet-later", "folder-buttons",
+                       "folders-later"):
+        assert 'id="{}"'.format(element_id) in html
+    assert ".is-off" not in read_frontend("css", "main.css")
 
 
 def test_archive_is_the_one_word_on_buttons():

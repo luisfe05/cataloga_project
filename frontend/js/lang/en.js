@@ -9,22 +9,19 @@
 const LANG_EN = {
     // Navigation and header
     "nav.home": "Home",
-    "nav.catalog": "Catalog list",
-    "home.tab_folders": "Folders",
-    "home.tab_list": "List",
+    "nav.catalog": "Catalog List",
     "home.view_icons": "Icons",
     "home.view_columns": "Columns",
-    "home.project": "Project",
     "home.path": "Path",
     "home.files": "{n} files",
     "home.folders": "{n} folders",
-    "home.classified": "{n} classified",
-    "home.manual_review": "{n} manual review",
+    "home.classified": "{n} Classified",
+    "home.manual_review": "{n} Manual Review",
     "home.not_cataloged": "Not cataloged yet",
     "home.empty": "This folder is empty.",
     "home.no_project": "Create a project to see its folders here.",
     "home.load_failed": "The folder could not be read.",
-    "home.double_click": "Double-click a folder to open it.",
+    "home.double_click": "Double-click or press Enter to open a folder.",
     "home.kind": "Kind",
     "home.kind_folder": "Folder",
     "home.kind_photo": "Photo",
@@ -80,7 +77,7 @@ const LANG_EN = {
     "catalog.empty": "Drop files into the Drop Zone folder inside {path} "
         + "and they will appear here once they are classified.",
     "catalog.no_match": "No files match your search.",
-    "catalog.progress": "Catalog progress",
+    "catalog.progress": "Catalog Progress",
     "scan.paused": "Paused at {done} of {total} files.",
     "scan.stopped": "Scan stopped at {done} of {total}",
     "banner.not_cataloged": "This folder is not cataloged yet.",
@@ -89,8 +86,6 @@ const LANG_EN = {
     "banner.catalog_now": "Archive now",
     "banner.learned": "Learned {n} folders from your folder.",
     "scan.retry_title": "Some files could not be read.",
-    "plan.summary": "{files} files read. {moves} moves, {renames} renames, "
-        + "{folders} new folders.",
     "plan.summary_unchanged": "{n} files stay as they are.",
     "plan.catalog_only": "Catalog only: no plan",
     "plan.no_plan": "This project sorts files by type, so it has no plan.",
@@ -228,20 +223,16 @@ const LANG_EN = {
     "dash.classified": "Documents Classified",
     "dash.review": "Needs Manual Review",
     "dash.sources": "Sources Tracked",
-    "dash.breakdown": "Media Type Breakdown",
     "dash.activity": "Recent Activity",
     "dash.empty": "No activity yet. Drop files into the Drop Zone to start.",
-    "dash.finding_review_one": "1 document needs manual review.",
-    "dash.finding_review": "{n} documents need manual review.",
-    "dash.finding_done": "Every document is classified.",
-    "dash.review_button": "Review in Catalog",
+    "dash.review_button": "Go Review",
     "dash.load_failed": "Could not load the dashboard: {message}",
     "dash.of_total": "of {n} documents",
     "dash.no_documents": "No documents yet",
 
     // Chat
     "chat.open_label": "Open Cataloga assistant",
-    "chat.title": "Cataloga assistant",
+    "chat.title": "Cataloga Assistant",
     "chat.close": "Close",
     "chat.empty_title": "How can I help with this project?",
     "chat.empty_hint": "I never rename a file without your OK.",
@@ -256,12 +247,12 @@ const LANG_EN = {
     "chat.sources": "Sources",
     "chat.filters_applied": "Catalog filters applied",
     "chat.open_catalog": "Open Catalog",
-    "chat.rename_title": "Proposed new name",
+    "chat.rename_title": "Proposed New Name",
     "chat.confirm": "Confirm",
     "chat.cancel": "Cancel",
     "chat.renamed": "Renamed to {name}",
     "chat.rename_cancelled": "Cancelled. Nothing changed.",
-    "chat.move_title": "Move {name} to another folder",
+    "chat.move_title": "Move {name} to Another Folder",
     "chat.summary_total": "Documents",
     "chat.summary_dates": "Dates",
     "chat.summary_sources": "Top sources",
@@ -305,46 +296,38 @@ const LANG_EN = {
     "settings.folder": "Select a folder or drive",
     "settings.browse": "Browse",
     "settings.ai_title": "AI Provider",
-    "settings.ai_using": "Cataloga uses {provider} ({model}).",
-    "settings.ai_needs_key": "{provider} needs an API key. Add it in "
-        + "Advanced settings.",
     "settings.advanced": "Advanced settings",
-    "settings.ai_hint": "Choose another AI provider or model.",
-    "settings.ai_text_title": "Text and images",
-    "settings.ai_fallback_title": "Fallback (optional)",
+    "settings.ai_text_title": "Text and Images",
+    "settings.ai_fallback_title": "Fallback (Optional)",
     "settings.ai_fallback_hint": "Answers when the main provider fails or "
         + "cannot read a file. With a Claude key saved, Claude is the "
         + "fallback unless you choose another.",
-    "settings.ai_media_title": "Audio and video",
+    "settings.ai_media_title": "Audio and Video",
     "settings.ai_media_hint": "Only Google Gemini reads audio and video. "
         + "Paid Gemini keys are not used to train models. Free keys are.",
     "settings.ai_none": "None",
-    "settings.ai_using_fallback": "Fallback: {provider} ({model}).",
-    "settings.server_title": "Server (optional)",
+    "settings.server_title": "Server (Optional)",
     "settings.server_hint": "A Cataloga server that holds the API keys. "
         + "Leave it empty to call the providers from this computer.",
     "settings.server_url": "Server URL",
     "settings.ai_provider": "AI Provider",
     "settings.api_key": "API Key",
     "settings.api_key_placeholder": "Paste your API key",
-    "settings.api_key_saved": "Saved. Type a new key only to replace it.",
     "settings.model": "Model",
     "settings.save": "Save",
     "settings.save_anyway": "Save anyway",
-    "settings.saving": "Saving and testing the AI connection...",
-    "settings.saved": "Settings saved. The AI connection works.",
+    "settings.saving": "Saving...",
+    "settings.saved": "Settings saved.",
     "settings.load_failed": "Could not load settings: {message}",
 
     // Drop Zone (not shown on screen yet)
     // Settings: language
     "lang.title": "Language",
-    "lang.hint": "Changes the app's buttons, labels and messages. "
-        + "File names and summaries are not translated.",
     "lang.en": "English",
     "lang.es": "Español (Latinoamérica)",
 
     // Settings: file names
-    "naming.title": "File names",
+    "naming.title": "File Names",
     "naming.m1": "Date and topic",
     "naming.m1_example": "date_topic-name.pdf",
     "naming.m2": "Source, date and topic",
@@ -354,8 +337,7 @@ const LANG_EN = {
     "naming.m4": "Topic, source and date",
     "naming.m4_example": "topic-name_source-name_date.pdf",
     "naming.m5": "Event and year, plus a number",
-    "naming.m5_example": "Event-Name_1998_1.jpg (the file takes the name of its "
-        + "event folder)",
+    "naming.m5_example": "Event-Name_1998_1.jpg",
     "naming.custom": "Custom",
     "naming.keep": "Keep original names",
     "naming.keep_example": "the-name-you-gave-it.pdf",
@@ -363,18 +345,9 @@ const LANG_EN = {
     "naming.stamp_order": "Dates stamped on photos",
     "naming.stamp_month": "Month first (11 13 '97)",
     "naming.stamp_day": "Day first (13 11 97)",
-    "naming.help_names": "Choose how Cataloga names new files; names already there stay. Accents are dropped, and a version mark stays at the end. Photos are named from what they show. Example: Niña de la Playa v02 becomes nina-de-la-playa_v02.jpg.",
-    "naming.help_style": "How the words of a name look. Example: topic-name, or Topic-Name.",
-    "naming.help_repeats": "Without a reliable date the name has no date part. A name already taken gets _2, _3, and names stay under 240 characters. Example: carta.pdf, then carta_2.pdf.",
-    "naming.help_dates": "A photo's date comes from what is printed on it, then a camera's EXIF, then a year in its name or folder. This says how to read a stamp. Example: 11 13 '97 is 1997-11-13.",
+    "naming.help_names": "Optional · Suggested: filling this in helps Cataloga name your files more accurately, and Suggested marks the method your files already follow. Only new names change; names already there stay. Accents are dropped, a version mark like v02 stays at the end, and the extension is added on its own. A name already taken gets _2, _3, and a name with no reliable date has no date part. With Event and year, the file takes the name of its event folder. A photo's date comes from its printed stamp, then the camera, then a year in its name or folder.",
     "help.open": "Help",
-    "help.catalog_only": "Reads and catalogs each file where it is and never moves or renames it. For websites, code and edits that link files by path (InDesign, Premiere, After Effects, Final Cut).",
-    "help.folder": "Every file is read where it is, subfolders included. Nothing moves or is renamed until you approve a plan.",
     "help.drop_zone": "Cataloga creates the folders now and files what you drop into the Drop Zone folder.",
-    "help.sheet": "A short text about the work. Cataloga reads it before every file, so it understands what the files are about.",
-    "help.ai_provider": "The service that reads your files. Only the provider you choose receives them, and your keys stay in the Mac Keychain.",
-    "help.account": "Your account lives only on this computer. There is no email, so a lost password cannot be recovered.",
-    "help.remove_project": "Takes the project out of the list. Its folder, files and catalog stay on the disk, so you can add it again.",
     "naming.style": "Style",
     "naming.blocks_add": "Click the parts in order",
     "naming.chosen": "Your file name",
@@ -389,8 +362,6 @@ const LANG_EN = {
     "naming.move_left": "Move left",
     "naming.move_right": "Move right",
     "naming.remove_block": "Remove part",
-    "naming.extension_note": "The extension (.pdf, .jpg) is added on its own. "
-        + "A number is added only when the name already exists.",
     "naming.legacy": "Saved custom name: {template}. Click parts to replace it.",
     "naming.err_no_blocks": "Click at least one part for the file name.",
     "naming.err_empty": "Write a template, or choose one of the 4 methods.",
@@ -403,9 +374,6 @@ const LANG_EN = {
 
     // Settings: categories (Digital Archiving Guideline)
     "categories.title": "Categories",
-    "categories.hint": "Cataloga sorts each new document into one of these "
-        + "categories. Write your industry and click Suggest categories, "
-        + "then edit the list.",
     "categories.industry": "Industry",
     "categories.industry_placeholder": "For example: sports documentary",
     "categories.suggest": "Suggest categories",
@@ -416,41 +384,19 @@ const LANG_EN = {
     "categories.remove": "Remove category",
     "categories.name_placeholder": "Category",
     "categories.subs_placeholder": "Subcategories, separated by commas",
-    "categories.rules": "Up to 10 categories. A document that fits none goes "
-        + "to Manual Review. Documents keep their category if you change "
-        + "the list.",
-
-    // Folder tree of a project
-    "sheet.title": "About this project",
-    "sheet.hint": "Write it, or click Write it for me.",
-    "sheet.label": "Project sheet",
-    "sheet.placeholder": "Work: ...\nIndustry: ...\nParts: ...\nFile "
-        + "types: ...\nNaming style: ...",
+    "sheet.title": "About This Project",
+    "sheet.placeholder": "A few lines about the work help Cataloga understand your files.",
     "sheet.suggest": "Write it for me",
     "sheet.need_folder": "Choose the project folder first.",
-    "sheet.suggesting": "Reading a sample of the folder...",
-    "sheet.suggested": "Edit the sheet if you like, then click Save.",
-    "folders.title": "Folders",
-    "folders.hint": "With Now, Cataloga proposes folders only for the "
-        + "files already in the folder. Edit them before you create the "
-        + "project.",
-    "folders.description": "What is this project about?",
-    "folders.description_placeholder": "For example: documentary about a "
-        + "harbor swimming club from the 1950s",
+    "folders.title": "Folder Names",
     "folders.suggest": "Suggest folders",
     "folders.file_types": "Start from file types",
-    "folders.learn": "Learn from my folder",
-    "folders.need_folder": "Choose the project folder first.",
-    "folders.learning": "Reading the folder as it is...",
-    "folders.learned": "{folders} folders and {files} files read. "
-        + "{description} For example: {examples}. Edit anything, then "
-        + "create the project: nothing on the disk changes.",
     "folders.suggesting": "Asking Ollama Cloud for folders...",
     "folders.suggested": "Edit the folders, then create the project.",
     "folders.reading": "Reading what is in the folder to propose its folders...",
     "folders.from_files": "Folders for the files already in this folder, and only for them. Edit them, then create the project.",
     "folders.from_organized": "This folder is already organized: its folders stay as they are. A new folder appears only for loose files that fit none.",
-    "folders.need_description": "Describe the project first.",
+    "folders.need_description": "Write a few lines in About This Project first.",
     "folders.add": "Add folder",
     "folders.remove": "Remove folder",
     "folders.remove_with_subs": "Remove \"{name}\" and its subfolders?",
@@ -459,10 +405,6 @@ const LANG_EN = {
     "folders.inside": "Inside",
     "folders.top_level": "Top level",
     "folders.unnamed": "(no name)",
-    "folders.rules": "Up to six levels deep, 20 top folders and 10 "
-        + "subfolders in each. Folders already created can't be renamed; "
-        + "you can add folders and remove empty ones. Removed folders stay "
-        + "on the disk. A folder with subfolders only holds files in them.",
     "folders.flag_events": "Events",
     "folders.flag_events_hint": "Holds one folder per event, named "
         + "Event_Year. Cataloga proposes new event folders here, and only "
@@ -489,11 +431,11 @@ const LANG_EN = {
     "folders.err_subs": "A folder can have 10 subfolders at most.",
 
     // Account and login
-    "auth.register_title": "Create an account",
+    "auth.register_title": "Create an Account",
     "auth.register_hint": "Each account on this computer has its own "
         + "project list and settings. Catalogs stay inside each project "
         + "folder. There is no way to recover a lost password.",
-    "auth.login_title": "Log in",
+    "auth.login_title": "Log In",
     "auth.username": "Username",
     "auth.password": "Password",
     "auth.confirm_password": "Confirm password",
@@ -514,8 +456,6 @@ const LANG_EN = {
         + "email. Your projects and files stay intact in their folders. "
         + "Create a new account to keep working.",
     "account.title": "Account",
-    "account.hint": "Each account on this computer has its own projects "
-        + "and settings.",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
     "account.new_password": "New password",
@@ -526,8 +466,8 @@ const LANG_EN = {
     "header.unavailable": "{name} (not available)",
     "header.unavailable_hint": "Folder not found. Open it and remove it "
         + "in Settings.",
-    "project.edit_title": "Project settings",
-    "project.new_title": "New project",
+    "project.edit_title": "Project Settings",
+    "project.new_title": "New Project",
     "project.folder_locked": "The project folder can't change, because the "
         + "catalog is saved inside it.",
     "project.create": "Create project",
@@ -536,14 +476,12 @@ const LANG_EN = {
     "project.archive_title": "When should Cataloga read this folder?",
     "project.archive_now": "Now",
     "project.archive_later": "Later",
-    "project.archive_later_hint": "Nothing is read or sent to the AI until you press Archive now in Home.",
     "project.folder_facts": "This folder has {files} files in {folders} folders ({size}).",
     "project.linked_advice": "This folder looks like a website or a linked "
         + "project ({markers}). Moving or renaming its files would break "
         + "it. Catalog only is ticked for you: it keeps every link working.",
-    "project.creating":
-        "Creating the project and testing the AI connection...",
-    "project.created": "Project created. The AI connection works.",
+    "project.creating": "Creating the project...",
+    "project.created": "Project created.",
     "project.created_later": "Project created. Nothing has been read yet: press Archive now in Home when you are ready.",
     "project.opened_existing": "This folder already had a Cataloga "
         + "catalog, so it was added to your projects.",
@@ -642,4 +580,49 @@ const LANG_EN = {
         + "settings, or build the folders by hand.",
     "error.suggest_folders_failed":
         "The AI provider did not suggest folders. Try again.",
+    "settings.tab_project": "Project",
+    "settings.tab_general": "General",
+    "settings.change": "Change",
+    "settings.done": "Done",
+    "settings.optional": "Optional · Suggested",
+    "settings.suggested": "Suggested",
+    "settings.progress": "{done} of {total} ready",
+    "settings.saved_short": "Saved",
+    "settings.ai_checking": "Checking the connection...",
+    "settings.ai_connected": "Connected",
+    "settings.ai_no_key": "No key saved",
+    "settings.ai_error": "Can't connect",
+    "settings.ai_add_key": "Add a key",
+    "sheet.writing": "Cataloga is writing…",
+    "sheet.again": "Write it again",
+    "folders.none_yet": "No folders yet",
+    "folders.count_one": "1 folder",
+    "folders.count": "{n} folders",
+    "account.save_password": "Save new password",
+    "project.remove_heading": "Remove Project",
+    "dash.top_sources": "Top Sources",
+    "dash.media_mix": "Media Mix",
+    "dash.mix_open": "{type}: {n}. Show them in Catalog list",
+    "help.language": "Changes the app's buttons, labels and messages. File names and summaries are not translated.",
+    "help.archive": "Now reads the folder right away and proposes its folders and names. Later only lists it: nothing goes to the AI until you press Archive now in Home. Catalog only reads every file where it is and never moves or renames anything.",
+    "help.folders": "Optional · Suggested: filling this in helps Cataloga classify your files more accurately. With Now, Cataloga proposes folders only for the files already in the folder. Up to 6 levels deep, 20 top folders and 10 subfolders in each. Folders already created can't be renamed, and a folder you remove stays on the disk.",
+    "categories.hint": "Cataloga sorts each new document into one of these categories. Write your industry and click Suggest categories, then edit the list. Up to 10 categories. A document that fits none goes to Manual Review. Documents keep their category if you change the list.",
+    "sheet.later": "Cataloga will write this when it reads the folder.",
+    "folders.later": "Folders are proposed when Cataloga reads the folder.",
+    "error.sheet_failed": "Cataloga couldn't write the description. Try again or write it yourself.",
+    "value.Moved": "Moved",
+    "value.Undone": "Undone",
+    "plan.select_all": "Select all",
+    "settings.key_saved_line": "A key is saved.",
+    "settings.api_key_replace": "Paste a new key to replace it",
+    "settings.need_folder": "Choose a folder first.",
+    "settings.need_name": "Write a name for the project.",
+    "plan.need_approval": "Approve at least one change.",
+    "catalog.filter_source_one": "Source: {source}",
+    "plan.summary_read": "{n} files read.",
+    "plan.summary_moves": "{n} moves",
+    "plan.summary_renames": "{n} renames",
+    "plan.summary_folders": "{n} new folders",
+    "settings.wait_line": "These appear when you choose a folder.",
+    "catalog.empty_place": "No activity yet. Press Archive now in Home.",
 };

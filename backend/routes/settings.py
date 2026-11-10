@@ -1,23 +1,33 @@
 """Settings routes."""
 
 import os
+import time
 
 from flask import Blueprint, current_app, jsonify, request
 from keyring.errors import KeyringError
 
-from backend.config import projects
+from backend.config import ai_settings, projects
 from backend.config.app_config import LANGUAGES, AppConfig
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import (MEDIA_PROVIDER, PROVIDERS, ROLES,
-                                           create_client, project_client)
+                                           create_client, text_client)
 from backend.pipeline.ai_providers.base import save_api_key
-from backend.pipeline import archive_rules, folder_tree, naming, project_sheet
-from backend.pipeline.ai_providers import DEFAULT_MODEL, DEFAULT_PROVIDER
+from backend.pipeline import (archive_rules, folder_tree, naming,
+                              project_sheet, time_budget)
 from backend.pipeline.file_organizer import FileOrganizer
 from backend.routes import (error_response, get_active_repo,
                             project_status, projects_path, session_user)
 
 settings_bp = Blueprint("settings", __name__)
+
+# The connection check of GET /settings/ai-status: a short call, kept for
+# a few minutes so the page never asks the provider on every visit.
+STATUS_TIMEOUT_SECONDS = 8
+STATUS_CACHE_SECONDS = 300
+status_cache = {}
+
+# The fields PATCH /settings saves one at a time (the General tab).
+PATCH_FIELDS = ("language", "server_url")
 
 
 def read_text_fields(body, names):
@@ -53,8 +63,6 @@ def get_settings():
         "numbered_folders": False,
         "project_sheet": "",
         "folder_counts": {},
-        "active_provider": None,
-        "active_model": None,
     }
     if status == "ok":
         repo, error = get_active_repo()
@@ -74,6 +82,8 @@ def get_settings():
             settings["folder_counts"] = folder_counts(repo)
         # The list is the source of truth for where the project is.
         settings["target_directory"] = folder
+    # One AI provider for every project of the account (General).
+    settings.update(provider_view(ai_settings.load(projects_path())))
     settings["language"] = data["language"]
     settings["project_status"] = status
     settings["old_inbox_has_files"] = (
@@ -81,6 +91,17 @@ def get_settings():
     settings["providers_with_key"] = providers_with_key()
     settings["username"] = session_user()
     return jsonify(settings), 200
+
+
+def provider_view(ai):
+    """The account's provider rows as GET /settings has always sent them."""
+    view = {"server_url": ai.get("server_url") or ""}
+    for role, prefix in (("text", "active"), ("fallback", "fallback"),
+                         ("media", "media")):
+        saved = ai.get(role) or {}
+        view[prefix + "_provider"] = saved.get("provider_name")
+        view[prefix + "_model"] = saved.get("model")
+    return view
 
 
 def folder_counts(repo):
@@ -186,7 +207,8 @@ def update_settings():
     if "project_sheet" in body:
         repo.save_config_value("project_sheet", body["project_sheet"])
     if "server_url" in body:
-        repo.save_config_value("server_url", body["server_url"])
+        ai_settings.set_server_url(projects_path(), body["server_url"])
+        status_cache.clear()
     if archive is not None and not tree_mode:
         config.update_categories(archive["industry"], archive["categories"])
     if "language" in body:
@@ -245,10 +267,7 @@ def suggest_categories():
     values = read_text_fields(body, ("industry",))
     if values is None:
         return error_response("missing_field", "industry is required.", 400)
-    repo, error = get_active_repo()
-    if error:
-        return error
-    client = project_client(repo)
+    client = text_client(ai_settings.load(projects_path()))
     if client is None:
         return error_response("no_provider",
                               "Choose an AI provider first.", 400)
@@ -276,21 +295,15 @@ def suggest_sheet():
         return error_response("invalid_directory",
                               "The folder does not exist: " + str(folder),
                               400)
-    repo, error = get_active_repo()
-    client = project_client(repo) if error is None else None
-    if client is None:
-        # Before the first project exists, the default provider is used.
-        client = create_client(DEFAULT_PROVIDER, DEFAULT_MODEL)
-    if not client.api_key:
+    # The account's provider, even before the first project exists.
+    client = text_client(ai_settings.load(projects_path()))
+    if client is None or not client.api_key:
         return error_response("no_provider",
                               "Choose an AI provider first.", 400)
-    sample = project_sheet.project_sample(folder)
-    sheet = project_sheet.parse_sheet_answer(client.ask(
-        project_sheet.SHEET_PROMPT.format(
-            industries=", ".join(project_sheet.INDUSTRIES)),
-        project_sheet.sample_text(sample)))
+    sheet = project_sheet.write_sheet(client, folder)
     if not sheet:
-        return error_response("suggest_failed",
+        # Its own code, so the message speaks of the description.
+        return error_response("sheet_failed",
                               "The AI provider did not write a sheet.", 502)
     return jsonify({"sheet": sheet}), 200
 
@@ -327,9 +340,6 @@ def update_ai_provider():
     if role is None:
         return error_response("invalid_role",
                               "role must be text, fallback, or media.", 400)
-    repo, error = get_active_repo()
-    if error:
-        return error
     if values["provider_name"] not in PROVIDERS:
         return error_response(
             "unsupported_provider",
@@ -351,7 +361,10 @@ def update_ai_provider():
                 "The API key could not be saved in the system keychain.",
                 400)
 
-    repo.set_provider(role, values["provider_name"], values["model"])
+    # One provider for every project: saved with the account.
+    ai_settings.set_role(projects_path(), role, values["provider_name"],
+                         values["model"])
+    status_cache.clear()
     return jsonify({"role": role, "provider_name": values["provider_name"],
                     "model": values["model"]}), 200
 
@@ -362,10 +375,8 @@ def clear_ai_provider(role):
     if role not in ROLES or role == "text":
         return error_response("invalid_role",
                               "Only fallback and media can be cleared.", 400)
-    repo, error = get_active_repo()
-    if error:
-        return error
-    repo.clear_provider(role)
+    ai_settings.clear_role(projects_path(), role)
+    status_cache.clear()
     return jsonify({"role": role, "provider_name": None}), 200
 
 
@@ -395,3 +406,70 @@ def test_ai_provider():
     except Exception as error:
         return error_response("connection_failed", str(error), 400)
     return jsonify({"connected": True}), 200
+
+
+@settings_bp.route("/settings", methods=["PATCH"])
+def patch_setting():
+    """Save one General field, {key, value}, checked here first."""
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or "key" not in body or \
+            "value" not in body:
+        return error_response("missing_field",
+                              "key and value are required.", 400)
+    key = body["key"]
+    value = body["value"]
+    if key not in PATCH_FIELDS:
+        return error_response(
+            "invalid_key",
+            "key must be one of: " + ", ".join(PATCH_FIELDS), 400)
+    if key == "language":
+        if value not in LANGUAGES:
+            return error_response(
+                "invalid_language",
+                "language must be one of: " + ", ".join(LANGUAGES), 400)
+        projects.set_language(projects_path(), value)
+        return jsonify({"key": key, "value": value}), 200
+    # The server belongs to the account, like the provider.
+    value = clean_server_url(value)
+    if value is None:
+        return error_response(
+            "invalid_server_url",
+            "server_url must start with http:// or https://.", 400)
+    ai_settings.set_server_url(projects_path(), value)
+    status_cache.clear()
+    return jsonify({"key": key, "value": value}), 200
+
+
+def check_connection(client):
+    """Return connected or error after one short call, kept for minutes."""
+    # Saving a provider, a key or a server clears the cache.
+    cache_key = (client.provider_name, client.model,
+                 getattr(client, "base_url", None))
+    saved = status_cache.get(cache_key)
+    if saved and time.monotonic() - saved[0] < STATUS_CACHE_SECONDS:
+        return saved[1]
+    # A budget on this thread makes the client's timeout short.
+    time_budget.local.budget = time_budget.Budget(STATUS_TIMEOUT_SECONDS)
+    try:
+        client.test_connection()
+        status = "connected"
+    except Exception:  # noqa: BLE001
+        status = "error"
+    finally:
+        time_budget.local.budget = None
+    status_cache[cache_key] = (time.monotonic(), status)
+    return status
+
+
+@settings_bp.route("/settings/ai-status", methods=["GET"])
+def ai_status():
+    """Say which provider reads the files and whether it connects."""
+    ai = ai_settings.load(projects_path())
+    provider = ai["text"]["provider_name"]
+    model = ai["text"]["model"]
+    client = create_client(provider, model, ai.get("server_url") or None)
+    has_key = bool(client.api_key)
+    status = check_connection(client) if has_key else "no_key"
+    # Only yes or no about the key: the key itself never leaves.
+    return jsonify({"provider": provider, "model": model,
+                    "has_key": has_key, "status": status}), 200

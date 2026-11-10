@@ -24,6 +24,8 @@
 
 /* Brand values. Every color, space, and radius comes from here. */
 :root {
+    /* Light only for now: a dark theme is planned for later. */
+    color-scheme: light;
     --color-deep-space: #08051c;
     --color-midnight: #221854;
     --color-nebula: #342476;
@@ -32,6 +34,11 @@
     --color-paper: #eef5fa;
     --color-white: #ffffff;
     --color-line: rgba(70, 65, 123, 0.16);
+    /* Tints of Violet for charts: each step is clearly lighter, and even
+       the lightest keeps 3:1 against Paper. */
+    --color-iris: #6458c3;
+    --color-lilac: #8b81d6;
+    --color-lavender: #d6d1f4;
 
     --spacing-4: 4px;
     --spacing-8: 8px;
@@ -47,10 +54,14 @@
     --radius-lg: 20px;
     --radius-full: 999px;
 
-    /* Shadows use Deep Space, not black, to stay in the palette. */
-    --shadow-sm: 0 1px 2px rgba(8, 5, 28, 0.06);
-    --shadow-md: 0 8px 24px rgba(8, 5, 28, 0.08);
-    --shadow-lg: 0 24px 64px rgba(8, 5, 28, 0.24);
+    /* Two shadows, in Deep Space: a card at rest, and what floats above
+       the page (menus, tooltips, dialogs, the chat). */
+    --shadow-card: 0 8px 32px rgba(8, 5, 28, 0.06);
+    --shadow-float: 0 24px 64px rgba(8, 5, 28, 0.24);
+
+    /* Placeholders (5.2:1 on white) and actions that remove something. */
+    --color-placeholder: #6b6895;
+    --color-danger: #b42318;
 
     --font-body: "Archivo", sans-serif;
     --font-label: "Archivo Narrow", sans-serif;
@@ -60,7 +71,10 @@
     --glass-bg-strong: rgba(255, 255, 255, 0.85);
     --glass-border: rgba(255, 255, 255, 0.6);
     --glass-blur: blur(16px);
-    --shadow-glass: 0 4px 16px rgba(8, 5, 28, 0.05);
+    /* Cards in Settings and the Dashboard: more blur than the other glass. */
+    --glass-blur-card: blur(32px);
+    /* Space between cards, across and down. */
+    --card-gap: 32px;
 
     /* The frame: top bar and sidebar share this gradient. */
     --frame-gradient: linear-gradient(135deg, var(--color-midnight),
@@ -79,21 +93,42 @@
     padding: 0;
 }
 
-/* Paper with three soft, fixed spots of Violet and Dusk. */
+/* Paper; the three soft spots of Violet and Dusk are on body::before. */
 body {
     font-family: var(--font-body);
     font-size: 15px;
     line-height: 22px;
     background-color: var(--color-paper);
-    background-image:
-        radial-gradient(circle at 85% 10%, rgba(73, 59, 178, 0.22),
-            transparent 40%),
-        radial-gradient(circle at 15% 90%, rgba(70, 65, 123, 0.2),
-            transparent 45%),
-        radial-gradient(circle at 55% 55%, rgba(73, 59, 178, 0.1),
-            transparent 50%);
-    background-attachment: fixed;
     color: var(--color-deep-space);
+}
+
+/* The spots on their own layer, bigger than the window. It moves with
+   transform only, so the page is never painted again for it. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: -25%;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle at 73% 23%, rgba(73, 59, 178, 0.22),
+            transparent 27%),
+        radial-gradient(circle at 27% 77%, rgba(70, 65, 123, 0.2),
+            transparent 30%),
+        radial-gradient(circle at 53% 53%, rgba(73, 59, 178, 0.1),
+            transparent 33%);
+    will-change: transform;
+    animation: backdrop-drift 24s ease-in-out infinite alternate;
+}
+
+@keyframes backdrop-drift {
+    from {
+        transform: translate3d(-6%, -4%, 0);
+    }
+
+    to {
+        transform: translate3d(6%, 4%, 0);
+    }
 }
 
 button,
@@ -121,10 +156,30 @@ button,
     user-select: none;
 }
 
+/* Placeholders: a grey that still reads at 4.5:1. */
+::placeholder {
+    color: var(--color-placeholder);
+    opacity: 1;
+}
+
 /* Keyboard focus: a Violet ring on everything that can be focused. */
 :focus-visible {
     outline: 2px solid var(--color-violet);
     outline-offset: 2px;
+}
+
+/* On the dark gradients (sidebar, folder banner, Needs Manual Review) the
+   ring is Paper: at least 6:1 on both ends of each gradient. */
+.sidebar :focus-visible,
+.folder-banner :focus-visible,
+.review-card :focus-visible {
+    outline-color: var(--color-paper);
+}
+
+/* Inside the project list the ring is drawn inward, so the list's scroll
+   box does not cut it. */
+.project-link:focus-visible {
+    outline-offset: -2px;
 }
 
 /* Text only screen readers read, like the word under a × button. */
@@ -225,6 +280,11 @@ td.media-type::before,
     -webkit-mask-image: url("../assets/icons/search.svg");
 }
 
+.icon-check {
+    mask-image: url("../assets/icons/check.svg");
+    -webkit-mask-image: url("../assets/icons/check.svg");
+}
+
 .icon-download {
     mask-image: url("../assets/icons/download.svg");
     -webkit-mask-image: url("../assets/icons/download.svg");
@@ -285,8 +345,33 @@ code:empty {
     flex-direction: column;
     gap: var(--spacing-4);
     padding: 20px 14px;
-    background: linear-gradient(180deg, var(--color-midnight),
-        var(--color-violet));
+    /* The gradient is on ::before, which moves; this keeps it inside. */
+    overflow: hidden;
+    background: var(--color-midnight);
+}
+
+/* Midnight to Violet, taller than the sidebar, sliding with transform only. */
+.sidebar::before {
+    content: "";
+    position: absolute;
+    inset: -50% 0;
+    z-index: -1;
+    pointer-events: none;
+    /* The middle half shows at rest: Midnight at the top, Violet below. */
+    background: linear-gradient(180deg, var(--color-midnight) 25%,
+        var(--color-violet) 75%);
+    will-change: transform;
+    animation: sidebar-drift 22s ease-in-out infinite alternate;
+}
+
+@keyframes sidebar-drift {
+    from {
+        transform: translate3d(0, -20%, 0);
+    }
+
+    to {
+        transform: translate3d(0, 20%, 0);
+    }
 }
 
 .side-label {
@@ -503,7 +588,6 @@ code:empty {
 /* Labels: Archivo Narrow SemiBold, 12 px, uppercase. */
 .catalog-table th,
 .settings-form label,
-.view-subtitle,
 .progress-title,
 .progress-label,
 .stat-label {
@@ -517,6 +601,7 @@ code:empty {
 
 /* Section titles (H2): Archivo SemiBold 18 px in Midnight. */
 .settings-form h2,
+.settings-card h2,
 .confirm-dialog h2,
 .panel h2,
 .chat-header h2,
@@ -614,9 +699,21 @@ code:empty {
     background: var(--color-nebula);
 }
 
+/* Off, but still readable (6.2:1): Lavender with Dusk text. */
 .primary-button:disabled {
-    opacity: 0.6;
-    cursor: default;
+    background: var(--color-lavender);
+    color: var(--color-dusk);
+    cursor: not-allowed;
+}
+
+/* What an off button is waiting for, beside it. */
+.action-hint {
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+.action-hint:empty {
+    display: none;
 }
 
 .secondary-button,
@@ -731,7 +828,7 @@ code:empty {
     background: var(--color-deep-space);
     color: var(--color-paper);
     font-size: 14px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-float);
 }
 
 .toolbar-message:empty {
@@ -816,8 +913,17 @@ code:empty {
 }
 
 /* The real checkbox is hidden; .switch draws the toggle instead. */
+/* Hidden but still reached with Tab; the focus ring goes on the switch. */
 .switch-label input {
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.switch-label input:focus-visible + .switch {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 2px;
 }
 
 .switch {
@@ -837,9 +943,9 @@ code:empty {
     width: 18px;
     height: 18px;
     border-radius: var(--radius-full);
+    border: 1px solid var(--color-line);
     background: var(--color-white);
-    box-shadow: var(--shadow-sm);
-    transition: left 0.2s;
+    transition: transform 0.2s;
 }
 
 .switch-label input:checked + .switch {
@@ -847,7 +953,7 @@ code:empty {
 }
 
 .switch-label input:checked + .switch::after {
-    left: 23px;
+    transform: translateX(20px);
 }
 
 /* File links: the name opens the file; the icons preview it or show it in Finder. */
@@ -906,14 +1012,74 @@ code:empty {
 .switch-label,
 .stat-card,
 .panel,
-.settings-fields,
+.settings-card,
 .edit-banner,
 .warning-message {
     background-color: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-glass);
+    box-shadow: var(--shadow-card);
     -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
+}
+
+/* Click areas: the main controls take clicks in at least 44 x 44 px, the
+   small ones in at least 24 x 24, without changing how they look. An
+   invisible ::after, centred on the control, grows the area around it. */
+.primary-button,
+.secondary-button,
+.pill-button,
+.tab,
+.review-go,
+.mix-chip,
+.help-button,
+.link-button,
+.read-more,
+.file-link,
+.file-action,
+.chat-close,
+.preview-close,
+.password-eye,
+.category-remove,
+.home-tabs button,
+.home-views button {
+    position: relative;
+}
+
+.primary-button::after,
+.secondary-button::after,
+.pill-button::after,
+.tab::after,
+.review-go::after,
+.mix-chip::after,
+.help-button::after,
+.link-button::after,
+.read-more::after,
+.file-link::after,
+.file-action::after,
+.chat-close::after,
+.preview-close::after,
+.password-eye::after,
+.category-remove::after,
+.home-tabs button::after,
+.home-views button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+}
+
+/* Small text controls: at least 24 px tall. */
+.advanced-settings summary {
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+}
+
+.settings-form .naming-separator label {
+    min-height: 24px;
 }
 
 /* Hover and focus fade in 150 ms. Only color, border, shadow, and opacity change. */
@@ -940,8 +1106,10 @@ td.editable {
 .stat-sub,
 .progress-number,
 .progress-percent,
-.breakdown-count,
-.breakdown-header,
+.ring-percent,
+.mix-chip,
+.source-count,
+.settings-progress,
 .activity-when,
 .chat-stat-value,
 .tab,
@@ -960,30 +1128,10 @@ td.editable {
     row-gap: var(--spacing-24);
     min-height: 100vh;
     padding: var(--spacing-16);
-    /* A gradient three times the screen drifts slowly across it. Hidden after
-       login (display: none), so it stops and costs nothing. */
+    /* Hidden after login (display: none), so its drift stops and costs nothing. */
     background: linear-gradient(135deg, var(--color-deep-space),
         var(--color-midnight) 30%, var(--color-nebula) 60%,
         var(--color-violet));
-    background-size: 300% 300%;
-    animation: auth-drift 24s ease-in-out infinite alternate;
-}
-
-@keyframes auth-drift {
-    from {
-        background-position: 0% 0%;
-    }
-
-    to {
-        background-position: 100% 100%;
-    }
-}
-
-/* Less motion asked by the system: the gradient stays still. */
-@media (prefers-reduced-motion: reduce) {
-    .auth-screen {
-        animation: none;
-    }
 }
 
 .auth-screen > .auth-form {
@@ -1037,7 +1185,7 @@ td.editable {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     background: var(--glass-bg-strong);
-    box-shadow: var(--shadow-glass);
+    box-shadow: var(--shadow-card);
     -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
 }
@@ -1110,8 +1258,11 @@ td.editable {
     min-width: 0;
 }
 
+/* A sentence under a title, like the Plan's summary: normal case. */
 .view-subtitle {
     margin-top: var(--spacing-4);
+    color: var(--color-dusk);
+    font-size: 14px;
 }
 
 .catalog-progress {
@@ -1189,9 +1340,11 @@ td.editable {
     align-items: center;
     gap: var(--spacing-4);
     padding: 4px 4px 4px var(--spacing-12);
+    /* A filter, not a tab: Violet border on a light ground. */
+    border: 1.5px solid var(--color-violet);
     border-radius: var(--radius-full);
-    background: var(--color-violet);
-    color: var(--color-white);
+    background: var(--color-white);
+    color: var(--color-violet);
     font-size: 14px;
     font-weight: 600;
 }
@@ -1208,7 +1361,7 @@ td.editable {
 }
 
 .sort-chip-clear:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(73, 59, 178, 0.1);
 }
 
 /* Catalog: Download and Edit Mode, at the right end of the filters */
@@ -1412,6 +1565,22 @@ td.editable {
     z-index: 4;
 }
 
+/* With the default columns the file name is first, and it stays in sight. */
+.fixed-view #catalog-table:not(.show-more) td.filename-cell,
+.fixed-view #catalog-table:not(.show-more) th.col-filename {
+    position: sticky;
+    left: 0;
+}
+
+.fixed-view #catalog-table:not(.show-more) td.filename-cell {
+    z-index: 1;
+    background: #fbfcfe;
+}
+
+.fixed-view #catalog-table:not(.show-more) th.col-filename {
+    z-index: 4;
+}
+
 /* The whole table fits; a long value ends in "…", the mouse shows it all. */
 #catalog-table:not(.show-more) {
     table-layout: fixed;
@@ -1428,19 +1597,20 @@ td.editable {
     white-space: normal;
 }
 
-#catalog-table:not(.show-more) th {
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* Each kind of data keeps the width it needs; the summary takes the
+   rest. Below that the list scrolls sideways. */
+#catalog-table:not(.show-more) {
+    min-width: 928px;
 }
 
-#catalog-table:not(.show-more) th:nth-child(1) { width: 13%; }
-#catalog-table:not(.show-more) th:nth-child(2) { width: 18%; }
-#catalog-table:not(.show-more) th:nth-child(3) { width: 9%; }
-#catalog-table:not(.show-more) th:nth-child(4) { width: 10%; }
-#catalog-table:not(.show-more) th:nth-child(5) { width: 8%; }
-#catalog-table:not(.show-more) th:nth-child(7) { width: 15%; }
-#catalog-table:not(.show-more) th:nth-child(9) { width: 8%; }
-#catalog-table:not(.show-more) th:last-child { width: 9%; }
+#catalog-table:not(.show-more) th.col-filename { width: 184px; }
+#catalog-table:not(.show-more) th.col-type { width: 114px; }
+#catalog-table:not(.show-more) th.col-source { width: 124px; }
+/* A full date, 2019-04-15, in 10 tabular digits. */
+#catalog-table:not(.show-more) th.col-date { width: 100px; }
+#catalog-table:not(.show-more) th.col-folder { width: 168px; }
+/* "Manual Review", the longest status, whole. */
+#catalog-table:not(.show-more) th.col-status { width: 120px; }
 
 /* The name gives way; the eye and the folder are always there. */
 #catalog-table:not(.show-more) td.filename-cell {
@@ -1481,13 +1651,42 @@ td.editable {
     table-layout: fixed;
 }
 
-.plan-table th:nth-child(1) { width: 44px; }
-.plan-table th:nth-child(2) { width: 20%; }
-.plan-table th:nth-child(3) { width: 12%; }
-.plan-table th:nth-child(4) { width: 17%; }
-.plan-table th:nth-child(5) { width: 18%; }
+.plan-table th:nth-child(1) { width: 56px; }
+
+/* The Plan's checkboxes: the whole 44 px square around each box is clickable. */
+.plan-table th.plan-check-cell,
+.plan-table td.plan-check-cell {
+    padding: 0 6px;
+}
+
+.check-hit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+}
+
+.check-hit input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--color-violet);
+    cursor: pointer;
+}
+/* Minimum widths for each kind of data; below them the list scrolls. */
+.plan-table {
+    min-width: 928px;
+}
+
+/* Why takes the rest, at least 96 px. */
+.plan-table th:nth-child(2) { width: 168px; }
+.plan-table th:nth-child(3) { width: 120px; }
+.plan-table th:nth-child(4) { width: 144px; }
+.plan-table th:nth-child(5) { width: 152px; }
 .plan-table th:nth-child(7) { width: 100px; }
-.plan-table th:nth-child(8) { width: 96px; }
+.plan-table th:nth-child(8) { width: 92px; }
 
 .plan-table td,
 .plan-table td.plan-why {
@@ -1499,7 +1698,7 @@ td.editable {
 .fixed-view .plan-table tbody td:nth-child(2),
 .fixed-view .plan-table thead th:nth-child(2) {
     position: sticky;
-    left: 44px;
+    left: 56px;
 }
 
 .fixed-view .plan-table tbody td:nth-child(2) {
@@ -1575,7 +1774,7 @@ td.editable {
     border-radius: var(--radius-sm);
     background: var(--color-deep-space);
     color: var(--color-paper);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-float);
     font-family: var(--font-body);
     font-size: 13px;
     font-weight: 400;
@@ -1611,7 +1810,7 @@ td.editable {
     min-height: 0;
     border-radius: var(--radius-lg);
     background: var(--color-paper);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-float);
     overflow: hidden;
 }
 
@@ -1707,7 +1906,9 @@ td.editable {
     text-align: left;
     padding: var(--spacing-16) var(--spacing-12);
     border-bottom: 1px solid var(--color-line);
-    white-space: nowrap;
+    /* A long header breaks into two lines; it is never cut. */
+    white-space: normal;
+    vertical-align: bottom;
 }
 
 /* 12 px sides, so the seven columns fit at the smallest window (1100 px). */
@@ -1757,27 +1958,32 @@ td.media-type::before {
     background-color: var(--color-violet);
 }
 
-td.media-type[data-type="Press"]::before {
+td.media-type[data-type="Press"]::before,
+.mix-chip[data-type="Press"]::before {
     mask-image: url("../assets/icons/newspaper.svg");
     -webkit-mask-image: url("../assets/icons/newspaper.svg");
 }
 
-td.media-type[data-type="Documents"]::before {
+td.media-type[data-type="Documents"]::before,
+.mix-chip[data-type="Documents"]::before {
     mask-image: url("../assets/icons/file-text.svg");
     -webkit-mask-image: url("../assets/icons/file-text.svg");
 }
 
-td.media-type[data-type="Photos"]::before {
+td.media-type[data-type="Photos"]::before,
+.mix-chip[data-type="Photos"]::before {
     mask-image: url("../assets/icons/image.svg");
     -webkit-mask-image: url("../assets/icons/image.svg");
 }
 
-td.media-type[data-type="Audio"]::before {
+td.media-type[data-type="Audio"]::before,
+.mix-chip[data-type="Audio"]::before {
     mask-image: url("../assets/icons/music.svg");
     -webkit-mask-image: url("../assets/icons/music.svg");
 }
 
-td.media-type[data-type="Video"]::before {
+td.media-type[data-type="Video"]::before,
+.mix-chip[data-type="Video"]::before {
     mask-image: url("../assets/icons/video.svg");
     -webkit-mask-image: url("../assets/icons/video.svg");
 }
@@ -1789,6 +1995,17 @@ td.media-type[data-type="Video"]::before {
 /* Selected row (the space bar previews it): Paper with a Violet border around the row. */
 .catalog-table tbody tr {
     cursor: default;
+}
+
+/* A row reached with Tab: a Violet line above and below it. Enter selects
+   it; the space bar opens its preview. */
+.catalog-table tbody tr:focus-visible {
+    outline: none;
+}
+
+.catalog-table tbody tr:focus-visible td {
+    box-shadow: inset 0 2px 0 var(--color-violet),
+        inset 0 -2px 0 var(--color-violet);
 }
 
 .catalog-table tbody tr.row-selected td {
@@ -1921,34 +2138,45 @@ td.edit-error {
     transition: background 0.4s;
 }
 
-/* Row icons dimmed until hover, selection, or keyboard focus, so 30 rows stay light. */
+/* Row icons a little softer until hover, selection, or keyboard focus.
+   At 0.7 they still keep 3:1, so they read without the mouse. */
 .catalog-table .file-action {
-    opacity: 0.35;
+    opacity: 0.7;
 }
 
 .catalog-table tbody tr:hover .file-action,
 .catalog-table tbody tr.row-selected .file-action,
-.catalog-table tbody tr:focus-within .file-action {
+.catalog-table tbody tr:focus-within .file-action,
+.catalog-table .file-action:focus-visible {
     opacity: 1;
 }
 
 /* ======== Dashboard ======== */
 
-/* Dashboard: a grid of large cards. Wide cards take two columns. */
+/* Dashboard: four columns. A wide card takes two, a full one all four. */
+/* The first card is a little wider, so "Documents Classified" fits on
+   one line beside its ring. */
 .dash-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-24);
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--card-gap);
 }
 
 .card-wide {
-    grid-column: span 2;
+    grid-column: span 1;
+}
+
+.card-full {
+    grid-column: 1 / -1;
 }
 
 .stat-card,
 .panel {
     padding: var(--spacing-24);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: var(--glass-blur-card);
+    backdrop-filter: var(--glass-blur-card);
 }
 
 /* The number sits under its label, so each card reads as one block. */
@@ -1959,7 +2187,14 @@ td.edit-error {
     min-height: 168px;
 }
 
-/* Big numbers in Archivo Light: 72 px, and 96 px for the two main ones. */
+.stat-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    min-width: 0;
+}
+
+/* Big numbers in Archivo Light: 72 px, and 96 px for the main ones. */
 .stat-number {
     font-family: var(--font-body);
     font-weight: 300;
@@ -1978,146 +2213,227 @@ td.edit-error {
     font-size: 15px;
 }
 
-/* Manual Review card: two blurred circles. JS sets --size from each share. */
-.review-orbs {
+/* Documents Classified: the number, and the ring beside it. */
+/* 72 px, so the ring fits beside it in a quarter of the row; a long number wraps. */
+.classified-row {
     display: flex;
-    gap: var(--spacing-16);
-    margin-top: var(--spacing-8);
-}
-
-.orb-slot {
-    display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-8);
 }
 
-.orb {
-    --ring: 104px;
-    display: block;
-    width: var(--ring);
-    height: var(--ring);
-    border: 1.5px dotted rgba(70, 65, 123, 0.5);
-    border-radius: var(--radius-full);
+.progress-ring {
     position: relative;
+    flex: none;
+    width: 64px;
+    height: 64px;
 }
 
-.orb::after {
-    content: "";
+.progress-ring svg {
+    width: 100%;
+    height: 100%;
+    /* The ring starts at the top and fills clockwise. */
+    transform: rotate(-90deg);
+}
+
+.ring-rail,
+.ring-fill {
+    fill: none;
+    stroke-width: 7;
+}
+
+.ring-rail {
+    stroke: var(--color-lavender);
+}
+
+/* pathLength is 100, so --ring-left is the part still empty (dashboard.js). */
+.ring-fill {
+    stroke: var(--color-violet);
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: var(--ring-left, 100);
+    transition: stroke-dashoffset 1s ease-out;
+}
+
+.ring-percent {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: var(--size, 24px);
-    height: var(--size, 24px);
-    transform: translate(-50%, -50%);
-    border-radius: var(--radius-full);
-    background: radial-gradient(circle, var(--color-violet) 35%,
-        rgba(73, 59, 178, 0.55) 60%, rgba(73, 59, 178, 0) 75%);
-    filter: blur(3px);
-    transition: width 0.6s ease-out, height 0.6s ease-out;
-}
-
-.orb-classified::after {
-    opacity: 0.4;
-}
-
-.orb-label {
-    font-size: 13px;
-    color: var(--color-dusk);
-}
-
-/* Manual Review card: circles on the left, the number on the right. */
-.review-card {
+    inset: 0;
     display: grid;
-    grid-template-columns: auto 1fr;
-    align-content: start;
-    gap: var(--spacing-8) var(--spacing-24);
+    place-items: center;
+    color: var(--color-midnight);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Needs Manual Review: Violet to Midnight. White and Ice keep 4.5:1 on both ends. */
+.review-card {
+    border-color: transparent;
+    background-color: var(--color-violet);
+    background-image: linear-gradient(135deg, var(--color-violet),
+        var(--color-midnight));
 }
 
 .review-card .stat-label {
-    grid-column: 1 / -1;
+    color: var(--color-paper);
 }
 
 .review-card .stat-number {
-    align-self: center;
-    justify-self: end;
+    color: var(--color-white);
 }
 
-/* The finding under the Dashboard title, with its button. */
-.dash-finding {
+/* Go Review: an Ice pill with Violet text. */
+.review-go {
+    align-self: flex-start;
+    margin-top: auto;
+    padding: 6px var(--spacing-16);
+    border: none;
+    border-radius: var(--radius-full);
+    background: var(--color-paper);
+    color: var(--color-violet);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.review-go:hover {
+    background: var(--color-white);
+}
+
+/* Sources Tracked: the number, and the top sources beside it. */
+.sources-card {
+    flex-direction: row;
+    gap: var(--spacing-32);
+}
+
+.top-sources {
+    flex: 1;
+    min-width: 0;
+    padding-top: var(--spacing-24);
+}
+
+.top-sources-title {
+    margin-bottom: var(--spacing-8);
+    color: var(--color-dusk);
+    font-size: 13px;
+}
+
+.top-sources-list {
+    list-style: none;
     display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--spacing-16);
-    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-24);
-    color: var(--color-midnight);
-    font-size: 15px;
+    flex-direction: column;
+    gap: var(--spacing-8);
+}
+
+.top-sources-list li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-12);
+    padding-bottom: var(--spacing-8);
+    border-bottom: 1px solid var(--color-line);
+}
+
+.source-link {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.source-count {
+    color: var(--color-dusk);
+    font-size: 14px;
 }
 
 .panel h2 {
     margin-bottom: var(--spacing-24);
 }
 
-/* Media type breakdown: five striped bars. The tallest is Violet. */
-.breakdown {
-    display: grid;
-    /* minmax(0, 1fr) keeps the five columns the same width, even with a longer label. */
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: var(--spacing-16);
-    /* Top-aligned, so every bar starts at the same height even if a name wraps. */
-    align-items: start;
+/* Media Mix: one bar, a segment per type, sized by its count (dashboard.js). */
+.mix-bar {
+    display: flex;
+    gap: 2px;
+    height: 16px;
+    border-radius: var(--radius-full);
+    background: var(--color-paper);
+    overflow: hidden;
 }
 
-.breakdown-item {
+.mix-segment {
+    flex-basis: 0;
+    min-width: 4px;
+}
+
+/* The segments grow from the left edge each time the numbers change. */
+.mix-bar.is-growing {
+    animation: mix-grow 0.8s ease-out both;
+}
+
+@keyframes mix-grow {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+.mix-chips {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: var(--spacing-8);
-    font-size: 14px;
+    margin-top: var(--spacing-16);
 }
 
-.breakdown-count {
-    font-family: var(--font-body);
-    font-weight: 300;
-    font-size: 40px;
-    line-height: 44px;
+/* A chip per type: its color, icon, name, count and share. Opens the Catalog. */
+.mix-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-8);
+    padding: 6px var(--spacing-12);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-full);
+    background: var(--color-white);
     color: var(--color-midnight);
+    font-size: 14px;
+    cursor: pointer;
 }
 
-.bar-track {
-    display: flex;
-    align-items: flex-end;
-    height: 160px;
+.mix-chip:hover {
+    border-color: var(--color-violet);
 }
 
-/* The top border stays at 0%, so an empty type still shows a thin bar. The gradient comes from dashboard.js. */
-.bar-fill {
-    width: 100%;
-    height: var(--share, 0%);
-    border-top: 3px solid var(--color-dusk);
-    transition: height 0.6s ease-out;
+/* The type's color, only in this dot; the icon stays in Dusk. */
+.mix-dot {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--chip-color);
 }
 
-.is-top .bar-fill {
-    border-top-color: var(--color-violet);
+/* The type's icon, in Dusk like the other icons. */
+.mix-chip::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    background-color: var(--color-dusk);
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
 }
 
-.is-top .breakdown-count {
-    color: var(--color-violet);
+.mix-chip strong {
+    font-weight: 600;
 }
 
-/* Type and percent on two lines, so a long Spanish name does not push its bar. */
-.breakdown-header {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+.mix-share {
     color: var(--color-dusk);
-}
-
-/* Long type names ("Documentos") break with a hyphen in the page language. */
-.breakdown-type {
-    -webkit-hyphens: auto;
-    hyphens: auto;
-    overflow-wrap: anywhere;
 }
 
 /* Recent activity: soft rows with the action as a badge. */
@@ -2163,45 +2479,316 @@ td.edit-error {
 
 /* ======== Settings ======== */
 
-/* Settings: one row per section, title on the left third, fields in a panel on the right. */
-.settings-section {
+/* Settings: two tabs, then one column of glass cards, --card-gap apart. */
+.settings-tabs {
+    align-self: flex-start;
+    width: max-content;
+    margin-bottom: var(--spacing-24);
+}
+
+.settings-panel {
+    max-width: 1040px;
+}
+
+.settings-cards {
+    gap: var(--card-gap);
+}
+
+/* Language (a third) and AI Provider (two thirds) side by side. */
+.card-pair {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    gap: var(--spacing-48);
-    max-width: 1040px;
-    padding: var(--spacing-32) 0;
-    border-top: 1px solid var(--color-line);
+    gap: var(--card-gap);
+    align-items: start;
 }
 
-#settings-form .settings-section:first-child {
-    padding-top: 0;
-    border-top: none;
-}
-
-.settings-form .settings-intro .hint {
-    margin-bottom: 0;
-}
-
-.settings-fields {
+.settings-card {
     display: flex;
     flex-direction: column;
     padding: var(--spacing-24);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: var(--glass-blur-card);
+    backdrop-filter: var(--glass-blur-card);
 }
 
-/* No extra space under the last field of a panel. */
-.settings-fields > :last-child {
+.settings-card h2 {
+    margin-bottom: var(--spacing-16);
+}
+
+/* No extra space under the last field of a card. */
+.settings-card > :last-child,
+.card-open > div > :last-child {
     margin-bottom: 0;
 }
 
-/* A smaller title inside a panel, like Change password. */
-.settings-fields h3 {
+/* A smaller title inside a card, like Fallback. */
+.settings-card h3 {
     margin: var(--spacing-8) 0 var(--spacing-16);
     padding-top: var(--spacing-24);
     border-top: 1px solid var(--color-line);
     font-size: 15px;
     font-weight: 600;
     color: var(--color-midnight);
+}
+
+/* Fields side by side on wide screens: folder and name, then the options. */
+.field-row {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 0 var(--spacing-24);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.option-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-12) var(--spacing-32);
+}
+
+.option-row .catalog-only-row,
+.option-row .archive-switch {
+    margin-top: 0;
+}
+
+.option-row .archive-switch {
+    flex-direction: row;
+    align-items: center;
+}
+
+/* The one line above the dotted places. */
+.card-wait-line {
+    margin-bottom: calc(-1 * var(--spacing-16));
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* A card waiting for the folder: a dotted place with its title. */
+.card-placeholder {
+    padding: var(--spacing-24);
+    border: 1.5px dashed rgba(70, 65, 123, 0.35);
+    border-radius: var(--radius-lg);
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* Open and folded: two parts; one is 0 high. Rows animate, so the page shrinks smoothly. */
+.card-fold {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.25s ease, visibility 0s;
+}
+
+.card-fold > div {
+    min-height: 0;
+}
+
+/* Inside an open card, the fields stack like the rest of the form. */
+.card-open > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-card.is-done .card-open,
+.settings-card:not(.is-done) .card-closed {
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease, visibility 0s 0.25s;
+}
+
+.settings-card.is-done .card-open > div,
+.settings-card:not(.is-done) .card-closed > div,
+.settings-card.is-moving .card-fold > div {
+    overflow: hidden;
+}
+
+/* The folded row: check, title, summary, and Change on the right. */
+.card-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+    min-width: 0;
+}
+
+.card-check {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-full);
+    background: var(--color-violet);
+    color: var(--color-white);
+}
+
+.card-check .icon {
+    width: 14px;
+    height: 14px;
+}
+
+.card-row-title {
+    flex: none;
+    color: var(--color-midnight);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.card-row-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* Done on the left, "Optional · Suggested" on the right, at the card's bottom. */
+.card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-16);
+}
+
+/* Nothing to show at the bottom yet: no empty space either. */
+.card-foot:has(> .card-confirm.hidden):not(:has(.card-optional)) {
+    display: none;
+}
+
+.option-row label {
+    margin-bottom: 0;
+}
+
+.card-optional {
+    margin-left: auto;
+    color: var(--color-dusk);
+    font-size: 12px;
+}
+
+/* A text button: Change, Done, Add a key, a source. */
+.link-button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-violet);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.link-button:hover {
+    color: var(--color-nebula);
+}
+
+/* The method that fits the folder's names. */
+.suggested-tag {
+    padding: 1px var(--spacing-8);
+    border-radius: var(--radius-full);
+    background: rgba(73, 59, 178, 0.1);
+    color: var(--color-violet);
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* "2 of 4 ready", and a thin bar that fills smoothly. */
+.settings-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-8);
+    margin: calc(-1 * var(--spacing-16)) 0 var(--spacing-16);
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+.progress-thin {
+    width: 220px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--color-lavender);
+    overflow: hidden;
+}
+
+.progress-thin span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-violet);
+    transition: width 0.4s ease-out;
+}
+
+/* AI Provider: a dot and one line. Green, gray or orange; the words say it too. */
+.ai-status-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-8);
+    margin-bottom: var(--spacing-16);
+    color: var(--color-midnight);
+    font-size: 15px;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: var(--color-lilac);
+}
+
+.ai-status-line[data-state="connected"] .status-dot {
+    background: #1f9d55;
+}
+
+.ai-status-line[data-state="no_key"] .status-dot {
+    background: #8a8f98;
+}
+
+.ai-status-line[data-state="error"] .status-dot {
+    background: #e07b00;
+}
+
+/* "A key is saved." under a key field. */
+.key-status {
+    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* "Saved" for 2 seconds, or what went wrong, under a General field. */
+.field-note {
+    margin: calc(-1 * var(--spacing-12)) 0 var(--spacing-12);
+    font-size: 12px;
+    color: var(--color-dusk);
+}
+
+.field-note:empty {
+    display: none;
+}
+
+.field-note.error {
+    color: #b42318;
+}
+
+.password-fields {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--spacing-16);
+}
+
+#account-section .secondary-button {
+    align-self: flex-start;
 }
 
 /* Categories: name, subcategories, and Remove on one line. */
@@ -2326,6 +2913,23 @@ td.edit-error {
     margin-top: var(--spacing-8);
 }
 
+/* Not a field label: the box and its text on one centred line, normal case. */
+.settings-form .checkbox-row {
+    min-height: 24px;
+    margin-bottom: 0;
+    color: var(--color-deep-space);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.settings-form .checkbox-row input {
+    height: auto;
+    margin: 0;
+}
+
 .tree-row input,
 .tree-row select {
     margin-bottom: 0;
@@ -2346,17 +2950,32 @@ td.edit-error {
     cursor: not-allowed;
 }
 
-/* Save and Cancel line up with the panels, under the right column. */
+/* Cancel and Save stay at the bottom of the panel while the cards scroll. */
 .settings-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-    gap: 0 var(--spacing-48);
-    max-width: 1040px;
-    padding-bottom: var(--spacing-32);
+    position: sticky;
+    bottom: var(--spacing-16);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--spacing-16);
+    /* Room on the right for the chat button, which floats there. */
+    padding: var(--spacing-12) 80px var(--spacing-12) var(--spacing-16);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg-strong);
+    box-shadow: var(--shadow-card);
+    -webkit-backdrop-filter: var(--glass-blur-card);
+    backdrop-filter: var(--glass-blur-card);
 }
 
-.settings-actions > * {
-    grid-column: 2;
+.settings-actions .form-message {
+    flex: 1;
+    margin: 0;
+}
+
+.settings-actions .primary-button {
+    align-self: center;
 }
 
 /* Advanced settings: closed by default, same column layout inside. */
@@ -2588,12 +3207,13 @@ td.edit-error {
     outline-offset: 2px;
 }
 
-/* A section Later turns off: its fields are dimmed, but the title and every
-   "?" keep their full color, so the help still reads well. */
-.settings-section.is-off .settings-intro .hint,
-.settings-section.is-off .settings-fields > :not(:has(.help-tip)),
-.settings-section.is-off .settings-fields > :has(.help-tip) > :not(.help-tip) {
-    opacity: 0.45;
+/* Later asks no AI: the AI buttons step aside for a short note. */
+.later-hidden {
+    display: none !important;
+}
+
+.later-note {
+    margin: 0 0 var(--spacing-12);
 }
 
 .naming-custom .hint {
@@ -2603,10 +3223,6 @@ td.edit-error {
 .naming-preview {
     font-size: 14px;
     color: var(--color-dusk);
-}
-
-.settings-form .folder-locked {
-    margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);
 }
 
 .folder-row {
@@ -2619,10 +3235,20 @@ td.edit-error {
 }
 
 /* Remove project: last, apart from Save so it is not clicked by mistake. */
+#remove-project-section {
+    margin-top: var(--card-gap);
+}
+
+/* Remove project: red text and border (4.5:1), apart from the other buttons. */
 .remove-project .secondary-button {
     align-self: flex-start;
-    color: var(--color-deep-space);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
     margin-bottom: 0;
+}
+
+.remove-project .secondary-button:hover {
+    background: rgba(180, 35, 24, 0.08);
 }
 
 /* ======== Chat ======== */
@@ -2642,7 +3268,7 @@ td.edit-error {
     border-radius: var(--radius-full);
     background: rgba(52, 36, 118, 0.2);
     /* The inner line on top is the glass shine. */
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), var(--shadow-md);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), var(--shadow-float);
     -webkit-backdrop-filter: blur(8px) saturate(160%);
     backdrop-filter: blur(8px) saturate(160%);
     cursor: pointer;
@@ -2675,7 +3301,7 @@ td.edit-error {
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-lg);
     background: rgba(52, 36, 118, 0.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--shadow-lg);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--shadow-float);
     -webkit-backdrop-filter: blur(40px) saturate(160%);
     backdrop-filter: blur(40px) saturate(160%);
     transform-origin: bottom right;
@@ -2824,7 +3450,7 @@ td.edit-error {
 
 .chat-user .chat-bubble {
     max-width: 85%;
-    border-radius: 16px 16px 4px 16px;
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
     background: var(--color-violet);
     color: var(--color-paper);
 }
@@ -2841,7 +3467,7 @@ td.edit-error {
 .chat-assistant .chat-bubble {
     align-self: flex-start;
     border: 1px solid var(--color-line);
-    border-radius: 4px 16px 16px 16px;
+    border-radius: var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg);
     background: var(--color-white);
     color: var(--color-deep-space);
 }
@@ -2920,7 +3546,7 @@ td.edit-error {
 .chat-sources-label {
     width: 100%;
     font-family: var(--font-label);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -3016,7 +3642,7 @@ td.edit-error {
 
 .chat-stat-label {
     font-family: var(--font-label);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -3108,7 +3734,7 @@ td.edit-error {
     padding: var(--spacing-32);
     color: var(--color-deep-space);
     background: var(--glass-bg-strong);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-float);
     -webkit-backdrop-filter: var(--glass-blur);
     backdrop-filter: var(--glass-blur);
 }
@@ -3145,9 +3771,10 @@ td.edit-error {
 
 /* Less motion: no growing bars or chat animation. countUp() skips counting too. */
 @media (prefers-reduced-motion: reduce) {
-    .bar-fill,
+    .ring-fill,
     .progress-fill,
-    .orb::after,
+    .progress-thin span,
+    .card-fold,
     .nav-link,
     .logout-button,
     .project-link,
@@ -3161,12 +3788,21 @@ td.edit-error {
     .chat-close,
     .file-action,
     .file-link,
-    td.editable {
+    td.editable,
+    .settings-card .card-fold,
+    .settings-card .card-open,
+    .settings-card.is-done .card-open,
+    .settings-card:not(.is-done) .card-closed,
+    .switch,
+    .switch::after,
+    .password-eye,
+    .catalog-table tbody tr.row-highlight td {
         transition: none;
     }
 
     .chat-thinking,
-    .chat-panel {
+    .chat-panel,
+    .mix-bar.is-growing {
         animation: none;
     }
 }
@@ -3190,14 +3826,183 @@ td.edit-error {
         width: 100%;
     }
 
-    .settings-section,
-    .settings-actions {
+    .card-wide {
+        grid-column: 1 / -1;
+    }
+
+    /* Rows stack, with the same space between the cards. */
+    .card-pair,
+    .field-row {
         grid-template-columns: minmax(0, 1fr);
-        gap: var(--spacing-16);
     }
 
-    .settings-actions > * {
-        grid-column: 1;
+}
+
+/* ======== Motion: cards and gradients ======== */
+
+/* card-drop: a card comes down 24 px into its place, one after another (settings.js). */
+.card-drop {
+    animation: card-drop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: calc(var(--drop-index, 0) * 70ms);
+}
+
+@keyframes card-drop {
+    from {
+        opacity: 0;
+        transform: translateY(-24px);
     }
 
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* card-quick: after the first time, cards come in at once: 200 ms,
+   opacity and 8 px, no bounce. */
+.card-quick {
+    animation: card-quick 200ms ease-out both;
+}
+
+@keyframes card-quick {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* A card that goes away fades in 200 ms; its height closes, so the cards below move up. */
+.card-leaving {
+    overflow: hidden;
+    opacity: 0;
+    height: 0 !important;
+    margin-bottom: calc(-1 * var(--card-gap));
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    transition: opacity 200ms ease, height 250ms ease, margin 250ms ease,
+        padding 250ms ease;
+}
+
+/* gradient-drift: every gradient is drawn bigger than its box and slides slowly.
+   Each one only uses dark brand colors, or none under text, so contrast never drops. */
+.auth-screen,
+.review-card,
+.progress-fill {
+    background-size: 300% 300%;
+    animation: gradient-drift 20s ease-in-out infinite alternate;
+}
+
+.review-card {
+    animation-duration: 16s;
+}
+
+@keyframes gradient-drift {
+    from {
+        background-position: 0% 0%;
+    }
+
+    to {
+        background-position: 100% 100%;
+    }
+}
+
+/* Less motion asked by the system: no drop, no drift, no fade. */
+/* Settings and Dashboard (motion.js): the two big backgrounds glide back to
+   their start in 300 ms and stay there. The small gradients keep moving. */
+.view-static-bg::before {
+    animation: backdrop-settle 300ms ease-out forwards;
+}
+
+.view-static-bg .sidebar::before {
+    animation: sidebar-settle 300ms ease-out forwards;
+}
+
+@keyframes backdrop-settle {
+    from {
+        transform: var(--backdrop-from, none);
+    }
+
+    to {
+        transform: translate3d(-6%, -4%, 0);
+    }
+}
+
+@keyframes sidebar-settle {
+    from {
+        transform: var(--sidebar-from, none);
+    }
+
+    to {
+        transform: translate3d(0, -20%, 0);
+    }
+}
+
+/* A hidden or unfocused window stops every moving gradient (motion.js). */
+.motion-paused body::before,
+.motion-paused .auth-screen,
+.motion-paused .sidebar::before,
+.motion-paused .review-card,
+.motion-paused .progress-fill,
+.motion-paused .folder-banner {
+    animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-drop,
+    .card-quick,
+    body::before,
+    .view-static-bg::before,
+    .auth-screen,
+    .sidebar::before,
+    .view-static-bg .sidebar::before,
+    .review-card,
+    .progress-fill {
+        animation: none;
+    }
+
+    .card-leaving {
+        transition: none;
+    }
+}
+
+/* An empty message takes no room at the bottom of a card. */
+.settings-card .form-message:empty {
+    display: none;
+}
+
+/* The first role needs no line above it. */
+.advanced-fields h3:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+/* The language list fits its narrow card. */
+#language-select {
+    width: 100%;
+    min-width: 0;
+}
+
+/* Reduce transparency (macOS): glass becomes solid Paper, with no blur. */
+@media (prefers-reduced-transparency: reduce) {
+    .settings-card,
+    .stat-card,
+    .panel,
+    .catalog-table,
+    .tabs,
+    .settings-actions,
+    .auth-form,
+    .chat-panel,
+    .chat-header,
+    .help-bubble {
+        background: var(--color-paper);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }

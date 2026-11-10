@@ -3,7 +3,9 @@
 from flask import Blueprint, current_app, jsonify
 
 from backend import scanner
+from backend.config import ai_settings
 from backend.config import projects as project_list
+from backend.pipeline.ai_providers import text_client
 from backend.routes import (error_response, get_active_repo, projects_path,
                             session_user)
 
@@ -63,7 +65,7 @@ def scan_retry():
     if current_job().is_running():
         return error_response("scan_running",
                               "The folder is being read already.", 409)
-    if repo.get_active_provider() is None:
+    if text_client(ai_settings.load(projects_path())) is None:
         return error_response("no_provider",
                               "Choose an AI provider first.", 400)
     count = scanner.forget_retryable(repo)

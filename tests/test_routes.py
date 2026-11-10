@@ -176,7 +176,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "language": "en", "naming_template": "{date}_{topic}",
         "naming_style": "lower",
         "stamp_date_order": "month",
-        "active_provider": None, "active_model": None,
+        "active_provider": "ollama", "active_model": "gemma4:31b",
         "fallback_provider": None, "fallback_model": None,
         "media_provider": None, "media_model": None, "server_url": "",
         "old_inbox_has_files": False, "project_status": "ok",
@@ -352,7 +352,7 @@ def test_put_ai_provider_keyring_failure(flask_client, monkeypatch):
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "keyring_failed"
     assert flask_client.get("/settings").get_json()[
-        "active_provider"] is None
+        "active_provider"] == "ollama"
 
 
 def test_get_settings_lists_providers_with_key(flask_client, fake_keyring):
@@ -372,12 +372,15 @@ def test_get_settings_counts_ollama_development_key(flask_client,
     assert b"dev-key" not in response.data
 
 
-def test_put_ai_provider_needs_a_project(empty_client, fake_keyring):
-    """The provider is saved per project, so it needs one."""
+def test_put_ai_provider_works_with_no_project(empty_client, fake_keyring):
+    """The provider belongs to the account, so General saves it anyway."""
     response = empty_client.put("/settings/ai-provider", json={
         "provider_name": "gemini", "model": "gemini-2.5-flash",
         "api_key": "k"})
-    assert_error(response, 409, "no_project")
+    assert response.status_code == 200
+    settings = empty_client.get("/settings").get_json()
+    assert settings["active_provider"] == "gemini"
+    assert fake_keyring == {"gemini": "k"}
 
 
 def test_put_ai_provider_unsupported(flask_client, fake_keyring):

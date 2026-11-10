@@ -174,7 +174,11 @@ function renderPlanRows() {
             box.className = "plan-check";
             box.value = row.id;
             box.setAttribute("aria-label", row.old_name || "");
-            check.appendChild(box);
+            // The whole 44 px label takes the click, not only the 18 px box.
+            const hit = document.createElement("label");
+            hit.className = "check-hit";
+            hit.appendChild(box);
+            check.appendChild(hit);
         }
         tr.appendChild(check);
         const fileText = row.action === "create_folder"
@@ -241,10 +245,19 @@ function checkedPlanIds() {
 
 function renderPlanSummary() {
     const counts = planView.summary;
-    document.getElementById("plan-summary").textContent =
-        t("plan.summary", { files: counts.files_read, moves: counts.moves,
-            renames: counts.renames, folders: counts.new_folders })
-        + " " + t("plan.summary_unchanged", { n: counts.unchanged });
+    // Only the parts that are not 0: "30 files read. 30 renames."
+    const parts = [["plan.summary_moves", counts.moves],
+        ["plan.summary_renames", counts.renames],
+        ["plan.summary_folders", counts.new_folders]]
+        .filter(([, n]) => n > 0).map(([key, n]) => t(key, { n: n }));
+    let text = t("plan.summary_read", { n: counts.files_read });
+    if (parts.length) {
+        text += " " + parts.join(", ") + ".";
+    }
+    if (counts.unchanged > 0) {
+        text += " " + t("plan.summary_unchanged", { n: counts.unchanged });
+    }
+    document.getElementById("plan-summary").textContent = text;
 }
 
 /** A batch being applied, undone or paused: progress and its buttons. */
@@ -383,6 +396,9 @@ function updateApplyButton() {
     button.textContent = count === 1 ? t("plan.apply_one")
         : count ? t("plan.apply_many", { n: count }) : t("plan.apply");
     button.disabled = count === 0 || Boolean(planView.busy);
+    // An off button says why: nothing approved yet.
+    document.getElementById("plan-apply-hint").textContent =
+        count === 0 && !planView.busy ? t("plan.need_approval") : "";
 }
 
 function renderPlan() {

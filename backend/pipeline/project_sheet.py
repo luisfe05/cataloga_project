@@ -124,6 +124,14 @@ def parse_sheet_answer(answer):
     return clean_sheet("\n".join(lines))
 
 
+def write_sheet(client, folder):
+    """Ask the AI once for the sheet of a folder; '' if it wrote none."""
+    sample = project_sample(folder)
+    return parse_sheet_answer(client.ask(
+        SHEET_PROMPT.format(industries=", ".join(INDUSTRIES)),
+        sample_text(sample)))
+
+
 def clean_sheet(value):
     """Return the sheet text ready to save, '' for none, None if bad."""
     if value is None:

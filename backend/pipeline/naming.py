@@ -280,3 +280,65 @@ def clean_new_name(new_name, extension):
     if not name:
         return ""
     return name + extension.lower()
+
+
+# Shapes for guessing how a folder already names its files. Each part of
+# a name is a word (letters first) or a date; "_" splits the parts.
+NAME_WORD = r"[a-z][a-z0-9-]*"
+NAME_DATE = r"(?:18|19|20)\d{2}(?:-\d{2}(?:-\d{2})?)?"
+
+# Checked in this order, so a name that fits two shapes gets the first.
+NAMING_SHAPES = (
+    # Swim-Meet_1998_3: the event folder, its year and a number.
+    (EVENT_TEMPLATE, re.compile(
+        r"^{w}_(?:18|19|20)\d{{2}}_\d{{1,4}}$".format(w=NAME_WORD))),
+    # harbor-gazette_1998-05-02_dawn-swim: source, date, topic.
+    (METHOD_TEMPLATES[1], re.compile(
+        r"^{w}_{d}_{w}$".format(w=NAME_WORD, d=NAME_DATE))),
+    # 1998-05-02_dawn-swim: the date first. A camera name like
+    # 20250312_141502 does not count: the topic must start with a letter.
+    (METHOD_TEMPLATES[0], re.compile(
+        r"^{d}_{w}$".format(w=NAME_WORD, d=NAME_DATE))),
+    # 0001_dawn-swim: a number of 3 to 5 digits first.
+    (METHOD_TEMPLATES[2], re.compile(r"^\d{{3,5}}_{w}$".format(w=NAME_WORD))),
+    # dawn-swim_harbor-gazette_1998: topic, source, date.
+    (METHOD_TEMPLATES[3], re.compile(
+        r"^{w}_{w}_{d}$".format(w=NAME_WORD, d=NAME_DATE))),
+)
+
+# A version mark at the end is not part of the shape: _v02, -draft-3.
+TRAILING_VERSION = re.compile(
+    r"[-_ ](?:v\d{1,3}|draft[-_ ]?\d+|borrador[-_ ]?\d+)$", re.IGNORECASE)
+
+
+def suggest_naming_style(filenames):
+    """Return the template most file names already follow, or None.
+
+    Only the names are read: no file is opened and no AI is asked. A
+    shape wins when at least half of the names (and two or more) follow
+    it, so a folder of camera names like IMG_0001 gets no suggestion.
+    """
+    stems = []
+    for name in filenames:
+        base = os.path.basename(str(name))
+        if not base or base.startswith("."):
+            continue
+        stem = os.path.splitext(base)[0]
+        stems.append(TRAILING_VERSION.sub("", stem))
+    if not stems:
+        return None
+    counts = {}
+    for stem in stems:
+        for template, shape in NAMING_SHAPES:
+            if shape.match(stem.lower()):
+                counts[template] = counts.get(template, 0) + 1
+                break
+    best = None
+    for template, _shape in NAMING_SHAPES:
+        # Ties go to the shape listed first.
+        if best is None or counts.get(template, 0) > counts.get(best, 0):
+            best = template
+    found = counts.get(best, 0)
+    if found >= 2 and found * 2 >= len(stems):
+        return best
+    return None

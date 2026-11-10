@@ -399,17 +399,18 @@ class SuggestAI(AIProviderClient):
 
 def test_suggest_folders_uses_ollama_and_saves_nothing(empty_client,
                                                        monkeypatch):
-    """The tree comes from Ollama Cloud, even before a project exists."""
+    """The account's provider (Ollama Cloud) works before any project."""
     used = []
     answer = json.dumps([{"name": "Caso 1142", "subfolders": [
         "Contratos", "Evidencia"]}])
 
-    def fake_client(name, model):
-        used.append((name, model))
+    def fake_client(settings):
+        used.append((settings["text"]["provider_name"],
+                     settings["text"]["model"]))
         return SuggestAI(answer)
-    monkeypatch.setattr(project_routes, "create_client", fake_client)
+    monkeypatch.setattr(project_routes, "text_client", fake_client)
     response = empty_client.post("/projects/folders/suggest", json={
-        "description": "Archivo de casos de una oficina legal"})
+        "project_sheet": "Work: archivo de casos de una oficina legal"})
     assert response.status_code == 200
     folders = response.get_json()["folders"]
     assert [(f["name"], f["subcategories"]) for f in folders] == [
@@ -419,20 +420,20 @@ def test_suggest_folders_uses_ollama_and_saves_nothing(empty_client,
 
 
 def test_suggest_folders_errors(empty_client, monkeypatch):
-    """No description, no key, or no usable answer."""
+    """No About this project, no key, or no usable answer."""
     response = empty_client.post("/projects/folders/suggest", json={})
     assert response.status_code == 400
     no_key = SuggestAI("[]")
     no_key.api_key = None
-    monkeypatch.setattr(project_routes, "create_client",
-                        lambda name, model: no_key)
+    monkeypatch.setattr(project_routes, "text_client",
+                        lambda settings: no_key)
     response = empty_client.post("/projects/folders/suggest",
-                                 json={"description": "Podcast"})
+                                 json={"project_sheet": "Work: podcast"})
     assert response.get_json()["error"]["code"] == "no_api_key"
-    monkeypatch.setattr(project_routes, "create_client",
-                        lambda name, model: SuggestAI("No idea."))
+    monkeypatch.setattr(project_routes, "text_client",
+                        lambda settings: SuggestAI("No idea."))
     response = empty_client.post("/projects/folders/suggest",
-                                 json={"description": "Podcast"})
+                                 json={"project_sheet": "Work: podcast"})
     assert response.status_code == 502
 
 

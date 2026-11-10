@@ -7,6 +7,7 @@ import sqlite3
 import pytest
 
 from backend import folder_watcher
+from backend.config import ai_settings
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
@@ -502,7 +503,7 @@ def test_watcher_sets_owner_and_cleans_duplicates(tmp_path, monkeypatch):
                         lambda name, model, base_url=None: RecordingAI())
     projects_path = str(tmp_path / "app" / "projects.json")
     repo = make_project(projects_path, tmp_path / "Research")
-    repo.set_active_provider("gemini", "gemini-2.5-flash")
+    ai_settings.set_role(projects_path, "text", "gemini", "gemini-2.5-flash")
     drop_zone = tmp_path / "Research" / "Drop Zone"
     (drop_zone / "a.txt").write_text("Same")
 
@@ -563,11 +564,12 @@ class SuggestAI(AIProviderClient):
      1),
     (json.dumps([{"name": str(n)} for n in range(14)]), 10),
 ])
-def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
+def test_suggest_categories(flask_client, projects_path, monkeypatch, answer,
+                            count):
     """Suggest returns a checked list and saves nothing."""
     monkeypatch.setattr(ai_providers, "create_client",
                         lambda name, model, base_url=None: SuggestAI(answer))
-    active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
+    ai_settings.set_role(projects_path, "text", "gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
     assert response.status_code == 200
@@ -575,12 +577,13 @@ def test_suggest_categories(flask_client, app, monkeypatch, answer, count):
     assert flask_client.get("/settings").get_json()["categories"] == []
 
 
-def test_suggest_categories_bad_answer(flask_client, app, monkeypatch):
+def test_suggest_categories_bad_answer(flask_client, projects_path,
+                                       monkeypatch):
     """No usable list from the AI gives a clear error."""
     monkeypatch.setattr(ai_providers, "create_client",
                         lambda name, model, base_url=None:
                         SuggestAI("I cannot help."))
-    active_repo(app).set_active_provider("gemini", "gemini-2.5-flash")
+    ai_settings.set_role(projects_path, "text", "gemini", "gemini-2.5-flash")
     response = flask_client.post("/settings/categories/suggest",
                                  json={"industry": "Sports media"})
     assert response.status_code == 502

@@ -34,7 +34,7 @@ def test_listing_a_folder_counts_and_writes_nothing(empty_client, tmp_path):
     answer = empty_client.post("/projects/folders/list",
                                json={"folder": str(root)}).get_json()
     assert answer == {"files": 2, "folders": 2, "size": 8,
-                      "has_catalog": False}
+                      "has_catalog": False, "naming_suggestion": None}
     assert everything_in(root) == before
 
 

@@ -10,11 +10,8 @@ const LANG_ES = {
     // Navigation and header
     "nav.home": "Inicio",
     "nav.catalog": "Lista del catálogo",
-    "home.tab_folders": "Carpetas",
-    "home.tab_list": "Lista",
     "home.view_icons": "Íconos",
     "home.view_columns": "Columnas",
-    "home.project": "Proyecto",
     "home.path": "Ruta",
     "home.files": "{n} archivos",
     "home.folders": "{n} carpetas",
@@ -24,7 +21,7 @@ const LANG_ES = {
     "home.empty": "Esta carpeta está vacía.",
     "home.no_project": "Crea un proyecto para ver aquí sus carpetas.",
     "home.load_failed": "No se pudo leer la carpeta.",
-    "home.double_click": "Doble clic en una carpeta para abrirla.",
+    "home.double_click": "Doble clic o Enter para abrir una carpeta.",
     "home.kind": "Tipo",
     "home.kind_folder": "Carpeta",
     "home.kind_photo": "Foto",
@@ -89,8 +86,6 @@ const LANG_ES = {
     "banner.catalog_now": "Archivar ahora",
     "banner.learned": "Se aprendieron {n} carpetas de tu carpeta.",
     "scan.retry_title": "Algunos archivos no se pudieron leer.",
-    "plan.summary": "{files} archivos leídos. {moves} movimientos, {renames} "
-        + "renombres, {folders} carpetas nuevas.",
     "plan.summary_unchanged": "{n} archivos se quedan como están.",
     "plan.catalog_only": "Catalog only: no plan",
     "plan.no_plan": "Este proyecto ordena por tipo de archivo, así que no "
@@ -99,7 +94,7 @@ const LANG_ES = {
     "plan.load_failed": "No se pudo cargar el plan.",
     "plan.filter_folder_all": "Destino: Todos",
     "plan.filter_action_all": "Acción: Todas",
-    "plan.filter_review": "Manual Review",
+    "plan.filter_review": "Revisión manual",
     "plan.filter_unchanged": "Sin cambios",
     "plan.action_move": "Mover",
     "plan.action_rename": "Renombrar",
@@ -231,14 +226,10 @@ const LANG_ES = {
     "dash.classified": "Documentos clasificados",
     "dash.review": "Necesitan revisión manual",
     "dash.sources": "Fuentes registradas",
-    "dash.breakdown": "Desglose por tipo de medio",
     "dash.activity": "Actividad reciente",
     "dash.empty": "Todavía no hay actividad. Pon archivos en la Drop Zone "
         + "para empezar.",
-    "dash.finding_review_one": "1 documento necesita revisión manual.",
-    "dash.finding_review": "{n} documentos necesitan revisión manual.",
-    "dash.finding_done": "Todos los documentos están clasificados.",
-    "dash.review_button": "Revisar en Catálogo",
+    "dash.review_button": "Ir a revisar",
     "dash.load_failed": "No se pudo cargar el panel: {message}",
     "dash.of_total": "de {n} documentos",
     "dash.no_documents": "Todavía no hay documentos",
@@ -309,11 +300,7 @@ const LANG_ES = {
     "settings.folder": "Selecciona una carpeta o disco",
     "settings.browse": "Buscar carpeta",
     "settings.ai_title": "Proveedor de IA",
-    "settings.ai_using": "Cataloga usa {provider} ({model}).",
-    "settings.ai_needs_key": "{provider} necesita una clave de API. "
-        + "Agrégala en Configuración avanzada.",
     "settings.advanced": "Configuración avanzada",
-    "settings.ai_hint": "Elige otro proveedor o modelo de IA.",
     "settings.ai_text_title": "Texto e imágenes",
     "settings.ai_fallback_title": "Respaldo (opcional)",
     "settings.ai_fallback_hint": "Responde cuando el proveedor principal "
@@ -324,7 +311,6 @@ const LANG_ES = {
         + "claves pagadas de Gemini no se usan para entrenar modelos. Las "
         + "gratuitas sí.",
     "settings.ai_none": "Ninguno",
-    "settings.ai_using_fallback": "Respaldo: {provider} ({model}).",
     "settings.server_title": "Servidor (opcional)",
     "settings.server_hint": "Un servidor de Cataloga que guarda las claves "
         + "de API. Déjalo vacío para llamar a los proveedores desde esta "
@@ -333,22 +319,17 @@ const LANG_ES = {
     "settings.ai_provider": "Proveedor de IA",
     "settings.api_key": "Clave de API",
     "settings.api_key_placeholder": "Pega tu clave de API",
-    "settings.api_key_saved":
-        "Guardada. Escribe una clave nueva solo si quieres reemplazarla.",
     "settings.model": "Modelo",
     "settings.save": "Guardar",
     "settings.save_anyway": "Guardar de todos modos",
-    "settings.saving": "Guardando y probando la conexión con la IA...",
-    "settings.saved":
-        "Configuración guardada. La conexión con la IA funciona.",
+    "settings.saving": "Guardando...",
+    "settings.saved": "Configuración guardada.",
     "settings.load_failed": "No se pudo cargar la configuración: {message}",
 
     // Drop Zone (not shown on screen yet). "Drop Zone" stays in English
     // because it is the folder's real name on disk.
     // Settings: language. Each language name is in its own language.
     "lang.title": "Idioma",
-    "lang.hint": "Cambia los botones, etiquetas y mensajes de la app. "
-        + "Los nombres de archivo y los resúmenes no se traducen.",
     "lang.en": "English",
     "lang.es": "Español (Latinoamérica)",
 
@@ -363,8 +344,7 @@ const LANG_ES = {
     "naming.m4": "Tema, fuente y fecha",
     "naming.m4_example": "nombre-del-tema_nombre-de-la-fuente_fecha.pdf",
     "naming.m5": "Evento y año, más un número",
-    "naming.m5_example": "Nombre-Del-Evento_1998_1.jpg (el archivo toma el "
-        + "nombre de su carpeta de evento)",
+    "naming.m5_example": "Nombre-Del-Evento_1998_1.jpg",
     "naming.custom": "Personalizado",
     "naming.keep": "Conservar los nombres originales",
     "naming.keep_example": "el-nombre-que-le-diste.pdf",
@@ -372,18 +352,9 @@ const LANG_ES = {
     "naming.stamp_order": "Fechas impresas en las fotos",
     "naming.stamp_month": "Mes primero (11 13 '97)",
     "naming.stamp_day": "Día primero (13 11 97)",
-    "naming.help_names": "Elige cómo Cataloga nombra los archivos nuevos; los nombres que ya existen no cambian. Se quitan los acentos y la marca de versión queda al final. Las fotos se nombran por lo que muestran. Ejemplo: Niña de la Playa v02 queda nina-de-la-playa_v02.jpg.",
-    "naming.help_style": "Cómo se ven las palabras del nombre. Ejemplo: tema-del-archivo, o Tema-Del-Archivo.",
-    "naming.help_repeats": "Sin una fecha confiable, el nombre no lleva fecha. Un nombre ya usado recibe _2, _3, y los nombres quedan bajo 240 caracteres. Ejemplo: carta.pdf, luego carta_2.pdf.",
-    "naming.help_dates": "La fecha de una foto sale de lo impreso en ella, luego del EXIF de una cámara, luego de un año en su nombre o carpeta. Esto dice cómo leer un sello. Ejemplo: 11 13 '97 es 1997-11-13.",
+    "naming.help_names": "Opcional · Sugerido: llenarlo ayuda a que Cataloga nombre tus archivos con más precisión, y Sugerido marca el método que ya siguen tus archivos. Solo cambian los nombres nuevos; los que ya existen se quedan. Se quitan los acentos, una marca de versión como v02 queda al final y la extensión se agrega sola. Un nombre ya usado recibe _2, _3, y un nombre sin fecha confiable no lleva fecha. Con Evento y año, el archivo toma el nombre de su carpeta de evento. La fecha de una foto sale de su sello impreso, luego de la cámara, luego de un año en su nombre o carpeta.",
     "help.open": "Ayuda",
-    "help.catalog_only": "Lee y cataloga cada archivo donde está, sin moverlo ni renombrarlo. Para sitios web, código y ediciones que enlazan archivos por su ruta (InDesign, Premiere, After Effects, Final Cut).",
-    "help.folder": "Cada archivo se lee donde está, con sus subcarpetas. Nada se mueve ni se renombra hasta que apruebes un plan.",
     "help.drop_zone": "Cataloga crea las carpetas ahora y archiva lo que sueltes en la carpeta Drop Zone.",
-    "help.sheet": "Un texto corto sobre el trabajo. Cataloga lo lee antes de cada archivo para entender de qué tratan.",
-    "help.ai_provider": "El servicio que lee tus archivos. Solo el proveedor que elijas los recibe, y tus llaves se quedan en el Llavero de la Mac.",
-    "help.account": "Tu cuenta existe solo en esta computadora. No hay correo, así que una contraseña perdida no se puede recuperar.",
-    "help.remove_project": "Quita el proyecto de la lista. Su carpeta, sus archivos y su catálogo se quedan en el disco, así que puedes agregarlo otra vez.",
     "naming.style": "Estilo",
     "naming.blocks_add": "Haz clic en las partes en orden",
     "naming.chosen": "Tu nombre de archivo",
@@ -398,8 +369,6 @@ const LANG_ES = {
     "naming.move_left": "Mover a la izquierda",
     "naming.move_right": "Mover a la derecha",
     "naming.remove_block": "Quitar parte",
-    "naming.extension_note": "La extensión (.pdf, .jpg) se agrega sola. Solo "
-        + "se añade un número cuando el nombre ya existe.",
     "naming.legacy": "Nombre personalizado guardado: {template}. Haz clic en "
         + "las partes para reemplazarlo.",
     "naming.err_no_blocks": "Haz clic en al menos una parte del nombre.",
@@ -413,9 +382,6 @@ const LANG_ES = {
 
     // Settings: categories (Digital Archiving Guideline)
     "categories.title": "Categorías",
-    "categories.hint": "Cataloga clasifica cada documento nuevo en una de "
-        + "estas categorías. Escribe tu industria y haz clic en Sugerir "
-        + "categorías; después edita la lista.",
     "categories.industry": "Industria",
     "categories.industry_placeholder": "Por ejemplo: documental deportivo",
     "categories.suggest": "Sugerir categorías",
@@ -427,41 +393,19 @@ const LANG_ES = {
     "categories.remove": "Quitar categoría",
     "categories.name_placeholder": "Categoría",
     "categories.subs_placeholder": "Subcategorías, separadas por comas",
-    "categories.rules": "Hasta 10 categorías. Un documento que no encaje en "
-        + "ninguna va a Revisión manual. Los documentos conservan su "
-        + "categoría si cambias la lista.",
-
-    // Folder tree of a project
     "sheet.title": "Sobre este proyecto",
-    "sheet.hint": "Escríbela, o haz clic en Escríbela por mí.",
-    "sheet.label": "Ficha del proyecto",
-    "sheet.placeholder": "Trabajo: ...\nIndustria: ...\nPartes: ...\n"
-        + "Tipos de archivo: ...\nEstilo de nombres: ...",
+    "sheet.placeholder": "Unas líneas sobre el trabajo ayudan a Cataloga a entender tus archivos.",
     "sheet.suggest": "Escríbela por mí",
     "sheet.need_folder": "Elige primero la carpeta del proyecto.",
-    "sheet.suggesting": "Leyendo una muestra de la carpeta...",
-    "sheet.suggested": "Edita la ficha si quieres y luego pulsa Guardar.",
-    "folders.title": "Carpetas",
-    "folders.hint": "Con Ahora, Cataloga propone carpetas solo para los "
-        + "archivos que ya están en la carpeta. Edítalas antes de crear el "
-        + "proyecto.",
-    "folders.description": "¿De qué trata este proyecto?",
-    "folders.description_placeholder": "Por ejemplo: documental sobre un "
-        + "club de natación del puerto en los años 50",
+    "folders.title": "Nombres de carpeta",
     "folders.suggest": "Sugerir carpetas",
     "folders.file_types": "Empezar con tipos de archivo",
-    "folders.learn": "Aprender de mi carpeta",
-    "folders.need_folder": "Elige primero la carpeta del proyecto.",
-    "folders.learning": "Leyendo la carpeta tal como está...",
-    "folders.learned": "{folders} carpetas y {files} archivos leídos. "
-        + "{description} Por ejemplo: {examples}. Edita lo que quieras y "
-        + "crea el proyecto: nada cambia en el disco.",
     "folders.suggesting": "Pidiendo carpetas a Ollama Cloud...",
     "folders.suggested": "Edita las carpetas y luego crea el proyecto.",
     "folders.reading": "Leyendo lo que hay en la carpeta para proponer sus carpetas...",
     "folders.from_files": "Carpetas para los archivos que ya están en esta carpeta, y solo para ellos. Edítalas y luego crea el proyecto.",
     "folders.from_organized": "Esta carpeta ya está organizada: sus carpetas se quedan como están. Solo aparece una carpeta nueva para archivos sueltos que no encajan en ninguna.",
-    "folders.need_description": "Primero describe el proyecto.",
+    "folders.need_description": "Escribe unas líneas en Sobre este proyecto primero.",
     "folders.add": "Agregar carpeta",
     "folders.remove": "Quitar carpeta",
     "folders.remove_with_subs": "¿Quitar \"{name}\" y sus subcarpetas?",
@@ -471,11 +415,6 @@ const LANG_ES = {
     "folders.inside": "Dentro de",
     "folders.top_level": "Nivel principal",
     "folders.unnamed": "(sin nombre)",
-    "folders.rules": "Hasta seis niveles, 20 carpetas principales y 10 "
-        + "subcarpetas en cada una. Las carpetas ya creadas no se renombran; "
-        + "puedes agregar carpetas y quitar las vacías. Las que quitas siguen "
-        + "en el disco. Una carpeta con subcarpetas solo guarda archivos en "
-        + "ellas.",
     "folders.err_none": "Agrega al menos una carpeta.",
     "folders.err_empty": "Cada carpeta necesita un nombre.",
     "folders.err_long":
@@ -529,8 +468,6 @@ const LANG_ES = {
         + "no usa correo. Tus proyectos y archivos siguen intactos en sus "
         + "carpetas. Crea una cuenta nueva para seguir trabajando.",
     "account.title": "Cuenta",
-    "account.hint": "Cada cuenta en esta computadora tiene sus propios "
-        + "proyectos y ajustes.",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
     "account.new_password": "Contraseña nueva",
@@ -547,20 +484,18 @@ const LANG_ES = {
     "project.folder_locked": "La carpeta del proyecto no se puede cambiar, "
         + "porque el catálogo se guarda dentro de ella.",
     "project.create": "Crear proyecto",
-    "project.mode_tree": "Usar un Drop Zone",
+    "project.mode_tree": "Usar una Drop Zone",
     "project.catalog_only": "Solo catalogar",
     "project.archive_title": "¿Cuándo debe Cataloga leer esta carpeta?",
     "project.archive_now": "Ahora",
     "project.archive_later": "Después",
-    "project.archive_later_hint": "No se lee ni se envía nada a la IA hasta que pulses Archivar ahora en Inicio.",
     "project.folder_facts": "Esta carpeta tiene {files} archivos en {folders} carpetas ({size}).",
     "project.linked_advice": "Esta carpeta parece una página web o un "
         + "proyecto enlazado ({markers}). Mover o renombrar sus archivos "
         + "lo rompería. Catalog only, que llega pronto, mantendrá todos los "
         + "enlaces funcionando.",
-    "project.creating":
-        "Creando el proyecto y probando la conexión con la IA...",
-    "project.created": "Proyecto creado. La conexión con la IA funciona.",
+    "project.creating": "Creando el proyecto...",
+    "project.created": "Proyecto creado.",
     "project.created_later": "Proyecto creado. Todavía no se ha leído nada: pulsa Archivar ahora en Inicio cuando quieras.",
     "project.opened_existing": "Esta carpeta ya tenía un catálogo de "
         + "Cataloga, así que se agregó a tus proyectos.",
@@ -662,4 +597,49 @@ const LANG_ES = {
         + "Configuración avanzada, o arma las carpetas a mano.",
     "error.suggest_folders_failed":
         "El proveedor de IA no sugirió carpetas. Inténtalo de nuevo.",
+    "settings.tab_project": "Proyecto",
+    "settings.tab_general": "General",
+    "settings.change": "Cambiar",
+    "settings.done": "Listo",
+    "settings.optional": "Opcional · Sugerido",
+    "settings.suggested": "Sugerido",
+    "settings.progress": "{done} de {total} listos",
+    "settings.saved_short": "Guardado",
+    "settings.ai_checking": "Revisando la conexión...",
+    "settings.ai_connected": "Conectado",
+    "settings.ai_no_key": "No hay clave guardada",
+    "settings.ai_error": "No se puede conectar",
+    "settings.ai_add_key": "Agregar una clave",
+    "sheet.writing": "Cataloga está escribiendo…",
+    "sheet.again": "Escríbela otra vez",
+    "folders.none_yet": "Todavía no hay carpetas",
+    "folders.count_one": "1 carpeta",
+    "folders.count": "{n} carpetas",
+    "account.save_password": "Guardar la contraseña nueva",
+    "project.remove_heading": "Quitar proyecto",
+    "dash.top_sources": "Fuentes principales",
+    "dash.media_mix": "Mezcla de medios",
+    "dash.mix_open": "{type}: {n}. Verlos en la lista del Catálogo",
+    "help.language": "Cambia los botones, etiquetas y mensajes de la app. Los nombres de archivo y los resúmenes no se traducen.",
+    "help.archive": "Ahora lee la carpeta enseguida y propone sus carpetas y nombres. Después solo la lista: nada va a la IA hasta que pulses Archivar ahora en Inicio. Solo catalogar lee cada archivo donde está y nunca mueve ni renombra nada.",
+    "help.folders": "Opcional · Sugerido: llenarlo ayuda a que Cataloga clasifique tus archivos con más precisión. Con Ahora, Cataloga propone carpetas solo para los archivos que ya están en la carpeta. Hasta 6 niveles, 20 carpetas principales y 10 subcarpetas en cada una. Las carpetas ya creadas no se renombran, y una carpeta que quitas se queda en el disco.",
+    "categories.hint": "Cataloga clasifica cada documento nuevo en una de estas categorías. Escribe tu industria y haz clic en Sugerir categorías; después edita la lista. Hasta 10 categorías. Un documento que no encaje en ninguna va a Revisión manual. Los documentos conservan su categoría si cambias la lista.",
+    "sheet.later": "Cataloga lo escribirá cuando lea la carpeta.",
+    "folders.later": "Las carpetas se proponen cuando Cataloga lea la carpeta.",
+    "error.sheet_failed": "Cataloga no pudo escribir la descripción. Inténtalo otra vez o escríbela tú.",
+    "value.Moved": "Movido",
+    "value.Undone": "Deshecho",
+    "plan.select_all": "Seleccionar todo",
+    "settings.key_saved_line": "Hay una clave guardada.",
+    "settings.api_key_replace": "Pega una clave nueva para reemplazarla",
+    "settings.need_folder": "Escoge una carpeta primero.",
+    "settings.need_name": "Escribe un nombre para el proyecto.",
+    "plan.need_approval": "Aprueba al menos un cambio.",
+    "catalog.filter_source_one": "Fuente: {source}",
+    "plan.summary_read": "{n} archivos leídos.",
+    "plan.summary_moves": "{n} movimientos",
+    "plan.summary_renames": "{n} renombres",
+    "plan.summary_folders": "{n} carpetas nuevas",
+    "settings.wait_line": "Aparecen cuando eliges una carpeta.",
+    "catalog.empty_place": "Todavía no hay actividad. Pulsa Archivar ahora en Inicio.",
 };

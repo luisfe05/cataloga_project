@@ -106,6 +106,22 @@ async function updateSettings(data) {
     return handleResponse(response);
 }
 
+/** PATCH /settings: save one General field, { key, value }. The server checks it. */
+async function patchSetting(key, value) {
+    const response = await apiFetch(`${BASE_URL}/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: key, value: value }),
+    });
+    return handleResponse(response);
+}
+
+/** GET /settings/ai-status: provider, model, and whether it connects. Never the key. */
+async function getAIStatus() {
+    const response = await apiFetch(`${BASE_URL}/settings/ai-status`);
+    return handleResponse(response);
+}
+
 /** POST /settings/categories/suggest: categories for an industry. Saves nothing. */
 async function suggestCategories(industry) {
     const response = await apiFetch(`${BASE_URL}/settings/categories/suggest`, {
@@ -261,24 +277,14 @@ async function createProject(data) {
     return handleResponse(response);
 }
 
-/** POST /projects/folders/suggest: a folder tree from Ollama Cloud. Saves nothing.
- *  With a folder, only for the files already in it; the description is context. */
-async function suggestFolders(description, industry, folder) {
+/** POST /projects/folders/suggest: a folder tree from the AI. Saves nothing.
+ *  With a folder, only for the files already in it; About this project is context. */
+async function suggestFolders(projectSheet, industry, folder) {
     const response = await apiFetch(`${BASE_URL}/projects/folders/suggest`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: description,
+        body: JSON.stringify({ project_sheet: projectSheet,
             industry: industry || "", folder: folder || "" }),
-    });
-    return handleResponse(response);
-}
-
-/** POST /projects/folders/learn: the tree and the naming of a folder already organized. */
-async function learnFolder(folder) {
-    const response = await apiFetch(`${BASE_URL}/projects/folders/learn`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder: folder }),
     });
     return handleResponse(response);
 }

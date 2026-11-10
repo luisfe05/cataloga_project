@@ -1,24 +1,31 @@
-"""Tests for the gradients of the Media Type Breakdown bars."""
+"""Tests for the Media Mix colors and the contrast of the Dashboard."""
 
 import os
 import re
 
-DASHBOARD_JS = os.path.join(os.path.dirname(__file__), "..", "frontend",
-                            "js", "dashboard.js")
-
-PALETTE = {"#08051c": "Deep Space", "#221854": "Midnight",
-           "#342476": "Nebula", "#46417b": "Dusk", "#493bb2": "Violet",
-           "#eef5fa": "Paper"}
+FRONTEND = os.path.join(os.path.dirname(__file__), "..", "frontend")
 MEDIA_TYPES = {"Documents", "Audio", "Video", "Press", "Photos"}
 
 
-def read_gradients():
-    """Return {media type: [colors bottom to top]} from dashboard.js."""
-    with open(DASHBOARD_JS, encoding="utf-8") as file:
-        content = file.read()
-    table = re.search(r"BAR_GRADIENTS = \{(.*?)\};", content, re.S).group(1)
-    return {name: re.findall(r"#[0-9a-f]{6}", value)
-            for name, value in re.findall(r'(\w+): "([^"]+)"', table)}
+def read(*parts):
+    """Return the text of a frontend file."""
+    with open(os.path.join(FRONTEND, *parts), encoding="utf-8") as file:
+        return file.read()
+
+
+def tokens():
+    """Return {token name: #rrggbb} from the :root block of main.css."""
+    root = re.search(r":root \{(.*?)\n\}", read("css", "main.css"), re.S)
+    return dict(re.findall(r"--([a-z-]+): (#[0-9a-f]{6});", root.group(1)))
+
+
+def mix_colors():
+    """Return {media type: #rrggbb} from MIX_COLORS in dashboard.js."""
+    table = re.search(r"MIX_COLORS = \{(.*?)\};", read("js", "dashboard.js"),
+                      re.S).group(1)
+    colors = tokens()
+    return {name: colors[token] for name, token in
+            re.findall(r'(\w+): "var\(--([a-z-]+)\)"', table)}
 
 
 def luminance(color):
@@ -37,34 +44,56 @@ def contrast(first, second):
     return (light + 0.05) / (dark + 0.05)
 
 
-def test_every_media_type_has_a_gradient():
-    """One gradient for each of the five bars, no more."""
-    assert set(read_gradients()) == MEDIA_TYPES
+def test_every_media_type_has_one_brand_color():
+    """Five types, five different colors, all tokens of main.css."""
+    colors = mix_colors()
+    assert set(colors) == MEDIA_TYPES
+    assert len(set(colors.values())) == 5
 
 
-def test_gradients_use_two_or_three_palette_colors():
-    """Only brand colors, two or three per bar."""
-    for colors in read_gradients().values():
-        assert 2 <= len(colors) <= 3
-        assert set(colors) <= set(PALETTE)
+def test_the_colors_also_differ_by_lightness():
+    """Each step is clearly lighter than the last, not only another hue."""
+    steps = sorted(luminance(color) for color in mix_colors().values())
+    for darker, lighter in zip(steps, steps[1:]):
+        assert (lighter + 0.05) / (darker + 0.05) >= 1.3
 
 
-def test_every_bar_has_its_own_combination():
-    """No two bars share the same colors in the same order."""
-    combinations = [tuple(colors) for colors in read_gradients().values()]
-    assert len(set(combinations)) == len(combinations)
+def test_text_on_the_review_gradient_keeps_its_contrast():
+    """White and Ice (Paper) on Violet and on Midnight: 4.5:1 or more."""
+    colors = tokens()
+    for background in (colors["color-violet"], colors["color-midnight"]):
+        for text in ("#ffffff", colors["color-paper"]):
+            assert contrast(text, background) >= 4.5
 
 
-def test_paper_is_only_a_light_accent_at_the_top():
-    """Paper never starts a bar and never stands without darker colors."""
-    for colors in read_gradients().values():
-        if "#eef5fa" in colors:
-            assert colors[-1] == "#eef5fa"
-            assert len(colors) == 3
+def test_go_review_keeps_its_contrast():
+    """Violet text on the Ice pill."""
+    colors = tokens()
+    assert contrast(colors["color-violet"], colors["color-paper"]) >= 4.5
 
 
-def test_text_around_the_bars_keeps_its_contrast():
-    """Labels (Dusk) and counts (Midnight, Violet) stay readable."""
-    for card in ("#ffffff", "#eef5fa"):
-        for text in ("#46417b", "#221854", "#493bb2"):
-            assert contrast(text, card) >= 4.5
+def test_every_gradient_drifts_with_one_animation():
+    """One gradient-drift keyframes, and reduced motion stops it."""
+    css = read("css", "main.css")
+    assert css.count("@keyframes gradient-drift") == 1
+    assert "auth-drift" not in css
+    reduced = css[css.rindex("@media (prefers-reduced-motion: reduce)"):]
+    for selector in (".auth-screen", ".sidebar::before", ".review-card",
+                     ".card-drop"):
+        assert selector in reduced
+
+
+def test_every_segment_stands_out_from_the_rail():
+    """Each Media Mix color keeps 3:1 against the Paper rail of the bar."""
+    paper = tokens()["color-paper"]
+    for name, color in mix_colors().items():
+        assert contrast(color, paper) >= 3, name
+
+
+def test_the_chip_icons_are_dusk_and_the_color_is_a_dot():
+    """The icon is Dusk; the type's color shows only in its dot."""
+    css = read("css", "main.css")
+    icon = re.search(r"\.mix-chip::before\s*\{([^}]*)\}", css).group(1)
+    assert "background-color: var(--color-dusk)" in icon
+    assert "var(--chip-color)" in re.search(
+        r"\.mix-dot\s*\{([^}]*)\}", css).group(1)

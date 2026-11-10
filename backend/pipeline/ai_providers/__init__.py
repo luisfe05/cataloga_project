@@ -40,43 +40,46 @@ def create_client(provider_name, model, base_url=None):
     return PROVIDERS[provider_name](model=model, base_url=base_url)
 
 
-def fallback_for(repo, main_name):
-    """Return the fallback client of a project, or None."""
-    saved = repo.get_provider("fallback")
+def fallback_for(ai, main_name):
+    """Return the fallback client of the account's settings, or None."""
+    saved = ai.get("fallback")
     if saved is None:
         # Claude steps in on its own when its key is in the keychain.
         if main_name == FALLBACK_PROVIDER:
             return None
         saved = {"provider_name": FALLBACK_PROVIDER, "model": FALLBACK_MODEL}
     client = create_client(saved["provider_name"], saved["model"],
-                           repo.get_server_url())
+                           ai.get("server_url") or None)
     # A fallback without a key would never answer.
     return client if getattr(client, "api_key", None) else None
 
 
-def project_client(repo):
-    """Build the text and image client of a project, with its fallback."""
-    main = repo.get_provider("text")
-    if main is None:
+def text_client(ai):
+    """Build the text and image client, with its fallback.
+
+    ai is the account's settings (ai_settings.load): one for every project.
+    """
+    main = ai.get("text")
+    if not main:
         return None
     client = create_client(main["provider_name"], main["model"],
-                           repo.get_server_url())
+                           ai.get("server_url") or None)
     return ClientWithFallback(client,
-                              fallback_for(repo, main["provider_name"]))
+                              fallback_for(ai, main["provider_name"]))
 
 
-def media_client(repo):
-    """Build the audio and video client of a project, or None."""
-    saved = repo.get_provider("media")
-    if saved is None:
+def media_client(ai):
+    """Build the audio and video client, or None."""
+    saved = ai.get("media")
+    if not saved:
         return None
     return create_client(saved["provider_name"], saved["model"],
-                         repo.get_server_url())
+                         ai.get("server_url") or None)
 
 
-def ready_media_client(repo):
+def ready_media_client(ai):
     """Return the media client when it has a key, else None."""
-    client = media_client(repo)
+    client = media_client(ai)
     if client is None or not getattr(client, "api_key", None):
         return None
     return client

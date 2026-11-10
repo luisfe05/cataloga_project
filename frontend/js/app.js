@@ -33,6 +33,11 @@ function showView(name) {
     if (name === "plan") {
         loadPlan();
     }
+    setStillBackground(name);
+    // The cards of the open tab drop into place.
+    if (name === "settings") {
+        dropSettingsCards();
+    }
 }
 
 document.querySelectorAll("[data-home-tab]").forEach((tab) => {
@@ -119,8 +124,9 @@ async function refreshAfterProjectChange() {
 /** Switch to a project and open Home, or open the New project form. */
 async function chooseProject(folder) {
     if (folder === NEW_PROJECT_OPTION) {
-        showView("settings");
+        // Reset first, so the cards drop already empty.
         startNewProject();
+        showView("settings");
         return;
     }
     // The active project is already loaded: just open Home.

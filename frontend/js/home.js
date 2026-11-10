@@ -74,7 +74,14 @@ function statusBadge(file) {
     const review = file.document.status === "Manual Review";
     const badge = document.createElement("i");
     badge.className = `home-badge ${review ? "rev" : "ok"}`;
-    badge.textContent = review ? "!" : "✓";
+    if (review) {
+        badge.textContent = "!";
+    } else {
+        // The same check icon as the rest of the app, not a text glyph.
+        const check = document.createElement("span");
+        check.className = "icon icon-check";
+        badge.appendChild(check);
+    }
     return badge;
 }
 
@@ -224,8 +231,10 @@ function makeColumnRow(kind, item, levelIndex, selected, depth) {
     } else if (item.photo) {
         row.appendChild(photoImage(item, "home-mini"));
     } else {
+        // The icon view's document, small, with its extension.
         const doc = document.createElement("i");
         doc.className = "home-minidoc";
+        doc.textContent = item.extension.slice(0, 4);
         row.appendChild(doc);
     }
     const name = document.createElement("span");

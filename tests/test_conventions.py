@@ -93,10 +93,10 @@ def test_suggest_folders_adds_the_industry_folders(empty_client, monkeypatch,
                                                    industry, expected):
     """With an industry, the tree request lists its usual folders."""
     ai = SuggestAI('[{"name": "Caso 1", "subfolders": []}]')
-    monkeypatch.setattr(project_routes, "create_client",
-                        lambda name, model: ai)
+    monkeypatch.setattr(project_routes, "text_client",
+                        lambda settings: ai)
     response = empty_client.post("/projects/folders/suggest", json={
-        "description": "Archivo legal", "industry": industry})
+        "project_sheet": "Work: archivo legal", "industry": industry})
     assert response.status_code == 200
     assert expected in ai.prompts[0]
     assert ai.prompts[0].startswith(base.FOLDERS_PROMPT)

@@ -6,7 +6,7 @@ import sqlite3
 
 import pytest
 
-from backend.config import projects
+from backend.config import ai_settings, projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
@@ -38,9 +38,9 @@ def repo(app):
 
 
 @pytest.fixture
-def fake_ai(monkeypatch, repo):
+def fake_ai(monkeypatch, projects_path):
     """Make /chat use a FakeClient. Returns a function to set its answer."""
-    repo.set_active_provider("gemini", "gemini-2.5-flash")
+    ai_settings.set_role(projects_path, "text", "gemini", "gemini-2.5-flash")
     client = FakeClient(None)
     monkeypatch.setattr(ai_providers, "create_client",
                         lambda name, model, base_url=None: client)

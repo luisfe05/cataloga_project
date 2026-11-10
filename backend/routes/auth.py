@@ -7,7 +7,7 @@ import time
 
 from flask import Blueprint, current_app, jsonify, request
 
-from backend.config import account, projects
+from backend.config import account, ai_settings, projects
 from backend.config.accounts import username_problem
 from backend.routes import error_response, session_user
 
@@ -40,6 +40,8 @@ def start_session(username):
     current_app.config["SESSION_TOKEN"] = token
     current_app.config["SESSION_USER"] = username
     store().remember_last(username)
+    # Once per account: the AI provider moves out of the projects.
+    ai_settings.migrate(store().projects_path(username))
     return token
 
 

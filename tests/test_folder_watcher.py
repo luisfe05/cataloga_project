@@ -6,7 +6,7 @@ import shutil
 import pytest
 
 from backend import folder_watcher
-from backend.config import projects
+from backend.config import ai_settings, projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.folder_watcher import (OLD_INBOX_WARNING, find_new_files,
@@ -46,7 +46,6 @@ def make_catalog(folder):
     init_db(db_path)
     repo = CatalogRepository(db_path)
     repo.save_app_config("Test", str(folder))
-    repo.set_active_provider("gemini", "gemini-2.5-flash")
     return repo
 
 
@@ -62,6 +61,9 @@ def project(tmp_path):
 def configure(project):
     """Make the folder a project with an AI provider, and activate it."""
     project["repo"] = make_catalog(project["folder"])
+    # One provider for the whole account, as Settings > General saves it.
+    ai_settings.set_role(project["projects_path"], "text", "gemini",
+                         "gemini-2.5-flash")
     projects.add_project(project["projects_path"], "Test",
                          str(project["folder"]))
 

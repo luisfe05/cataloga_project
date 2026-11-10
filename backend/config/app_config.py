@@ -7,7 +7,7 @@ LANGUAGES = ("en", "es")
 
 
 class AppConfig:
-    """Manages research settings and active AI provider config."""
+    """Manages a project's settings. The AI provider is in ai_settings."""
 
     def __init__(self, catalog_repo):
         """Set up AppConfig with the repository it reads and writes through."""
@@ -16,9 +16,6 @@ class AppConfig:
     def get_settings(self):
         """Read the current app settings."""
         config = self.db.get_app_config() or {}
-        provider = self.db.get_active_provider() or {}
-        fallback = self.db.get_provider("fallback") or {}
-        media = self.db.get_provider("media") or {}
         return {
             "research_name": config.get("research_name", ""),
             "target_directory": config.get("target_directory", ""),
@@ -29,13 +26,6 @@ class AppConfig:
             "industry": config.get("industry") or "",
             "categories": archive_rules.categories_from_text(
                 config.get("categories")),
-            "active_provider": provider.get("provider_name"),
-            "active_model": provider.get("model"),
-            "fallback_provider": fallback.get("provider_name"),
-            "fallback_model": fallback.get("model"),
-            "media_provider": media.get("provider_name"),
-            "media_model": media.get("model"),
-            "server_url": config.get("server_url") or "",
         }
 
     def update_settings(self, research_name, target_directory):
@@ -54,10 +44,6 @@ class AppConfig:
         """Save the industry and the checked category list."""
         self.db.save_industry(industry)
         self.db.save_categories(categories)
-
-    def set_active_provider(self, provider_name, model):
-        """Mark a provider as active and store its model name."""
-        self.db.set_active_provider(provider_name, model)
 
     def set_password_hash(self, password_hash):
         """Store the app-lock password hash in app_config."""

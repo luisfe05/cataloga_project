@@ -6,11 +6,10 @@ import threading
 import time
 
 from backend import scanner
-from backend.config import projects
+from backend.config import ai_settings, projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.pipeline import organization_plan
-from backend.pipeline.ai_providers import (project_client,
-                                           ready_media_client)
+from backend.pipeline.ai_providers import ready_media_client, text_client
 from backend.pipeline.classification_pipeline import (
     ClassificationPipeline, remove_gone_duplicates)
 from backend.pipeline.file_organizer import FileOrganizer
@@ -83,10 +82,12 @@ def scan_once(projects_path, owner=None, scan_busy=False):
         # A scan that never finished waits for Resume or Catalog files.
         if scanner.needs_scan(repo, folder):
             return []
-        client = project_client(repo)
+        ai = ai_settings.load(projects_path)
+        client = text_client(ai)
         if client is None:
             return []
-        return scanner.watch_once(folder, repo, client, owner)
+        return scanner.watch_once(folder, repo, client, owner,
+                                  ready_media_client(ai))
 
     # Only a project's own Inbox is migrated: Cataloga made it.
     organizer = FileOrganizer(folder)
@@ -94,7 +95,8 @@ def scan_once(projects_path, owner=None, scan_busy=False):
     log_old_inbox_warning(organizer)
     remove_gone_duplicates(repo)
 
-    client = project_client(repo)
+    ai = ai_settings.load(projects_path)
+    client = text_client(ai)
     if client is None:
         return []
 
@@ -107,7 +109,7 @@ def scan_once(projects_path, owner=None, scan_busy=False):
         repo,
         organizer,
         owner=owner,
-        media_client=ready_media_client(repo),
+        media_client=ready_media_client(ai),
     )
     return pipeline.process_batch(files)
 

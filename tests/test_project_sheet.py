@@ -157,8 +157,8 @@ def test_suggest_sheet_reads_the_folder_and_saves_nothing(
     """The sample of the given folder goes to the AI; nothing is saved."""
     folder = make_tree(tmp_path / "web")
     ai = SheetAI('{"work": "A website.", "industry": "web and code"}')
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: ai)
+    monkeypatch.setattr(settings_routes, "text_client",
+                        lambda settings: ai)
     response = flask_client.post("/settings/sheet/suggest",
                                  json={"folder": str(folder)})
     assert response.status_code == 200
@@ -172,8 +172,8 @@ def test_suggest_sheet_uses_the_active_project_by_default(
         flask_client, app, monkeypatch):
     """Without a folder, the active project's folder is sampled."""
     ai = SheetAI('{"work": "Research."}')
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: ai)
+    monkeypatch.setattr(settings_routes, "text_client",
+                        lambda settings: ai)
     (os.path.join(app.config["PROJECT_FOLDER"], "Drop Zone"))
     response = flask_client.post("/settings/sheet/suggest", json={})
     assert response.status_code == 200
@@ -187,12 +187,12 @@ def test_suggest_sheet_errors(flask_client, monkeypatch):
     assert response.get_json()["error"]["code"] == "invalid_directory"
     no_key = SheetAI("x")
     no_key.api_key = None
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: no_key)
+    monkeypatch.setattr(settings_routes, "text_client",
+                        lambda settings: no_key)
     response = flask_client.post("/settings/sheet/suggest", json={})
     assert response.get_json()["error"]["code"] == "no_provider"
-    monkeypatch.setattr(settings_routes, "create_client",
-                        lambda name, model: SheetAI("No idea."))
+    monkeypatch.setattr(settings_routes, "text_client",
+                        lambda settings: SheetAI("No idea."))
     response = flask_client.post("/settings/sheet/suggest", json={})
     assert response.status_code == 502
 

@@ -1,4 +1,4 @@
-/** settings.js: Settings. Save tests the AI first, so a wrong API key is never saved. */
+/** settings.js: Settings. Project: this project's cards. General: fields that save on their own. */
 
 // The key is the backend's name. The first model is the default: free or cheapest.
 const AI_PROVIDERS = {
@@ -77,9 +77,25 @@ let customSeparator = "_";
 // A saved custom template that is not made of parts, like "archivo-{date}".
 let legacyTemplate = "";
 
-// The sections Archive Later turns off in a new project; Archive Now turns them on.
-const ARCHIVE_SECTIONS = ["sheet-section", "naming-section", "folders-section",
-    "ai-section"];
+// The four sections of the Project tab, in order.
+const PROJECT_CARDS = ["project-section", "sheet-section", "naming-section",
+    "folders-section"];
+
+// The dotted place each card keeps in a new project until a folder is chosen.
+const CARD_PLACEHOLDERS = {
+    "sheet-section": "sheet-placeholder",
+    "naming-section": "naming-placeholder",
+    "folders-section": "folders-placeholder",
+};
+
+// Write it for me types its answer at this pace, in milliseconds per character.
+const TYPE_MS = 20;
+
+// How long "Saved" stays next to a General field.
+const SAVED_NOTE_MS = 2000;
+
+// Same as the card-leaving transition in main.css, plus a little.
+const LEAVE_MS = 260;
 
 // Generic values for the live preview, not real data.
 const PREVIEW_PARTS = {
@@ -125,6 +141,299 @@ let savedProjectName = "";
 // Providers with an API key ready. The backend never sends the key itself.
 let providersWithKey = [];
 
+// New project: the user typed a name or picked a naming method, so neither is filled for them.
+let nameTouched = false;
+let namingTouched = false;
+
+// Write it for me: running now, and the folder it already ran for once on its own.
+let sheetWriting = false;
+let sheetWrittenFor = "";
+
+// The chosen folder's numbers, so a new language can write them again.
+let folderFacts = null;
+
+// What General shows as saved, so a failed save puts it back.
+let savedRows = {};
+let savedServerUrl = "";
+
+// ---- Cards: drop, fold, hide ----
+
+function settingsVisible() {
+    return !document.getElementById("view-settings").classList
+        .contains("hidden");
+}
+
+// The full drop plays the first time Settings opens in this app session,
+// and for every new project. Kept in memory only: a new session starts over.
+let fullDropDone = false;
+let fullDropNext = false;
+
+/** The cards drop into place (card-drop), or just come in quickly (card-quick). */
+function dropCards(cards, quick = false) {
+    if (!settingsVisible() || prefersReducedMotion()) {
+        return;
+    }
+    const name = quick ? "card-quick" : "card-drop";
+    cards.forEach((card, index) => {
+        card.classList.remove("card-drop", "card-quick");
+        // Quick entrances all come at once; the full drop goes one by one.
+        card.style.setProperty("--drop-index", quick ? 0 : index);
+        // Reading the size restarts the animation on a card that just played it.
+        card.getBoundingClientRect();
+        card.classList.add(name);
+    });
+}
+
+/** The visible cards and dotted places of the open tab, top to bottom. */
+function openTabCards() {
+    const panel = document.querySelector(".settings-panel:not(.hidden)");
+    if (!panel) {
+        return [];
+    }
+    return [...panel.querySelectorAll(
+        ".settings-card, .card-placeholder, .card-wait-line, .card-pair")]
+        .filter((card) => !card.classList.contains("hidden")
+            && !card.querySelector(".settings-card"));
+}
+
+/** The cards of the open tab come in: the full drop once, then quickly. */
+function dropSettingsCards() {
+    const quick = fullDropDone && !fullDropNext;
+    fullDropDone = true;
+    fullDropNext = false;
+    dropCards(openTabCards(), quick);
+}
+
+/** Show a hidden card; only that card drops. */
+function showCard(card) {
+    clearTimeout(card.leaveTimer);
+    card.classList.remove("card-leaving");
+    card.style.height = "";
+    if (!card.classList.contains("hidden")) {
+        return;
+    }
+    card.classList.remove("hidden");
+    dropCards([card]);
+}
+
+/** Hide a card: it fades out, and the cards under it move up. */
+function hideCard(card) {
+    if (card.classList.contains("hidden")
+            || card.classList.contains("card-leaving")) {
+        return;
+    }
+    if (!settingsVisible() || prefersReducedMotion()) {
+        card.classList.add("hidden");
+        return;
+    }
+    // A fixed height first, so the change to 0 can be animated.
+    card.style.height = `${card.offsetHeight}px`;
+    card.getBoundingClientRect();
+    card.classList.add("card-leaving");
+    card.leaveTimer = setTimeout(() => {
+        card.classList.add("hidden");
+        card.classList.remove("card-leaving");
+        card.style.height = "";
+        // The progress counts only the cards that stay.
+        refreshCards();
+    }, LEAVE_MS);
+}
+
+function setCardShown(card, shown) {
+    if (shown) {
+        showCard(card);
+    } else {
+        hideCard(card);
+    }
+}
+
+/** Fold a card into its one-line summary, or open it again. */
+function setCardDone(card, done) {
+    if (card.classList.contains("is-done") === done) {
+        return;
+    }
+    // While it moves, nothing sticks out of the card.
+    card.classList.add("is-moving");
+    card.classList.toggle("is-done", done);
+    clearTimeout(card.foldTimer);
+    card.foldTimer = setTimeout(() => {
+        card.classList.remove("is-moving");
+    }, prefersReducedMotion() ? 0 : LEAVE_MS);
+}
+
+/** Which cards show in the Project tab: a new project waits for its folder. */
+function updateCardVisibility() {
+    const isNew = projectMode === "new";
+    const waiting = isNew
+        && !document.getElementById("target-directory").value.trim();
+    const catalogOnly = document.getElementById("catalog-only").checked;
+    // A place project keeps its folders in the Plan tab, not here.
+    const wanted = {
+        "sheet-section": true,
+        "naming-section": true,
+        "folders-section": !catalogOnly
+            && (isNew || projectFolderMode === "tree"),
+    };
+    const revealed = [];
+    // One line above the dotted places says when they appear.
+    document.getElementById("cards-wait-line").classList
+        .toggle("hidden", !waiting);
+    Object.keys(CARD_PLACEHOLDERS).forEach((id) => {
+        const card = document.getElementById(id);
+        document.getElementById(CARD_PLACEHOLDERS[id]).classList
+            .toggle("hidden", !(waiting && wanted[id]));
+        if (wanted[id] && !waiting) {
+            if (card.classList.contains("hidden")) {
+                revealed.push(card);
+            }
+            showCard(card);
+        } else if (waiting) {
+            // Its dotted place takes its spot at once.
+            card.classList.add("hidden");
+        } else {
+            hideCard(card);
+        }
+    });
+    // About first, then File names, then Folder names.
+    dropCards(revealed);
+    const treeMode = isNew || ["tree", "place"].includes(projectFolderMode);
+    setCardShown(document.getElementById("categories-section"), !treeMode);
+    setCardShown(document.getElementById("remove-project-section"), !isNew);
+    refreshCards();
+}
+
+/** Is a section complete? File names and Folder names have a default. */
+function cardReady(id) {
+    if (id === "project-section") {
+        return Boolean(document.getElementById("target-directory").value
+            .trim() && document.getElementById("research-name").value.trim());
+    }
+    if (id === "sheet-section") {
+        return Boolean(document.getElementById("project-sheet").value.trim())
+            && !sheetWriting;
+    }
+    if (id === "naming-section") {
+        const picked = document.querySelector(
+            'input[name="naming-method"]:checked');
+        const template = chosenTemplate();
+        return Boolean(picked) && Boolean(template.trim())
+            && validateTemplate(template) === null;
+    }
+    // Folder names: a proposal, or left empty on purpose.
+    return !foldersBusy;
+}
+
+/** The counted sections: the cards that show, or wait in their dotted place. */
+function countedCards() {
+    return PROJECT_CARDS.filter((id) => {
+        const placeholder = CARD_PLACEHOLDERS[id];
+        return !document.getElementById(id).classList.contains("hidden")
+            || (placeholder && !document.getElementById(placeholder)
+                .classList.contains("hidden"));
+    });
+}
+
+/** The method's name and its preview, as the folded row shows it. */
+function namingSummary() {
+    const picked = document.querySelector(
+        'input[name="naming-method"]:checked');
+    if (!picked) {
+        return "";
+    }
+    const label = picked.closest(".naming-option")
+        .querySelector("span").textContent.trim();
+    const preview = document.getElementById("naming-preview").textContent;
+    return preview ? `${label} · ${preview}` : label;
+}
+
+/** "Harbor Swimmers · /Volumes/Demo/Harbor · Later" for the folded New Project row. */
+function projectSummary() {
+    const parts = [document.getElementById("research-name").value.trim(),
+        document.getElementById("target-directory").value.trim()];
+    if (projectMode === "new") {
+        if (document.getElementById("catalog-only").checked) {
+            parts.push(t("project.catalog_only"));
+        } else if (document.getElementById("use-drop-zone").checked) {
+            parts.push(t("project.mode_tree"));
+        }
+        if (archiveChoice()) {
+            parts.push(t(`project.archive_${archiveChoice()}`));
+        }
+    }
+    return parts.filter(Boolean).join(" · ");
+}
+
+function foldersSummary() {
+    const count = readFolderTree().length;
+    if (!count) {
+        return t("folders.none_yet");
+    }
+    return count === 1 ? t("folders.count_one")
+        : t("folders.count", { n: count });
+}
+
+/** Progress, summaries, Done links and the Create button, after any change. */
+function refreshCards() {
+    // A card still in its dotted place is not ready yet.
+    const ready = PROJECT_CARDS.filter((id) => cardReady(id)
+        && !document.getElementById(id).classList.contains("hidden"));
+    PROJECT_CARDS.forEach((id) => {
+        const card = document.getElementById(id);
+        card.querySelector(".card-confirm").classList
+            .toggle("hidden", !ready.includes(id));
+        // A card that is no longer complete opens again.
+        if (!ready.includes(id) && card.classList.contains("is-done")) {
+            setCardDone(card, false);
+        }
+    });
+    document.getElementById("project-summary").textContent =
+        projectSummary();
+    const sheet = document.getElementById("project-sheet").value.trim();
+    document.getElementById("sheet-summary").textContent =
+        sheet.split("\n")[0];
+    document.getElementById("naming-summary").textContent = namingSummary();
+    document.getElementById("folders-summary").textContent =
+        foldersSummary();
+
+    const isNew = projectMode === "new";
+    const counted = countedCards();
+    const done = counted.filter((id) => ready.includes(id)).length;
+    document.getElementById("settings-progress").classList
+        .toggle("hidden", !isNew);
+    document.getElementById("settings-progress-text").textContent = t(
+        "settings.progress",
+        { done: done, total: counted.length });
+    document.getElementById("settings-progress-fill").style.width =
+        `${counted.length ? Math.round((done / counted.length) * 100) : 0}%`;
+    // A project needs a folder and a name; the rest has defaults.
+    const blocked = isNew && !ready.includes("project-section");
+    document.getElementById("save-button").disabled = blocked;
+    // An off button says what is missing.
+    let missing = "";
+    if (blocked) {
+        missing = document.getElementById("target-directory").value.trim()
+            ? t("settings.need_name") : t("settings.need_folder");
+    }
+    document.getElementById("save-hint").textContent = missing;
+}
+
+/** Moving on to a later card folds the complete cards above it. */
+function moveOnFrom(target) {
+    const card = target.closest(".settings-card");
+    const index = card ? PROJECT_CARDS.indexOf(card.id) : -1;
+    if (index < 1) {
+        return;
+    }
+    PROJECT_CARDS.slice(0, index).forEach((id) => {
+        const above = document.getElementById(id);
+        if (!above.classList.contains("hidden") && cardReady(id)) {
+            setCardDone(above, true);
+        }
+    });
+}
+
+// ---- Project tab ----
+
 function updateSaveButton() {
     let text = t("settings.save");
     if (folderWarningShown) {
@@ -143,21 +452,14 @@ function updateBrowseButton() {
 function setProjectMode(mode) {
     projectMode = mode;
     const isNew = mode === "new";
-    document.getElementById("project-form-title").textContent =
-        t(isNew ? "project.new_title" : "project.edit_title");
+    const title = t(isNew ? "project.new_title" : "project.edit_title");
+    document.getElementById("project-form-title").textContent = title;
+    document.getElementById("project-row-title").textContent = title;
     document.getElementById("target-directory").readOnly = !isNew;
-    document.getElementById("folder-locked")
-        .classList.toggle("hidden", isNew);
+    // An existing project says, under its folder, why it can't change.
+    document.getElementById("folder-locked").classList.toggle("hidden", isNew);
     document.getElementById("cancel-new-project")
-        .classList.toggle("hidden", !(isNew && hasProjects));
-    document.getElementById("remove-project-section")
-        .classList.toggle("hidden", isNew);
-    // New projects get a folder tree; old projects keep their categories.
-    const treeMode = isNew || ["tree", "place"].includes(projectFolderMode);
-    document.getElementById("categories-section")
-        .classList.toggle("hidden", treeMode);
-    document.getElementById("folders-section")
-        .classList.toggle("hidden", !treeMode);
+        .classList.toggle("hidden", isNew && !hasProjects);
     // Catalog only: the box is a choice for new projects, a fact after.
     const box = document.getElementById("catalog-only");
     box.disabled = !isNew;
@@ -168,6 +470,13 @@ function setProjectMode(mode) {
     updateBrowseButton();
     resetFolderWarning();
     hideArchiveSwitch();
+    // An existing project shows every section folded; a new one, open.
+    PROJECT_CARDS.forEach((id) => {
+        const card = document.getElementById(id);
+        card.classList.remove("is-moving");
+        card.classList.toggle("is-done", !isNew);
+    });
+    updateCardVisibility();
 }
 
 /** "now" or "later" while the switch shows, else "" (an existing project, or a Drop Zone). */
@@ -179,31 +488,25 @@ function archiveChoice() {
     return document.querySelector('input[name="archive-when"]:checked').value;
 }
 
-/** Archive Later turns off About this project, File names, Folders and AI provider. */
+/** Later sends nothing to the AI: its two AI buttons give way to a short note.
+
+Everything else works the same with Now and Later. Going back to Now, the
+buttons come back, each with its drop.
+ */
 function applyArchiveChoice() {
-    const choice = archiveChoice();
-    ARCHIVE_SECTIONS.forEach((id) => {
-        const section = document.getElementById(id);
-        const off = choice === "later";
-        section.classList.toggle("is-off", off);
-        // The fields are off, but the "?" still opens. Only what the switch
-        // turned off is turned on again, so Catalog only keeps its own rules.
-        section.querySelectorAll("input, select, textarea, button")
-            .forEach((control) => {
-                if (control.classList.contains("help-button")) {
-                    return;
-                }
-                if (off && !control.disabled) {
-                    control.disabled = true;
-                    control.dataset.archiveOff = "1";
-                } else if (!off && control.dataset.archiveOff) {
-                    control.disabled = false;
-                    delete control.dataset.archiveOff;
-                }
-            });
-    });
-    document.getElementById("archive-hint").textContent =
-        choice === "later" ? t("project.archive_later_hint") : "";
+    const later = archiveChoice() === "later";
+    const comeBack = [];
+    [["sheet-buttons", "sheet-later"], ["folder-buttons", "folders-later"]]
+        .forEach(([buttonsId, noteId]) => {
+            const buttons = document.getElementById(buttonsId);
+            if (!later && buttons.classList.contains("later-hidden")) {
+                comeBack.push(...buttons.children);
+            }
+            buttons.classList.toggle("later-hidden", later);
+            document.getElementById(noteId).classList.toggle("hidden", !later);
+        });
+    dropCards(comeBack);
+    refreshCards();
 }
 
 /** Archive Now: read the folder and propose its tree, unless the user already has one. */
@@ -236,9 +539,6 @@ function applyCatalogOnly() {
     const isNew = projectMode === "new";
     document.getElementById("drop-zone-row")
         .classList.toggle("hidden", !isNew);
-    document.getElementById("folders-section")
-        .classList.toggle("hidden", on || !(isNew
-            || projectFolderMode === "tree"));
     document.querySelectorAll("#naming-options input").forEach((radio) => {
         radio.disabled = on && radio.value !== "keep";
     });
@@ -247,11 +547,21 @@ function applyCatalogOnly() {
             .checked = true;
         updateNamingPreview();
     }
+    updateCardVisibility();
+}
+
+/** Write it for me's button: "Write it again" once it has written. */
+function setSheetButton(again) {
+    const button = document.getElementById("suggest-sheet");
+    button.dataset.i18n = again ? "sheet.again" : "sheet.suggest";
+    button.textContent = t(button.dataset.i18n);
 }
 
 /** Empty the form for a new project, which starts with Ollama Cloud. */
 function startNewProject() {
-    setProjectMode("new");
+    // A new project always gets the full drop.
+    fullDropNext = true;
+    showSettingsTab("project", false);
     showFolderSection({}, true);
     document.getElementById("research-name").value = "";
     document.getElementById("target-directory").value = "";
@@ -259,12 +569,15 @@ function startNewProject() {
     document.getElementById("folder-advice").classList.add("hidden");
     document.getElementById("project-sheet").value = "";
     showSheetMessage("", "");
+    setSheetButton(false);
+    nameTouched = false;
+    namingTouched = false;
+    sheetWrittenFor = "";
+    showNamingSuggestion(null);
     document.getElementById("catalog-only").checked = false;
-    applyCatalogOnly();
     // Archive Later by default: nothing is read or sent until the user says so.
     document.querySelector('input[name="archive-when"][value="later"]')
         .checked = true;
-    hideArchiveSwitch();
     // New projects start with method 4, lowercase, no accents, and
     // month-first photo stamps.
     showSavedTemplate(NAMING_METHODS.m4);
@@ -273,95 +586,8 @@ function startNewProject() {
     document.querySelector('input[name="stamp-order"][value="month"]')
         .checked = true;
     showCategories("", []);
-    showProvider("text", "ollama", "");
-    showProvider("fallback", "", "");
-    showProvider("media", "", "");
-    document.getElementById("server-url").value = "";
     showSettingsMessage("", "");
-}
-
-function rowField(role, name) {
-    return document.getElementById(PROVIDER_ROWS[role][name]);
-}
-
-function rowProvider(role) {
-    return rowField(role, "provider").value;
-}
-
-function providerHasKey(provider) {
-    return providersWithKey.includes(provider);
-}
-
-function updateKeyPlaceholder(role) {
-    const provider = rowProvider(role);
-    const field = rowField(role, "key");
-    field.disabled = !provider;
-    field.placeholder = providerHasKey(provider)
-        ? t("settings.api_key_saved") : t("settings.api_key_placeholder");
-}
-
-/** The line under the title: the main provider, and the fallback if any. */
-function updateAIStatus() {
-    const provider = rowProvider("text");
-    const vars = { provider: AI_PROVIDERS[provider].label,
-        model: rowField("text", "model").value };
-    let text = providerHasKey(provider)
-        ? t("settings.ai_using", vars) : t("settings.ai_needs_key", vars);
-    const fallback = rowProvider("fallback");
-    if (fallback) {
-        text += " " + t("settings.ai_using_fallback", {
-            provider: AI_PROVIDERS[fallback].label,
-            model: rowField("fallback", "model").value });
-    }
-    document.getElementById("ai-status").textContent = text;
-}
-
-/** Show a row's provider. Advanced settings opens only if the main one needs a key. */
-function showProvider(role, provider, model) {
-    rowField(role, "provider").value = provider;
-    rowField(role, "key").value = "";
-    fillModels(role, model);
-    if (role === "text") {
-        document.getElementById("ai-advanced").open =
-            provider !== "ollama" || !providerHasKey(provider);
-    }
-    updateKeyPlaceholder(role);
-    updateAIStatus();
-}
-
-/** Read the three rows. A row with no provider chosen is null. */
-function readProviderRows() {
-    const rows = {};
-    Object.keys(PROVIDER_ROWS).forEach((role) => {
-        const provider = rowProvider(role);
-        rows[role] = provider ? {
-            role: role,
-            provider_name: provider,
-            model: rowField(role, "model").value,
-            api_key: rowField(role, "key").value.trim(),
-        } : null;
-    });
-    return rows;
-}
-
-function readServerUrl() {
-    return document.getElementById("server-url").value.trim();
-}
-
-/** Test and save each row. An empty optional row is cleared in the backend. */
-async function saveProviderRows(rows) {
-    const serverUrl = readServerUrl();
-    for (const role of Object.keys(PROVIDER_ROWS)) {
-        const data = rows[role];
-        if (!data) {
-            if (role !== "text") {
-                await deleteAIProvider(role);
-            }
-            continue;
-        }
-        await testAIProvider({ ...data, server_url: serverUrl });
-        await updateAIProvider(data);
-    }
+    setProjectMode("new");
 }
 
 function resetFolderWarning() {
@@ -565,6 +791,52 @@ function showSavedTemplate(template) {
     renderNamingBlocks();
 }
 
+/** The naming method of a template, like "m4", or "" for Custom. */
+function methodOf(template) {
+    return Object.keys(NAMING_METHODS)
+        .find((key) => NAMING_METHODS[key] === template) || "";
+}
+
+/** Mark the method the folder's names already follow; pick it unless the user chose. */
+function showNamingSuggestion(template) {
+    document.querySelectorAll(".suggested-tag").forEach((tag) => tag.remove());
+    const method = template ? methodOf(template) : "";
+    if (!method) {
+        return;
+    }
+    const radio = document.querySelector(
+        `input[name="naming-method"][value="${method}"]`);
+    // Catalog only keeps every name: nothing to suggest.
+    if (radio.disabled) {
+        return;
+    }
+    if (!namingTouched) {
+        radio.checked = true;
+        updateNamingPreview();
+    }
+    const tag = document.createElement("span");
+    tag.className = "suggested-tag";
+    tag.dataset.i18n = "settings.suggested";
+    tag.textContent = t("settings.suggested");
+    radio.closest(".naming-option").querySelector("span").after(tag);
+}
+
+/** "Harbor-Swimmers-Documentary" becomes "Harbor Swimmers Documentary". */
+function readableName(folder) {
+    return folder.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+
+/** A typed name is never replaced; an empty one takes the folder's name. */
+function fillNameFromFolder() {
+    const field = document.getElementById("research-name");
+    if (!nameTouched || !field.value.trim()) {
+        field.value = readableName(folderName());
+    }
+}
+
 /** After a folder is chosen for a new project, say what it looks like. */
 async function adviseOnFolder() {
     const advice = document.getElementById("folder-advice");
@@ -596,7 +868,27 @@ function showSheetMessage(text, kind) {
     message.className = "form-message " + kind;
 }
 
-/** Ask the AI for the sheet of the chosen folder; the user edits it before Save. */
+/** Show a text one character at a time, or at once with reduced motion. */
+function typeText(field, text) {
+    if (prefersReducedMotion()) {
+        field.value = text;
+        return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+        let shown = 0;
+        field.value = "";
+        const timer = setInterval(() => {
+            shown += 1;
+            field.value = text.slice(0, shown);
+            if (shown >= text.length) {
+                clearInterval(timer);
+                resolve();
+            }
+        }, TYPE_MS);
+    });
+}
+
+/** Ask the AI for the sheet of the chosen folder; the user edits it before saving. */
 async function suggestProjectSheet() {
     const folder = document.getElementById("target-directory").value.trim();
     if (!folder) {
@@ -604,17 +896,42 @@ async function suggestProjectSheet() {
         return;
     }
     const button = document.getElementById("suggest-sheet");
+    const field = document.getElementById("project-sheet");
+    const before = field.value;
+    sheetWriting = true;
     button.disabled = true;
-    showSheetMessage(t("sheet.suggesting"), "");
+    field.readOnly = true;
+    showSheetMessage(t("sheet.writing"), "");
+    refreshCards();
     try {
         const result = await suggestSheet(folder);
-        document.getElementById("project-sheet").value = result.sheet;
-        showSheetMessage(t("sheet.suggested"), "success");
+        await typeText(field, result.sheet);
+        showSheetMessage("", "");
+        setSheetButton(true);
     } catch (error) {
+        // What was there before comes back: empty when it ran on its own.
+        field.value = before;
         showSheetMessage(errorText(error), "error");
     } finally {
+        sheetWriting = false;
         button.disabled = false;
+        field.readOnly = false;
+        refreshCards();
     }
+}
+
+/** Write it for me runs on its own once per folder, unless Later or the user wrote. */
+function writeSheetIfEmpty() {
+    const folder = document.getElementById("target-directory").value.trim();
+    const later = readsNewFolder() && document.querySelector(
+        'input[name="archive-when"]:checked').value === "later";
+    if (projectMode !== "new" || !folder || later || sheetWriting
+            || sheetWrittenFor === folder
+            || document.getElementById("project-sheet").value.trim()) {
+        return;
+    }
+    sheetWrittenFor = folder;
+    suggestProjectSheet();
 }
 
 function showSettingsMessage(text, kind) {
@@ -622,6 +939,189 @@ function showSettingsMessage(text, kind) {
     message.textContent = text;
     message.className = "form-message " + kind;
 }
+
+// ---- General tab: each field saves on its own ----
+
+function rowField(role, name) {
+    return document.getElementById(PROVIDER_ROWS[role][name]);
+}
+
+function rowProvider(role) {
+    return rowField(role, "provider").value;
+}
+
+function providerHasKey(provider) {
+    return providersWithKey.includes(provider);
+}
+
+function updateKeyPlaceholder(role) {
+    const provider = rowProvider(role);
+    const field = rowField(role, "key");
+    field.disabled = !provider;
+    const saved = Boolean(provider) && providerHasKey(provider);
+    field.placeholder = t(saved ? "settings.api_key_replace"
+        : "settings.api_key_placeholder");
+    // Whether a key is saved is said in a line of its own, not in the field.
+    document.getElementById(`${PROVIDER_ROWS[role].key}-status`).classList
+        .toggle("hidden", !saved);
+}
+
+/** Show a row's provider and model as saved. */
+function showProvider(role, provider, model) {
+    rowField(role, "provider").value = provider;
+    rowField(role, "key").value = "";
+    fillModels(role, model);
+    updateKeyPlaceholder(role);
+    savedRows[role] = { provider: provider, model: rowField(role, "model")
+        .value };
+}
+
+function readServerUrl() {
+    return document.getElementById("server-url").value.trim();
+}
+
+/** "Saved" next to a field for 2 seconds, or the error that undid the change. */
+function showFieldNote(field, text, kind) {
+    let note = field.nextElementSibling;
+    if (!note || !note.classList.contains("field-note")) {
+        note = document.createElement("span");
+        note.setAttribute("aria-live", "polite");
+        field.after(note);
+    }
+    note.className = "field-note " + kind;
+    note.textContent = text;
+    clearTimeout(note.timer);
+    if (kind === "saved") {
+        note.timer = setTimeout(() => {
+            note.textContent = "";
+        }, SAVED_NOTE_MS);
+    }
+}
+
+/** The line under AI Provider: provider, model, and whether it connects. */
+async function loadAIStatus() {
+    const line = document.getElementById("ai-status");
+    const text = document.getElementById("ai-status-text");
+    const addKey = document.getElementById("ai-status-open");
+    line.dataset.state = "loading";
+    text.textContent = t("settings.ai_checking");
+    addKey.classList.add("hidden");
+    try {
+        const status = await getAIStatus();
+        const known = AI_PROVIDERS[status.provider];
+        const parts = [known ? known.label : status.provider, status.model,
+            t(`settings.ai_${status.status}`)];
+        line.dataset.state = status.status;
+        text.textContent = parts.join(" · ");
+        addKey.classList.toggle("hidden", status.status !== "no_key");
+    } catch (error) {
+        line.dataset.state = "error";
+        text.textContent = t("settings.ai_error");
+    }
+}
+
+/** Save a row's provider and model as soon as they change; no key is sent. */
+async function saveProviderRow(role, field) {
+    const provider = rowProvider(role);
+    try {
+        if (provider) {
+            await updateAIProvider({ role: role, provider_name: provider,
+                model: rowField(role, "model").value });
+        } else {
+            await deleteAIProvider(role);
+        }
+        savedRows[role] = { provider: provider,
+            model: rowField(role, "model").value };
+        showFieldNote(field, t("settings.saved_short"), "saved");
+        loadAIStatus();
+    } catch (error) {
+        // The saved choice comes back.
+        const saved = savedRows[role] || { provider: "", model: "" };
+        rowField(role, "provider").value = saved.provider;
+        fillModels(role, saved.model);
+        updateKeyPlaceholder(role);
+        showFieldNote(field, errorText(error), "error");
+    }
+}
+
+/** A key is tested first, then saved in the Keychain. A wrong key is never saved. */
+async function saveProviderKey(role) {
+    const field = rowField(role, "key");
+    const key = field.value.trim();
+    const provider = rowProvider(role);
+    if (!key || !provider) {
+        return;
+    }
+    const model = rowField(role, "model").value;
+    field.disabled = true;
+    try {
+        await testAIProvider({ provider_name: provider, model: model,
+            api_key: key, server_url: readServerUrl() });
+        await updateAIProvider({ role: role, provider_name: provider,
+            model: model, api_key: key });
+        if (!providerHasKey(provider)) {
+            providersWithKey.push(provider);
+        }
+        field.value = "";
+        showFieldNote(field, t("settings.saved_short"), "saved");
+        loadAIStatus();
+    } catch (error) {
+        // Keys are never shown, so the field goes back to empty.
+        field.value = "";
+        showFieldNote(field, errorText(error), "error");
+    } finally {
+        updateKeyPlaceholder(role);
+    }
+}
+
+async function saveServerUrl() {
+    const field = document.getElementById("server-url");
+    if (readServerUrl() === savedServerUrl) {
+        return;
+    }
+    try {
+        const saved = await patchSetting("server_url", readServerUrl());
+        savedServerUrl = saved.value;
+        field.value = saved.value;
+        showFieldNote(field, t("settings.saved_short"), "saved");
+        loadAIStatus();
+    } catch (error) {
+        field.value = savedServerUrl;
+        showFieldNote(field, errorText(error), "error");
+    }
+}
+
+/** Save the language, then show it everywhere, JS-built text included. */
+async function changeLanguage() {
+    const select = document.getElementById("language-select");
+    const language = select.value;
+    const before = currentLanguage;
+    try {
+        await patchSetting("language", language);
+    } catch (error) {
+        select.value = before;
+        showFieldNote(select, errorText(error), "error");
+        return;
+    }
+    setLanguage(language);
+    updateSaveButton();
+    Object.keys(PROVIDER_ROWS).forEach(updateKeyPlaceholder);
+    // Redraws the part names in the new language, and the preview.
+    renderNamingBlocks();
+    const title = t(projectMode === "new" ? "project.new_title"
+        : "project.edit_title");
+    document.getElementById("project-form-title").textContent = title;
+    document.getElementById("project-row-title").textContent = title;
+    writeFolderFacts();
+    refreshCards();
+    loadAIStatus();
+    showSettingsMessage("", "");
+    loadProjectHeader();
+    loadCatalog();
+    showFieldNote(select, t("settings.saved_short"), "saved");
+}
+
+// ---- Load and save ----
 
 function fillModels(role, chosenModel) {
     const provider = rowProvider(role);
@@ -672,8 +1172,10 @@ async function loadSettings() {
         document.getElementById("project-sheet").value =
             settings.project_sheet || "";
         showSheetMessage("", "");
+        setSheetButton(false);
         document.getElementById("language-select").value =
             settings.language;
+        showNamingSuggestion(null);
         showSavedTemplate(settings.naming_template);
         document.querySelector(`input[name="stamp-order"][value="${
             settings.stamp_date_order || "month"}"]`).checked = true;
@@ -695,8 +1197,8 @@ async function loadSettings() {
             settings.fallback_model);
         showProvider("media", settings.media_provider || "",
             settings.media_model);
-        document.getElementById("server-url").value =
-            settings.server_url || "";
+        savedServerUrl = settings.server_url || "";
+        document.getElementById("server-url").value = savedServerUrl;
 
         // With no project yet, the form starts as "New project".
         if (hasProjects) {
@@ -714,7 +1216,7 @@ async function loadSettings() {
     }
 }
 
-/** Save: project, then AI test, then provider (only if the test passed). */
+/** Save the Project tab: create the project, or save the active one. */
 async function saveSettings(event) {
     event.preventDefault();
 
@@ -730,19 +1232,19 @@ async function saveSettings(event) {
         || ["tree", "place"].includes(projectFolderMode));
     const archive = archiveChoice();
     const later = archive === "later";
-    // Later leaves Folders off; Now may start with no folders, reading proposes them.
-    const checkTree = isTree && !later
-        && !(archive === "now" && !readFolderTree().length);
+    // A tree typed by hand is checked; read in place it may be empty, the
+    // reading proposes it. A Drop Zone (no switch) always needs one.
+    const checkTree = isTree && (readFolderTree().length > 0 || !archive);
     const treeProblem = checkTree ? folderTreeProblem() : "";
     if (treeProblem) {
         showFoldersMessage(treeProblem, "error");
         showSettingsMessage(treeProblem, "error");
+        setCardDone(document.getElementById("folders-section"), false);
         return;
     }
-    const providerRows = readProviderRows();
 
     const isNew = projectMode === "new";
-    // True once a new project exists, even if the AI test fails later.
+    // True once a new project exists, even if something fails later.
     let projectCreated = false;
     let doneMessage = t("settings.saved");
 
@@ -751,7 +1253,8 @@ async function saveSettings(event) {
         "");
     try {
         if (isNew) {
-            // Archive Later sends only what its switch leaves on; nothing is read.
+            // Language, AI provider and server live in General, not here.
+            // Later reads nothing and asks no AI, but keeps what was typed.
             const created = await createProject({
                 name: document.getElementById("research-name").value
                     || folderName(),
@@ -760,19 +1263,15 @@ async function saveSettings(event) {
                 naming_template: chosenTemplate(),
                 stamp_date_order: readStampOrder(),
                 naming_style: readNamingStyle(),
-                description: later ? "" : document.getElementById(
-                    "project-description").value.trim(),
-                project_sheet: later ? "" : document.getElementById(
-                    "project-sheet").value.trim(),
-                folders: later ? [] : readFolderTree(),
+                project_sheet: document.getElementById("project-sheet")
+                    .value.trim(),
+                folders: readFolderTree(),
                 folder_mode: chosenFolderMode(),
                 catalog_only: document.getElementById("catalog-only").checked,
                 numbered_folders: readNumberedFolders(),
                 confirm_folder: folderWarningShown,
-                server_url: later ? "" : readServerUrl(),
             });
             projectCreated = true;
-            // Later tests no AI, so its message does not say the connection works.
             let createdKey = later ? "project.created_later" : "project.created";
             if (created.opened_existing) {
                 createdKey = "project.opened_existing";
@@ -793,14 +1292,9 @@ async function saveSettings(event) {
                     ? { folder_tree: readFolderTree(),
                         numbered_folders: readNumberedFolders() }
                     : { categories: readCategories() }),
-                server_url: readServerUrl(),
             });
         }
         resetFolderWarning();
-        // Later keeps Ollama Cloud; the provider can change in Settings before reading.
-        if (!later) {
-            await saveProviderRows(providerRows);
-        }
         await refreshAfterProjectChange();
         showSettingsMessage(doneMessage, "success");
         if (archive) {
@@ -822,7 +1316,7 @@ async function saveSettings(event) {
             : errorText(error);
         showSettingsMessage(message, "error");
     } finally {
-        saveButton.disabled = false;
+        refreshCards();
     }
 }
 
@@ -853,17 +1347,6 @@ async function confirmRemoveProject() {
     showSettingsMessage(t("project.removed"), "success");
 }
 
-/** Open the folder picker. Only the desktop window has it, so a browser hides Browse. */
-async function browseFolder() {
-    const folder = await window.pywebview.api.choose_folder();
-    if (folder) {
-        document.getElementById("target-directory").value = folder;
-        await adviseOnFolder();
-        resetFolderWarning();
-        showFolderFacts();
-    }
-}
-
 /** The last part of the chosen folder, the name when none is typed. */
 function folderName() {
     const parts = document.getElementById("target-directory").value
@@ -871,11 +1354,44 @@ function folderName() {
     return parts[parts.length - 1] || "";
 }
 
+/** A folder was chosen: the name, the advice, the cards, then what it holds. */
+async function folderChosen() {
+    if (projectMode !== "new") {
+        return;
+    }
+    fillNameFromFolder();
+    resetFolderWarning();
+    updateCardVisibility();
+    await adviseOnFolder();
+    await showFolderFacts();
+    writeSheetIfEmpty();
+}
+
+/** Open the folder picker. Only the desktop window has it, so a browser hides Browse. */
+async function browseFolder() {
+    const folder = await window.pywebview.api.choose_folder();
+    if (folder) {
+        document.getElementById("target-directory").value = folder;
+        await folderChosen();
+    }
+}
+
+/** "This folder has 30 files in 3 folders (6.7 MB)." in the current language. */
+function writeFolderFacts() {
+    if (!folderFacts) {
+        return;
+    }
+    document.getElementById("folder-facts").textContent = t(
+        "project.folder_facts", { files: folderFacts.files,
+            folders: folderFacts.folders,
+            size: humanSize(folderFacts.size) });
+}
+
 /** After a folder is chosen: list it (nothing is read), then show its numbers and the switch. */
 async function showFolderFacts() {
     const folder = document.getElementById("target-directory").value.trim();
     hideArchiveSwitch();
-    if (!folder || !readsNewFolder()) {
+    if (!folder || projectMode !== "new") {
         return;
     }
     let facts;
@@ -889,11 +1405,14 @@ async function showFolderFacts() {
         openExistingFolder();
         return;
     }
-    const line = document.getElementById("folder-facts");
-    line.textContent = t("project.folder_facts", { files: facts.files,
-        folders: facts.folders, size: humanSize(facts.size) });
-    line.classList.remove("hidden");
-    document.getElementById("archive-switch").classList.remove("hidden");
+    showNamingSuggestion(facts.naming_suggestion);
+    folderFacts = facts;
+    writeFolderFacts();
+    document.getElementById("folder-facts").classList.remove("hidden");
+    // A Drop Zone has nothing to read now or later.
+    if (readsNewFolder()) {
+        document.getElementById("archive-switch").classList.remove("hidden");
+    }
     applyArchiveChoice();
     proposeFromFolder();
 }
@@ -915,30 +1434,27 @@ async function openExistingFolder() {
     showView("home");
 }
 
-/** Apply and save the language; reload the views so JS-built text changes too. */
-async function changeLanguage() {
-    const language = document.getElementById("language-select").value;
-    setLanguage(language);
-    updateSaveButton();
-    updateKeyPlaceholder();
-    updateAIStatus();
-    // Redraws the part names in the new language, and the preview.
-    renderNamingBlocks();
-    document.getElementById("project-form-title").textContent = t(
-        projectMode === "new" ? "project.new_title" : "project.edit_title");
-    showSettingsMessage("", "");
-    loadProjectHeader();
-    loadCatalog();
-    if (!document.getElementById("view-dashboard")
-            .classList.contains("hidden")) {
-        loadDashboard();
+/** Project or General. Opening a tab drops its cards. */
+function showSettingsTab(name, drop = true) {
+    document.querySelectorAll("[data-settings-tab]").forEach((tab) => {
+        const on = tab.dataset.settingsTab === name;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", String(on));
+    });
+    document.getElementById("settings-project").classList
+        .toggle("hidden", name !== "project");
+    document.getElementById("settings-general").classList
+        .toggle("hidden", name !== "general");
+    if (name === "general") {
+        loadAIStatus();
     }
-    try {
-        await updateSettings({ language: language });
-    } catch (error) {
-        showSettingsMessage(errorText(error), "error");
+    // Changing tabs is never the full drop: the cards just come in.
+    if (drop) {
+        dropCards(openTabCards(), true);
     }
 }
+
+// ---- Events ----
 
 // pywebview announces itself with this event once its API is ready.
 window.addEventListener("pywebviewready", () => {
@@ -946,10 +1462,21 @@ window.addEventListener("pywebviewready", () => {
     updateBrowseButton();
 });
 
+document.querySelectorAll("[data-settings-tab]").forEach((tab) => {
+    tab.addEventListener("click", () => showSettingsTab(tab.dataset
+        .settingsTab));
+});
+// A finished drop leaves nothing behind, so the next one can play.
+document.addEventListener("animationend", (event) => {
+    if (["card-drop", "card-quick"].includes(event.animationName)) {
+        event.target.classList.remove("card-drop", "card-quick");
+    }
+});
+
 updateBrowseButton();
 document.getElementById("browse-button")
     .addEventListener("click", browseFolder);
-// Cancel goes back to the active project's settings.
+// Cancel goes back to the active project's settings, as they are saved.
 document.getElementById("cancel-new-project")
     .addEventListener("click", () => {
         showSettingsMessage("", "");
@@ -963,47 +1490,59 @@ document.getElementById("remove-project-cancel")
     .addEventListener("click", () => {
         document.getElementById("remove-project-dialog").close();
     });
-Object.keys(PROVIDER_ROWS).forEach((role) => {
-    rowField(role, "provider").addEventListener("change", () => {
-        fillModels(role, "");
-        updateKeyPlaceholder(role);
-        updateAIStatus();
-    });
-    rowField(role, "model").addEventListener("change", updateAIStatus);
+
+// Folded cards: Change opens one; Done, or going on to a later card, folds it.
+const settingsForm = document.getElementById("settings-form");
+settingsForm.addEventListener("click", (event) => {
+    const change = event.target.closest(".card-change");
+    const confirm = event.target.closest(".card-confirm");
+    if (change) {
+        const card = change.closest(".settings-card");
+        setCardDone(card, false);
+        const first = card.querySelector(".card-open input:not([readonly]), "
+            + ".card-open textarea, .card-open select");
+        if (first) {
+            first.focus({ preventScroll: true });
+        }
+    } else if (confirm) {
+        setCardDone(confirm.closest(".settings-card"), true);
+    }
+});
+settingsForm.addEventListener("focusin", (event) => moveOnFrom(event.target));
+settingsForm.addEventListener("pointerdown",
+    (event) => moveOnFrom(event.target));
+settingsForm.addEventListener("input", refreshCards);
+settingsForm.addEventListener("change", refreshCards);
+settingsForm.addEventListener("submit", saveSettings);
+
+document.getElementById("research-name").addEventListener("input", () => {
+    nameTouched = Boolean(document.getElementById("research-name").value
+        .trim());
 });
 // A different folder needs its own warning.
 document.getElementById("target-directory")
     .addEventListener("input", resetFolderWarning);
 document.getElementById("target-directory")
-    .addEventListener("change", async () => {
-        await adviseOnFolder();
-        showFolderFacts();
-    });
+    .addEventListener("change", folderChosen);
 // Only Archive Now reads the folder and asks the AI; Later sends nothing.
 document.querySelectorAll('input[name="archive-when"]').forEach((radio) => {
     radio.addEventListener("change", () => {
         applyArchiveChoice();
         proposeFromFolder();
+        writeSheetIfEmpty();
     });
 });
 // Drop Zone has nothing to read now or later; in place and Catalog only do.
 // The two boxes exclude each other: ticking one unticks the other.
 document.getElementById("use-drop-zone")
-    .addEventListener("change", () => {
+    .addEventListener("change", async () => {
         if (document.getElementById("use-drop-zone").checked) {
             document.getElementById("catalog-only").checked = false;
             applyCatalogOnly();
         }
-        showFolderFacts();
+        await showFolderFacts();
+        writeSheetIfEmpty();
     });
-document.getElementById("settings-form")
-    .addEventListener("submit", saveSettings);
-document.getElementById("suggest-sheet")
-    .addEventListener("click", suggestProjectSheet);
-document.getElementById("language-select")
-    .addEventListener("change", changeLanguage);
-document.getElementById("naming-options")
-    .addEventListener("change", updateNamingPreview);
 document.getElementById("catalog-only")
     .addEventListener("change", () => {
         if (document.getElementById("catalog-only").checked) {
@@ -1011,6 +1550,16 @@ document.getElementById("catalog-only")
         }
         applyCatalogOnly();
         showFolderFacts();
+    });
+document.getElementById("suggest-sheet")
+    .addEventListener("click", suggestProjectSheet);
+document.getElementById("naming-options")
+    .addEventListener("change", (event) => {
+        // A method the user picks is never replaced by a suggestion.
+        if (event.isTrusted && event.target.name === "naming-method") {
+            namingTouched = true;
+        }
+        updateNamingPreview();
     });
 document.querySelectorAll('input[name="naming-style"]').forEach((radio) => {
     radio.addEventListener("change", updateNamingPreview);
@@ -1022,5 +1571,47 @@ document.querySelectorAll('input[name="naming-separator"]')
             updateNamingPreview();
         });
     });
+
+// General: selects save when they change, text fields on leaving or Enter.
+document.getElementById("language-select")
+    .addEventListener("change", changeLanguage);
+Object.keys(PROVIDER_ROWS).forEach((role) => {
+    const provider = rowField(role, "provider");
+    const model = rowField(role, "model");
+    const key = rowField(role, "key");
+    provider.addEventListener("change", () => {
+        fillModels(role, "");
+        updateKeyPlaceholder(role);
+        saveProviderRow(role, provider);
+    });
+    model.addEventListener("change", () => saveProviderRow(role, model));
+    key.addEventListener("change", () => saveProviderKey(role));
+});
+document.getElementById("server-url")
+    .addEventListener("change", saveServerUrl);
+document.querySelectorAll("#ai-advanced input").forEach((field) => {
+    field.addEventListener("keydown", (event) => {
+        // Enter saves a key or the server, as leaving the field does.
+        if (event.key === "Enter") {
+            event.preventDefault();
+            field.blur();
+        }
+    });
+});
+document.getElementById("ai-status-open").addEventListener("click", () => {
+    document.getElementById("ai-advanced").open = true;
+    rowField("text", "key").focus();
+});
+// Change password opens the three fields; they save with their own button.
+document.getElementById("open-password").addEventListener("click", () => {
+    const fields = document.getElementById("password-fields");
+    const open = fields.classList.contains("hidden");
+    fields.classList.toggle("hidden", !open);
+    document.getElementById("open-password")
+        .setAttribute("aria-expanded", String(open));
+    if (open) {
+        document.getElementById("current-password").focus();
+    }
+});
 
 // startApp() in app.js calls fillProviders() and loadSettings() after the language loads.
