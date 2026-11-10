@@ -82,9 +82,9 @@
 
         <!-- The legal pages and the version, under the card. -->
         <p class="login-legal">
-            <a href="legal/terms.html" target="_blank" rel="noopener"
+            <a href="legal/terms.html" class="legal-link"
                data-i18n="legal.terms">Terms and Conditions</a>
-            <a href="legal/privacy.html" target="_blank" rel="noopener"
+            <a href="legal/privacy.html" class="legal-link"
                data-i18n="legal.privacy">Privacy Policy</a>
             <span data-i18n="legal.version">Cataloga 1.0</span>
         </p>
@@ -103,9 +103,9 @@
             <li><span class="icon icon-check"></span><span data-i18n="terms.point_as_is"></span></li>
         </ul>
         <p class="terms-links">
-            <a href="legal/terms.html" target="_blank" rel="noopener"
+            <a href="legal/terms.html" class="legal-link"
                data-i18n="terms.read_terms">Read Terms and Conditions</a>
-            <a href="legal/privacy.html" target="_blank" rel="noopener"
+            <a href="legal/privacy.html" class="legal-link"
                data-i18n="terms.read_privacy">Read Privacy Policy</a>
         </p>
         <label class="terms-agree">
@@ -121,6 +121,17 @@
         </div>
         <p class="action-hint terms-hint" id="terms-hint"
            data-i18n="terms.button_hint"></p>
+    </dialog>
+
+    <!-- Terms or Privacy, read inside the app: a local page in a frame. -->
+    <dialog class="legal-dialog" id="legal-dialog"
+            aria-labelledby="legal-dialog-title">
+        <div class="legal-dialog-bar">
+            <h2 id="legal-dialog-title"></h2>
+            <button type="button" class="link-button" id="legal-close"
+                    data-i18n="legal.close">Close</button>
+        </div>
+        <iframe id="legal-frame" title=""></iframe>
     </dialog>
 
     <!-- The recovery key: after a new account, a reset, or from Settings. -->
@@ -1216,9 +1227,9 @@
                     <!-- Legal: the two pages and the version. -->
                     <section class="settings-card legal-card" id="legal-section">
                         <h2 data-i18n="legal.title">Legal</h2>
-                        <a href="legal/terms.html" target="_blank" rel="noopener"
+                        <a href="legal/terms.html" class="legal-link"
                            data-i18n="legal.terms">Terms and Conditions</a>
-                        <a href="legal/privacy.html" target="_blank" rel="noopener"
+                        <a href="legal/privacy.html" class="legal-link"
                            data-i18n="legal.privacy">Privacy Policy</a>
                         <span class="legal-version"
                               data-i18n="legal.version">Cataloga 1.0</span>
@@ -1343,7 +1354,7 @@
 
         <form class="chat-form" id="chat-form">
             <div class="chat-input-row">
-                <textarea id="chat-input" rows="1" maxlength="1000"
+                <textarea id="chat-input" rows="1" maxlength="2000"
                           placeholder="Ask about your files…"
                           data-i18n-placeholder="chat.placeholder"
                           aria-labelledby="chat-title"></textarea>
@@ -1352,6 +1363,9 @@
                     <span aria-hidden="true">↑</span>
                 </button>
             </div>
+            <!-- Shown when 200 characters or fewer are left. -->
+            <p class="chat-counter" id="chat-counter" hidden
+               aria-live="polite"></p>
             <!-- What the assistant can answer about: this project only. -->
             <p class="chat-limits" data-i18n="chat.limits">Ask Cataloga only
                 answers about the files in this project.</p>

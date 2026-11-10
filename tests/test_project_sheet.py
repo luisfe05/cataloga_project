@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from backend.pipeline import project_sheet
+from backend.pipeline import assistant_guard, project_sheet
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.routes import settings as settings_routes
@@ -125,8 +125,12 @@ def test_sheet_goes_into_the_metadata_prompt(tree_project):
     prompts = tree_project["ai"].prompts
     metadata_prompt = [p for p in prompts if "Project sheet" in p]
     assert len(metadata_prompt) == 1
-    assert metadata_prompt[0].startswith(
-        "Project sheet (what this work is):\nWork: A documentary.\n\n")
+    # Since Nov 9 the rules come first and the sheet sits between the
+    # data markers: it is context, never an instruction.
+    assert metadata_prompt[0].startswith(assistant_guard.MODEL_RULES)
+    assert "Project sheet (what this work is):\n<<FILE_DATA nonce=" in \
+        metadata_prompt[0]
+    assert "\nWork: A documentary.\n<<END_FILE_DATA" in metadata_prompt[0]
 
 
 def test_without_a_sheet_the_prompt_is_unchanged(tree_project):

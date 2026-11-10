@@ -336,6 +336,19 @@ function drawAnswer(body, answer) {
     rememberMessage("assistant", text);
 }
 
+// The message limit: the field stops there, the server checks it too.
+const CHAT_MAX_CHARS = 2000;
+// The counter appears when this many characters, or fewer, are left.
+const CHAT_COUNTER_FROM = 200;
+
+function updateCounter() {
+    const input = document.getElementById("chat-input");
+    const counter = document.getElementById("chat-counter");
+    const left = CHAT_MAX_CHARS - input.value.length;
+    counter.hidden = left > CHAT_COUNTER_FROM;
+    counter.textContent = t("chat.chars_left", { n: left });
+}
+
 async function sendChat(text) {
     const message = text.trim();
     if (!message || chatBusy) {
@@ -345,6 +358,7 @@ async function sendChat(text) {
     const input = document.getElementById("chat-input");
     const send = document.getElementById("chat-send");
     input.value = "";
+    updateCounter();
     send.disabled = true;
 
     addUserMessage(message);
@@ -394,6 +408,8 @@ document.getElementById("chat-form").addEventListener("submit", (event) => {
     sendChat(document.getElementById("chat-input").value);
 });
 
+document.getElementById("chat-input").addEventListener("input", updateCounter);
+
 // Enter sends; Shift+Enter starts a new line.
 document.getElementById("chat-input").addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -409,6 +425,7 @@ document.querySelectorAll(".chat-example").forEach((button) => {
         if (button.dataset.fillOnly) {
             const input = document.getElementById("chat-input");
             input.value = text;
+            updateCounter();
             input.focus();
             return;
         }

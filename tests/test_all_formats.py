@@ -8,7 +8,7 @@ import zipfile
 import pytest
 from PIL import Image
 
-from backend.pipeline import archive_rules, file_readers
+from backend.pipeline import archive_rules, assistant_guard, file_readers
 # The fixtures come along with the helpers.
 from tests.test_file_formats import (  # noqa: F401
     FakeAI, METADATA, setup, test_key)
@@ -162,7 +162,8 @@ def test_unknown_format_is_cataloged_by_its_name(setup):
         return original(system_prompt, text)
     ai.send_prompt = send
     doc = setup["build"](ai).classify_document(str(path))
-    assert seen[0].startswith("File name: proyecto_final.xyz")
+    assert assistant_guard.unwrap_data(seen[0]).startswith(
+        "File name: proyecto_final.xyz")
     assert "Other files in that folder: guion_v2.docx" in seen[0]
     assert doc.status == "Classified"
     assert doc.media_type == "Documents"

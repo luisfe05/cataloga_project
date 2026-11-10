@@ -8,7 +8,7 @@ from pypdf import PdfWriter
 
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
-from backend.pipeline import classification_pipeline
+from backend.pipeline import assistant_guard, classification_pipeline
 from backend.pipeline.ai_providers import base
 from backend.pipeline.ai_providers.base import AIProviderClient
 from backend.pipeline.classification_pipeline import (
@@ -370,7 +370,9 @@ def test_context_names_the_file_its_folder_and_its_neighbors(setup):
     make_text_file(setup["drop_zone"], "otro.txt")
     pipeline.classify_document(
         make_text_file(setup["drop_zone"], "Contrato_alquiler_v02.txt"))
-    text = ai.last_text
+    # The whole context is data: it sits between the markers of the call.
+    assert ai.last_text.startswith("<<FILE_DATA nonce=")
+    text = assistant_guard.unwrap_data(ai.last_text)
     assert text.startswith("File name: Contrato_alquiler_v02.txt")
     assert "Type: .txt" in text
     # The test Drop Zone sits next to the archive, so the path goes up.

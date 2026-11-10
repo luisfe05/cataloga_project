@@ -1,9 +1,10 @@
 """Chat route."""
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
-from backend.config import ai_settings
+from backend.config import ai_settings, projects
 from backend.pipeline.ai_providers import text_client
+from backend.pipeline.assistant_guard import ChatThrottle
 from backend.pipeline.chat_assistant import run_chat
 from backend.routes import error_response, get_active_repo, projects_path
 
@@ -25,5 +26,8 @@ def chat():
     if error:
         return error
     client = text_client(ai_settings.load(projects_path()))
+    # Blocks and pace are counted per project, in memory only.
+    throttle = current_app.config.setdefault("CHAT_THROTTLE", ChatThrottle())
+    project = projects.active_folder(projects_path())
     return jsonify(run_chat(repo, client, message.strip(),
-                            body.get("history"))), 200
+                            body.get("history"), throttle, project)), 200

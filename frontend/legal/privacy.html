@@ -7,12 +7,90 @@
     <link rel="stylesheet" href="../css/main.css">
 </head>
 <body class="legal-page">
-    <!-- Temporary page: the full legal text comes in its own prompt. -->
     <main>
+        <p class="legal-nav">
+            <strong>Cataloga</strong>
+            <a href="terms.html">Terms and Conditions</a>
+        </p>
         <h1>Privacy Policy</h1>
-        <p>The full text is not published yet.</p>
-        <h1 lang="es">Política de privacidad</h1>
-        <p lang="es">El texto completo todavía no está publicado.</p>
+        <p class="legal-date">Effective date: November 9, 2026</p>
+<p>This policy explains what information Cataloga handles and where it goes. Cataloga is offered by Luis González (&quot;I&quot;, &quot;me&quot;).</p>
+<section id="s1">
+<h2>1. The short version</h2>
+<p>Cataloga runs on your computer. Your files, your catalog and your account stay on your computer. The only time file content leaves your computer is when Cataloga sends it to the AI provider you use, so the provider can describe the file. I do not receive your files, your catalog or your account information.</p>
+</section>
+<section id="s2">
+<h2>2. What stays on your computer</h2>
+<ul>
+<li>Your files. Cataloga reads them where they are.</li>
+<li>Your catalog: names, summaries, dates, sources, keywords and plans. It is saved in a &quot;.cataloga&quot; folder inside your project folder.</li>
+<li>Your account: username and password. The password is stored as a secure hash, never as plain text.</li>
+<li>Your recovery key: stored as a secure hash, plus a copy in the macOS Keychain so Cataloga can show it to you again after you confirm your password. If you save it as a file, it goes only where you choose.</li>
+<li>The date and version of the Terms you accepted.</li>
+<li>Your API keys, stored in the macOS Keychain.</li>
+<li>Your settings.</li>
+<li>A local log file, in Cataloga&#x27;s own data folder, with errors and, when the assistant blocks a request, the date, the kind of block and the project name. The log never keeps the text of your messages or of your files.</li>
+</ul>
+</section>
+<section id="s3">
+<h2>3. What is sent to AI providers</h2>
+<p>To describe a file, Cataloga sends the AI provider the information it needs, which can include:</p>
+<ul>
+<li>text extracted from the file, and images, audio or video from it;</li>
+<li>the file name, the names of your project&#x27;s folders and of other files in the same folder, and the project description you wrote (&quot;About this project&quot;);</li>
+<li>names and summaries already in your catalog, when Cataloga checks that a new name follows the same pattern as the others;</li>
+<li>the questions you ask the Cataloga assistant, the earlier messages of that conversation, and the parts of your catalog needed to answer them.</li>
+</ul>
+<p>Cataloga does not send your API keys or your password to an AI provider. Files whose names mark them as secrets (such as &quot;.env&quot; files, private keys and certificates) are skipped: they are never read or sent. Cataloga does not scan the content of other files for secrets, so a key or password written inside a normal document is sent with the rest of its text. Do not add such files to Cataloga.</p>
+<p>Providers Cataloga can use:</p>
+<ul>
+<li>Ollama Cloud: the default provider for text and images.</li>
+<li>Another provider you choose in Settings for text and images: Google Gemini, Anthropic Claude, Groq, OpenAI or xAI.</li>
+<li>Google Gemini: the only provider for audio and video, if you add a Gemini key. According to Google&#x27;s terms at the time of writing, with a free Gemini key Google may use the content to improve its models; with a paid key it does not. Check Google&#x27;s current terms.</li>
+<li>A fallback provider that you choose in Settings (optional).</li>
+<li>A Cataloga server that you set in Settings (optional). If you set one, requests go through that server instead of directly to the providers.</li>
+</ul>
+<p>Each provider handles the content under its own privacy policy and terms. Read them before you use Cataloga with sensitive files.</p>
+</section>
+<section id="s4">
+<h2>4. What I do not do</h2>
+<ul>
+<li>I do not sell or share your information.</li>
+<li>I do not use your files or your catalog to train AI models.</li>
+<li>Cataloga does not include analytics, ads, tracking, crash reports or automatic updates.</li>
+<li>Cataloga connects to the internet only to reach the AI provider you use or the Cataloga server you set. Everything else runs on your computer.</li>
+</ul>
+</section>
+<section id="s5">
+<h2>5. The website</h2>
+<p>The Cataloga website is a static page. It does not use cookies or analytics. The site host may keep standard server logs, such as IP addresses.</p>
+</section>
+<section id="s6">
+<h2>6. Your choices</h2>
+<ul>
+<li>Choose which folders Cataloga reads.</li>
+<li>Use &quot;Catalog only&quot; to catalog files without moving or renaming them.</li>
+<li>Delete a project&#x27;s catalog by deleting the &quot;.cataloga&quot; folder inside its project folder.</li>
+<li>Your account and settings live in Cataloga&#x27;s own data folder on your computer, and your keys in the macOS Keychain. To remove them, delete that folder and the Cataloga items in Keychain Access, or uninstall the app and do the same.</li>
+<li>Do not add files to Cataloga that you do not want sent to an AI provider.</li>
+</ul>
+</section>
+<section id="s7">
+<h2>7. Security</h2>
+<p>Cataloga keeps your information on your computer and uses standard protections, such as hashed passwords and recovery keys, and the macOS Keychain for API keys. No method of storing or sending information is completely secure, and I cannot guarantee its security. Content sent to an AI provider or a server is handled under that provider&#x27;s or server&#x27;s own security practices, which I do not control. See the Terms and Conditions for the limits of my responsibility.</p>
+</section>
+<section id="s8">
+<h2>8. Children</h2>
+<p>Cataloga is not meant for children under 13, and I do not knowingly handle their information.</p>
+</section>
+<section id="s9">
+<h2>9. Changes</h2>
+<p>I may update this policy. When I do, I will change the effective date above.</p>
+</section>
+<section id="s10">
+<h2>10. Contact</h2>
+<p>Questions about privacy: <a href="mailto:lgonzalez05@gmail.com">lgonzalez05@gmail.com</a></p>
+</section>
     </main>
 </body>
 </html>

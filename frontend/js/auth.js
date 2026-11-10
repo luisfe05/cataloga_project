@@ -54,6 +54,32 @@ function openTermsDialog(mode) {
     document.getElementById("terms-dialog").showModal();
 }
 
+/** Open a legal page in the dialog, inside the app and without internet. */
+function openLegalPage(href) {
+    const dialog = document.getElementById("legal-dialog");
+    const frame = document.getElementById("legal-frame");
+    const title = t(href.includes("privacy") ? "legal.privacy"
+        : "legal.terms");
+    document.getElementById("legal-dialog-title").textContent = title;
+    frame.title = title;
+    frame.src = href;
+    dialog.showModal();
+}
+
+/** Every "legal/..." link, on the login, the overlay and Settings. */
+document.addEventListener("click", (event) => {
+    const link = event.target.closest("a.legal-link");
+    if (!link) {
+        return;
+    }
+    event.preventDefault();
+    openLegalPage(link.getAttribute("href"));
+});
+
+document.getElementById("legal-close").addEventListener("click", () => {
+    document.getElementById("legal-dialog").close();
+});
+
 /** The box is checked: create the account form, or accept and go in. */
 async function acceptTermsDialog() {
     const dialog = document.getElementById("terms-dialog");

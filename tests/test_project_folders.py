@@ -658,7 +658,8 @@ class ChatAI(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         self.prompts.append(system_prompt)
-        return json.dumps(self.answer)
+        return json.dumps(dict({"in_scope": True, "category": "files"},
+                               **self.answer))
 
 
 def test_chat_proposes_a_move_and_moves_nothing(tmp_path, tree_project):

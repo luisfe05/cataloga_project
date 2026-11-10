@@ -1464,6 +1464,92 @@ td.editable {
     font-size: 28px;
 }
 
+/* The legal text: a column of about 68 characters, read inside the app. */
+.legal-page {
+    background: var(--surface);
+    color: var(--color-deep-space);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.legal-page .legal-nav {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-label);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.legal-page .legal-nav a {
+    color: var(--color-violet);
+}
+
+.legal-page .legal-date {
+    margin-bottom: var(--spacing-24);
+    font-family: var(--font-label);
+    font-weight: 600;
+    color: var(--color-dusk);
+}
+
+.legal-page h2 {
+    margin: var(--spacing-24) 0 var(--spacing-8);
+    font-family: var(--font-label);
+    font-size: 18px;
+    color: var(--color-midnight);
+}
+
+.legal-page p {
+    margin: 0 0 var(--spacing-12);
+}
+
+.legal-page ul {
+    margin: 0 0 var(--spacing-12);
+    padding-left: 1.3em;
+}
+
+.legal-page li {
+    margin-bottom: var(--spacing-8);
+}
+
+/* The dialog that shows a legal page inside the app. */
+.legal-dialog {
+    margin: auto;
+    width: min(760px, calc(100vw - 48px));
+    height: min(760px, calc(100vh - 48px));
+    padding: 0;
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-float);
+}
+
+.legal-dialog::backdrop {
+    background: rgba(8, 5, 28, 0.5);
+}
+
+.legal-dialog-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 var(--spacing-24);
+    border-bottom: 1px solid var(--surface-line);
+}
+
+.legal-dialog-bar h2 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--color-midnight);
+}
+
+.legal-dialog iframe {
+    display: block;
+    width: 100%;
+    height: calc(100% - 56px);
+    border: 0;
+}
+
 /* ======== Catalog ======== */
 
 /* The line that says how far the reading of the folder is. */
@@ -4046,6 +4132,13 @@ td.edit-error {
     background: var(--color-lavender);
     color: var(--color-dusk);
     cursor: not-allowed;
+}
+
+/* "180 characters left": only once the message is close to the limit. */
+.chat-counter {
+    color: var(--color-midnight);
+    font-size: 12px;
+    text-align: right;
 }
 
 /* On the light frost: Midnight, SemiBold, so it reads without the blur. */

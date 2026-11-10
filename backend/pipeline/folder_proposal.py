@@ -4,8 +4,8 @@ import json
 import os
 import re
 
-from backend.pipeline import (archive_rules, folder_tree, learn_folder,
-                              project_sheet)
+from backend.pipeline import (archive_rules, assistant_guard, folder_tree,
+                              learn_folder, project_sheet)
 
 # File names sent to the AI, at most, so a big disk stays cheap.
 MAX_FILES = 80
@@ -90,6 +90,11 @@ def file_kinds(names):
     return kinds
 
 
+def as_data(text):
+    """File names and extracts go between the data markers of one call."""
+    return assistant_guard.wrap_data(text, assistant_guard.new_nonce())
+
+
 def sample_text(description, names, extracts, existing=None):
     """Write what the AI reads: context, folders, files, kinds, extracts."""
     lines = ["Project description (context only): " +
@@ -163,8 +168,8 @@ def propose(client, folder, description=""):
             loose_names = {os.path.basename(path) for path in loose}
             loose_extracts = [(name, text) for name, text in extracts
                               if name in loose_names]
-            answer = client.ask(LOOSE_FILES_PROMPT, sample_text(
-                description, loose, loose_extracts, existing=paths))
+            answer = client.ask(LOOSE_FILES_PROMPT, as_data(sample_text(
+                description, loose, loose_extracts, existing=paths)))
             taken = {archive_rules.fold(node["name"]) for node in tree}
             for node in folder_tree.clean_ai_tree(keep_folders_with_files(
                     read_list(answer), loose)):
@@ -173,8 +178,8 @@ def propose(client, folder, description=""):
                     tree.append(node)
                     taken.add(archive_rules.fold(node["name"]))
         return {"folder_tree": tree, "organized": True, "learned": learned}
-    answer = client.ask(FROM_FILES_PROMPT, sample_text(
-        description, names, extracts))
+    answer = client.ask(FROM_FILES_PROMPT, as_data(sample_text(
+        description, names, extracts)))
     tree = folder_tree.clean_ai_tree(keep_folders_with_files(
         read_list(answer), names))
     return {"folder_tree": tree, "organized": False, "learned": learned}

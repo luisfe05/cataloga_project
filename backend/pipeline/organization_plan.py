@@ -12,7 +12,8 @@ import os
 import shutil
 import threading
 
-from backend.pipeline import archive_rules, folder_tree, naming
+from backend.pipeline import (archive_rules, assistant_guard, folder_tree,
+                              naming)
 from backend.pipeline.file_organizer import CATALOG_FOLDER
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ TEMP_SUFFIX = ".cataloga-tmp"
 CHUNK = 1024 * 1024
 
 MISSING_REASON = "File changed or missing since the plan was made"
+# A proposed name or folder that is unsafe (outside the project, "..").
+UNSAFE_REASON = "Unsafe name or folder: not applied"
 MOVED_SINCE_REASON = "File moved or changed since it was applied"
 TOO_LONG_REASON = archive_rules.TOO_LONG_NOTE
 NOT_EMPTY_REASON = "Folder is not empty"
@@ -227,6 +230,14 @@ class OrganizationPlan:
         if not path_length_ok(new_path):
             # Marked here, so the disk is never touched for it.
             item["status"], item["reason"] = "failed", TOO_LONG_REASON
+        elif assistant_guard.name_problem(new_name) or \
+                assistant_guard.path_problem(doc.proposed_folder or "") or \
+                not self.organizer.is_inside_project(new_path):
+            # A proposal that would leave the project, or a name a disk
+            # rejects, never becomes a move: the row says why and stops.
+            item.update({"status": "failed", "reason": UNSAFE_REASON,
+                         "new_path": old_path, "new_name": doc.filename,
+                         "new_folder": doc.folder_path or ""})
         return item
 
     def folder_items(self, file_items):

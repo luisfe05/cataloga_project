@@ -271,6 +271,14 @@ const LANG_EN = {
     "chat.notice_move_invalid": "That folder is not in this project. "
         + "Use one of the project's folders.",
     "chat.notice_move_same": "The file is already in that folder.",
+    "chat.notice_blocked": "I can only help with the files in this project. "
+        + "I can't help with that request.",
+    "chat.notice_out_of_scope": "I can only help with the files in this "
+        + "project. I can't help with that request.",
+    "chat.notice_paused": "Let's get back to your files.",
+    "chat.notice_too_many": "Too many messages at once. Wait a moment and "
+        + "try again.",
+    "chat.chars_left": "{n} characters left",
 
     // File links: open, preview, show in Finder
     "files.open": "Open",
@@ -620,6 +628,7 @@ const LANG_EN = {
     "legal.terms": "Terms and Conditions",
     "legal.privacy": "Privacy Policy",
     "legal.version": "Cataloga 1.0",
+    "legal.close": "Close",
     "terms.title": "Before You Create Your Account",
     "terms.title_update": "The Terms Have Changed",
     "terms.lead": "Read the key points. The full text is in the links below.",
@@ -627,12 +636,12 @@ const LANG_EN = {
         + "computer.",
     "terms.point_approve": "Nothing is moved or renamed until you approve it. "
         + "Originals never change.",
-    "terms.point_ai": "To read your files, the text is sent to the AI provider "
-        + "you choose.",
+    "terms.point_ai": "To read your files, their content is sent to the AI "
+        + "provider you choose. AI can make mistakes: review the results.",
     "terms.point_as_is": "Cataloga is provided \"as is\". Keep your own backup. "
-        + "We are not responsible for lost data, hacks or leaks.",
-    "terms.read_terms": "Read Terms and Conditions ↗",
-    "terms.read_privacy": "Read Privacy Policy ↗",
+        + "The developer is not liable for lost data, hacks or leaks.",
+    "terms.read_terms": "Read Terms and Conditions",
+    "terms.read_privacy": "Read Privacy Policy",
     "terms.agree": "I have read and agree to the Terms and Conditions and the "
         + "Privacy Policy.",
     "terms.no_recovery": "If you lose both your password and your recovery "

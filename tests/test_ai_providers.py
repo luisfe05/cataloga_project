@@ -2,6 +2,7 @@
 
 import pytest
 
+from backend.pipeline import assistant_guard
 from backend.pipeline.ai_providers import (
     base, claude, create_client, gemini, groq_provider, ollama_cloud,
     openai_provider, xai)
@@ -110,7 +111,8 @@ def test_summary_with_facts_sends_them_first():
     client = FakeClient(["A summary."])
     client.send_summary_request("The text.", {"source": "Gazette",
                                               "document_date": None})
-    sent = client.calls[0]
+    # The whole text goes between the data markers of the call.
+    sent = assistant_guard.unwrap_data(client.calls[0])
     assert sent.startswith("Facts confirmed by the researcher")
     assert "- source: Gazette" in sent
     assert "document_date" not in sent

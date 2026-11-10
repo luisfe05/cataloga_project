@@ -3,7 +3,7 @@
 import json
 import os
 
-from backend.pipeline import archive_rules, file_readers
+from backend.pipeline import archive_rules, assistant_guard, file_readers
 from backend.pipeline.file_organizer import CATALOG_FOLDER
 
 # The sheet the user keeps is plain text, at most this long.
@@ -127,9 +127,11 @@ def parse_sheet_answer(answer):
 def write_sheet(client, folder):
     """Ask the AI once for the sheet of a folder; '' if it wrote none."""
     sample = project_sample(folder)
+    # The sample is file names and extracts: data, between the markers.
     return parse_sheet_answer(client.ask(
         SHEET_PROMPT.format(industries=", ".join(INDUSTRIES)),
-        sample_text(sample)))
+        assistant_guard.wrap_data(sample_text(sample),
+                                  assistant_guard.new_nonce())))
 
 
 def clean_sheet(value):

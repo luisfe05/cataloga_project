@@ -10,7 +10,7 @@ from backend.config import ai_settings, projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
 from backend.models.document import Document
-from backend.pipeline import chat_assistant
+from backend.pipeline import assistant_guard, chat_assistant
 from backend.pipeline.naming import clean_new_name
 from backend.pipeline import ai_providers
 from backend.routes import chat as chat_route
@@ -46,8 +46,11 @@ def fake_ai(monkeypatch, projects_path):
                         lambda name, model, base_url=None: client)
 
     def set_answer(answer):
-        client.answer = json.dumps(answer) if isinstance(answer, dict) \
-            else answer
+        if isinstance(answer, dict):
+            # Since Nov 9 every answer says it is about the files.
+            answer = dict({"in_scope": True, "category": "files"}, **answer)
+            answer = json.dumps(answer)
+        client.answer = answer
         return client
     return set_answer
 
@@ -377,15 +380,15 @@ def test_propose_rename_invalid(flask_client, fake_ai, project, answer,
 
 
 @pytest.mark.parametrize("answer, notice", [
-    ("not json at all", "invalid_reply"),
+    ("not json at all", "out_of_scope"),
     ('```json\n{"action": "delete_file", "document_id": 1}\n```',
-     "invalid_reply"),
-    ('{"action": ["answer"]}', "invalid_reply"),
-    ("[1, 2]", "invalid_reply"),
+     "out_of_scope"),
+    ('{"action": ["answer"]}', "out_of_scope"),
+    ("[1, 2]", "out_of_scope"),
     (None, "ai_unavailable"),
 ])
 def test_bad_model_answers(flask_client, fake_ai, project, answer, notice):
-    """Broken JSON, unknown actions, or no answer: a friendly notice."""
+    """Broken JSON or an unknown action is out of scope; no answer, a note."""
     fake_ai(answer)
     body = chat(flask_client)
     assert body["action"] == "answer"
@@ -431,11 +434,16 @@ def test_context_has_project_documents_and_history(flask_client, fake_ai,
     history.append({"role": "system", "text": "ignored"})
     chat(flask_client, "Dawn results", history)
 
-    prompt = json.loads(client.prompts[0])
+    sent = client.prompts[0]
+    # The catalog goes between the data markers; the talk stays outside.
+    prompt = json.loads(assistant_guard.unwrap_data(sent))
     assert prompt["project"]["total"] == 3
     assert prompt["documents"][0]["filename"] == "2026-07-15_harbor.pdf"
-    assert [item["text"] for item in prompt["conversation"]] == \
+    talk = sent.split("Conversation so far: ")[1]
+    talk = talk.split("\nUser message:")[0]
+    assert [item["text"] for item in json.loads(talk)] == \
         ["message {}".format(number) for number in range(5, 10)]
+    assert sent.rstrip().endswith("User message: Dawn results")
 
 
 def test_find_documents_falls_back_to_newest(repo, app):

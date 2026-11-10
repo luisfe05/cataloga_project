@@ -275,6 +275,14 @@ const LANG_ES = {
     "chat.notice_move_invalid": "Esa carpeta no está en este proyecto. "
         + "Usa una de las carpetas del proyecto.",
     "chat.notice_move_same": "El archivo ya está en esa carpeta.",
+    "chat.notice_blocked": "Solo puedo ayudar con los archivos de este "
+        + "proyecto. No puedo ayudar con esa solicitud.",
+    "chat.notice_out_of_scope": "Solo puedo ayudar con los archivos de este "
+        + "proyecto. No puedo ayudar con esa solicitud.",
+    "chat.notice_paused": "Volvamos a tus archivos.",
+    "chat.notice_too_many": "Demasiados mensajes a la vez. Espera un momento "
+        + "e inténtalo de nuevo.",
+    "chat.chars_left": "Quedan {n} caracteres",
 
     // File links: open, preview, show in Finder
     "files.open": "Abrir",
@@ -638,6 +646,7 @@ const LANG_ES = {
     "legal.terms": "Términos y condiciones",
     "legal.privacy": "Política de privacidad",
     "legal.version": "Cataloga 1.0",
+    "legal.close": "Cerrar",
     "terms.title": "Antes de crear tu cuenta",
     "terms.title_update": "Los términos cambiaron",
     "terms.lead": "Lee los puntos clave. El texto completo está en los enlaces "
@@ -646,13 +655,14 @@ const LANG_ES = {
         + "en tu computadora.",
     "terms.point_approve": "Nada se mueve ni se renombra hasta que lo "
         + "apruebes. Los originales nunca cambian.",
-    "terms.point_ai": "Para leer tus archivos, el texto se envía al proveedor "
-        + "de IA que escojas.",
+    "terms.point_ai": "Para leer tus archivos, su contenido se envía al "
+        + "proveedor de IA que escojas. La IA puede equivocarse: revisa los "
+        + "resultados.",
     "terms.point_as_is": "Cataloga se ofrece \"tal cual\". Guarda tu propia "
-        + "copia. No somos responsables por datos perdidos, hackeos ni "
-        + "filtraciones.",
-    "terms.read_terms": "Leer Términos y condiciones ↗",
-    "terms.read_privacy": "Leer Política de privacidad ↗",
+        + "copia. El desarrollador no responde por datos perdidos, hackeos "
+        + "ni filtraciones.",
+    "terms.read_terms": "Leer Términos y condiciones",
+    "terms.read_privacy": "Leer Política de privacidad",
     "terms.agree": "Leí y acepto los Términos y condiciones y la Política de "
         + "privacidad.",
     "terms.no_recovery": "Si pierdes la contraseña y la clave de recuperación, "

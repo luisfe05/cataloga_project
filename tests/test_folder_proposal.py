@@ -154,8 +154,8 @@ def test_route_says_so_when_nothing_fits(empty_client, tmp_path,
 
 def test_the_old_description_request_still_works_without_a_folder():
     """An empty Drop Zone project has no files: the description decides."""
-    assert ai_providers.base.FOLDERS_PROMPT.startswith(
-        "You are an archivist setting up")
+    assert "You are an archivist setting up" in \
+        ai_providers.base.FOLDERS_PROMPT
 
 
 def read_js(name):
