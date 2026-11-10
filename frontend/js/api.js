@@ -23,7 +23,12 @@ async function handleResponse(response) {
     const data = await response.json();
     if (response.status === 401 && data.error
             && data.error.code === "unauthorized") {
-        showLoginScreen();
+        // Inside the app, the views still hold this account's data.
+        if (!document.getElementById("app-main").classList.contains("hidden")) {
+            leaveApp();
+        } else {
+            showLoginScreen();
+        }
     }
     if (!response.ok) {
         return Promise.reject(data.error
@@ -327,12 +332,13 @@ async function getAuthStatus() {
     return handleResponse(response);
 }
 
-/** POST /auth/register - create an account, then remember the token. */
-async function registerAccount(username, password) {
+/** POST /auth/register - create an account (terms accepted), remember the token. */
+async function registerAccount(username, password, termsVersion) {
     const response = await apiFetch(`${BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username, password: password }),
+        body: JSON.stringify({ username: username, password: password,
+            accepted_terms: termsVersion }),
     });
     const data = await handleResponse(response);
     setSessionToken(data.token);
@@ -370,6 +376,46 @@ async function changePassword(currentPassword, newPassword) {
         }),
     });
     return handleResponse(response);
+}
+
+/** POST with a JSON body to an account route; returns the parsed answer. */
+async function postAccount(path, body) {
+    const response = await apiFetch(`${BASE_URL}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    return handleResponse(response);
+}
+
+/** POST /auth/terms - accept the current terms after a login that asked. */
+function acceptTerms(version) {
+    return postAccount("/auth/terms", { version: version });
+}
+
+/** GET /auth/recovery - the day the key was saved to a file, or "". */
+async function getRecoveryStatus() {
+    const response = await apiFetch(`${BASE_URL}/auth/recovery`);
+    return handleResponse(response);
+}
+
+/** POST /auth/recovery/key - the same key, or a new one. Needs the password. */
+function getRecoveryKey(password, makeNew) {
+    return postAccount("/auth/recovery/key",
+        { password: password, new: makeNew });
+}
+
+/** POST /auth/recovery/save - the server writes the key to the chosen file. */
+function saveRecoveryFile(path, ticket) {
+    return postAccount("/auth/recovery/save", { path: path, ticket: ticket });
+}
+
+/** POST /auth/recovery/reset - a new password with the recovery key. */
+async function resetPassword(username, key, newPassword) {
+    const data = await postAccount("/auth/recovery/reset", {
+        username: username, recovery_key: key, new_password: newPassword });
+    setSessionToken(data.token);
+    return data;
 }
 
 // --- Chat ---
@@ -438,6 +484,16 @@ function fileMediaUrl(path) {
 /** POST /browse/reveal: show a file or folder in Finder. */
 async function revealFile(path) {
     const response = await apiFetch(`${BASE_URL}/browse/reveal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: path }),
+    });
+    return handleResponse(response);
+}
+
+/** POST /browse/open: open a file of the project with its default app. */
+async function openFileAt(path) {
+    const response = await apiFetch(`${BASE_URL}/browse/open`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: path }),

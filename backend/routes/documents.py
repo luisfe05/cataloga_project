@@ -375,7 +375,8 @@ def preview_document(doc_id):
     if error:
         return error
     return jsonify(dict(previews.build_preview(doc.file_path),
-                        filename=doc.filename)), 200
+                        filename=doc.filename,
+                        size=os.path.getsize(doc.file_path))), 200
 
 
 @documents_bp.route("/documents/<int:doc_id>/media", methods=["GET"])

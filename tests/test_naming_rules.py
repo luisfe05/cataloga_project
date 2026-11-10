@@ -84,7 +84,7 @@ def test_pipeline_uses_the_style_and_ignores_the_old_accents_option(setup):
 
 
 def test_pipeline_never_writes_undated(setup):
-    """With only the disk date, the name has no date at all."""
+    """No reliable date: none is saved, and the name has no date part."""
     replies = {"classify": "Documents", "summary": "A letter.",
                "metadata": '{"source": null, "document_date": null, '
                            '"topic": "Carta"}'}
@@ -93,7 +93,7 @@ def test_pipeline_never_writes_undated(setup):
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "x.txt"))
     assert doc.filename == "carta.txt"
-    assert doc.date_source == "file"
+    assert doc.document_date is None and doc.date_source is None
 
 
 def test_second_file_with_the_same_name_gets_2(setup):

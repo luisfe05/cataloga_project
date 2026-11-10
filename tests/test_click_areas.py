@@ -34,12 +34,11 @@ def test_the_main_controls_take_clicks_in_44_px():
 
 
 def test_the_plan_checkboxes_sit_in_a_44_px_label():
-    """The whole square around each box is clickable, the header's too."""
+    """The whole square around each box of To Approve is clickable."""
     css = read("css", "main.css")
     hit = re.search(r"\.check-hit\s*\{([^}]*)\}", css).group(1)
     assert "width: 44px" in hit and "height: 44px" in hit
-    assert 'class="check-hit"' in read("index.html")
-    assert 'hit.className = "check-hit"' in read("js", "plan.js")
+    assert 'check.className = "check-hit"' in read("js", "plan.js")
 
 
 def test_small_text_controls_are_at_least_24_px():

@@ -19,7 +19,6 @@ const LANG_ES = {
     "home.manual_review": "{n} en revisión manual",
     "home.not_cataloged": "Sin catalogar",
     "home.empty": "Esta carpeta está vacía.",
-    "home.no_project": "Crea un proyecto para ver aquí sus carpetas.",
     "home.load_failed": "No se pudo leer la carpeta.",
     "home.double_click": "Doble clic o Enter para abrir una carpeta.",
     "home.kind": "Tipo",
@@ -37,20 +36,20 @@ const LANG_ES = {
     "home.open": "Abrir",
     "home.show": "Mostrar en la carpeta",
     "nav.projects": "Proyectos",
-    "nav.plan": "Plan",
+    "nav.plan": "Por aprobar",
     "nav.dashboard": "Panel",
     "nav.settings": "Configuración",
     "header.no_project": "Todavía no hay proyecto",
 
     // Catalog
     "catalog.tab_all": "Todos los archivos",
-    "catalog.tab_review": "Revisión manual ({n})",
+    "catalog.tab_review": "Revisión manual {n}",
     "catalog.search": "Buscar en el catálogo",
     "catalog.filter_type_all": "Tipo de medio: todos",
     "catalog.filter_source_all": "Fuente: todas",
     "catalog.newest_first": "Más recientes primero",
     "catalog.newest_first_clear": "Volver al orden normal",
-    "catalog.download": "Descargar hoja de cálculo",
+    "catalog.download": "Hoja",
     "catalog.edit_mode": "Modo edición",
     "catalog.col_original": "Nombre original",
     "catalog.col_filename": "Nombre del archivo",
@@ -77,7 +76,6 @@ const LANG_ES = {
     "catalog.empty": "Pon archivos en la carpeta Drop Zone dentro de "
         + "{path}. Aparecerán aquí cuando se clasifiquen.",
     "catalog.no_match": "Ningún archivo coincide con tu búsqueda.",
-    "catalog.progress": "Progreso del catálogo",
     "scan.paused": "En pausa en {done} de {total} archivos.",
     "scan.stopped": "Lectura detenida en {done} de {total}",
     "banner.not_cataloged": "Esta carpeta todavía no está catalogada.",
@@ -86,7 +84,6 @@ const LANG_ES = {
     "banner.catalog_now": "Archivar ahora",
     "banner.learned": "Se aprendieron {n} carpetas de tu carpeta.",
     "scan.retry_title": "Algunos archivos no se pudieron leer.",
-    "plan.summary_unchanged": "{n} archivos se quedan como están.",
     "plan.catalog_only": "Catalog only: no plan",
     "plan.no_plan": "Este proyecto ordena por tipo de archivo, así que no "
         + "tiene plan.",
@@ -224,8 +221,6 @@ const LANG_ES = {
 
     // Dashboard
     "dash.classified": "Documentos clasificados",
-    "dash.review": "Necesitan revisión manual",
-    "dash.sources": "Fuentes registradas",
     "dash.activity": "Actividad reciente",
     "dash.empty": "Todavía no hay actividad. Pon archivos en la Drop Zone "
         + "para empezar.",
@@ -236,7 +231,7 @@ const LANG_ES = {
 
     // Chat
     "chat.open_label": "Abrir el asistente de Cataloga",
-    "chat.title": "Asistente de Cataloga",
+    "chat.title": "Pregúntale a Cataloga",
     "chat.close": "Cerrar",
     "chat.empty_title": "¿En qué te ayudo con este proyecto?",
     "chat.empty_hint": "Nunca renombro un archivo sin tu confirmación.",
@@ -282,7 +277,7 @@ const LANG_ES = {
     "chat.notice_move_same": "El archivo ya está en esa carpeta.",
 
     // File links: open, preview, show in Finder
-    "files.open": "Abrir archivo",
+    "files.open": "Abrir",
     "files.preview": "Vista previa",
     "files.reveal": "Mostrar en Finder",
     "files.show_in_catalog": "Ver en el catálogo",
@@ -443,10 +438,11 @@ const LANG_ES = {
 
     // Account and login
     "auth.register_title": "Crear una cuenta",
-    "auth.register_hint": "Cada cuenta en esta computadora tiene su propia "
-        + "lista de proyectos y sus ajustes. Los catálogos se quedan dentro "
-        + "de cada carpeta de proyecto. Una contraseña perdida no se puede "
-        + "recuperar.",
+    "auth.register_hint": "Cada cuenta en esta computadora tiene su "
+        + "propia lista de proyectos y configuración. Los catálogos se "
+        + "quedan dentro de cada carpeta de proyecto. Si olvidas la "
+        + "contraseña, la clave de recuperación que recibes después te "
+        + "deja poner una nueva.",
     "auth.login_title": "Iniciar sesión",
     "auth.username": "Usuario",
     "auth.password": "Contraseña",
@@ -464,9 +460,6 @@ const LANG_ES = {
     "auth.need_account": "Crear una cuenta",
     "auth.have_account": "Ya tengo una cuenta",
     "auth.forgot": "¿Olvidaste tu contraseña?",
-    "auth.forgot_hint": "Las contraseñas no se pueden recuperar: Cataloga "
-        + "no usa correo. Tus proyectos y archivos siguen intactos en sus "
-        + "carpetas. Crea una cuenta nueva para seguir trabajando.",
     "account.title": "Cuenta",
     "account.change_password": "Cambiar contraseña",
     "account.current_password": "Contraseña actual",
@@ -509,7 +502,8 @@ const LANG_ES = {
     "project.remove_confirm": "Quitar",
     "project.removed": "Proyecto quitado de la lista. Su carpeta y sus "
         + "archivos no cambiaron.",
-    "catalog.no_project": "Crea un proyecto en Configuración para empezar.",
+    "catalog.no_project": "Todavía no hay proyecto. Crea uno para ver sus "
+        + "archivos aquí.",
 
     // Labels for values stored in the database. The stored value itself
     // never changes; only what the user sees.
@@ -558,8 +552,8 @@ const LANG_ES = {
     "error.unauthorized": "Inicia sesión para usar Cataloga.",
     "error.wrong_login": "El usuario o la contraseña no son correctos.",
     "error.wrong_password": "La contraseña actual no es correcta.",
-    "error.too_many_attempts": "Demasiadas contraseñas incorrectas. "
-        + "Vuelve a intentarlo en {seconds} segundos.",
+    "error.too_many_attempts": "Demasiados intentos fallidos. Prueba otra vez "
+        + "en {seconds} segundos.",
     "error.password_too_short":
         "La contraseña debe tener al menos 8 caracteres.",
     "error.password_too_long": "La contraseña es demasiado larga. Usa 72 "
@@ -603,7 +597,6 @@ const LANG_ES = {
     "settings.done": "Listo",
     "settings.optional": "Opcional · Sugerido",
     "settings.suggested": "Sugerido",
-    "settings.progress": "{done} de {total} listos",
     "settings.saved_short": "Guardado",
     "settings.ai_checking": "Revisando la conexión...",
     "settings.ai_connected": "Conectado",
@@ -617,7 +610,6 @@ const LANG_ES = {
     "folders.count": "{n} carpetas",
     "account.save_password": "Guardar la contraseña nueva",
     "project.remove_heading": "Quitar proyecto",
-    "dash.top_sources": "Fuentes principales",
     "dash.media_mix": "Mezcla de medios",
     "dash.mix_open": "{type}: {n}. Verlos en la lista del Catálogo",
     "help.language": "Cambia los botones, etiquetas y mensajes de la app. Los nombres de archivo y los resúmenes no se traducen.",
@@ -636,10 +628,134 @@ const LANG_ES = {
     "settings.need_name": "Escribe un nombre para el proyecto.",
     "plan.need_approval": "Aprueba al menos un cambio.",
     "catalog.filter_source_one": "Fuente: {source}",
-    "plan.summary_read": "{n} archivos leídos.",
     "plan.summary_moves": "{n} movimientos",
     "plan.summary_renames": "{n} renombres",
-    "plan.summary_folders": "{n} carpetas nuevas",
     "settings.wait_line": "Aparecen cuando eliges una carpeta.",
     "catalog.empty_place": "Todavía no hay actividad. Pulsa Archivar ahora en Inicio.",
+
+    // Calm frame, first way in, accounts (Nov 9)
+    "legal.title": "Legal",
+    "legal.terms": "Términos y condiciones",
+    "legal.privacy": "Política de privacidad",
+    "legal.version": "Cataloga 1.0",
+    "terms.title": "Antes de crear tu cuenta",
+    "terms.title_update": "Los términos cambiaron",
+    "terms.lead": "Lee los puntos clave. El texto completo está en los enlaces "
+        + "de abajo.",
+    "terms.point_local": "Cataloga funciona en tu Mac. Tus archivos se quedan "
+        + "en tu computadora.",
+    "terms.point_approve": "Nada se mueve ni se renombra hasta que lo "
+        + "apruebes. Los originales nunca cambian.",
+    "terms.point_ai": "Para leer tus archivos, el texto se envía al proveedor "
+        + "de IA que escojas.",
+    "terms.point_as_is": "Cataloga se ofrece \"tal cual\". Guarda tu propia "
+        + "copia. No somos responsables por datos perdidos, hackeos ni "
+        + "filtraciones.",
+    "terms.read_terms": "Leer Términos y condiciones ↗",
+    "terms.read_privacy": "Leer Política de privacidad ↗",
+    "terms.agree": "Leí y acepto los Términos y condiciones y la Política de "
+        + "privacidad.",
+    "terms.no_recovery": "Si pierdes la contraseña y la clave de recuperación, "
+        + "la cuenta no se puede recuperar.",
+    "terms.accept_new": "Aceptar y crear cuenta",
+    "terms.accept_update": "Aceptar y continuar",
+    "terms.button_hint": "El botón se activa cuando marcas la casilla.",
+    "recovery.title": "Tu clave de recuperación",
+    "recovery.lead": "Si olvidas la contraseña, esta clave te deja poner una "
+        + "nueva. Guárdala en un lugar seguro, fuera de las carpetas de tus "
+        + "proyectos.",
+    "recovery.copy": "Copiar",
+    "recovery.copied": "Copiada.",
+    "recovery.copy_failed": "No se pudo copiar. Selecciona la clave y cópiala.",
+    "recovery.save_now": "Guardar ahora",
+    "recovery.later": "Después",
+    "recovery.way_save": "Guardar ahora abre la ventana de Guardar con el "
+        + "archivo listo: {file} en Documentos.",
+    "recovery.way_later": "Después: puedes guardarla cuando quieras en "
+        + "Configuración › Cuenta.",
+    "recovery.no_window": "La ventana de Guardar solo se abre en la app de "
+        + "Cataloga. Copia la clave.",
+    "recovery.row_label": "Clave de recuperación",
+    "recovery.not_saved": "Todavía no está guardada. Guárdala para poder "
+        + "cambiar tu contraseña.",
+    "recovery.saved_on": "Guardada el {date}.",
+    "recovery.save_current": "Guardar la clave actual",
+    "recovery.get_new": "Crear una clave nueva",
+    "recovery.type_password": "Escribe tu contraseña para seguir",
+    "recovery.continue": "Seguir",
+    "forgot.title": "Cambia tu contraseña",
+    "forgot.lead": "Usa la clave de recuperación que guardaste al crear la "
+        + "cuenta.",
+    "forgot.key": "Clave de recuperación",
+    "forgot.reset": "Cambiar contraseña",
+    "forgot.after": "Después del cambio recibes una clave nueva, y la anterior "
+        + "deja de servir.",
+    "forgot.back": "Volver a entrar",
+    "error.wrong_recovery": "El usuario o la clave de recuperación no son "
+        + "correctos.",
+    "error.terms_not_accepted": "Primero acepta los Términos y la Política de "
+        + "privacidad.",
+    "error.inside_project": "Escoge una carpeta fuera de tus proyectos para la "
+        + "clave.",
+    "error.ticket_expired": "Escribe tu contraseña para guardar la clave.",
+    "error.no_key": "No hay clave de recuperación. Crea una clave nueva.",
+    "error.outside_project": "Ese archivo está fuera de la carpeta del "
+        + "proyecto.",
+    "settings.autosave": "Los cambios se guardan solos.",
+    "project.optional": "Detalles opcionales",
+    "start.title": "Escoge una carpeta para empezar",
+    "start.lead": "Cataloga la lee y propone nombres y carpetas. Nada se mueve "
+        + "hasta que apruebes.",
+    "start.choose": "Escoger carpeta",
+    "start.step_1": "Paso 1",
+    "start.step_1_name": "Escoge una carpeta",
+    "start.step_1_text": "Tus archivos se quedan donde están.",
+    "start.step_2": "Paso 2",
+    "start.step_2_name": "Léela ahora o después",
+    "start.step_2_text": "Cataloga describe cada archivo.",
+    "start.step_3": "Paso 3",
+    "start.step_3_name": "Aprueba los cambios",
+    "start.step_3_text": "Tú decides cada nombre y cada movimiento.",
+    "dash.no_project": "Todavía no hay proyecto. Crea uno para ver tus números "
+        + "aquí.",
+    "dash.review_one": "archivo necesita revisión",
+    "dash.review_many": "archivos necesitan revisión",
+    "dash.nothing_review": "Nada que revisar",
+    "dash.all_classified": "Todo está clasificado.",
+    "dash.sources_count": "Fuentes registradas · {n}",
+    "plan.no_project": "Todavía no hay proyecto. Crea uno para ver aquí los "
+        + "cambios por aprobar.",
+    "plan.show": "Mostrar",
+    "plan.show_all": "Todos {n}",
+    "plan.show_rename": "Renombres {n}",
+    "plan.show_move": "Movimientos {n}",
+    "plan.show_skipped": "Saltados {n}",
+    "plan.files_one": "1 archivo",
+    "plan.files_many": "{n} archivos",
+    "plan.new_folder": "carpeta nueva",
+    "plan.approve_row": "Aprobar {name}",
+    "plan.in_folder": "en {folder}",
+    "plan.skip": "Saltar",
+    "plan.undo_skip": "Deshacer",
+    "plan.skipped_note": "Saltado: se queda como está",
+    "plan.summary_changes": "{n} cambios",
+    "plan.summary_note": "Nada cambia hasta que apliques.",
+    "plan.leave_note": "Los archivos de una carpeta marcada Dejar como está se "
+        + "catalogan, pero nunca se mueven ni se renombran.",
+    "plan.tab_changes": "Cambios",
+    "catalog.download_label": "Descargar la hoja",
+    "catalog.showing": "Mostrando {n} de {total} archivos",
+    "catalog.pages": "Páginas",
+    "catalog.page_prev": "Anterior",
+    "catalog.page_next": "Siguiente",
+    "catalog.page_of": "Página {n} de {total}",
+    "preview.previous": "Archivo anterior",
+    "preview.next": "Archivo siguiente",
+    "preview.new_name": "Nombre nuevo (por aprobar)",
+    "preview.where": "Dónde está",
+    "preview.reveal_hint": "Muestra el archivo en su carpeta. Nada se mueve.",
+    "preview.keys": "Espacio o Esc para cerrar · ← → siguiente archivo",
+    "preview.count": "{n} de {total}",
+    "chat.limits": "Pregúntale a Cataloga solo responde sobre los archivos de "
+        + "este proyecto.",
 };

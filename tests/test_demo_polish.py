@@ -198,7 +198,7 @@ def test_preview_of_a_photo_a_pdf_and_text(flask_client, app, tmp_path):
     answer = flask_client.get("/documents/{}/preview".format(doc_id)
                               ).get_json()
     assert answer == {"kind": "text", "text": "Hello there",
-                      "filename": "n.txt"}
+                      "filename": "n.txt", "size": 11}
 
 
 def test_preview_of_a_missing_file(flask_client, app):

@@ -3,7 +3,6 @@
 import os
 import re
 import unicodedata
-from datetime import datetime
 
 METHOD_TEMPLATES = (
     "{date}_{topic}",            # Method 1: date_topic-name
@@ -107,10 +106,10 @@ def clean_date(document_date):
     return ""
 
 
-def file_date(path):
-    """Return a file's last modified date as YYYY-MM-DD."""
-    return datetime.fromtimestamp(os.path.getmtime(path)).strftime(
-        "%Y-%m-%d")
+def only_digits(filename):
+    """Say whether a name is only a number, like 0005.mp3 or 0005_2.mp3."""
+    stem = os.path.splitext(filename)[0]
+    return re.fullmatch(r"\d+(_\d+)?", stem) is not None
 
 
 def next_event_number(folder, event):

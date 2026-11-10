@@ -8,6 +8,7 @@ import pytest
 
 from backend import folder_watcher, scanner
 from backend.config import projects
+from backend.config.terms import TERMS_VERSION
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import get_connection, init_db
 from backend.models.document import Document
@@ -252,8 +253,9 @@ def test_no_folder_on_open_on_switch_or_on_start(
     create_app(data_folder=data_folder,
                old_db_path=str(tmp_path / "no_old.db"))
     empty_client.post("/auth/logout")
-    empty_client.post("/auth/register", json={"username": "otra-cuenta",
-                                              "password": "password-1234"})
+    empty_client.post("/auth/register", json={
+        "username": "otra-cuenta", "password": "password-1234",
+        "accepted_terms": TERMS_VERSION})
     assert (folders_in(root), folders_in(other)) == before
 
 

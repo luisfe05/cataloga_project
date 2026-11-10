@@ -278,8 +278,8 @@ def choose_date(content_date, file_path, taken=None, meta_date=None,
     """Pick the date and say where it came from, in order of trust.
 
     A date printed or written on a photo comes first, then the date a
-    camera wrote, then the content, the file's own metadata, a year in
-    the file name or its folders, and last the disk date.
+    camera wrote, then the content, the file's own metadata, and a year
+    in the file name or its folders. Nothing else: (None, None).
     """
     if stamp:
         return stamp, "photo stamp"
@@ -291,7 +291,9 @@ def choose_date(content_date, file_path, taken=None, meta_date=None,
         return meta_date, "metadata"
     if name_year:
         return name_year, "name"
-    return naming.file_date(file_path), "file"
+    # The disk date only says when the file was copied or imported, so it
+    # is never the document's date: no reliable date leaves it empty.
+    return None, None
 
 
 def too_big_to_read(file_path, extension):
@@ -514,7 +516,7 @@ class ClassificationPipeline:
 
         folder, placed = self.destination(file_path, media_type, metadata)
         new_filename = self.build_filename(file_path, has_text, metadata,
-                                           date_source, folder)
+                                           folder)
         proposed_folder = proposed_name = None
         # From here on the file may move and a row is written.
         time_budget.commit()
@@ -783,8 +785,7 @@ class ClassificationPipeline:
         )
         return self.db.add_document(document)
 
-    def build_filename(self, file_path, has_text, metadata, date_source,
-                       folder):
+    def build_filename(self, file_path, has_text, metadata, folder):
         """Build the new file name, short enough for its folder, or None."""
         original_filename = os.path.basename(file_path)
         extension = os.path.splitext(file_path)[1]
@@ -794,9 +795,8 @@ class ClassificationPipeline:
             return original_filename
         number = self.db.next_number()
         style = self.db.get_naming_style()
-        # The disk date changes when files are copied, so it is left out.
-        name_date = None if date_source == "file" else \
-            metadata["document_date"]
+        # Only a reliable date (content, metadata, name) is ever here.
+        name_date = metadata["document_date"]
         # Without a topic, a camera or scanner name never becomes one.
         if has_text and not metadata["topic"] and \
                 archive_rules.is_generic_name(original_filename):
@@ -816,6 +816,11 @@ class ClassificationPipeline:
                 event_number = naming.next_event_number(folder, event)
             else:
                 template = naming.NEW_PROJECT_TEMPLATE
+        # No topic, no source, no date: nothing to name the file by, so it
+        # keeps its own name and the plan proposes no rename.
+        if not (metadata["topic"] or metadata["source"] or name_date or
+                event):
+            return original_filename
         if has_text:
             topic_number = naming.next_topic_number(
                 metadata["topic"] or original_filename, self.db.get_topics())
@@ -832,7 +837,11 @@ class ClassificationPipeline:
             parts = naming.build_parts(original_filename, number,
                                        document_date=name_date,
                                        style=style)
-        return naming.fit_path(folder, template, parts, extension)
+        new_name = naming.fit_path(folder, template, parts, extension)
+        # A name that is only a number tells less than the original.
+        if new_name and naming.only_digits(new_name):
+            return original_filename
+        return new_name
 
     def regenerate_summary(self, document):
         """Write a new summary that uses the source and date the user typed."""

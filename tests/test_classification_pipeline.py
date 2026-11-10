@@ -115,7 +115,8 @@ def test_missing_source_or_date_is_still_classified(setup):
     doc = pipeline.classify_document(
         make_text_file(setup["drop_zone"], "a.txt"))
     assert doc.source is None
-    assert doc.date_source == "file"
+    # No reliable date: the disk date is never used (Nov 9).
+    assert doc.document_date is None and doc.date_source is None
     assert doc.status == "Classified"
     assert doc.review_note is None
 
@@ -172,7 +173,8 @@ def test_photo_is_sorted_without_ai(setup):
     doc = pipeline.classify_document(path)
 
     assert doc.media_type == "Photos"
-    assert doc.filename == "0001.jpg"
+    # Nothing known about it: it keeps its own name, never 0001.jpg.
+    assert doc.filename == "team.JPG"
     assert doc.status == "Manual Review"
     assert ai.calls == 0
 
@@ -184,7 +186,7 @@ def test_scanned_pdf_is_flagged_for_manual_summary(setup):
     os.utime(path, (JULY_15, JULY_15))
     doc = pipeline.classify_document(path)
     assert doc.media_type == "Documents"
-    assert doc.filename == "0001.pdf"
+    assert doc.filename == "scan.pdf"
     assert doc.summary is None
     assert doc.status == "Manual Review"
     assert ai.calls == 0
@@ -255,7 +257,7 @@ def test_each_method_names_the_file(setup):
 
 
 def test_missing_date_source_and_topic(setup):
-    """No date in the text: the file date is saved, the name says undated."""
+    """No date, source or topic: no date is saved, the name stays."""
     replies = {"classify": "Documents", "summary": "A letter.",
                "metadata": '{"source": null, "document_date": null, '
                            '"topic": null}'}
@@ -264,9 +266,9 @@ def test_missing_date_source_and_topic(setup):
     path = make_text_file(setup["drop_zone"], "Carta de Ramón.txt")
     os.utime(path, (JULY_15, JULY_15))
     doc = pipeline.classify_document(path)
-    assert doc.filename == "carta-de-ramon.txt"
-    assert doc.document_date == "2026-07-15"
-    assert doc.date_source == "file"
+    assert doc.filename == "Carta de Ramón.txt"
+    assert doc.document_date is None
+    assert doc.date_source is None
 
 
 def test_custom_template_with_original(setup):
@@ -279,14 +281,14 @@ def test_custom_template_with_original(setup):
 
 
 def test_photo_ignores_the_custom_template(setup):
-    """Files without text always use the file date and number."""
+    """A photo with nothing known keeps its name, whatever the template."""
     pipeline, ai = setup["build"]()
     setup["repo"].save_naming_template("{source}_{topic}")
     path = str(setup["drop_zone"] / "team.png")
     with open(path, "wb") as file:
         file.write(b"fake image bytes")
     os.utime(path, (JULY_15, JULY_15))
-    assert pipeline.classify_document(path).filename == "0001.png"
+    assert pipeline.classify_document(path).filename == "team.png"
 
 
 def test_topic_comes_in_the_metadata_request(setup):

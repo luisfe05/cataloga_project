@@ -9,68 +9,178 @@
 </head>
 <body>
 
-    <!-- Account screen: setup or login (auth.js). The app stays hidden until login. -->
+    <!-- Account screen: login, a new account, a reset (auth.js). The app stays hidden until login. -->
     <section class="auth-screen hidden" id="auth-screen">
-        <img class="auth-logo" src="assets/logo-vertical-paper.svg"
-             alt="Cataloga">
+        <!-- Two slow glows over the dark gradient: decoration only. -->
+        <span class="login-glow glow-a" aria-hidden="true"></span>
+        <span class="login-glow glow-b" aria-hidden="true"></span>
 
-        <form class="settings-form auth-form hidden" id="register-form">
-            <h2 data-i18n="auth.register_title">Create an account</h2>
-            <p class="hint" data-i18n="auth.register_hint"></p>
-            <label for="register-username"
+        <!-- The language before any account: EN or ES. -->
+        <div class="login-lang" role="group" data-i18n-label="lang.title">
+            <button type="button" data-login-lang="en">EN</button>
+            <button type="button" data-login-lang="es">ES</button>
+        </div>
+
+        <div class="auth-center">
+            <img class="auth-logo" src="assets/logo-horizontal-paper.svg"
+                 alt="Cataloga">
+
+            <form class="settings-form auth-form hidden" id="register-form">
+                <h1 data-i18n="auth.register_title">Create an account</h1>
+                <p class="hint" data-i18n="auth.register_hint"></p>
+                <label for="register-username"
+                       data-i18n="auth.username">Username</label>
+                <input type="text" id="register-username"
+                       autocomplete="username">
+                <label for="register-password"
+                       data-i18n="auth.password">Password</label>
+                <div class="password-field">
+                    <input type="password" id="register-password"
+                           autocomplete="new-password">
+                </div>
+                <label for="register-confirm"
+                       data-i18n="auth.confirm_password">Confirm password</label>
+                <div class="password-field">
+                    <input type="password" id="register-confirm"
+                           autocomplete="new-password"
+                           aria-describedby="register-confirm-message">
+                </div>
+                <p class="form-message error" id="register-confirm-message"></p>
+                <button type="submit" class="primary-button"
+                        data-i18n="auth.create_account">Create account</button>
+                <p class="form-message error" id="register-message"></p>
+                <p class="auth-links">
+                    <button type="button" class="auth-link" id="show-login-link"
+                            data-i18n="auth.have_account">I already have an
+                        account</button>
+                </p>
+            </form>
+
+            <form class="settings-form auth-form hidden" id="login-form">
+                <h1 data-i18n="auth.login_title">Log in</h1>
+                <label for="login-username"
+                       data-i18n="auth.username">Username</label>
+                <input type="text" id="login-username" autocomplete="username">
+                <label for="login-password"
+                       data-i18n="auth.password">Password</label>
+                <div class="password-field">
+                    <input type="password" id="login-password"
+                           autocomplete="current-password">
+                </div>
+                <button type="submit" class="primary-button"
+                        data-i18n="auth.log_in">Log in</button>
+                <p class="form-message error" id="login-message"></p>
+                <p class="auth-links">
+                    <button type="button" class="auth-link"
+                            id="show-register-link"
+                            data-i18n="auth.need_account">Create an account</button>
+                    <button type="button" class="auth-link" id="forgot-link"
+                            data-i18n="auth.forgot">Forgot your password?</button>
+                </p>
+            </form>
+        </div>
+
+        <!-- The legal pages and the version, under the card. -->
+        <p class="login-legal">
+            <a href="legal/terms.html" target="_blank" rel="noopener"
+               data-i18n="legal.terms">Terms and Conditions</a>
+            <a href="legal/privacy.html" target="_blank" rel="noopener"
+               data-i18n="legal.privacy">Privacy Policy</a>
+            <span data-i18n="legal.version">Cataloga 1.0</span>
+        </p>
+    </section>
+
+    <!-- Terms and Privacy: before a new account, or after the terms change. -->
+    <dialog class="confirm-dialog account-dialog" id="terms-dialog"
+            aria-labelledby="terms-title">
+        <h2 id="terms-title" data-i18n="terms.title">Before you create your
+            account</h2>
+        <p class="hint" data-i18n="terms.lead"></p>
+        <ul class="terms-points">
+            <li><span class="icon icon-check"></span><span data-i18n="terms.point_local"></span></li>
+            <li><span class="icon icon-check"></span><span data-i18n="terms.point_approve"></span></li>
+            <li><span class="icon icon-check"></span><span data-i18n="terms.point_ai"></span></li>
+            <li><span class="icon icon-check"></span><span data-i18n="terms.point_as_is"></span></li>
+        </ul>
+        <p class="terms-links">
+            <a href="legal/terms.html" target="_blank" rel="noopener"
+               data-i18n="terms.read_terms">Read Terms and Conditions</a>
+            <a href="legal/privacy.html" target="_blank" rel="noopener"
+               data-i18n="terms.read_privacy">Read Privacy Policy</a>
+        </p>
+        <label class="terms-agree">
+            <input type="checkbox" id="terms-agree" autofocus>
+            <span data-i18n="terms.agree"></span>
+        </label>
+        <p class="hint" data-i18n="terms.no_recovery"></p>
+        <div class="form-buttons">
+            <button type="button" class="secondary-button" id="terms-cancel"
+                    data-i18n="project.cancel">Cancel</button>
+            <button type="button" class="primary-button" id="terms-accept"
+                    disabled aria-describedby="terms-hint"></button>
+        </div>
+        <p class="action-hint terms-hint" id="terms-hint"
+           data-i18n="terms.button_hint"></p>
+    </dialog>
+
+    <!-- The recovery key: after a new account, a reset, or from Settings. -->
+    <dialog class="confirm-dialog account-dialog" id="recovery-dialog"
+            aria-labelledby="recovery-title">
+        <h2 id="recovery-title" data-i18n="recovery.title">Your recovery
+            key</h2>
+        <p class="hint" data-i18n="recovery.lead"></p>
+        <div class="recovery-box">
+            <span class="recovery-key" id="recovery-key"></span>
+            <button type="button" class="secondary-button" id="recovery-copy"
+                    data-i18n="recovery.copy">Copy</button>
+        </div>
+        <p class="hint recovery-ways" id="recovery-ways"></p>
+        <p class="form-message" id="recovery-message" aria-live="polite"></p>
+        <div class="form-buttons">
+            <button type="button" class="secondary-button" id="recovery-later"
+                    data-i18n="recovery.later">Later</button>
+            <button type="button" class="primary-button" id="recovery-save"
+                    data-i18n="recovery.save_now">Save now</button>
+        </div>
+    </dialog>
+
+    <!-- Forgot password: the username and the recovery key. -->
+    <dialog class="confirm-dialog account-dialog" id="forgot-dialog"
+            aria-labelledby="forgot-title">
+        <form class="settings-form" id="forgot-form">
+            <h2 id="forgot-title" data-i18n="forgot.title">Reset your
+                password</h2>
+            <p class="hint" data-i18n="forgot.lead"></p>
+            <label for="forgot-username"
                    data-i18n="auth.username">Username</label>
-            <input type="text" id="register-username"
-                   autocomplete="username">
-            <label for="register-password"
-                   data-i18n="auth.password">Password</label>
+            <input type="text" id="forgot-username" autocomplete="username">
+            <label for="forgot-key"
+                   data-i18n="forgot.key">Recovery key</label>
+            <input type="text" id="forgot-key" class="key-input"
+                   autocomplete="off" spellcheck="false"
+                   placeholder="XXXX-XXXX-XXXX-XXXX">
+            <label for="forgot-password"
+                   data-i18n="account.new_password">New password</label>
             <div class="password-field">
-                <input type="password" id="register-password"
+                <input type="password" id="forgot-password"
                        autocomplete="new-password">
             </div>
-            <label for="register-confirm"
+            <label for="forgot-confirm"
                    data-i18n="auth.confirm_password">Confirm password</label>
             <div class="password-field">
-                <input type="password" id="register-confirm"
-                       autocomplete="new-password"
-                       aria-describedby="register-confirm-message">
-            </div>
-            <p class="form-message error" id="register-confirm-message"></p>
-            <button type="submit" class="primary-button"
-                    data-i18n="auth.create_account">Create account</button>
-            <p class="form-message error" id="register-message"></p>
-            <p class="auth-links">
-                <button type="button" class="auth-link" id="show-login-link"
-                        data-i18n="auth.have_account">I already have an
-                    account</button>
-            </p>
-        </form>
-
-        <form class="settings-form auth-form hidden" id="login-form">
-            <h2 data-i18n="auth.login_title">Log in</h2>
-            <label for="login-username"
-                   data-i18n="auth.username">Username</label>
-            <input type="text" id="login-username" autocomplete="username">
-            <label for="login-password"
-                   data-i18n="auth.password">Password</label>
-            <div class="password-field">
-                <input type="password" id="login-password"
-                       autocomplete="current-password">
+                <input type="password" id="forgot-confirm"
+                       autocomplete="new-password">
             </div>
             <button type="submit" class="primary-button"
-                    data-i18n="auth.log_in">Log in</button>
-            <p class="form-message error" id="login-message"></p>
-            <p class="auth-links">
-                <button type="button" class="auth-link"
-                        id="show-register-link"
-                        data-i18n="auth.need_account">Create an account</button>
-                <button type="button" class="auth-link" id="forgot-link"
-                        data-i18n="auth.forgot">Forgot your password?</button>
-            </p>
-            <!-- There is no email, so there is no way to recover it. -->
-            <p class="hint auth-forgot hidden" id="forgot-hint"
-               data-i18n="auth.forgot_hint"></p>
+                    data-i18n="forgot.reset">Reset password</button>
+            <p class="form-message error" id="forgot-message"
+               aria-live="polite"></p>
+            <p class="hint" data-i18n="forgot.after"></p>
+            <button type="button" class="auth-link forgot-back"
+                    id="forgot-back" data-i18n="forgot.back">Back to log
+                in</button>
         </form>
-    </section>
+    </dialog>
 
     <!-- App frame: hiding #nav-bar hides the sidebar and the chat button. -->
     <nav id="nav-bar" class="hidden">
@@ -122,8 +232,10 @@
         <!-- Floating chat button. Its name is only for screen readers. -->
         <button type="button" class="chat-toggle" id="chat-toggle"
                 aria-expanded="false" aria-controls="chat-panel">
-            <img class="chat-logomark" src="assets/logomarks/logomark-7.svg"
+            <img class="chat-logomark" src="assets/logomarks/logomark-6.svg"
                  alt="">
+            <!-- Open, the button shows × instead of the logomark. -->
+            <span class="chat-toggle-close" aria-hidden="true">×</span>
             <span class="visually-hidden"
                   data-i18n="chat.open_label">Open Cataloga
                 assistant</span>
@@ -224,12 +336,38 @@
             <div class="home-head">
                 <div>
                     <h1 id="home-title"></h1>
+                    <!-- Files and their state, in one line (home.js). -->
+                    <p class="view-subtitle home-counts" id="home-chips"></p>
                     <nav class="home-crumbs" id="home-crumbs"
                          data-i18n-label="home.path"></nav>
                 </div>
-                <div class="home-chips" id="home-chips"></div>
             </div>
             <p class="empty-message hidden" id="home-message"></p>
+            <!-- No project yet: one way to start (home.js). -->
+            <section class="start-empty hidden" id="home-start"
+                     aria-labelledby="home-start-title">
+                <img class="start-mark" src="assets/logomarks/logomark-3.svg"
+                     alt="">
+                <h1 id="home-start-title" data-i18n="start.title">Choose a
+                    folder to start</h1>
+                <p class="start-lead" data-i18n="start.lead"></p>
+                <button type="button" class="primary-button start-button"
+                        data-start-folder>
+                    <span class="icon icon-folder-open"></span>
+                    <span data-i18n="start.choose">Choose folder</span>
+                </button>
+                <ol class="start-steps">
+                    <li><span class="start-step" data-i18n="start.step_1">Step 1</span>
+                        <b data-i18n="start.step_1_name">Choose a folder</b>
+                        <span data-i18n="start.step_1_text"></span></li>
+                    <li><span class="start-step" data-i18n="start.step_2">Step 2</span>
+                        <b data-i18n="start.step_2_name">Read now or later</b>
+                        <span data-i18n="start.step_2_text"></span></li>
+                    <li><span class="start-step" data-i18n="start.step_3">Step 3</span>
+                        <b data-i18n="start.step_3_name">Approve the changes</b>
+                        <span data-i18n="start.step_3_text"></span></li>
+                </ol>
+            </section>
             <section class="home-work" id="home-work">
                 <div class="home-pane" id="home-browser"></div>
                 <aside class="home-info" id="home-info" aria-live="polite"></aside>
@@ -243,27 +381,12 @@
                 <div class="catalog-heading">
                     <h1 class="view-title project-title"
                         id="catalog-title"></h1>
+                    <!-- "25 Classified · 5 Manual Review" (catalog.js). -->
+                    <p class="view-subtitle" id="progress-counts"></p>
                 </div>
                 <section class="catalog-progress">
-                    <p class="progress-title"
-                       data-i18n="catalog.progress">Catalog progress</p>
-                    <div class="progress-numbers">
-                        <div>
-                            <p class="progress-label"
-                               data-i18n="value.Classified">Classified</p>
-                            <p class="progress-number"
-                               id="progress-classified">0</p>
-                        </div>
-                        <div>
-                            <p class="progress-label"
-                               data-i18n="value.Manual Review">Manual
-                                Review</p>
-                            <p class="progress-number"
-                               id="progress-review">0</p>
-                        </div>
-                        <p class="progress-percent" id="progress-percent"></p>
-                    </div>
-                    <!-- The numbers above say the same, so screen readers skip the bar. -->
+                    <p class="progress-percent" id="progress-percent"></p>
+                    <!-- The line above says the same, so screen readers skip the bar. -->
                     <div class="progress-track" aria-hidden="true">
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
@@ -272,11 +395,11 @@
 
             <!-- Tabs, filters, Download, and Edit Mode. The search is in the top bar. -->
             <div class="filter-row">
-                <div class="tabs">
+                <div class="tabs segmented">
                     <button class="tab active" data-status=""
                             data-i18n="catalog.tab_all">All Files</button>
                     <button class="tab" data-status="Manual Review"
-                            id="tab-review">Manual Review (0)</button>
+                            id="tab-review">Manual Review 0</button>
                 </div>
                 <select id="filter-media-type">
                     <option value=""
@@ -304,24 +427,28 @@
                             id="sort-chip-clear"
                             data-i18n-label="catalog.newest_first_clear">×</button>
                 </span>
-                <div class="toolbar">
-                    <button type="button" class="pill-button"
-                            id="download-button">
-                        <span class="icon icon-download"></span>
-                        <span data-i18n="catalog.download">Download
-                            Worksheet</span>
-                    </button>
-                    <label class="switch-label">
-                        <span data-i18n="catalog.more_columns">More columns</span>
-                        <input type="checkbox" id="more-columns">
-                        <span class="switch"></span>
-                    </label>
-                    <label class="switch-label">
-                        <span data-i18n="catalog.edit_mode">Edit Mode</span>
-                        <input type="checkbox" id="edit-mode">
-                        <span class="switch"></span>
-                    </label>
-                </div>
+            </div>
+
+            <!-- How many rows show, then the two switches. -->
+            <div class="table-tools">
+                <p class="showing-line" id="showing-line" aria-live="polite"></p>
+                <!-- The worksheet: the download icon and one word. -->
+                <button type="button" class="pill-button worksheet-button"
+                        id="download-button"
+                        data-i18n-label="catalog.download_label">
+                    <span class="icon icon-download"></span>
+                    <span data-i18n="catalog.download">Worksheet</span>
+                </button>
+                <label class="switch-label">
+                    <input type="checkbox" id="more-columns">
+                    <span class="switch"></span>
+                    <span data-i18n="catalog.more_columns">More columns</span>
+                </label>
+                <label class="switch-label">
+                    <input type="checkbox" id="edit-mode">
+                    <span class="switch"></span>
+                    <span data-i18n="catalog.edit_mode">Edit Mode</span>
+                </label>
             </div>
 
             <!-- Shown while Edit Mode is on (catalog.js). -->
@@ -331,6 +458,11 @@
             <p class="warning-message hidden" id="catalog-warning"></p>
 
             <p class="empty-message hidden" id="catalog-message"></p>
+            <button type="button" class="primary-button start-button hidden"
+                    id="catalog-start" data-start-folder>
+                <span class="icon icon-folder-open"></span>
+                <span data-i18n="start.choose">Choose folder</span>
+            </button>
 
             <!-- Only the table scrolls sideways when long file names do not fit. -->
             <div class="table-scroll">
@@ -374,18 +506,44 @@
                     <tbody id="catalog-body"></tbody>
                 </table>
             </div>
+            <!-- More than one page of rows: Previous and Next (catalog.js). -->
+            <nav class="pager hidden" id="catalog-pager"
+                 data-i18n-label="catalog.pages">
+                <button type="button" class="secondary-button" id="page-prev"
+                        data-i18n="catalog.page_prev">Previous</button>
+                <span id="page-text"></span>
+                <button type="button" class="secondary-button" id="page-next"
+                        data-i18n="catalog.page_next">Next</button>
+            </nav>
         </div>
 
         <!-- Plan: what the pipeline proposed for files read in place (plan.js). -->
+        <!-- To Approve: every proposed change, before → after (plan.js). -->
         <div id="view-plan" class="view hidden">
-            <div class="catalog-header">
+            <div class="plan-head">
                 <div class="catalog-heading">
-                    <h1 class="view-title" data-i18n="nav.plan">Plan</h1>
+                    <h1 class="view-title" data-i18n="nav.plan">To Approve</h1>
                     <p class="view-subtitle" id="plan-summary"></p>
                 </div>
+                <div class="plan-head-actions hidden" id="plan-actions">
+                    <button type="button" class="secondary-button"
+                            id="plan-approve-all"
+                            data-i18n="plan.approve_all">Approve all</button>
+                    <button type="button" class="primary-button plan-apply"
+                            id="plan-apply"
+                            aria-describedby="plan-apply-hint"></button>
+                </div>
             </div>
+            <!-- Says what is missing while Apply is off. -->
+            <p class="action-hint plan-apply-hint" id="plan-apply-hint"
+               aria-live="polite"></p>
 
             <p class="empty-message hidden" id="plan-message"></p>
+            <button type="button" class="primary-button start-button hidden"
+                    id="plan-start" data-start-folder>
+                <span class="icon icon-folder-open"></span>
+                <span data-i18n="start.choose">Choose folder</span>
+            </button>
 
             <!-- A batch being applied or undone, or one that paused. -->
             <section class="scan-status hidden" id="plan-progress">
@@ -397,74 +555,22 @@
                     batch</button>
             </section>
 
-            <div class="tabs plan-tabs hidden" id="plan-tabs">
-                <button type="button" class="tab active" data-plan-tab="files"
-                        data-i18n="plan.tab_files">Files</button>
-                <button type="button" class="tab" data-plan-tab="folders"
-                        data-i18n="plan.folders">Folders</button>
-                <button type="button" class="tab" data-plan-tab="batches"
-                        data-i18n="plan.batches">Batches</button>
+            <!-- Which changes show: all, renames, moves, skipped. -->
+            <div class="segmented plan-show hidden" id="plan-filters"
+                 role="group" data-i18n-label="plan.show">
+                <button type="button" data-plan-show="all"
+                        aria-pressed="true"></button>
+                <button type="button" data-plan-show="rename"
+                        aria-pressed="false"></button>
+                <button type="button" data-plan-show="move"
+                        aria-pressed="false"></button>
+                <button type="button" data-plan-show="skipped"
+                        aria-pressed="false"></button>
             </div>
 
-            <div class="filter-row hidden" id="plan-filters">
-                <select id="plan-filter-folder">
-                    <option value="" data-i18n="plan.filter_folder_all">Destination:
-                        All</option>
-                </select>
-                <select id="plan-filter-action">
-                    <option value="" data-i18n="plan.filter_action_all">Action:
-                        All</option>
-                    <option value="move" data-i18n="plan.action_move">Move</option>
-                    <option value="rename" data-i18n="plan.action_rename">Rename</option>
-                    <option value="move_rename"
-                            data-i18n="plan.action_move_rename">Move and
-                        rename</option>
-                    <option value="create_folder"
-                            data-i18n="plan.action_create_folder">New
-                        folder</option>
-                    <option value="review" data-i18n="plan.filter_review">Manual
-                        Review</option>
-                    <option value="none" data-i18n="plan.filter_unchanged">Unchanged</option>
-                </select>
-                <input type="search" class="plan-search" id="plan-search"
-                       data-i18n-placeholder="plan.search">
-                <div class="toolbar">
-                    <button type="button" class="pill-button"
-                            id="plan-approve-all"
-                            data-i18n="plan.approve_all">Approve all</button>
-                    <button type="button" class="pill-button"
-                            id="plan-approve-selected"
-                            data-i18n="plan.approve_selected">Approve
-                        selected</button>
-                    <button type="button" class="pill-button"
-                            id="plan-skip-selected"
-                            data-i18n="plan.skip_selected">Skip selected</button>
-                    <!-- Says what is missing while Apply is off. -->
-                    <span class="action-hint" id="plan-apply-hint"
-                          aria-live="polite"></span>
-                    <button type="button" class="primary-button"
-                            id="plan-apply"></button>
-                </div>
-            </div>
-
-            <div class="table-scroll hidden" id="plan-table-wrap">
-                <table class="catalog-table plan-table" id="plan-table">
-                    <thead>
-                        <tr>
-                            <th class="plan-check-cell"><label class="check-hit"><input
-                                type="checkbox" id="plan-check-all"
-                                data-i18n-label="plan.select_all"></label></th>
-                            <th data-i18n="plan.col_file">File</th>
-                            <th data-i18n="plan.col_current">Current folder</th>
-                            <th data-i18n="plan.col_proposed">Proposed folder</th>
-                            <th data-i18n="plan.col_name">Proposed name</th>
-                            <th data-i18n="plan.col_why">Why</th>
-                            <th data-i18n="catalog.col_confidence">Confidence</th>
-                            <th data-i18n="catalog.col_status">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="plan-rows"></tbody>
-                </table>
+            <!-- Groups by destination folder; each row: before → after. -->
+            <div class="plan-list-wrap hidden" id="plan-table-wrap">
+                <section class="plan-list" id="plan-rows"></section>
             </div>
 
             <!-- Every folder of the tree with its Leave as is switch. -->
@@ -477,19 +583,66 @@
             <section class="plan-batches hidden" id="plan-batches">
                 <ul id="plan-batch-list"></ul>
             </section>
+
+            <!-- The rule of Leave as is, and the two other lists. -->
+            <p class="plan-foot hidden" id="plan-tabs">
+                <span data-i18n="plan.leave_note">Files in a folder marked
+                    Leave as is are cataloged but never moved or renamed.</span>
+                <button type="button" class="link-button" data-plan-tab="files"
+                        data-i18n="plan.tab_changes">Changes</button>
+                <button type="button" class="link-button" data-plan-tab="folders"
+                        data-i18n="plan.folders">Folders</button>
+                <button type="button" class="link-button" data-plan-tab="batches"
+                        data-i18n="plan.batches">Batches</button>
+            </p>
         </div>
 
         <div id="view-dashboard" class="view hidden">
             <div class="dashboard">
-                <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
+                <div class="view-head">
+                    <h1 class="view-title" data-i18n="nav.dashboard">Dashboard</h1>
+                    <span class="view-scope" id="dash-project"></span>
+                </div>
 
-                <!-- Four columns: two small cards and one wide card, then two full rows. -->
-                <div class="dash-grid">
-                    <!-- The ring fills to the share of classified documents (dashboard.js). -->
-                    <section class="stat-card classified-card">
-                        <p class="stat-label" data-i18n="dash.classified">Documents Classified</p>
-                        <div class="classified-row">
-                            <p class="stat-number" id="stat-classified">0</p>
+                <!-- No project yet: a plain line and the way to start (dashboard.js). -->
+                <section class="empty-start hidden" id="dash-start">
+                    <p data-i18n="dash.no_project"></p>
+                    <button type="button" class="primary-button start-button"
+                            data-start-folder>
+                        <span class="icon icon-folder-open"></span>
+                        <span data-i18n="start.choose">Choose folder</span>
+                    </button>
+                </section>
+
+                <!-- The answer first: what needs review, then the numbers. -->
+                <div class="dash-grid" id="dash-grid">
+                    <!-- Violet to Midnight, drifting slowly. Paper text on it. -->
+                    <section class="stat-card review-card"
+                             aria-labelledby="review-title">
+                        <div class="review-head">
+                            <h2 class="review-title" id="review-title"><span
+                                  class="review-number" id="stat-review">0</span>
+                                <span id="review-words"></span></h2>
+                            <button type="button" class="review-go"
+                                    id="dash-review-button"
+                                    data-i18n="dash.review_button">Go Review</button>
+                        </div>
+                        <!-- Up to five files, each with why it waits. -->
+                        <ul class="review-list" id="review-list"></ul>
+                        <p class="review-done hidden" id="review-done"
+                           data-i18n="dash.all_classified">Everything is
+                            classified.</p>
+                    </section>
+
+                    <div class="dash-side">
+                        <!-- The ring fills to the share of classified documents (dashboard.js). -->
+                        <section class="stat-card classified-card">
+                            <div class="stat-text">
+                                <p class="stat-label" data-i18n="dash.classified">Documents
+                                    classified</p>
+                                <p class="stat-number" id="stat-classified">0</p>
+                                <p class="stat-sub" id="stat-total"></p>
+                            </div>
                             <div class="progress-ring" id="classified-ring">
                                 <svg viewBox="0 0 64 64" aria-hidden="true">
                                     <circle class="ring-rail" cx="32" cy="32" r="28"></circle>
@@ -498,30 +651,15 @@
                                 </svg>
                                 <span class="ring-percent" id="classified-percent">0%</span>
                             </div>
-                        </div>
-                        <p class="stat-sub" id="stat-total"></p>
-                    </section>
+                        </section>
 
-                    <!-- Violet to Midnight, drifting slowly. White and Ice text on it. -->
-                    <section class="stat-card review-card">
-                        <p class="stat-label" data-i18n="dash.review">Needs Manual Review</p>
-                        <p class="stat-number stat-hero" id="stat-review">0</p>
-                        <button type="button" class="review-go" id="dash-review-button"
-                                data-i18n="dash.review_button">Go Review</button>
-                    </section>
-
-                    <section class="stat-card sources-card card-wide">
-                        <div class="stat-text">
-                            <p class="stat-label" data-i18n="dash.sources">Sources Tracked</p>
-                            <p class="stat-number stat-hero" id="stat-sources">0</p>
-                        </div>
                         <!-- Top 3, each opens Catalog list with only its documents, newest first. -->
-                        <div class="top-sources">
-                            <p class="top-sources-title"
-                               data-i18n="dash.top_sources">Top sources</p>
+                        <section class="stat-card sources-card">
+                            <p class="stat-label" id="sources-label"></p>
+                            <span class="hidden" id="stat-sources">0</span>
                             <ol class="top-sources-list" id="top-sources"></ol>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
 
                     <!-- One bar split by media type, and a chip per type that filters the Catalog. -->
                     <section class="panel card-full">
@@ -538,6 +676,13 @@
                 </div>
             </div>
         </div>
+        <!-- New Project: its own screen. settings.js moves the Project form
+             here (#settings-project) and back, so both use the same cards. -->
+        <div id="view-new" class="view hidden">
+            <h1 class="view-title" data-i18n="project.new_title">New Project</h1>
+            <div id="new-project-slot"></div>
+        </div>
+
         <div id="view-settings" class="view hidden">
             <h1 class="view-title" data-i18n="nav.settings">Settings</h1>
             <!-- Project: this project's sections. General: set once, for the whole app. -->
@@ -554,15 +699,7 @@
 
             <div class="settings-panel" id="settings-project" role="tabpanel"
                  aria-labelledby="settings-tab-project">
-                <!-- New project only: how many sections are ready (settings.js). -->
-                <div class="settings-progress hidden" id="settings-progress">
-                    <p id="settings-progress-text" aria-live="polite"></p>
-                    <div class="progress-thin" aria-hidden="true">
-                        <span id="settings-progress-fill"></span>
-                    </div>
-                </div>
-
-                <!-- One glass card per section. A finished card folds into one row with Change. -->
+                <!-- One card per section. A finished card folds into one row with Change. -->
                 <form class="settings-form settings-cards" id="settings-form">
                     <section class="settings-card" id="project-section">
                         <div class="card-fold card-closed">
@@ -599,36 +736,6 @@
                                         <input type="text" id="research-name" required>
                                     </div>
                                 </div>
-                                <div class="field-row option-row">
-                                    <!-- New projects only. Unticked, the folder is read in place. -->
-                                    <label class="catalog-only-row folders-new-only"
-                                           id="drop-zone-row">
-                                        <input type="checkbox" id="use-drop-zone">
-                                        <span data-i18n="project.mode_tree">Use a Drop Zone</span>
-                                        <span class="help-tip" data-help="help.drop_zone"></span>
-                                    </label>
-                                    <!-- New project read where it is: when to read it (settings.js). -->
-                                    <div class="archive-switch hidden" id="archive-switch">
-                                        <span class="archive-switch-label" id="archive-switch-label"><span
-                                              data-i18n="project.archive_title">When should
-                                                Cataloga read this folder?</span>
-                                            <span class="help-tip" data-help="help.archive"></span></span>
-                                        <div class="archive-options" role="radiogroup"
-                                             aria-labelledby="archive-switch-label">
-                                            <label><input type="radio" name="archive-when"
-                                                          value="now">
-                                                <span data-i18n="project.archive_now">Now</span></label>
-                                            <label><input type="radio" name="archive-when"
-                                                          value="later" checked>
-                                                <span data-i18n="project.archive_later">Later</span></label>
-                                        </div>
-                                    </div>
-                                    <!-- Catalog only: read and catalog in place, never move or rename -->
-                                    <label class="catalog-only-row" id="catalog-only-row">
-                                        <input type="checkbox" id="catalog-only">
-                                        <span data-i18n="project.catalog_only">Catalog only</span>
-                                    </label>
-                                </div>
                                 <p class="folder-facts hidden" id="folder-facts"></p>
                                 <!-- What the chosen folder looks like (inspect) -->
                                 <p class="form-message hidden" id="folder-advice"
@@ -640,6 +747,44 @@
                             </div>
                         </div>
                     </section>
+
+                    <!-- New project, once a folder is chosen: when to read it, then the two boxes. -->
+                    <section class="settings-card hidden" id="read-section">
+                        <h2 id="archive-switch-label"><span
+                              data-i18n="project.archive_title">When should
+                                Cataloga read this folder?</span>
+                            <span class="help-tip" data-help="help.archive"></span></h2>
+                        <div class="field-row option-row">
+                            <!-- Read where it is: Now or Later (settings.js). -->
+                            <div class="archive-switch hidden" id="archive-switch">
+                                <div class="archive-options" role="radiogroup"
+                                     aria-labelledby="archive-switch-label">
+                                    <label><input type="radio" name="archive-when"
+                                                  value="now">
+                                        <span data-i18n="project.archive_now">Now</span></label>
+                                    <label><input type="radio" name="archive-when"
+                                                  value="later" checked>
+                                        <span data-i18n="project.archive_later">Later</span></label>
+                                </div>
+                            </div>
+                            <!-- New projects only. Unticked, the folder is read in place. -->
+                            <label class="catalog-only-row folders-new-only"
+                                   id="drop-zone-row">
+                                <input type="checkbox" id="use-drop-zone">
+                                <span data-i18n="project.mode_tree">Use a Drop Zone</span>
+                                <span class="help-tip" data-help="help.drop_zone"></span>
+                            </label>
+                            <!-- Catalog only: read and catalog in place, never move or rename -->
+                            <label class="catalog-only-row" id="catalog-only-row">
+                                <input type="checkbox" id="catalog-only">
+                                <span data-i18n="project.catalog_only">Catalog only</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- New project: the next cards are optional and start folded. -->
+                    <h2 class="optional-heading" id="optional-heading"
+                        data-i18n="project.optional">Optional details</h2>
 
                     <!-- Dotted places for the next three cards, until a folder is chosen. -->
                     <p class="card-wait-line" id="cards-wait-line"
@@ -1035,8 +1180,51 @@
                                     password</button>
                             </div>
                             <p class="form-message" id="password-message"></p>
+
+                            <!-- Recovery key: its state, and two ways to save it. Both ask the password. -->
+                            <div class="recovery-row">
+                                <div class="recovery-row-text">
+                                    <p class="recovery-row-title"
+                                       data-i18n="recovery.row_label">Recovery key</p>
+                                    <p class="hint" id="recovery-status"></p>
+                                </div>
+                                <button type="button" class="secondary-button"
+                                        id="recovery-current"
+                                        data-i18n="recovery.save_current">Save current
+                                    key</button>
+                                <button type="button" class="secondary-button"
+                                        id="recovery-new"
+                                        data-i18n="recovery.get_new">Get a new key</button>
+                            </div>
+                            <div class="recovery-confirm hidden" id="recovery-confirm">
+                                <label for="recovery-password"
+                                       data-i18n="recovery.type_password">Type your
+                                    password to continue</label>
+                                <div class="recovery-confirm-row">
+                                    <input type="password" id="recovery-password"
+                                           autocomplete="current-password">
+                                    <button type="button" class="primary-button"
+                                            id="recovery-continue"
+                                            data-i18n="recovery.continue">Continue</button>
+                                </div>
+                                <p class="form-message error"
+                                   id="recovery-confirm-message"></p>
+                            </div>
                         </section>
                     </form>
+
+                    <!-- Legal: the two pages and the version. -->
+                    <section class="settings-card legal-card" id="legal-section">
+                        <h2 data-i18n="legal.title">Legal</h2>
+                        <a href="legal/terms.html" target="_blank" rel="noopener"
+                           data-i18n="legal.terms">Terms and Conditions</a>
+                        <a href="legal/privacy.html" target="_blank" rel="noopener"
+                           data-i18n="legal.privacy">Privacy Policy</a>
+                        <span class="legal-version"
+                              data-i18n="legal.version">Cataloga 1.0</span>
+                    </section>
+                    <p class="hint autosave-line"
+                       data-i18n="settings.autosave">Changes save on their own.</p>
                 </div>
             </div>
         </div>
@@ -1047,16 +1235,59 @@
     <!-- Preview of a file, inside the app so it shows in a screen recording. -->
     <div class="preview-overlay hidden" id="preview-overlay" role="dialog"
          aria-modal="true" aria-labelledby="preview-title">
-        <div class="preview-box">
-            <header class="preview-header">
-                <h2 id="preview-title"></h2>
-                <button type="button" class="preview-close" id="preview-close"
-                        data-i18n-label="preview.close">
-                    <span class="icon icon-close"></span>
-                </button>
-            </header>
-            <div class="preview-content" id="preview-content"></div>
-        </div>
+        <button type="button" class="preview-step preview-prev" id="preview-prev"
+                data-i18n-label="preview.previous">
+            <span aria-hidden="true">←</span>
+        </button>
+        <button type="button" class="preview-step preview-next" id="preview-next"
+                data-i18n-label="preview.next">
+            <span aria-hidden="true">→</span>
+        </button>
+        <section class="preview-box">
+            <!-- The file itself, on Deep Space. -->
+            <div class="preview-stage">
+                <div class="preview-content" id="preview-content"></div>
+                <p class="preview-count" id="preview-count"></p>
+            </div>
+            <!-- What Cataloga knows about it, and what to do. -->
+            <aside class="preview-info">
+                <div class="preview-head">
+                    <div>
+                        <h2 id="preview-title"></h2>
+                        <p class="preview-kind" id="preview-kind"></p>
+                    </div>
+                    <button type="button" class="preview-close" id="preview-close"
+                            data-i18n-label="preview.close">
+                        <span class="icon icon-close"></span>
+                    </button>
+                </div>
+                <p class="preview-summary" id="preview-summary"></p>
+                <dl class="preview-facts" id="preview-facts"></dl>
+                <div class="preview-new hidden" id="preview-new">
+                    <span class="preview-label"
+                          data-i18n="preview.new_name">New name (to approve)</span>
+                    <span id="preview-new-name"></span>
+                </div>
+                <div class="preview-where">
+                    <span class="preview-label"
+                          data-i18n="preview.where">Where it is</span>
+                    <span id="preview-where"></span>
+                </div>
+                <div class="preview-actions">
+                    <button type="button" class="primary-button"
+                            id="preview-reveal">
+                        <span class="icon icon-folder-open"></span>
+                        <span data-i18n="files.reveal">Show in Finder</span>
+                    </button>
+                    <button type="button" class="secondary-button"
+                            id="preview-open" data-i18n="files.open">Open</button>
+                    <p class="hint" data-i18n="preview.reveal_hint">Shows the
+                        file in its folder. Nothing is moved.</p>
+                </div>
+            </aside>
+        </section>
+        <p class="preview-keys" aria-hidden="true"
+           data-i18n="preview.keys"></p>
     </div>
     </main>
 
@@ -1065,9 +1296,13 @@
            aria-labelledby="chat-title">
         <header class="chat-header">
             <span class="chat-avatar">
-                <img src="assets/logomark-midnight.svg" alt="">
+                <img src="assets/logomarks/logomark-6.svg" alt="">
             </span>
-            <h2 id="chat-title" data-i18n="chat.title">Cataloga assistant</h2>
+            <div class="chat-heading">
+                <h2 id="chat-title" data-i18n="chat.title">Ask Cataloga</h2>
+                <!-- "Harbor Swimmers · 30 files" (chat.js). -->
+                <span class="chat-scope" id="chat-scope"></span>
+            </div>
             <!-- The × is hidden from screen readers; they read the translated word. -->
             <button type="button" class="chat-close" id="chat-close">
                 <span aria-hidden="true">×</span>
@@ -1107,12 +1342,19 @@
         </div>
 
         <form class="chat-form" id="chat-form">
-            <textarea id="chat-input" rows="2" maxlength="1000"
-                      placeholder="Ask about your files…"
-                      data-i18n-placeholder="chat.placeholder"
-                      aria-labelledby="chat-title"></textarea>
-            <button type="submit" class="primary-button" id="chat-send"
-                    data-i18n="chat.send">Send</button>
+            <div class="chat-input-row">
+                <textarea id="chat-input" rows="1" maxlength="1000"
+                          placeholder="Ask about your files…"
+                          data-i18n-placeholder="chat.placeholder"
+                          aria-labelledby="chat-title"></textarea>
+                <button type="submit" class="chat-send" id="chat-send"
+                        data-i18n-label="chat.send">
+                    <span aria-hidden="true">↑</span>
+                </button>
+            </div>
+            <!-- What the assistant can answer about: this project only. -->
+            <p class="chat-limits" data-i18n="chat.limits">Ask Cataloga only
+                answers about the files in this project.</p>
         </form>
     </aside>
 

@@ -159,8 +159,23 @@ let savedServerUrl = "";
 // ---- Cards: drop, fold, hide ----
 
 function settingsVisible() {
-    return !document.getElementById("view-settings").classList
-        .contains("hidden");
+    return ["view-settings", "view-new"].some((id) =>
+        !document.getElementById(id).classList.contains("hidden"));
+}
+
+/** The Project form lives in New Project or in Settings > Project; it moves, it is not copied. */
+function placeProjectPanel(isNew) {
+    const panel = document.getElementById("settings-project");
+    if (isNew) {
+        document.getElementById("new-project-slot").appendChild(panel);
+        panel.classList.remove("hidden");
+    } else {
+        // Back after the Project / General tabs.
+        document.getElementById("settings-general").before(panel);
+    }
+    // With no project yet, Settings shows only General.
+    document.getElementById("settings-tab-project").classList
+        .toggle("hidden", !hasProjects);
 }
 
 // The full drop plays the first time Settings opens in this app session,
@@ -186,7 +201,10 @@ function dropCards(cards, quick = false) {
 
 /** The visible cards and dotted places of the open tab, top to bottom. */
 function openTabCards() {
-    const panel = document.querySelector(".settings-panel:not(.hidden)");
+    const view = document.getElementById("view-new").classList
+        .contains("hidden") ? "#view-settings" : "#view-new";
+    const panel = document.querySelector(
+        `${view} .settings-panel:not(.hidden)`);
     if (!panel) {
         return [];
     }
@@ -278,6 +296,10 @@ function updateCardVisibility() {
     // One line above the dotted places says when they appear.
     document.getElementById("cards-wait-line").classList
         .toggle("hidden", !waiting);
+    // When to read it, and the two boxes: after the folder is chosen. An
+    // existing project shows it only to say it is Catalog only.
+    setCardShown(document.getElementById("read-section"),
+        isNew ? !waiting : catalogOnly);
     Object.keys(CARD_PLACEHOLDERS).forEach((id) => {
         const card = document.getElementById(id);
         document.getElementById(CARD_PLACEHOLDERS[id]).classList
@@ -321,16 +343,6 @@ function cardReady(id) {
     }
     // Folder names: a proposal, or left empty on purpose.
     return !foldersBusy;
-}
-
-/** The counted sections: the cards that show, or wait in their dotted place. */
-function countedCards() {
-    return PROJECT_CARDS.filter((id) => {
-        const placeholder = CARD_PLACEHOLDERS[id];
-        return !document.getElementById(id).classList.contains("hidden")
-            || (placeholder && !document.getElementById(placeholder)
-                .classList.contains("hidden"));
-    });
 }
 
 /** The method's name and its preview, as the folded row shows it. */
@@ -381,8 +393,11 @@ function refreshCards() {
         const card = document.getElementById(id);
         card.querySelector(".card-confirm").classList
             .toggle("hidden", !ready.includes(id));
-        // A card that is no longer complete opens again.
-        if (!ready.includes(id) && card.classList.contains("is-done")) {
+        // A card that is no longer complete opens again; in a new project
+        // the optional cards stay folded until the user opens them.
+        const optional = projectMode === "new" && id !== "project-section";
+        if (!ready.includes(id) && card.classList.contains("is-done")
+                && !optional) {
             setCardDone(card, false);
         }
     });
@@ -396,15 +411,6 @@ function refreshCards() {
         foldersSummary();
 
     const isNew = projectMode === "new";
-    const counted = countedCards();
-    const done = counted.filter((id) => ready.includes(id)).length;
-    document.getElementById("settings-progress").classList
-        .toggle("hidden", !isNew);
-    document.getElementById("settings-progress-text").textContent = t(
-        "settings.progress",
-        { done: done, total: counted.length });
-    document.getElementById("settings-progress-fill").style.width =
-        `${counted.length ? Math.round((done / counted.length) * 100) : 0}%`;
     // A project needs a folder and a name; the rest has defaults.
     const blocked = isNew && !ready.includes("project-section");
     document.getElementById("save-button").disabled = blocked;
@@ -419,6 +425,10 @@ function refreshCards() {
 
 /** Moving on to a later card folds the complete cards above it. */
 function moveOnFrom(target) {
+    // A new project's cards open and fold only when the user says so.
+    if (projectMode === "new") {
+        return;
+    }
     const card = target.closest(".settings-card");
     const index = card ? PROJECT_CARDS.indexOf(card.id) : -1;
     if (index < 1) {
@@ -452,14 +462,15 @@ function updateBrowseButton() {
 function setProjectMode(mode) {
     projectMode = mode;
     const isNew = mode === "new";
+    placeProjectPanel(isNew);
     const title = t(isNew ? "project.new_title" : "project.edit_title");
     document.getElementById("project-form-title").textContent = title;
     document.getElementById("project-row-title").textContent = title;
     document.getElementById("target-directory").readOnly = !isNew;
     // An existing project says, under its folder, why it can't change.
     document.getElementById("folder-locked").classList.toggle("hidden", isNew);
-    document.getElementById("cancel-new-project")
-        .classList.toggle("hidden", isNew && !hasProjects);
+    // Cancel always shows: in New Project it goes back to Home.
+    document.getElementById("cancel-new-project").classList.remove("hidden");
     // Catalog only: the box is a choice for new projects, a fact after.
     const box = document.getElementById("catalog-only");
     box.disabled = !isNew;
@@ -470,11 +481,12 @@ function setProjectMode(mode) {
     updateBrowseButton();
     resetFolderWarning();
     hideArchiveSwitch();
-    // An existing project shows every section folded; a new one, open.
+    // An existing project shows every section folded. A new one shows its
+    // folder and name open, and the optional details folded.
     PROJECT_CARDS.forEach((id) => {
         const card = document.getElementById(id);
         card.classList.remove("is-moving");
-        card.classList.toggle("is-done", !isNew);
+        card.classList.toggle("is-done", !isNew || id !== "project-section");
     });
     updateCardVisibility();
 }
@@ -555,6 +567,29 @@ function setSheetButton(again) {
     const button = document.getElementById("suggest-sheet");
     button.dataset.i18n = again ? "sheet.again" : "sheet.suggest";
     button.textContent = t(button.dataset.i18n);
+}
+
+/** Choose folder (Home, Dashboard, …): the picker, then New Project with that folder. */
+async function chooseFolderToStart() {
+    let folder = "";
+    if (pywebviewReady) {
+        folder = await window.pywebview.api.choose_folder();
+        if (!folder) {
+            // The picker was closed: stay where we are.
+            return;
+        }
+    }
+    openNewProject();
+    if (folder) {
+        document.getElementById("target-directory").value = folder;
+        await folderChosen();
+    }
+}
+
+/** New Project: an empty form, on its own screen. */
+function openNewProject() {
+    startNewProject();
+    showView("new");
 }
 
 /** Empty the form for a new project, which starts with Ollama Cloud. */
@@ -1166,6 +1201,7 @@ async function loadSettings() {
             settings.username;
         document.getElementById("topbar-user").textContent =
             settings.username;
+        loadRecoveryStatus();
         document.getElementById("target-directory").value =
             settings.target_directory;
 
@@ -1474,13 +1510,20 @@ document.addEventListener("animationend", (event) => {
 });
 
 updateBrowseButton();
+// Every Choose folder button, now and later (they can be drawn by JS).
+document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-start-folder]")) {
+        chooseFolderToStart();
+    }
+});
 document.getElementById("browse-button")
     .addEventListener("click", browseFolder);
-// Cancel goes back to the active project's settings, as they are saved.
+// Cancel leaves New Project for Home; Settings reloads as it is saved.
 document.getElementById("cancel-new-project")
     .addEventListener("click", () => {
         showSettingsMessage("", "");
         loadSettings();
+        showView("home");
     });
 document.getElementById("remove-project-button")
     .addEventListener("click", openRemoveDialog);

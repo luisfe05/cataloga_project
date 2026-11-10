@@ -14,6 +14,10 @@ const MIX_COLORS = {
     Video: "var(--color-lilac)",
 };
 
+// Actions that changed a file. The rest (Undone, Manual Review) are
+// states, shown in a quieter style.
+const REAL_CHANGES = ["Classified", "Moved", "Renamed", "Edited"];
+
 // What is on screen now, so a refresh with the same numbers does not
 // play the ring or the Media Mix again from zero.
 let ringLeft = "100";
@@ -114,6 +118,34 @@ function renderClassified(classified, review) {
     ringLeft = String(100 - percent);
 }
 
+/** The answer first: how many files need review, and up to five with why. */
+function renderReview(count, files) {
+    document.getElementById("review-words").textContent = count === 0
+        ? t("dash.nothing_review")
+        : t(count === 1 ? "dash.review_one" : "dash.review_many");
+    // With nothing to review there is no number and no button (A4).
+    document.getElementById("stat-review").classList
+        .toggle("hidden", count === 0);
+    document.getElementById("dash-review-button").classList
+        .toggle("hidden", count === 0);
+    document.getElementById("review-done").classList
+        .toggle("hidden", count > 0);
+    const list = document.getElementById("review-list");
+    list.innerHTML = "";
+    files.forEach((file) => {
+        const row = document.createElement("li");
+        const name = document.createElement("span");
+        name.className = "review-file";
+        name.textContent = file.filename;
+        name.title = file.filename;
+        const note = document.createElement("span");
+        note.className = "review-reason";
+        note.textContent = file.note;
+        row.append(name, note);
+        list.appendChild(row);
+    });
+}
+
 /** The three sources with the most documents, each a link to its documents. */
 function renderTopSources(sources) {
     const list = document.getElementById("top-sources");
@@ -136,7 +168,6 @@ function renderTopSources(sources) {
         row.append(link, count);
         list.appendChild(row);
     });
-    list.closest(".top-sources").classList.toggle("hidden", !sources.length);
 }
 
 function renderActivity(activity) {
@@ -144,13 +175,14 @@ function renderActivity(activity) {
     list.innerHTML = "";
     activity.forEach((entry) => {
         const item = document.createElement("li");
+        // A real change reads in ink; Undone and the other states, quieter.
+        item.classList.toggle("is-quiet",
+            !REAL_CHANGES.includes(entry.action));
         const name = document.createElement("span");
         name.textContent = entry.filename;
         name.className = "activity-name";
-        // Manual Review gets the Violet border.
         const badge = document.createElement("span");
-        badge.className = entry.action === "Manual Review"
-            ? "activity-badge is-review" : "activity-badge";
+        badge.className = "activity-badge";
         badge.textContent = valueLabel(entry.action);
         const when = document.createElement("span");
         when.className = "activity-when";
@@ -167,9 +199,19 @@ function renderActivity(activity) {
     message.classList.toggle("hidden", activity.length > 0);
 }
 
+/** No project: a plain line and Choose folder, never an error. */
+function showDashboardStart(show) {
+    document.getElementById("dash-start").classList.toggle("hidden", !show);
+    document.getElementById("dash-grid").classList.toggle("hidden", show);
+}
+
 async function loadDashboard() {
+    const active = document.querySelector(".project-link.active");
+    document.getElementById("dash-project").textContent =
+        active ? active.textContent : "";
     try {
         const stats = await getDashboardStats();
+        showDashboardStart(false);
         countUp(document.getElementById("stat-classified"),
             stats.documents_classified);
         countUp(document.getElementById("stat-review"),
@@ -178,8 +220,9 @@ async function loadDashboard() {
             stats.sources_tracked);
         renderClassified(stats.documents_classified,
             stats.needs_manual_review);
-        document.getElementById("dash-review-button").classList
-            .toggle("hidden", stats.needs_manual_review === 0);
+        renderReview(stats.needs_manual_review, stats.review_files || []);
+        document.getElementById("sources-label").textContent =
+            t("dash.sources_count", { n: stats.sources_tracked });
         renderTopSources(stats.top_sources || []);
         renderMediaMix(stats.media_type_breakdown);
         renderActivity(stats.recent_activity);
@@ -189,16 +232,20 @@ async function loadDashboard() {
             countUp(document.getElementById(id), 0);
         });
         renderClassified(0, 0);
+        renderReview(0, []);
         renderTopSources([]);
         document.getElementById("stat-total").textContent = "";
         document.getElementById("mix-bar").innerHTML = "";
         document.getElementById("mix-chips").innerHTML = "";
         drawnMix = "";
         document.getElementById("activity-list").innerHTML = "";
+        const noProject = Boolean(error && error.code === "no_project");
+        showDashboardStart(noProject);
+        // Only a real failure says that something failed.
         const message = document.getElementById("dashboard-message");
-        message.textContent = t("dash.load_failed",
+        message.textContent = noProject ? "" : t("dash.load_failed",
             { message: errorText(error) });
-        message.classList.remove("hidden");
+        message.classList.toggle("hidden", noProject);
     }
 }
 

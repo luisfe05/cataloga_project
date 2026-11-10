@@ -33,9 +33,19 @@ function showView(name) {
     if (name === "plan") {
         loadPlan();
     }
-    setStillBackground(name);
-    // The cards of the open tab drop into place.
+    // The cards of the open tab drop into place. Settings never shows a
+    // half-made new project: it reloads the saved one, or General alone.
     if (name === "settings") {
+        if (projectMode === "new") {
+            if (hasProjects) {
+                loadSettings();
+            } else {
+                showSettingsTab("general", false);
+            }
+        }
+        dropSettingsCards();
+    }
+    if (name === "new") {
         dropSettingsCards();
     }
 }
@@ -125,8 +135,7 @@ async function refreshAfterProjectChange() {
 async function chooseProject(folder) {
     if (folder === NEW_PROJECT_OPTION) {
         // Reset first, so the cards drop already empty.
-        startNewProject();
-        showView("settings");
+        openNewProject();
         return;
     }
     // The active project is already loaded: just open Home.
@@ -158,13 +167,14 @@ async function startApp() {
         // Keep English; the login screen shows the error below.
     }
     setLanguage(status ? status.language : "en");
+    termsVersion = status ? status.terms_version : "";
     fillProviders();
-    // The first person on this computer has no account to log in with.
+    showLoginScreen();
+    // The first person on this computer has no account: the terms first.
     if (status && !status.account_exists) {
-        showRegisterScreen();
+        openTermsDialog("new");
         return;
     }
-    showLoginScreen();
     if (!status) {
         showAuthMessage("login-message", t("catalog.backend_down"));
     }

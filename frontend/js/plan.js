@@ -1,9 +1,11 @@
-/** plan.js: the Plan view. What the pipeline proposed, chosen and applied in batches. */
+/** plan.js: To Approve. What the pipeline proposed, chosen and applied in batches. */
 
 // The last answer of GET /plan, so filters work without asking again.
 let planView = null;
 let planTimer = null;
 let planTab = "files";
+// Which changes show: all, rename, move or skipped.
+let planShow = "all";
 
 /** Folder path for the screen: "A / B", or the project folder. */
 function planFolderLabel(place) {
@@ -27,6 +29,7 @@ function showPlanTab(name) {
     planTab = name || planTab;
     const panels = { files: ["plan-filters", "plan-table-wrap"],
         folders: ["plan-folders"], batches: ["plan-batches"] };
+    // The tab the list is on is not offered as a link.
     Object.keys(panels).forEach((tab) => {
         panels[tab].forEach((id) => {
             document.getElementById(id).classList
@@ -34,72 +37,65 @@ function showPlanTab(name) {
         });
     });
     document.querySelectorAll("[data-plan-tab]").forEach((button) => {
-        button.classList.toggle("active", button.dataset.planTab === name);
+        button.classList.toggle("hidden", button.dataset.planTab === name);
     });
 }
 
 /** Show or hide the parts of the view that need a plan. */
 function showPlanParts(visible) {
     document.getElementById("plan-tabs").classList.toggle("hidden", !visible);
+    document.getElementById("plan-actions").classList
+        .toggle("hidden", !visible);
     showPlanTab(visible ? planTab : "");
 }
 
-/** Read the three filters. */
-function planFilters() {
-    return {
-        folder: document.getElementById("plan-filter-folder").value,
-        action: document.getElementById("plan-filter-action").value,
-        search: document.getElementById("plan-search").value.trim()
-            .toLowerCase(),
-    };
+/** The rows that change a file: renames, moves, or both. */
+function changeRows() {
+    return planView.rows.filter((row) => row.document_id
+        && row.action !== "create_folder");
 }
 
-/** The rows that pass the filters: the journal rows, or the unchanged ones. */
+/** Does a row rename its file? Does it move it? */
+function renamesFile(row) {
+    return ["rename", "move_rename"].includes(row.action);
+}
+
+function movesFile(row) {
+    return ["move", "move_rename"].includes(row.action);
+}
+
+/** The rows of the chosen view: all, renames, moves, or skipped. */
 function filteredPlanRows() {
-    const filters = planFilters();
-    let rows = planView.rows;
-    if (filters.action === "none") {
-        rows = planView.unchanged;
-    } else if (filters.action === "review") {
-        rows = rows.filter((row) => row.review);
-    } else if (filters.action) {
-        rows = rows.filter((row) => row.action === filters.action);
+    const rows = changeRows();
+    if (planShow === "rename") {
+        return rows.filter(renamesFile);
     }
-    if (filters.folder) {
-        rows = rows.filter((row) => row.new_folder === filters.folder);
+    if (planShow === "move") {
+        return rows.filter(movesFile);
     }
-    if (filters.search) {
-        rows = rows.filter((row) => [row.filename, row.old_name,
-            row.new_name, row.old_folder, row.new_folder, row.why,
-            row.summary].join(" ").toLowerCase().includes(filters.search));
+    if (planShow === "skipped") {
+        return rows.filter((row) => row.status === "skipped");
     }
     return rows;
 }
 
-/** Fill the Destination filter with the folders rows go to. */
-function fillPlanFolderFilter() {
-    const select = document.getElementById("plan-filter-folder");
-    const current = select.value;
-    const folders = [...new Set(planView.rows.map((row) => row.new_folder)
-        .filter(Boolean))].sort();
-    select.innerHTML = "";
-    const all = document.createElement("option");
-    all.value = "";
-    all.textContent = t("plan.filter_folder_all");
-    select.appendChild(all);
-    folders.forEach((folder) => {
-        const option = document.createElement("option");
-        option.value = folder;
-        option.textContent = planFolderLabel(folder);
-        select.appendChild(option);
+/** "All 30", "Renames 18", "Moves 12", "Skipped 1" on the four buttons. */
+function renderPlanShow() {
+    const rows = changeRows();
+    const counts = { all: rows.length, rename: rows.filter(renamesFile).length,
+        move: rows.filter(movesFile).length,
+        skipped: rows.filter((row) => row.status === "skipped").length };
+    document.querySelectorAll("[data-plan-show]").forEach((button) => {
+        const name = button.dataset.planShow;
+        button.textContent = t(`plan.show_${name}`, { n: counts[name] });
+        button.setAttribute("aria-pressed", String(name === planShow));
     });
-    select.value = folders.includes(current) ? current : "";
 }
 
 /** The folder dropdown of a row: every place of the tree. */
 function planFolderSelect(row) {
     const select = document.createElement("select");
-    select.className = "status-select";
+    select.className = "plan-folder-select";
     select.setAttribute("aria-label", t("plan.col_proposed"));
     const same = document.createElement("option");
     same.value = "";
@@ -126,7 +122,9 @@ function planFolderSelect(row) {
 function planNameInput(row) {
     const input = document.createElement("input");
     input.type = "text";
-    input.value = row.new_name || "";
+    // Looks like text; a click edits it.
+    input.className = "plan-new-name";
+    input.value = row.new_name || row.old_name || "";
     input.title = input.value;
     input.setAttribute("aria-label", t("plan.col_name"));
     input.addEventListener("change", () => {
@@ -153,111 +151,141 @@ function planRowOpen(row) {
         && row.action !== "create_folder";
 }
 
+/** Where a row's file ends up: its new folder, or the one it is in. */
+function planDestination(row) {
+    return movesFile(row) ? row.new_folder : row.old_folder;
+}
+
+/** One group header: the destination folder, its file count, new or not. */
+function planGroupHeader(folder, count) {
+    const header = document.createElement("div");
+    header.className = "plan-group";
+    const name = document.createElement("span");
+    name.className = "plan-group-name";
+    name.textContent = planFolderLabel(folder);
+    const facts = document.createElement("span");
+    facts.className = "plan-group-facts";
+    const made = planView.rows.some((row) => row.action === "create_folder"
+        && row.new_folder === folder);
+    facts.textContent = (count === 1 ? t("plan.files_one")
+        : t("plan.files_many", { n: count }))
+        + (made ? ` · ${t("plan.new_folder")}` : "");
+    header.append(name, facts);
+    return header;
+}
+
+/** One row: the box, the file as it is (struck through), →, as it will be, Skip or Undo. */
+function planRow(row) {
+    const line = document.createElement("div");
+    line.className = "plan-row";
+    line.dataset.id = row.id;
+    const skipped = row.status === "skipped";
+    const open = planRowOpen(row);
+    line.classList.toggle("is-skipped", skipped);
+    line.classList.toggle("row-failed", row.status === "failed");
+
+    // The box approves the change; unticked, the change is skipped.
+    const check = document.createElement("label");
+    check.className = "check-hit";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = row.status === "approved" || !open
+        && ["applied", "pending"].includes(row.status);
+    box.disabled = !open || Boolean(planView.busy);
+    box.setAttribute("aria-label", t("plan.approve_row",
+        { name: row.old_name || "" }));
+    box.addEventListener("change", () => choosePlan({
+        status: box.checked ? "approved" : "skipped", ids: [row.id] }));
+    check.appendChild(box);
+
+    const before = document.createElement("div");
+    before.className = "plan-before";
+    const oldName = document.createElement("span");
+    oldName.className = "plan-old-name";
+    oldName.textContent = row.old_name;
+    oldName.title = row.old_name;
+    const oldLine = document.createElement("span");
+    oldLine.className = "plan-old-line";
+    oldLine.append(oldName, makeFileActions(row.document_id));
+    const where = document.createElement("span");
+    where.className = "plan-where";
+    where.textContent = t("plan.in_folder",
+        { folder: planFolderLabel(row.old_folder) });
+    before.append(oldLine, where);
+
+    const arrow = document.createElement("span");
+    arrow.className = "plan-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "→";
+
+    const after = document.createElement("div");
+    after.className = "plan-after";
+    if (open && !skipped) {
+        after.appendChild(planNameInput(row));
+    } else {
+        const newName = document.createElement("span");
+        newName.className = "plan-new-name";
+        newName.textContent = row.new_name || row.old_name;
+        after.appendChild(newName);
+    }
+    const why = document.createElement("span");
+    why.className = "plan-why";
+    if (skipped) {
+        why.textContent = t("plan.skipped_note");
+    } else {
+        // The folder can still change here; the reason says why this one.
+        if (open && planView.folders.length) {
+            why.appendChild(planFolderSelect(row));
+        }
+        const reason = document.createElement("span");
+        reason.textContent = row.reason || row.why || row.review_note || "";
+        why.appendChild(reason);
+    }
+    after.appendChild(why);
+
+    // Skip a change, or Undo the skip: the row's own choice.
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "link-button plan-row-action";
+    action.textContent = t(skipped ? "plan.undo_skip" : "plan.skip");
+    action.disabled = !open || Boolean(planView.busy);
+    action.addEventListener("click", () => choosePlan({
+        status: skipped ? "approved" : "skipped", ids: [row.id] }));
+    line.append(check, before, arrow, after, action);
+    return line;
+}
+
 function renderPlanRows() {
-    const body = document.getElementById("plan-rows");
-    body.innerHTML = "";
-    // Files first: the folders to make are only what they need.
-    const rows = filteredPlanRows();
-    rows.filter((row) => row.action !== "create_folder")
-        .concat(rows.filter((row) => row.action === "create_folder"))
-        .forEach((row) => {
-        const tr = document.createElement("tr");
-        tr.dataset.id = row.id || "";
-        if (row.status === "failed") {
-            tr.classList.add("row-failed");
+    const list = document.getElementById("plan-rows");
+    list.innerHTML = "";
+    renderPlanShow();
+    // Grouped by where the files end up, in the order of the tree.
+    const groups = new Map();
+    filteredPlanRows().forEach((row) => {
+        const folder = planDestination(row) || "";
+        if (!groups.has(folder)) {
+            groups.set(folder, []);
         }
-        const check = document.createElement("td");
-        check.className = "plan-check-cell";
-        if (planRowOpen(row)) {
-            const box = document.createElement("input");
-            box.type = "checkbox";
-            box.className = "plan-check";
-            box.value = row.id;
-            box.setAttribute("aria-label", row.old_name || "");
-            // The whole 44 px label takes the click, not only the 18 px box.
-            const hit = document.createElement("label");
-            hit.className = "check-hit";
-            hit.appendChild(box);
-            check.appendChild(hit);
-        }
-        tr.appendChild(check);
-        const fileText = row.action === "create_folder"
-            ? planLabel("action", "create_folder") : row.old_name;
-        const file = makeCell("", "plan-file");
-        file.title = fileText;
-        const line = document.createElement("div");
-        line.className = "plan-file-line";
-        const fileName = document.createElement("span");
-        fileName.className = "plan-file-name";
-        fileName.textContent = fileText;
-        line.appendChild(fileName);
-        // A file row has its document: the eye previews it, the folder shows it in Finder.
-        if (row.document_id && row.action !== "create_folder") {
-            line.appendChild(makeFileActions(row.document_id));
-        }
-        file.appendChild(line);
-        if (row.reason) {
-            const note = document.createElement("p");
-            note.className = "review-note";
-            note.textContent = row.reason;
-            file.appendChild(note);
-        }
-        tr.appendChild(file);
-        tr.appendChild(makeCell(row.action === "create_folder" ? ""
-            : planFolderLabel(row.old_folder), "plan-cut"));
-        const proposed = makeCell("", "plan-cut");
-        if (planRowOpen(row) && planView.folders.length) {
-            proposed.appendChild(planFolderSelect(row));
-        } else {
-            proposed.textContent = row.new_folder === row.old_folder
-                && row.action !== "create_folder" ? t("plan.same_folder")
-                : planFolderLabel(row.new_folder);
-            proposed.title = proposed.textContent;
-        }
-        tr.appendChild(proposed);
-        const name = makeCell("", "plan-name");
-        if (planRowOpen(row)) {
-            name.appendChild(planNameInput(row));
-        } else {
-            name.textContent = row.action === "create_folder" ? ""
-                : (row.new_name === row.old_name || !row.new_name
-                    ? t("plan.keep_name") : row.new_name);
-            name.title = name.textContent;
-        }
-        tr.appendChild(name);
-        tr.appendChild(makeCell(row.why || row.review_note || "",
-            "plan-why"));
-        tr.appendChild(makeCell(row.confidence
-            ? t(`catalog.confidence_${row.confidence}`) : "", "nowrap"));
-        const status = makeCell(planLabel("status", row.status),
-            row.review ? "nowrap status-review" : "nowrap");
-        tr.appendChild(status);
-        body.appendChild(tr);
+        groups.get(folder).push(row);
     });
-    document.getElementById("plan-check-all").checked = false;
+    [...groups.keys()].sort().forEach((folder) => {
+        const rows = groups.get(folder);
+        list.appendChild(planGroupHeader(folder, rows.length));
+        rows.forEach((row) => list.appendChild(planRow(row)));
+    });
+    list.classList.toggle("hidden", groups.size === 0);
 }
 
-/** The ids of the checked rows. */
-function checkedPlanIds() {
-    return [...document.querySelectorAll(".plan-check:checked")]
-        .map((box) => Number(box.value));
-}
-
+/** "30 changes · 18 renames · 12 moves. Nothing changes until you apply." */
 function renderPlanSummary() {
-    const counts = planView.summary;
-    // Only the parts that are not 0: "30 files read. 30 renames."
-    const parts = [["plan.summary_moves", counts.moves],
-        ["plan.summary_renames", counts.renames],
-        ["plan.summary_folders", counts.new_folders]]
+    const rows = changeRows();
+    // Only the parts that are not 0.
+    const parts = [["plan.summary_changes", rows.length],
+        ["plan.summary_renames", rows.filter(renamesFile).length],
+        ["plan.summary_moves", rows.filter(movesFile).length]]
         .filter(([, n]) => n > 0).map(([key, n]) => t(key, { n: n }));
-    let text = t("plan.summary_read", { n: counts.files_read });
-    if (parts.length) {
-        text += " " + parts.join(", ") + ".";
-    }
-    if (counts.unchanged > 0) {
-        text += " " + t("plan.summary_unchanged", { n: counts.unchanged });
-    }
-    document.getElementById("plan-summary").textContent = text;
+    document.getElementById("plan-summary").textContent = parts.length
+        ? `${parts.join(" · ")}. ${t("plan.summary_note")}` : "";
 }
 
 /** A batch being applied, undone or paused: progress and its buttons. */
@@ -395,6 +423,8 @@ function updateApplyButton() {
     const button = document.getElementById("plan-apply");
     button.textContent = count === 1 ? t("plan.apply_one")
         : count ? t("plan.apply_many", { n: count }) : t("plan.apply");
+    document.getElementById("plan-approve-all").disabled =
+        Boolean(planView.busy);
     button.disabled = count === 0 || Boolean(planView.busy);
     // An off button says why: nothing approved yet.
     document.getElementById("plan-apply-hint").textContent =
@@ -403,7 +433,6 @@ function updateApplyButton() {
 
 function renderPlan() {
     renderPlanSummary();
-    fillPlanFolderFilter();
     renderPlanRows();
     renderPlanFolders();
     renderPlanBatches();
@@ -411,12 +440,9 @@ function renderPlan() {
     const running = (planView.batches || []).find((batch) =>
         ["applying", "undoing", "paused", "applied"].includes(batch.status));
     renderPlanProgress(running || null, running ? running.summary : null);
-    planMessage(planView.rows.length ? "" : emptyPlanText());
+    planMessage(changeRows().length ? "" : emptyPlanText());
     updateApplyButton();
     refreshPlanBadge();
-    // The table and the buttons wait while a batch runs.
-    document.querySelectorAll("#plan-filters .toolbar .pill-button")
-        .forEach((button) => { button.disabled = Boolean(planView.busy); });
 }
 
 /** The number next to Plan in the sidebar. */
@@ -432,17 +458,27 @@ async function refreshPlanBadge() {
     badge.classList.toggle("hidden", !count);
 }
 
+/** Nothing to show: an empty list and its line (and Choose folder with no project). */
+function clearPlan(text, noProject) {
+    planView = null;
+    showPlanParts(false);
+    document.getElementById("plan-summary").textContent = "";
+    document.getElementById("plan-progress").classList.add("hidden");
+    document.getElementById("plan-rows").innerHTML = "";
+    document.getElementById("plan-apply-hint").textContent = "";
+    document.getElementById("plan-start").classList
+        .toggle("hidden", !noProject);
+    planMessage(text);
+}
+
 async function loadPlan() {
     clearTimeout(planTimer);
+    document.getElementById("plan-start").classList.add("hidden");
     try {
         const view = await getPlan();
         if (view.message) {
-            planView = null;
-            showPlanParts(false);
-            document.getElementById("plan-summary").textContent = "";
-            document.getElementById("plan-progress").classList.add("hidden");
-            planMessage(view.mode === "catalog" ? t("plan.catalog_only")
-                : t("plan.no_plan"));
+            clearPlan(view.mode === "catalog" ? t("plan.catalog_only")
+                : t("plan.no_plan"), false);
             return;
         }
         planView = view;
@@ -453,7 +489,10 @@ async function loadPlan() {
             planTimer = setTimeout(loadPlan, 1000);
         }
     } catch (error) {
-        planMessage(t("plan.load_failed"));
+        // No project is a start, not a failure. Nothing of before stays.
+        const noProject = Boolean(error && error.code === "no_project");
+        clearPlan(noProject ? t("plan.no_project") : t("plan.load_failed"),
+            noProject);
     }
 }
 
@@ -482,10 +521,6 @@ async function runPlanAction(action, batchId, messageKey) {
 document.getElementById("plan-approve-all").addEventListener("click", () => {
     choosePlan({ status: "approved", all: true });
 });
-document.getElementById("plan-approve-selected").addEventListener("click",
-    () => choosePlan({ status: "approved", ids: checkedPlanIds() }));
-document.getElementById("plan-skip-selected").addEventListener("click",
-    () => choosePlan({ status: "skipped", ids: checkedPlanIds() }));
 document.getElementById("plan-apply").addEventListener("click", () => {
     runPlanAction("apply", null, "plan.started");
 });
@@ -497,19 +532,14 @@ document.getElementById("plan-undo").addEventListener("click", (event) => {
     runPlanAction("undo", Number(event.target.dataset.batch),
         "plan.undo_started");
 });
-document.getElementById("plan-check-all").addEventListener("change",
-    (event) => {
-        document.querySelectorAll(".plan-check").forEach((box) => {
-            box.checked = event.target.checked;
-        });
-    });
 document.querySelectorAll("[data-plan-tab]").forEach((button) => {
     button.addEventListener("click", () => {
         showPlanTab(button.dataset.planTab);
     });
 });
-["plan-filter-folder", "plan-filter-action"].forEach((id) => {
-    document.getElementById(id).addEventListener("change", renderPlanRows);
+document.querySelectorAll("[data-plan-show]").forEach((button) => {
+    button.addEventListener("click", () => {
+        planShow = button.dataset.planShow;
+        renderPlanRows();
+    });
 });
-document.getElementById("plan-search").addEventListener("input",
-    renderPlanRows);

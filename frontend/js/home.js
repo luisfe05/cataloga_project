@@ -139,32 +139,16 @@ function drawCrumbs() {
     });
 }
 
-function makeChip(text) {
-    const chip = document.createElement("span");
-    chip.className = "home-chip";
-    // The number in bold, as in the mockup.
-    const found = text.match(/^(\S+)(.*)$/);
-    const number = document.createElement("b");
-    number.textContent = found[1];
-    chip.append(number, found[2]);
-    return chip;
-}
-
+/** One line under the title: "30 files · 25 Classified · 5 Manual Review". */
 function drawChips(totals) {
-    const chips = document.getElementById("home-chips");
-    chips.innerHTML = "";
-    if (totals.cataloged) {
-        chips.append(
-            makeChip(t("home.classified", { n: totals.classified })),
-            makeChip(t("home.manual_review", { n: totals.review })),
-            makeChip(t("home.files", { n: totals.files })));
-        return;
-    }
-    const waiting = document.createElement("span");
-    waiting.className = "home-chip";
-    waiting.textContent = t("home.not_cataloged");
-    chips.append(makeChip(t("home.files", { n: totals.files })),
-        makeChip(t("home.folders", { n: totals.folders })), waiting);
+    const line = document.getElementById("home-chips");
+    const parts = totals.cataloged
+        ? [t("home.files", { n: totals.files }),
+            t("home.classified", { n: totals.classified }),
+            t("home.manual_review", { n: totals.review })]
+        : [t("home.files", { n: totals.files }),
+            t("home.folders", { n: totals.folders }), t("home.not_cataloged")];
+    line.textContent = parts.join(" · ");
 }
 
 /** One folder or file in the icon view. */
@@ -190,7 +174,7 @@ function makeIconItem(kind, item, icon, count) {
     size.textContent = count;
     button.append(holder, name, size);
     const enter = () => (kind === "folder" ? enterHomeFolder(item.path)
-        : openPreviewAt(item.path));
+        : openPreviewAt(item.path, homeSiblings(item.path)));
     button.addEventListener("click", () => selectHomeItem(kind, item));
     button.addEventListener("dblclick", enter);
     button.addEventListener("keydown", (event) => {
@@ -260,7 +244,7 @@ function makeColumnRow(kind, item, levelIndex, selected, depth) {
         }
     });
     if (kind === "file") {
-        row.addEventListener("dblclick", () => openPreviewAt(item.path));
+        row.addEventListener("dblclick", () => openPreviewAt(item.path, homeSiblings(item.path)));
     }
     return row;
 }
@@ -368,7 +352,7 @@ function drawFileInfo(info, file) {
     const open = document.createElement("button");
     open.type = "button";
     open.textContent = t("home.open");
-    open.addEventListener("click", () => openPreviewAt(file.path));
+    open.addEventListener("click", () => openPreviewAt(file.path, homeSiblings(file.path)));
     const show = document.createElement("button");
     show.type = "button";
     show.textContent = t("home.show");
@@ -420,6 +404,13 @@ function drawHome() {
     drawInfo();
 }
 
+/** The files next to this one, so the preview's arrows walk its folder. */
+function homeSiblings(path) {
+    const level = homeTrail.find((one) => one.files
+        .some((file) => file.path === path));
+    return level ? level.files : [];
+}
+
 /** Read every level of the trail again; draw only if something changed. */
 async function loadHome() {
     const message = document.getElementById("home-message");
@@ -440,6 +431,7 @@ async function loadHome() {
             }
         }
         message.classList.add("hidden");
+        showHomeStart(false);
         work.classList.remove("hidden");
         const answer = JSON.stringify(levels);
         if (answer === homeDrawn) {
@@ -453,11 +445,23 @@ async function loadHome() {
         homeTrail = [];
         homeDrawn = "";
         work.classList.add("hidden");
-        message.classList.remove("hidden");
-        message.textContent = error && error.code === "no_project"
-            ? t("home.no_project") : t("home.load_failed");
+        const noProject = Boolean(error && error.code === "no_project");
+        // No project: one big way to start, not an error. A real failure says so.
+        showHomeStart(noProject);
+        message.classList.toggle("hidden", noProject);
+        message.textContent = noProject ? "" : t("home.load_failed");
         document.getElementById("home-chips").innerHTML = "";
         document.getElementById("home-crumbs").innerHTML = "";
+    }
+}
+
+/** Show or hide the start block; with it, there is nothing to search yet. */
+function showHomeStart(show) {
+    document.getElementById("home-start").classList.toggle("hidden", !show);
+    document.querySelector("#view-home .home-head").classList
+        .toggle("hidden", show);
+    if (show) {
+        document.getElementById("home-top").classList.add("hidden");
     }
 }
 

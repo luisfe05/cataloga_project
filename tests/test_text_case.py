@@ -9,11 +9,12 @@ FRONTEND = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 # Titles named by convention (*.title, *_title, *_heading), plus screen,
 # tab and card titles that have other names.
+# The Dashboard's card labels are sentence case since Nov 9 (mockup):
+# "Documents classified", "Sources tracked · 4".
 TITLE_KEYS = ["nav.home", "nav.catalog", "nav.plan", "nav.dashboard",
-              "nav.settings", "nav.projects", "catalog.progress",
-              "dash.classified", "dash.review", "dash.sources",
-              "dash.activity", "dash.media_mix", "dash.top_sources",
-              "settings.tab_project", "settings.tab_general"]
+              "nav.settings", "nav.projects", "dash.activity",
+              "dash.media_mix", "settings.tab_project",
+              "settings.tab_general"]
 
 # Short words that stay in lowercase inside a title.
 MINOR = {"a", "an", "and", "as", "at", "but", "by", "for", "from", "in",

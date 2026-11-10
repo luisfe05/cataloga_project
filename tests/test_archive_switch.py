@@ -126,9 +126,10 @@ def test_drop_zone_is_a_box_and_read_in_place_is_the_default():
     assert 'name="folder-mode"' not in html
     box = html.index('id="use-drop-zone"')
     assert html.index('id="target-directory"') < box
-    assert box < html.index('id="archive-switch"')
+    # Since Nov 9 the box comes after Now / Later, in the same card (B5).
+    assert html.index('id="archive-switch"') < box
     assert 'data-help="help.drop_zone"' in html[box:html.index(
-        'id="archive-switch"')]
+        'id="catalog-only"')]
     settings = read_frontend("js", "settings.js")
     assert 'checked ? "tree" : "place"' in settings
     assert 'getElementById("use-drop-zone").checked = false' in settings

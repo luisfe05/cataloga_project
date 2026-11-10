@@ -40,6 +40,22 @@ class DesktopApi:
             return ""
         return result[0]
 
+    def choose_recovery_file(self, username):
+        """Open the Save window, ready with the key's file name in Documents.
+
+        Only returns the chosen path: the server checks it is outside the
+        projects and writes the file, so the key never passes through here.
+        """
+        window = webview.windows[0]
+        result = window.create_file_dialog(
+            webview.FileDialog.SAVE,
+            directory=os.path.expanduser("~/Documents"),
+            save_filename="Cataloga Recovery Key - {}.txt".format(username),
+        )
+        if not result:
+            return ""
+        return result if isinstance(result, str) else result[0]
+
     def save_worksheet(self, query, token):
         """Ask where to save the worksheet, then save the CSV there."""
         window = webview.windows[0]

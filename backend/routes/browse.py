@@ -164,19 +164,46 @@ def media():
     return send_file(path, conditional=True)
 
 
-@browse_bp.route("/browse/reveal", methods=["POST"])
-def reveal():
-    """Show a file or a folder in Finder."""
+def checked_path(must_be_file):
+    """The path in the body, checked on the server: (root, path, error).
+
+    The frontend only names a place in the project; it is joined to the
+    project folder here, and anything that ends outside (.., links) is
+    refused before anything runs.
+    """
     repo, error = get_active_repo()
     if error:
-        return error
+        return None, None, error
     root = project_root()
     body = request.get_json(silent=True)
     path = full_path(root, body.get("path")) if isinstance(body, dict) \
         else None
-    if path is None or not os.path.exists(path):
-        return error_response(
-            "file_missing",
-            "The file is missing or outside the project folder.", 409)
+    if path is None:
+        return None, None, error_response(
+            "outside_project", "That path is outside the project folder.",
+            400)
+    if not os.path.exists(path) or \
+            (must_be_file and not os.path.isfile(path)):
+        return None, None, error_response(
+            "file_missing", "The file is not there anymore.", 409)
+    return root, path, None
+
+
+@browse_bp.route("/browse/reveal", methods=["POST"])
+def reveal():
+    """Show a file or a folder in Finder (open -R). Nothing else."""
+    root, path, error = checked_path(must_be_file=False)
+    if error:
+        return error
     FileOrganizer(root).reveal_file(path)
+    return jsonify({"ok": True}), 200
+
+
+@browse_bp.route("/browse/open", methods=["POST"])
+def open_path():
+    """Open a file with its default app (open), checked like reveal."""
+    root, path, error = checked_path(must_be_file=True)
+    if error:
+        return error
+    FileOrganizer(root).open_file(path)
     return jsonify({"ok": True}), 200

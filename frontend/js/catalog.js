@@ -490,6 +490,53 @@ function selectRow(id) {
     });
 }
 
+// Rows on one page of the Catalog, and the page on screen.
+const PAGE_SIZE = 50;
+let catalogPage = 1;
+// The filters of the page on screen: other filters start again at page 1.
+let pageFilters = "";
+// All the rows of the last load, so Previous and Next need no new request.
+let catalogRows = [];
+// The project's whole count, for "Showing 8 of 30 files".
+let catalogTotal = 0;
+
+/** Draw one page of the rows, and the pager under the table. */
+function renderPage() {
+    const pages = Math.max(1, Math.ceil(catalogRows.length / PAGE_SIZE));
+    catalogPage = Math.min(Math.max(1, catalogPage), pages);
+    const first = (catalogPage - 1) * PAGE_SIZE;
+    const shown = catalogRows.slice(first, first + PAGE_SIZE);
+    renderTable(shown);
+    document.getElementById("showing-line").textContent = catalogTotal
+        ? t("catalog.showing", { n: shown.length, total: catalogTotal }) : "";
+    document.getElementById("catalog-pager").classList
+        .toggle("hidden", pages === 1);
+    document.getElementById("page-text").textContent =
+        t("catalog.page_of", { n: catalogPage, total: pages });
+    document.getElementById("page-prev").disabled = catalogPage === 1;
+    document.getElementById("page-next").disabled = catalogPage === pages;
+}
+
+/** Keep the rows; a new filter starts at page 1, a refresh keeps the page. */
+function showRows(documents) {
+    const filters = JSON.stringify(readFilters());
+    if (filters !== pageFilters) {
+        pageFilters = filters;
+        catalogPage = 1;
+    }
+    catalogRows = documents;
+    renderPage();
+}
+
+/** Go to the page that has this document (the chat's links). */
+function pageOf(id) {
+    const index = catalogRows.findIndex((doc) => doc.id === id);
+    if (index >= 0) {
+        catalogPage = Math.floor(index / PAGE_SIZE) + 1;
+        renderPage();
+    }
+}
+
 function renderTable(documents) {
     const body = document.getElementById("catalog-body");
     forgetSummaries(body);
@@ -522,7 +569,8 @@ function renderTable(documents) {
             });
         } else {
             row.appendChild(makeCell(doc.source));
-            row.appendChild(makeCell(doc.document_date, "nowrap"));
+            // No reliable date: a dash, never the day it was imported.
+            row.appendChild(makeCell(doc.document_date || "—", "nowrap"));
             if (doc.summary) {
                 // At most 2 lines, with Read more (summary.js).
                 const summaryCell = makeCell("", "summary");
@@ -636,8 +684,10 @@ function renderOldInboxWarning(settings) {
 function renderProgress(classified, review) {
     const total = classified + review;
     const percent = total ? Math.round((classified / total) * 100) : 0;
-    countUp(document.getElementById("progress-classified"), classified);
-    countUp(document.getElementById("progress-review"), review);
+    // The same words as Home and the Status column.
+    document.getElementById("progress-counts").textContent = total
+        ? `${t("home.classified", { n: classified })} · ${t(
+            "home.manual_review", { n: review })}` : "";
     document.getElementById("progress-percent").textContent = total
         ? t("catalog.progress_percent", { n: percent })
         : t("dash.no_documents");
@@ -759,15 +809,22 @@ async function loadCatalog() {
             document.getElementById("tab-review").textContent =
                 t("catalog.tab_review", { n: 0 });
             renderProgress(0, 0);
-            showMessage(settings.project_status === "none"
-                ? t("catalog.no_project")
+            catalogTotal = 0;
+            showRows([]);
+            // No project is a start, with its button, not an error.
+            const none = settings.project_status === "none";
+            document.getElementById("catalog-start").classList
+                .toggle("hidden", !none);
+            showMessage(none ? t("catalog.no_project")
                 : t("error.project_unavailable",
                     { path: settings.target_directory }));
             return;
         }
 
+        document.getElementById("catalog-start").classList.add("hidden");
         // All documents feed the Source list and counter, so they stay complete while filtering.
         const allDocuments = await getDocuments();
+        catalogTotal = allDocuments.length;
         projectCategories = settings.categories || [];
         projectTree = settings.folder_tree || [];
         catalogFolderMode = settings.folder_mode;
@@ -793,12 +850,13 @@ async function loadCatalog() {
                     : t("catalog.empty", { path: settings.target_directory });
             }
             showMessage(empty);
+            showRows([]);
             return;
         }
 
         const documents = await getDocuments(readFilters());
         showMessage(documents.length ? "" : t("catalog.no_match"));
-        renderTable(documents);
+        showRows(documents);
     } catch (error) {
         showMessage(t("catalog.load_failed",
             { message: errorText(error) }));
@@ -852,6 +910,7 @@ function reloadInNormalOrder() {
 /** Clear the filters, scroll to a document's row, and highlight it for two seconds. */
 async function highlightDocument(id) {
     await applyCatalogFilters({});
+    pageOf(id);
     const row = document.querySelector(`#catalog-body tr[data-id="${id}"]`);
     if (!row) {
         return;
@@ -869,6 +928,15 @@ document.querySelectorAll(".tab").forEach((tab) => {
         });
         reloadInNormalOrder();
     });
+});
+
+document.getElementById("page-prev").addEventListener("click", () => {
+    catalogPage -= 1;
+    renderPage();
+});
+document.getElementById("page-next").addEventListener("click", () => {
+    catalogPage += 1;
+    renderPage();
 });
 
 // Search 300 ms after the last key press, not on every key.
@@ -942,8 +1010,9 @@ function spaceBelongsToControl(target) {
 document.addEventListener("keydown", (event) => {
     const catalogOpen = !document.getElementById("view-catalog")
         .classList.contains("hidden");
+    // With the preview open, the space bar closes it (preview.js).
     if (event.key !== " " || !catalogOpen || selectedDocumentId === null
-            || spaceBelongsToControl(event.target)) {
+            || spaceBelongsToControl(event.target) || previewOpen()) {
         return;
     }
     // Otherwise the space bar also scrolls the page.

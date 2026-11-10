@@ -19,7 +19,6 @@ const LANG_EN = {
     "home.manual_review": "{n} Manual Review",
     "home.not_cataloged": "Not cataloged yet",
     "home.empty": "This folder is empty.",
-    "home.no_project": "Create a project to see its folders here.",
     "home.load_failed": "The folder could not be read.",
     "home.double_click": "Double-click or press Enter to open a folder.",
     "home.kind": "Kind",
@@ -37,20 +36,20 @@ const LANG_EN = {
     "home.open": "Open",
     "home.show": "Show in folder",
     "nav.projects": "Projects",
-    "nav.plan": "Plan",
+    "nav.plan": "To Approve",
     "nav.dashboard": "Dashboard",
     "nav.settings": "Settings",
     "header.no_project": "No project yet",
 
     // Catalog
     "catalog.tab_all": "All Files",
-    "catalog.tab_review": "Manual Review ({n})",
+    "catalog.tab_review": "Manual Review {n}",
     "catalog.search": "Search the catalog",
     "catalog.filter_type_all": "Media Type: All",
     "catalog.filter_source_all": "Source: All",
     "catalog.newest_first": "Newest first",
     "catalog.newest_first_clear": "Back to the normal order",
-    "catalog.download": "Download Worksheet",
+    "catalog.download": "Worksheet",
     "catalog.edit_mode": "Edit Mode",
     "catalog.col_original": "Original Filename",
     "catalog.col_filename": "Filename",
@@ -77,7 +76,6 @@ const LANG_EN = {
     "catalog.empty": "Drop files into the Drop Zone folder inside {path} "
         + "and they will appear here once they are classified.",
     "catalog.no_match": "No files match your search.",
-    "catalog.progress": "Catalog Progress",
     "scan.paused": "Paused at {done} of {total} files.",
     "scan.stopped": "Scan stopped at {done} of {total}",
     "banner.not_cataloged": "This folder is not cataloged yet.",
@@ -86,7 +84,6 @@ const LANG_EN = {
     "banner.catalog_now": "Archive now",
     "banner.learned": "Learned {n} folders from your folder.",
     "scan.retry_title": "Some files could not be read.",
-    "plan.summary_unchanged": "{n} files stay as they are.",
     "plan.catalog_only": "Catalog only: no plan",
     "plan.no_plan": "This project sorts files by type, so it has no plan.",
     "plan.empty": "Nothing to do: every file is where it belongs.",
@@ -220,9 +217,7 @@ const LANG_EN = {
     "catalog.date_format": "Write the date as YYYY-MM-DD, like 2026-07-15.",
 
     // Dashboard
-    "dash.classified": "Documents Classified",
-    "dash.review": "Needs Manual Review",
-    "dash.sources": "Sources Tracked",
+    "dash.classified": "Documents classified",
     "dash.activity": "Recent Activity",
     "dash.empty": "No activity yet. Drop files into the Drop Zone to start.",
     "dash.review_button": "Go Review",
@@ -232,7 +227,7 @@ const LANG_EN = {
 
     // Chat
     "chat.open_label": "Open Cataloga assistant",
-    "chat.title": "Cataloga Assistant",
+    "chat.title": "Ask Cataloga",
     "chat.close": "Close",
     "chat.empty_title": "How can I help with this project?",
     "chat.empty_hint": "I never rename a file without your OK.",
@@ -278,7 +273,7 @@ const LANG_EN = {
     "chat.notice_move_same": "The file is already in that folder.",
 
     // File links: open, preview, show in Finder
-    "files.open": "Open file",
+    "files.open": "Open",
     "files.preview": "Preview",
     "files.reveal": "Show in Finder",
     "files.show_in_catalog": "Show in Catalog",
@@ -434,7 +429,8 @@ const LANG_EN = {
     "auth.register_title": "Create an Account",
     "auth.register_hint": "Each account on this computer has its own "
         + "project list and settings. Catalogs stay inside each project "
-        + "folder. There is no way to recover a lost password.",
+        + "folder. If you forget the password, the recovery key you get "
+        + "next lets you set a new one.",
     "auth.login_title": "Log In",
     "auth.username": "Username",
     "auth.password": "Password",
@@ -452,9 +448,6 @@ const LANG_EN = {
     "auth.need_account": "Create an account",
     "auth.have_account": "I already have an account",
     "auth.forgot": "Forgot your password?",
-    "auth.forgot_hint": "Passwords cannot be recovered: Cataloga has no "
-        + "email. Your projects and files stay intact in their folders. "
-        + "Create a new account to keep working.",
     "account.title": "Account",
     "account.change_password": "Change password",
     "account.current_password": "Current password",
@@ -495,7 +488,7 @@ const LANG_EN = {
     "project.remove_confirm": "Remove",
     "project.removed": "Project removed from the list. Its folder and "
         + "files were not changed.",
-    "catalog.no_project": "Create a project in Settings to start.",
+    "catalog.no_project": "No project yet. Create one to see its files here.",
 
     // Labels for values stored in the database. The stored value itself
     // never changes; only what the user sees.
@@ -544,8 +537,8 @@ const LANG_EN = {
     "error.unauthorized": "Log in to use Cataloga.",
     "error.wrong_login": "The username or password is wrong.",
     "error.wrong_password": "The current password is wrong.",
-    "error.too_many_attempts": "Too many wrong passwords. Try again in "
-        + "{seconds} seconds.",
+    "error.too_many_attempts": "Too many wrong tries. Try again in {seconds} "
+        + "seconds.",
     "error.password_too_short":
         "The password must have at least 8 characters.",
     "error.password_too_long": "The password is too long. Use 72 "
@@ -586,7 +579,6 @@ const LANG_EN = {
     "settings.done": "Done",
     "settings.optional": "Optional · Suggested",
     "settings.suggested": "Suggested",
-    "settings.progress": "{done} of {total} ready",
     "settings.saved_short": "Saved",
     "settings.ai_checking": "Checking the connection...",
     "settings.ai_connected": "Connected",
@@ -600,7 +592,6 @@ const LANG_EN = {
     "folders.count": "{n} folders",
     "account.save_password": "Save new password",
     "project.remove_heading": "Remove Project",
-    "dash.top_sources": "Top Sources",
     "dash.media_mix": "Media Mix",
     "dash.mix_open": "{type}: {n}. Show them in Catalog list",
     "help.language": "Changes the app's buttons, labels and messages. File names and summaries are not translated.",
@@ -619,10 +610,126 @@ const LANG_EN = {
     "settings.need_name": "Write a name for the project.",
     "plan.need_approval": "Approve at least one change.",
     "catalog.filter_source_one": "Source: {source}",
-    "plan.summary_read": "{n} files read.",
     "plan.summary_moves": "{n} moves",
     "plan.summary_renames": "{n} renames",
-    "plan.summary_folders": "{n} new folders",
     "settings.wait_line": "These appear when you choose a folder.",
     "catalog.empty_place": "No activity yet. Press Archive now in Home.",
+
+    // Calm frame, first way in, accounts (Nov 9)
+    "legal.title": "Legal",
+    "legal.terms": "Terms and Conditions",
+    "legal.privacy": "Privacy Policy",
+    "legal.version": "Cataloga 1.0",
+    "terms.title": "Before You Create Your Account",
+    "terms.title_update": "The Terms Have Changed",
+    "terms.lead": "Read the key points. The full text is in the links below.",
+    "terms.point_local": "Cataloga runs on your Mac. Your files stay on your "
+        + "computer.",
+    "terms.point_approve": "Nothing is moved or renamed until you approve it. "
+        + "Originals never change.",
+    "terms.point_ai": "To read your files, the text is sent to the AI provider "
+        + "you choose.",
+    "terms.point_as_is": "Cataloga is provided \"as is\". Keep your own backup. "
+        + "We are not responsible for lost data, hacks or leaks.",
+    "terms.read_terms": "Read Terms and Conditions ↗",
+    "terms.read_privacy": "Read Privacy Policy ↗",
+    "terms.agree": "I have read and agree to the Terms and Conditions and the "
+        + "Privacy Policy.",
+    "terms.no_recovery": "If you lose both your password and your recovery "
+        + "key, the account cannot be recovered.",
+    "terms.accept_new": "Agree and create account",
+    "terms.accept_update": "Agree and continue",
+    "terms.button_hint": "The button turns on after you check the box.",
+    "recovery.title": "Your Recovery Key",
+    "recovery.lead": "If you forget your password, this key lets you set a new "
+        + "one. Keep it somewhere safe, outside your project folders.",
+    "recovery.copy": "Copy",
+    "recovery.copied": "Copied.",
+    "recovery.copy_failed": "Could not copy. Select the key and copy it.",
+    "recovery.save_now": "Save now",
+    "recovery.later": "Later",
+    "recovery.way_save": "Save now opens the Save window with the file ready: "
+        + "{file} in Documents.",
+    "recovery.way_later": "Later: you can save it anytime in Settings › "
+        + "Account.",
+    "recovery.no_window": "The Save window only opens in the Cataloga app. "
+        + "Copy the key instead.",
+    "recovery.row_label": "Recovery key",
+    "recovery.not_saved": "Not saved yet. Save it so you can reset your "
+        + "password.",
+    "recovery.saved_on": "Saved on {date}.",
+    "recovery.save_current": "Save current key",
+    "recovery.get_new": "Get a new key",
+    "recovery.type_password": "Type your password to continue",
+    "recovery.continue": "Continue",
+    "forgot.title": "Reset Your Password",
+    "forgot.lead": "Use the recovery key you saved when you created the "
+        + "account.",
+    "forgot.key": "Recovery key",
+    "forgot.reset": "Reset password",
+    "forgot.after": "After the reset you get a new recovery key, and the old "
+        + "one stops working.",
+    "forgot.back": "Back to log in",
+    "error.wrong_recovery": "Username or recovery key is wrong.",
+    "error.terms_not_accepted": "Accept the Terms and Privacy Policy first.",
+    "error.inside_project": "Choose a folder outside your projects for the "
+        + "key.",
+    "error.ticket_expired": "Type your password to save the key.",
+    "error.no_key": "There is no recovery key. Get a new key.",
+    "error.outside_project": "That file is outside the project folder.",
+    "settings.autosave": "Changes save on their own.",
+    "project.optional": "Optional details",
+    "start.title": "Choose a Folder to Start",
+    "start.lead": "Cataloga reads it and proposes names and folders. Nothing "
+        + "moves until you approve.",
+    "start.choose": "Choose folder",
+    "start.step_1": "Step 1",
+    "start.step_1_name": "Choose a folder",
+    "start.step_1_text": "Your files stay where they are.",
+    "start.step_2": "Step 2",
+    "start.step_2_name": "Read now or later",
+    "start.step_2_text": "Cataloga describes every file.",
+    "start.step_3": "Step 3",
+    "start.step_3_name": "Approve the changes",
+    "start.step_3_text": "You decide every name and move.",
+    "dash.no_project": "No project yet. Create one to see your numbers here.",
+    "dash.review_one": "file needs review",
+    "dash.review_many": "files need review",
+    "dash.nothing_review": "Nothing to review",
+    "dash.all_classified": "Everything is classified.",
+    "dash.sources_count": "Sources tracked · {n}",
+    "plan.no_project": "No project yet. Create one to see the changes to "
+        + "approve here.",
+    "plan.show": "Show",
+    "plan.show_all": "All {n}",
+    "plan.show_rename": "Renames {n}",
+    "plan.show_move": "Moves {n}",
+    "plan.show_skipped": "Skipped {n}",
+    "plan.files_one": "1 file",
+    "plan.files_many": "{n} files",
+    "plan.new_folder": "new folder",
+    "plan.approve_row": "Approve {name}",
+    "plan.in_folder": "in {folder}",
+    "plan.skip": "Skip",
+    "plan.undo_skip": "Undo",
+    "plan.skipped_note": "Skipped: stays as it is",
+    "plan.summary_changes": "{n} changes",
+    "plan.summary_note": "Nothing changes until you apply.",
+    "plan.leave_note": "Files in a folder marked Leave as is are cataloged but "
+        + "never moved or renamed.",
+    "plan.tab_changes": "Changes",
+    "catalog.download_label": "Download the worksheet",
+    "catalog.showing": "Showing {n} of {total} files",
+    "catalog.pages": "Pages",
+    "catalog.page_prev": "Previous",
+    "catalog.page_next": "Next",
+    "catalog.page_of": "Page {n} of {total}",
+    "preview.previous": "Previous file",
+    "preview.next": "Next file",
+    "preview.new_name": "New name (to approve)",
+    "preview.where": "Where it is",
+    "preview.reveal_hint": "Shows the file in its folder. Nothing is moved.",
+    "preview.keys": "Space or Esc to close · ← → next file",
+    "preview.count": "{n} of {total}",
+    "chat.limits": "Ask Cataloga only answers about the files in this project.",
 };

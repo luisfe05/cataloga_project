@@ -3,6 +3,15 @@
 // Shortest password allowed, the same rule as backend/config/account.py.
 const MIN_PASSWORD_LENGTH = 8;
 
+// The terms version the server asks for (GET /auth/status).
+let termsVersion = "";
+// The terms dialog says yes before a new account, or after a login.
+let termsMode = "new";
+// The key on screen: who it is for, and the one-time ticket to save it.
+let recoveryShown = { username: "", ticket: "" };
+// What happens after the recovery key dialog closes.
+let afterRecovery = null;
+
 function showAuthMessage(id, text, kind = "error") {
     const message = document.getElementById(id);
     message.textContent = text;
@@ -10,6 +19,7 @@ function showAuthMessage(id, text, kind = "error") {
 }
 
 function showAuthForm(formId) {
+    showLoginLanguage();
     document.getElementById("nav-bar").classList.add("hidden");
     document.getElementById("app-main").classList.add("hidden");
     // A dialog left open would stay on top of the login screen.
@@ -23,11 +33,163 @@ function showAuthForm(formId) {
     });
 }
 
-/** Show the "Create an account" form. */
+/** Show the "Create an account" form, after the terms were accepted. */
 function showRegisterScreen() {
     showAuthForm("register-form");
     showAuthMessage("register-message", "");
     document.getElementById("register-username").focus();
+}
+
+/** Open the Terms and Privacy dialog: "new" before an account, "update" after a login. */
+function openTermsDialog(mode) {
+    termsMode = mode;
+    const check = document.getElementById("terms-agree");
+    check.checked = false;
+    const accept = document.getElementById("terms-accept");
+    accept.disabled = true;
+    accept.textContent = t(mode === "new" ? "terms.accept_new"
+        : "terms.accept_update");
+    document.getElementById("terms-title").textContent =
+        t(mode === "new" ? "terms.title" : "terms.title_update");
+    document.getElementById("terms-dialog").showModal();
+}
+
+/** The box is checked: create the account form, or accept and go in. */
+async function acceptTermsDialog() {
+    const dialog = document.getElementById("terms-dialog");
+    if (termsMode === "new") {
+        dialog.close();
+        showRegisterScreen();
+        return;
+    }
+    try {
+        await acceptTerms(termsVersion);
+    } catch (error) {
+        return;
+    }
+    dialog.close();
+    enterApp();
+}
+
+/** Show a recovery key with Save now and Later; then() runs when it closes. */
+function showRecoveryKey(username, key, ticket, then) {
+    recoveryShown = { username: username, ticket: ticket };
+    afterRecovery = then;
+    document.getElementById("recovery-key").textContent = key;
+    document.getElementById("recovery-ways").innerHTML = "";
+    ["recovery.way_save", "recovery.way_later"].forEach((textKey) => {
+        const line = document.createElement("span");
+        line.textContent = t(textKey, { file: recoveryFileName(username) });
+        document.getElementById("recovery-ways").appendChild(line);
+    });
+    showAuthMessage("recovery-message", "");
+    document.getElementById("recovery-dialog").showModal();
+}
+
+/** The file name the Save window starts with. */
+function recoveryFileName(username) {
+    return `Cataloga Recovery Key - ${username}.txt`;
+}
+
+/** Close the key dialog and go on (into the app, or back to Settings). */
+function closeRecoveryKey() {
+    document.getElementById("recovery-dialog").close();
+    const then = afterRecovery;
+    afterRecovery = null;
+    if (then) {
+        then();
+    }
+}
+
+/** Save now: the Mac's Save window, then the server writes the file. */
+async function saveRecoveryNow() {
+    const api = window.pywebview && window.pywebview.api;
+    if (!api || !api.choose_recovery_file) {
+        showAuthMessage("recovery-message", t("recovery.no_window"));
+        return;
+    }
+    const path = await api.choose_recovery_file(recoveryShown.username);
+    if (!path) {
+        // The Save window was closed: the key is still on screen.
+        return;
+    }
+    try {
+        await saveRecoveryFile(path, recoveryShown.ticket);
+    } catch (error) {
+        // Inside a project: the dialog stays open to choose another place.
+        showAuthMessage("recovery-message", errorText(error));
+        return;
+    }
+    closeRecoveryKey();
+}
+
+/** Copy the key on screen. */
+async function copyRecoveryKey() {
+    const key = document.getElementById("recovery-key").textContent;
+    try {
+        await navigator.clipboard.writeText(key);
+        showAuthMessage("recovery-message", t("recovery.copied"), "success");
+    } catch (error) {
+        showAuthMessage("recovery-message", t("recovery.copy_failed"));
+    }
+}
+
+/** Forgot your password: the username and the recovery key. */
+function openForgotDialog() {
+    const form = document.getElementById("forgot-form");
+    form.reset();
+    document.getElementById("forgot-username").value =
+        document.getElementById("login-username").value.trim();
+    showAuthMessage("forgot-message", "");
+    document.getElementById("forgot-dialog").showModal();
+    document.getElementById(document.getElementById("forgot-username").value
+        ? "forgot-key" : "forgot-username").focus();
+}
+
+/** Reset the password, then show the new key; the old one stops working. */
+async function submitForgot(event) {
+    event.preventDefault();
+    const username = document.getElementById("forgot-username").value.trim();
+    const key = document.getElementById("forgot-key").value.trim();
+    const password = document.getElementById("forgot-password").value;
+    const confirmation = document.getElementById("forgot-confirm").value;
+    if (!username || !key) {
+        showAuthMessage("forgot-message", t("error.missing_field"));
+        return;
+    }
+    const problem = newPasswordProblem(password, confirmation);
+    if (problem) {
+        showAuthMessage("forgot-message", problem);
+        return;
+    }
+    let answer;
+    try {
+        answer = await resetPassword(username, key, password);
+    } catch (error) {
+        showAuthMessage("forgot-message", errorText(error));
+        return;
+    }
+    document.getElementById("forgot-form").reset();
+    document.getElementById("forgot-dialog").close();
+    showRecoveryKey(answer.username, answer.recovery_key, answer.save_ticket,
+        () => goInAfterLogin(answer.terms_ok));
+}
+
+/** After a login or a reset: the terms first if they changed, then the app. */
+function goInAfterLogin(termsOk) {
+    if (termsOk === false) {
+        openTermsDialog("update");
+        return;
+    }
+    enterApp();
+}
+
+/** The EN / ES switch on the login screen. */
+function showLoginLanguage() {
+    document.querySelectorAll("[data-login-lang]").forEach((button) => {
+        button.setAttribute("aria-pressed",
+            String(button.dataset.loginLang === currentLanguage));
+    });
 }
 
 /** Show the login form. api.js also calls this on a 401. */
@@ -35,7 +197,6 @@ function showLoginScreen() {
     setSessionToken("");
     showAuthForm("login-form");
     document.getElementById("login-password").value = "";
-    document.getElementById("forgot-hint").classList.add("hidden");
     showAuthMessage("login-message", "");
     document.getElementById("login-username").focus();
 }
@@ -98,8 +259,9 @@ async function submitRegister(event) {
         showAuthMessage("register-message", problem);
         return;
     }
+    let answer;
     try {
-        await registerAccount(username, password);
+        answer = await registerAccount(username, password, termsVersion);
     } catch (error) {
         showAuthMessage("register-message", errorText(error));
         return;
@@ -107,7 +269,9 @@ async function submitRegister(event) {
     // The passwords are not needed anymore.
     document.getElementById("register-password").value = "";
     document.getElementById("register-confirm").value = "";
-    enterApp();
+    // The key is shown once now; later it needs the password.
+    showRecoveryKey(answer.username, answer.recovery_key, answer.save_ticket,
+        enterApp);
 }
 
 /** Check the username and password, then go into the app. */
@@ -115,15 +279,23 @@ async function submitLogin(event) {
     event.preventDefault();
     const username = document.getElementById("login-username").value.trim();
     const passwordField = document.getElementById("login-password");
+    let answer;
     try {
-        await logIn(username, passwordField.value);
+        answer = await logIn(username, passwordField.value);
     } catch (error) {
         passwordField.value = "";
         showAuthMessage("login-message", errorText(error));
         return;
     }
     passwordField.value = "";
-    enterApp();
+    goInAfterLogin(answer.terms_ok);
+}
+
+/** Leave the app: a reload empties the memory of every view and the chat. */
+function leaveApp() {
+    // The token is only in memory, so the reload also forgets it.
+    setSessionToken("");
+    window.location.reload();
 }
 
 async function submitLogout() {
@@ -132,7 +304,54 @@ async function submitLogout() {
     } catch (error) {
         // The session is forgotten here anyway.
     }
-    showLoginScreen();
+    leaveApp();
+}
+
+// Settings > Account: which button asked for the password ("current" or "new").
+let recoveryWanted = "current";
+
+/** "Not saved yet" or "Saved on <date>", under Recovery key. */
+async function loadRecoveryStatus() {
+    const line = document.getElementById("recovery-status");
+    try {
+        const status = await getRecoveryStatus();
+        line.textContent = status.saved
+            ? t("recovery.saved_on", { date: status.saved })
+            : t("recovery.not_saved");
+    } catch (error) {
+        line.textContent = "";
+    }
+}
+
+/** Save current key or Get a new key: first the password. */
+function askRecoveryPassword(wanted) {
+    recoveryWanted = wanted;
+    document.getElementById("recovery-confirm").classList.remove("hidden");
+    showAuthMessage("recovery-confirm-message", "");
+    const field = document.getElementById("recovery-password");
+    field.value = "";
+    field.focus();
+}
+
+/** Check the password, then show the key with Save now and Later. */
+async function continueRecovery() {
+    const field = document.getElementById("recovery-password");
+    if (!field.value) {
+        showAuthMessage("recovery-confirm-message", t("error.missing_field"));
+        return;
+    }
+    let answer;
+    try {
+        answer = await getRecoveryKey(field.value, recoveryWanted === "new");
+    } catch (error) {
+        showAuthMessage("recovery-confirm-message", errorText(error));
+        return;
+    }
+    field.value = "";
+    document.getElementById("recovery-confirm").classList.add("hidden");
+    const username = document.getElementById("account-username").value;
+    showRecoveryKey(username, answer.recovery_key, answer.save_ticket,
+        loadRecoveryStatus);
 }
 
 /** Change the password from Settings > Account. The session stays open. */
@@ -180,13 +399,61 @@ document.getElementById("register-confirm").addEventListener("input", () => {
 });
 document.getElementById("show-login-link")
     .addEventListener("click", showLoginScreen);
+// A new account starts with the Terms and Privacy.
 document.getElementById("show-register-link")
-    .addEventListener("click", showRegisterScreen);
-// The line stays visible until the login form is shown again.
-document.getElementById("forgot-link").addEventListener("click", () => {
-    document.getElementById("forgot-hint").classList.remove("hidden");
+    .addEventListener("click", () => openTermsDialog("new"));
+document.getElementById("terms-agree").addEventListener("change", (event) => {
+    document.getElementById("terms-accept").disabled = !event.target.checked;
+});
+document.getElementById("terms-accept")
+    .addEventListener("click", acceptTermsDialog);
+document.getElementById("terms-cancel").addEventListener("click", () => {
+    document.getElementById("terms-dialog").close();
+    // Saying no after a login leaves the app.
+    if (termsMode === "update") {
+        submitLogout();
+    }
+});
+document.getElementById("forgot-link")
+    .addEventListener("click", openForgotDialog);
+document.getElementById("forgot-form")
+    .addEventListener("submit", submitForgot);
+document.getElementById("forgot-back").addEventListener("click", () => {
+    document.getElementById("forgot-dialog").close();
+});
+document.getElementById("recovery-save")
+    .addEventListener("click", saveRecoveryNow);
+document.getElementById("recovery-later")
+    .addEventListener("click", closeRecoveryKey);
+document.getElementById("recovery-copy")
+    .addEventListener("click", copyRecoveryKey);
+// Esc closes the key dialog the same way as Later.
+document.getElementById("recovery-dialog").addEventListener("cancel",
+    (event) => {
+        event.preventDefault();
+        closeRecoveryKey();
+    });
+document.querySelectorAll("[data-login-lang]").forEach((button) => {
+    button.addEventListener("click", () => {
+        setLanguage(button.dataset.loginLang);
+        showLoginLanguage();
+    });
 });
 document.getElementById("logout-button")
     .addEventListener("click", submitLogout);
 document.getElementById("password-form")
     .addEventListener("submit", submitPasswordChange);
+document.getElementById("recovery-current")
+    .addEventListener("click", () => askRecoveryPassword("current"));
+document.getElementById("recovery-new")
+    .addEventListener("click", () => askRecoveryPassword("new"));
+document.getElementById("recovery-continue")
+    .addEventListener("click", continueRecovery);
+// Enter in this field must not send the Change password form.
+document.getElementById("recovery-password").addEventListener("keydown",
+    (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            continueRecovery();
+        }
+    });

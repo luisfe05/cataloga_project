@@ -7,6 +7,7 @@ import pytest
 
 from backend.app import create_app
 from backend.config import account, projects
+from backend.config.terms import TERMS_VERSION
 from backend.routes import auth
 from tests.conftest import make_project
 
@@ -45,8 +46,9 @@ def clock(monkeypatch):
 
 def create_account(client, username=USERNAME, password=PASSWORD):
     """Create an account and return the session token."""
-    response = client.post("/auth/register", json={"username": username,
-                                                   "password": password})
+    response = client.post("/auth/register", json={
+        "username": username, "password": password,
+        "accepted_terms": TERMS_VERSION})
     assert response.status_code == 201
     return response.get_json()["token"]
 
@@ -69,7 +71,8 @@ def test_status_before_and_after_register(client):
     response = client.get("/auth/status")
     assert response.status_code == 200
     assert response.get_json() == {"account_exists": False,
-                                   "language": "en"}
+                                   "language": "en",
+                                   "terms_version": TERMS_VERSION}
     create_account(client)
     response = client.get("/auth/status")
     assert response.get_json()["account_exists"] is True
@@ -100,8 +103,9 @@ def test_register_logs_the_user_in(client):
 def test_username_taken(client, taken):
     """The same username, in any case, cannot be created twice."""
     create_account(client)
-    response = client.post("/auth/register", json={"username": taken,
-                                                   "password": "other-pass"})
+    response = client.post("/auth/register", json={
+        "username": taken, "password": "other-pass",
+        "accepted_terms": TERMS_VERSION})
     assert_error(response, 409, "username_taken")
 
 
@@ -188,7 +192,8 @@ def test_old_account_and_projects_are_migrated(tmp_path, data_folder):
                      old_db_path=str(tmp_path / "no_old.db"))
     client = app.test_client()
     assert client.get("/auth/status").get_json() == {
-        "account_exists": True, "language": "es"}
+        "account_exists": True, "language": "es",
+        "terms_version": TERMS_VERSION}
     response = login(client, username="Luis G")
     assert response.status_code == 200
     token = response.get_json()["token"]

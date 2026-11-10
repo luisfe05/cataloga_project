@@ -56,7 +56,7 @@
 
     /* Two shadows, in Deep Space: a card at rest, and what floats above
        the page (menus, tooltips, dialogs, the chat). */
-    --shadow-card: 0 8px 32px rgba(8, 5, 28, 0.06);
+    --shadow-card: none;
     --shadow-float: 0 24px 64px rgba(8, 5, 28, 0.24);
 
     /* Placeholders (5.2:1 on white) and actions that remove something. */
@@ -66,19 +66,14 @@
     --font-body: "Archivo", sans-serif;
     --font-label: "Archivo Narrow", sans-serif;
 
-    /* Glass: 70% for cards, 85% on the dark login background or over other content. */
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-bg-strong: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --glass-blur: blur(16px);
-    /* Cards in Settings and the Dashboard: more blur than the other glass. */
-    --glass-blur-card: blur(32px);
+    /* Solid surfaces: a card is white on Paper, with a line one step
+       darker. A tint for headers and rows inside a card. */
+    --surface: #ffffff;
+    --surface-line: rgba(34, 24, 84, 0.08);
+    --surface-tint: #f6f9fc;
     /* Space between cards, across and down. */
-    --card-gap: 32px;
+    --card-gap: 20px;
 
-    /* The frame: top bar and sidebar share this gradient. */
-    --frame-gradient: linear-gradient(135deg, var(--color-midnight),
-        var(--color-nebula) 55%, var(--color-violet));
     --frame-gap: 12px;
     --sidebar-width: 248px;
     /* Room at the bottom of the content for the chat button. */
@@ -93,42 +88,13 @@
     padding: 0;
 }
 
-/* Paper; the three soft spots of Violet and Dusk are on body::before. */
+/* Flat Paper: no gradient and nothing moving behind the work. */
 body {
     font-family: var(--font-body);
     font-size: 15px;
     line-height: 22px;
     background-color: var(--color-paper);
     color: var(--color-deep-space);
-}
-
-/* The spots on their own layer, bigger than the window. It moves with
-   transform only, so the page is never painted again for it. */
-body::before {
-    content: "";
-    position: fixed;
-    inset: -25%;
-    z-index: -1;
-    pointer-events: none;
-    background-image:
-        radial-gradient(circle at 73% 23%, rgba(73, 59, 178, 0.22),
-            transparent 27%),
-        radial-gradient(circle at 27% 77%, rgba(70, 65, 123, 0.2),
-            transparent 30%),
-        radial-gradient(circle at 53% 53%, rgba(73, 59, 178, 0.1),
-            transparent 33%);
-    will-change: transform;
-    animation: backdrop-drift 24s ease-in-out infinite alternate;
-}
-
-@keyframes backdrop-drift {
-    from {
-        transform: translate3d(-6%, -4%, 0);
-    }
-
-    to {
-        transform: translate3d(6%, 4%, 0);
-    }
 }
 
 button,
@@ -331,7 +297,8 @@ code:empty {
     position: fixed;
     z-index: 5;
     border-radius: var(--radius-lg);
-    background: var(--frame-gradient);
+    /* Flat Deep Space: the frame stays still and quiet. */
+    background: var(--color-deep-space);
     color: var(--color-paper);
 }
 
@@ -343,46 +310,17 @@ code:empty {
     width: var(--sidebar-width);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-4);
-    padding: 20px 14px;
-    /* The gradient is on ::before, which moves; this keeps it inside. */
+    gap: 26px;
+    padding: 24px 14px 20px;
     overflow: hidden;
-    background: var(--color-midnight);
 }
 
-/* Midnight to Violet, taller than the sidebar, sliding with transform only. */
-.sidebar::before {
-    content: "";
-    position: absolute;
-    inset: -50% 0;
-    z-index: -1;
-    pointer-events: none;
-    /* The middle half shows at rest: Midnight at the top, Violet below. */
-    background: linear-gradient(180deg, var(--color-midnight) 25%,
-        var(--color-violet) 75%);
-    will-change: transform;
-    animation: sidebar-drift 22s ease-in-out infinite alternate;
-}
-
-@keyframes sidebar-drift {
-    from {
-        transform: translate3d(0, -20%, 0);
-    }
-
-    to {
-        transform: translate3d(0, 20%, 0);
-    }
-}
-
+/* "Projects": sentence case, Paper at 60% (7:1 on Deep Space). */
 .side-label {
-    padding: 16px 12px 6px;
-    color: var(--color-paper);
-    font-family: var(--font-label);
-    font-size: 12px;
+    padding: 0 12px 4px;
+    color: rgba(238, 245, 250, 0.6);
+    font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.12em;
-    opacity: 0.75;
-    text-transform: uppercase;
 }
 
 /* The number next to Plan: proposals that wait for a look. */
@@ -391,8 +329,8 @@ code:empty {
     margin-left: auto;
     padding: 1px 7px;
     border-radius: var(--radius-full);
-    background: var(--color-paper);
-    color: var(--color-midnight);
+    background: rgba(238, 245, 250, 0.14);
+    color: var(--color-paper);
     font-size: 12px;
     font-weight: 600;
     line-height: 18px;
@@ -404,15 +342,15 @@ code:empty {
     flex: none;
     gap: 2px;
     margin-top: auto;
-    padding-top: 10px;
-    border-top: 1px solid rgba(238, 245, 250, 0.18);
+    padding-top: 14px;
+    border-top: 1px solid rgba(238, 245, 250, 0.12);
 }
 
 .side-bottom .logout-button {
     width: 100%;
     margin: 0;
-    color: rgba(238, 245, 250, 0.85);
-    font-size: 15px;
+    color: rgba(238, 245, 250, 0.6);
+    font-size: 14px;
     font-weight: 400;
     text-align: left;
 }
@@ -424,13 +362,14 @@ code:empty {
     white-space: nowrap;
 }
 
-/* 30 px high, as in the mockup; about 150 px wide, over its 120 px minimum. */
+/* 184 px wide and centered, as in the mockup (over the 160 px minimum). */
 .app-logo {
     flex: none;
-    align-self: flex-start;
-    width: auto;
-    height: 30px;
-    margin: 0 8px 18px;
+    align-self: center;
+    width: 184px;
+    max-width: 84%;
+    height: auto;
+    margin-top: 4px;
 }
 
 .search-box {
@@ -481,7 +420,7 @@ code:empty {
     border: none;
     border-radius: var(--radius-md);
     background: none;
-    color: rgba(238, 245, 250, 0.85);
+    color: rgba(238, 245, 250, 0.72);
     font-size: 14px;
     text-align: left;
     cursor: pointer;
@@ -523,22 +462,23 @@ code:empty {
     display: flex;
     align-items: center;
     gap: var(--spacing-12);
-    padding: var(--spacing-8) var(--spacing-12);
-    border-radius: var(--radius-md);
-    color: rgba(238, 245, 250, 0.85);
+    min-height: 44px;
+    padding: 10px var(--spacing-12);
+    border-radius: 10px;
+    color: rgba(238, 245, 250, 0.72);
     text-decoration: none;
     font-size: 15px;
 }
 
 .nav-link:hover,
 .logout-button:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--color-paper);
 }
 
-/* The open view: white at 20% on the gradient. */
+/* The open view: the one place Violet fills the frame (selection). */
 .nav-link.active {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-violet);
     color: var(--color-paper);
     font-weight: 600;
 }
@@ -558,13 +498,11 @@ code:empty {
     margin: var(--frame-gap) var(--frame-gap) var(--frame-gap)
         calc(var(--sidebar-width) + var(--frame-gap) * 2);
     padding-bottom: var(--chat-button-room);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.35);
 }
 
+/* The work sits on Paper; cards and tables are the white surfaces. */
 .view {
-    padding: var(--spacing-32);
+    padding: 24px 36px 24px 12px;
 }
 
 /* Dashboard and Settings end at the chat room above; more padding was blank space. */
@@ -572,12 +510,11 @@ code:empty {
     padding-bottom: 0;
 }
 
-/* Screen titles: Archivo SemiBold. */
+/* Screen titles: Archivo SemiBold 32 px, an app's scale, not a landing page's. */
 .view-title {
     font-weight: 600;
-    letter-spacing: -0.01em;
-    font-size: 40px;
-    line-height: 44px;
+    font-size: 32px;
+    line-height: 38px;
     color: var(--color-midnight);
     margin-bottom: var(--spacing-24);
 }
@@ -585,12 +522,9 @@ code:empty {
 /* ======== Components ======== */
 /* Parts used on more than one screen. */
 
-/* Labels: Archivo Narrow SemiBold, 12 px, uppercase. */
-.catalog-table th,
-.settings-form label,
-.progress-title,
-.progress-label,
-.stat-label {
+/* Field labels only: Archivo Narrow SemiBold, 12 px, uppercase (BRAND.md).
+   Table headers and card labels are sentence case, 13 px (Nov 9). */
+.settings-form label {
     font-family: var(--font-label);
     font-size: 12px;
     font-weight: 600;
@@ -840,38 +774,55 @@ code:empty {
     font-weight: 600;
 }
 
-.tabs {
-    display: flex;
-    gap: var(--spacing-4);
+/* Segmented control: a white track, the chosen option filled.
+   A filter's choice is Midnight; Settings' tabs use Violet (selection). */
+.tabs,
+.segmented {
+    display: inline-flex;
+    align-self: flex-start;
+    gap: 2px;
     padding: var(--spacing-4);
+    border: 1px solid var(--surface-line);
     border-radius: var(--radius-full);
+    background: var(--surface);
 }
 
-.tab {
+.tab,
+.segmented button {
+    height: 36px;
+    padding: 0 18px;
     border: none;
     border-radius: var(--radius-full);
     background: none;
-    color: var(--color-dusk);
-    padding: 6px var(--spacing-16);
+    color: var(--color-midnight);
     font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
 }
 
-.tab:hover {
-    color: var(--color-midnight);
+.tab:hover,
+.segmented button:hover {
+    background: var(--color-paper);
 }
 
-.tab.active {
-    background: var(--color-violet);
+.tab.active,
+.segmented button[aria-pressed="true"] {
+    background: var(--color-midnight);
     color: var(--color-paper);
-    font-weight: 600;
 }
 
+.settings-tabs .tab.active {
+    background: var(--color-violet);
+}
+
+/* Filters: 36 px, white, one line around them. */
 .filter-row select {
-    max-width: 200px;
-    height: 40px;
+    max-width: 220px;
+    height: 36px;
+    border: 1px solid rgba(34, 24, 84, 0.22);
     border-radius: var(--radius-full);
-    padding: 0 var(--spacing-16);
+    background-color: var(--surface);
+    padding: 0 var(--spacing-16) 0 14px;
     font-size: 14px;
     color: var(--color-midnight);
 }
@@ -899,13 +850,11 @@ code:empty {
 }
 
 .switch-label {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: var(--spacing-12);
-    height: 40px;
-    padding: 0 var(--spacing-12) 0 var(--spacing-16);
-    border-radius: var(--radius-full);
-    font-size: 14px;
+    gap: var(--spacing-8);
+    min-height: 36px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--color-midnight);
     white-space: nowrap;
@@ -926,34 +875,37 @@ code:empty {
     outline-offset: 2px;
 }
 
+/* 32 × 18: off is a pale gray, on is Deep Space (not an accent). The
+   inner Dusk line gives the off switch its 3:1 edge on white. */
 .switch {
     position: relative;
-    width: 44px;
-    height: 24px;
+    flex: none;
+    width: 32px;
+    height: 18px;
     border-radius: var(--radius-full);
-    background: var(--color-line);
+    background: #c9d1e2;
+    box-shadow: inset 0 0 0 1px rgba(70, 65, 123, 0.7);
     transition: background 0.2s;
 }
 
 .switch::after {
     content: "";
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 18px;
-    height: 18px;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
     border-radius: var(--radius-full);
-    border: 1px solid var(--color-line);
     background: var(--color-white);
     transition: transform 0.2s;
 }
 
 .switch-label input:checked + .switch {
-    background: var(--color-violet);
+    background: var(--color-deep-space);
 }
 
 .switch-label input:checked + .switch::after {
-    transform: translateX(20px);
+    transform: translateX(14px);
 }
 
 /* File links: the name opens the file; the icons preview it or show it in Finder. */
@@ -1004,22 +956,19 @@ code:empty {
     color: var(--color-violet);
 }
 
-/* Every glass surface. Their own rules set no background or border, except colored left edges. */
+/* Every white surface. Their own rules set no background or border, except colored left edges. */
 .catalog-table,
 .tabs,
 .filter-row select,
 .pill-button,
-.switch-label,
 .stat-card,
 .panel,
 .settings-card,
 .edit-banner,
 .warning-message {
-    background-color: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background-color: var(--surface);
+    border: 1px solid var(--surface-line);
     box-shadow: var(--shadow-card);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
 }
 
 /* Click areas: the main controls take clicks in at least 44 x 44 px, the
@@ -1104,12 +1053,10 @@ td.editable {
 /* Tabular figures: digits keep the same width, so numbers do not shift. */
 .stat-number,
 .stat-sub,
-.progress-number,
 .progress-percent,
 .ring-percent,
 .mix-chip,
 .source-count,
-.settings-progress,
 .activity-when,
 .chat-stat-value,
 .tab,
@@ -1119,23 +1066,122 @@ td.editable {
 
 /* ======== Login ======== */
 
-/* Three rows: the card sits in the exact middle, the logo above it. */
+/* The card in the middle, the language at the top right, the legal links
+   at the bottom. */
 .auth-screen {
-    display: grid;
-    grid-template-rows: minmax(auto, 1fr) auto minmax(0, 1fr);
-    justify-items: center;
-    align-items: end;
-    row-gap: var(--spacing-24);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     min-height: 100vh;
-    padding: var(--spacing-16);
-    /* Hidden after login (display: none), so its drift stops and costs nothing. */
-    background: linear-gradient(135deg, var(--color-deep-space),
-        var(--color-midnight) 30%, var(--color-nebula) 60%,
-        var(--color-violet));
+    padding: var(--spacing-24) var(--spacing-16);
+    /* One of the two animated gradients (with Needs Manual Review). Hidden
+       after login (display: none), so its motion stops and costs nothing. */
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(150deg, var(--color-deep-space) 0%,
+        var(--color-midnight) 45%, var(--color-nebula) 80%,
+        var(--color-dusk) 100%);
 }
 
-.auth-screen > .auth-form {
-    grid-row: 2;
+.auth-center {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    width: 100%;
+}
+
+/* Two slow glows of Violet and Dusk: decoration, never under text. */
+.login-glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.glow-a {
+    top: -180px;
+    right: -120px;
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, rgba(73, 59, 178, 0.45),
+        transparent 65%);
+    animation: glow-drift 10s ease-in-out infinite;
+}
+
+.glow-b {
+    bottom: -200px;
+    left: -140px;
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle, rgba(70, 65, 123, 0.5),
+        transparent 65%);
+    animation: glow-drift 12s ease-in-out infinite reverse;
+}
+
+@keyframes glow-drift {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    50% {
+        transform: translate(-40px, 30px) scale(1.1);
+    }
+}
+
+/* EN / ES before logging in. */
+.login-lang {
+    position: absolute;
+    z-index: 1;
+    top: var(--spacing-24);
+    right: var(--spacing-24);
+    display: inline-flex;
+    padding: 4px;
+    border: 1px solid rgba(238, 245, 250, 0.16);
+    border-radius: var(--radius-full);
+    background: rgba(238, 245, 250, 0.08);
+}
+
+.login-lang button {
+    height: 32px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-paper);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.login-lang button[aria-pressed="true"] {
+    background: var(--color-paper);
+    color: var(--color-deep-space);
+}
+
+/* Terms, Privacy and the version, under everything. */
+.login-legal {
+    position: relative;
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+}
+
+.login-legal a {
+    color: rgba(238, 245, 250, 0.72);
+    text-decoration: none;
+}
+
+.login-legal a:hover {
+    color: var(--color-paper);
+    text-decoration: underline;
+}
+
+.login-legal span {
+    color: rgba(238, 245, 250, 0.5);
 }
 
 /* The eye sits inside the field. */
@@ -1173,28 +1219,72 @@ td.editable {
     filter: drop-shadow(0 0 6px rgba(73, 59, 178, 0.65));
 }
 
+/* The logo falls in, then floats a few pixels. */
 .auth-logo {
     width: 160px;
+    animation: logo-in 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+        logo-float 6s ease-in-out 1.2s infinite;
 }
 
-/* Login card: 400 px wide, with the button across it. */
+@keyframes logo-in {
+    from {
+        opacity: 0;
+        transform: translateY(-40px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes logo-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/* Login card: 400 px of frosted white. At 88% it keeps contrast even
+   without the blur. */
 .auth-form {
     width: 100%;
     max-width: 400px;
     padding: var(--spacing-32);
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg-strong);
-    box-shadow: var(--shadow-card);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 16px 48px rgba(8, 5, 28, 0.35);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    animation: card-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s both;
 }
 
-.auth-form h2 {
-    margin-bottom: var(--spacing-24);
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
-.auth-form h2 + .hint {
+.auth-form h1 {
+    margin-bottom: var(--spacing-16);
+    color: var(--color-midnight);
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 24px;
+}
+
+.auth-form h1 + .hint {
     margin-top: calc(-1 * var(--spacing-16));
 }
 
@@ -1217,13 +1307,161 @@ td.editable {
     background: none;
     color: var(--color-violet);
     font: inherit;
-    font-size: 0.9rem;
+    font-size: 14px;
     text-decoration: underline;
+    text-underline-offset: 3px;
     cursor: pointer;
 }
 
-.auth-forgot {
-    margin-top: var(--spacing-12);
+/* Terms, recovery key and reset: white dialogs over the dimmed login. */
+/* Two classes: it wins over .confirm-dialog's 420 px, defined later. */
+.confirm-dialog.account-dialog {
+    width: min(520px, calc(100vw - 32px));
+    max-width: none;
+}
+
+.account-dialog h2 {
+    font-size: 26px;
+    line-height: 32px;
+}
+
+.confirm-dialog#forgot-dialog {
+    width: min(440px, calc(100vw - 32px));
+}
+
+#forgot-dialog h2 {
+    font-size: 22px;
+    line-height: 28px;
+}
+
+.account-dialog .hint {
+    margin-bottom: var(--spacing-16);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.terms-points {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-12);
+    margin-bottom: var(--spacing-16);
+    padding: 16px 18px;
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius-md);
+    background: var(--surface-tint);
+    color: var(--color-midnight);
+    font-size: 14px;
+    line-height: 20px;
+    list-style: none;
+}
+
+.terms-points li {
+    display: flex;
+    gap: 10px;
+}
+
+.terms-points .icon {
+    flex: none;
+    margin-top: 2px;
+    color: var(--color-violet);
+}
+
+.confirm-dialog .terms-links {
+    display: flex;
+    gap: 20px;
+    margin-bottom: var(--spacing-16);
+    font-size: 14px;
+}
+
+.terms-links a {
+    color: var(--color-violet);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.terms-agree {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-12);
+    min-height: 24px;
+    margin-bottom: var(--spacing-12);
+    color: var(--color-midnight);
+    font-size: 14px;
+    line-height: 20px;
+    cursor: pointer;
+}
+
+.terms-agree input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-deep-space);
+}
+
+.confirm-dialog .terms-hint {
+    margin: var(--spacing-8) 0 0;
+    text-align: right;
+}
+
+/* The key: big, in a box, with Copy beside it. */
+.recovery-box {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+    margin-bottom: var(--spacing-16);
+    padding: 16px 18px;
+    border: 1px solid rgba(34, 24, 84, 0.12);
+    border-radius: var(--radius-md);
+    background: var(--surface-tint);
+}
+
+/* A typed code: a monospace face keeps 0 and O, 1 and I apart. */
+.recovery-key,
+.key-input {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.06em;
+}
+
+.recovery-key {
+    flex: 1;
+    min-width: 0;
+    color: var(--color-midnight);
+    font-size: 22px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.confirm-dialog .recovery-ways {
+    font-size: 13px;
+}
+
+/* Save now and Later, one line each. */
+.recovery-ways span {
+    display: block;
+}
+
+#forgot-form .primary-button {
+    align-self: stretch;
+}
+
+.forgot-back {
+    align-self: center;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* Temporary legal pages. */
+.legal-page main {
+    max-width: 640px;
+    margin: 48px auto;
+    padding: 0 var(--spacing-16);
+}
+
+.legal-page h1 {
+    margin: var(--spacing-24) 0 var(--spacing-8);
+    color: var(--color-midnight);
+    font-size: 28px;
 }
 
 /* ======== Catalog ======== */
@@ -1265,44 +1503,27 @@ td.editable {
     font-size: 14px;
 }
 
+/* "83% classified" over a 300 px bar, at the right of the title. */
 .catalog-progress {
-    width: min(520px, 55%);
-}
-
-.progress-title,
-.progress-title {
-    margin-bottom: var(--spacing-8);
-}
-
-.progress-numbers {
     display: flex;
-    align-items: flex-end;
-    gap: var(--spacing-32);
-    margin-bottom: var(--spacing-12);
-}
-
-.progress-number {
-    font-family: var(--font-body);
-    font-weight: 300;
-    font-size: 40px;
-    line-height: 44px;
-    color: var(--color-midnight);
+    flex-direction: column;
+    gap: 6px;
+    width: 300px;
 }
 
 .progress-percent {
-    margin-left: auto;
     color: var(--color-dusk);
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: right;
 }
 
-/* Striped empty part; the fill goes from Violet to Paper and ends in a Deep Space marker. */
+/* Flat bar: a pale track and a Violet fill (the key number of the view). */
 .progress-track {
-    height: 14px;
+    height: 8px;
+    overflow: hidden;
     border-radius: var(--radius-full);
-    background-color: var(--color-white);
-    background-image: repeating-linear-gradient(135deg,
-        rgba(70, 65, 123, 0.3) 0 1.5px, transparent 1.5px 6px);
-    box-shadow: inset 0 0 0 1px var(--color-line);
+    background-color: #dce3f0;
 }
 
 .progress-fill {
@@ -1310,20 +1531,8 @@ td.editable {
     width: var(--share, 0%);
     height: 100%;
     border-radius: var(--radius-full);
-    background: linear-gradient(90deg, var(--color-violet),
-        var(--color-paper));
+    background: var(--color-violet);
     transition: width 0.6s ease-out;
-}
-
-.progress-fill::after {
-    content: "";
-    position: absolute;
-    top: -4px;
-    right: -2px;
-    width: 4px;
-    height: 22px;
-    border-radius: var(--radius-full);
-    background: var(--color-deep-space);
 }
 
 .filter-row {
@@ -1396,38 +1605,6 @@ td.editable {
     font-weight: 600;
 }
 
-/* Plan: the search box sits with the filters; cells edit in place. */
-.plan-search {
-    height: 40px;
-    min-width: 200px;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-full);
-    background: var(--color-white);
-    padding: 0 var(--spacing-16);
-    font-size: 14px;
-    color: var(--color-midnight);
-}
-
-.plan-table td.plan-name input {
-    width: 220px;
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-sm);
-    padding: var(--spacing-4) var(--spacing-8);
-    font-size: 14px;
-    font-family: var(--font-label);
-}
-
-.plan-table td.plan-why {
-    max-width: 260px;
-    white-space: normal;
-    font-size: 13px;
-    color: var(--color-dusk);
-}
-
-.plan-table tbody tr.row-failed td {
-    color: var(--color-deep-space);
-}
-
 .plan-batches {
     margin-top: var(--spacing-32);
 }
@@ -1446,8 +1623,8 @@ td.editable {
     gap: var(--spacing-12);
     padding: var(--spacing-12) var(--spacing-16);
     border-radius: var(--radius-md);
-    background-color: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background-color: var(--surface);
+    border: 1px solid var(--surface-line);
     font-size: 14px;
 }
 
@@ -1491,7 +1668,9 @@ td.editable {
 }
 
 /* Room for the chat button under the last row. */
+/* The last row and the last change stay clear of the chat button. */
 .fixed-view .catalog-table,
+.fixed-view .plan-list,
 .fixed-view .plan-batches ul {
     margin-bottom: var(--chat-button-room);
 }
@@ -1507,42 +1686,18 @@ td.editable {
     }
 
     .fixed-view .view-title {
-        font-size: 28px;
-        line-height: 32px;
         margin-bottom: var(--spacing-4);
     }
 
     .fixed-view .catalog-header,
     .fixed-view .filter-row,
-    .fixed-view .scan-status,
-    .plan-tabs {
+    .fixed-view .scan-status {
         margin-bottom: var(--spacing-8);
-    }
-
-    .fixed-view .progress-numbers {
-        margin-bottom: var(--spacing-4);
-    }
-
-    .fixed-view .progress-number {
-        font-size: 24px;
-        line-height: 28px;
     }
 
     .fixed-view .filter-row {
         gap: var(--spacing-8);
     }
-}
-
-/* The small logo leaves the card in the exact middle of a laptop screen. */
-@media (max-height: 1000px) {
-    .auth-logo {
-        width: 96px;
-    }
-}
-
-.plan-tabs {
-    align-self: flex-start;
-    margin-bottom: var(--spacing-16);
 }
 
 /* The header row and the file name stay in sight while the list moves. */
@@ -1646,19 +1801,7 @@ td.editable {
     max-width: 100%;
 }
 
-/* Plan: checkbox and file name stay at the left, nothing runs off the side. */
-.plan-table {
-    table-layout: fixed;
-}
-
-.plan-table th:nth-child(1) { width: 56px; }
-
-/* The Plan's checkboxes: the whole 44 px square around each box is clickable. */
-.plan-table th.plan-check-cell,
-.plan-table td.plan-check-cell {
-    padding: 0 6px;
-}
-
+/* To Approve's checkboxes: the whole 44 px square around each box is clickable. */
 .check-hit {
     display: flex;
     align-items: center;
@@ -1675,67 +1818,6 @@ td.editable {
     accent-color: var(--color-violet);
     cursor: pointer;
 }
-/* Minimum widths for each kind of data; below them the list scrolls. */
-.plan-table {
-    min-width: 928px;
-}
-
-/* Why takes the rest, at least 96 px. */
-.plan-table th:nth-child(2) { width: 168px; }
-.plan-table th:nth-child(3) { width: 120px; }
-.plan-table th:nth-child(4) { width: 144px; }
-.plan-table th:nth-child(5) { width: 152px; }
-.plan-table th:nth-child(7) { width: 100px; }
-.plan-table th:nth-child(8) { width: 92px; }
-
-.plan-table td,
-.plan-table td.plan-why {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.fixed-view .plan-table tbody td:nth-child(2),
-.fixed-view .plan-table thead th:nth-child(2) {
-    position: sticky;
-    left: 56px;
-}
-
-.fixed-view .plan-table tbody td:nth-child(2) {
-    z-index: 1;
-    background: #fbfcfe;
-}
-
-.fixed-view .plan-table thead th:nth-child(2) {
-    z-index: 4;
-}
-
-.plan-table td.plan-file .review-note {
-    max-width: none;
-    white-space: normal;
-}
-
-.plan-table .status-select,
-.plan-table td.plan-name input {
-    width: 100%;
-    max-width: 100%;
-}
-
-/* Plan file cell: the name gives way, the eye and the folder are always there. */
-.plan-file-line {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-4);
-    min-width: 0;
-}
-
-.plan-file-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 /* Help: a "?" next to a field; a small balloon on hover, click or focus. */
 .help-tip {
     position: relative;
@@ -1791,64 +1873,38 @@ td.editable {
 }
 
 /* Preview: over everything, inside the app. */
+/* Preview: the file on Deep Space at the left, its facts and actions at
+   the right, arrows at the sides, the keys under it. */
 .preview-overlay {
     position: fixed;
     inset: 0;
     z-index: 50;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--spacing-32);
-    background: rgba(8, 5, 28, 0.85);
+    gap: var(--spacing-16);
+    padding: 48px 144px 24px;
+    background: rgba(8, 5, 28, 0.55);
 }
 
 .preview-box {
     display: flex;
-    flex-direction: column;
-    width: min(1100px, 100%);
-    max-height: 100%;
+    width: min(992px, 100%);
+    height: min(620px, 100%);
     min-height: 0;
     border-radius: var(--radius-lg);
-    background: var(--color-paper);
-    box-shadow: var(--shadow-float);
+    background: var(--surface);
+    box-shadow: 0 24px 64px rgba(8, 5, 28, 0.36);
     overflow: hidden;
 }
 
-.preview-header {
+.preview-stage {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-16);
-    padding: var(--spacing-12) var(--spacing-16) var(--spacing-12)
-        var(--spacing-24);
-    border-bottom: 1px solid var(--color-line);
-}
-
-.preview-header h2 {
-    overflow: hidden;
-    color: var(--color-midnight);
-    font-size: 16px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.preview-close {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 0;
-    border-radius: var(--radius-full);
-    background: none;
-    color: var(--color-midnight);
-    cursor: pointer;
-}
-
-.preview-close:hover {
-    background: rgba(73, 59, 178, 0.12);
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--color-deep-space);
 }
 
 .preview-content {
@@ -1856,34 +1912,211 @@ td.editable {
     flex: 1;
     align-items: center;
     justify-content: center;
-    min-height: 200px;
+    min-height: 0;
     overflow: auto;
-    padding: var(--spacing-16);
+    padding: 28px;
+    color: var(--color-paper);
 }
 
 .preview-content img,
 .preview-content video {
     max-width: 100%;
-    max-height: calc(100vh - 160px);
+    max-height: 100%;
+    border-radius: var(--radius-sm);
     object-fit: contain;
 }
 
 .preview-content audio {
     width: 100%;
-    max-width: 640px;
+    max-width: 520px;
 }
 
 .preview-content pre {
     width: 100%;
-    max-height: calc(100vh - 160px);
+    max-height: 100%;
     overflow: auto;
     margin: 0;
+    padding: var(--spacing-16);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     color: var(--color-deep-space);
     font-family: var(--font-body);
     font-size: 14px;
     line-height: 22px;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+.preview-count {
+    padding: 12px 20px;
+    border-top: 1px solid rgba(238, 245, 250, 0.1);
+    color: rgba(238, 245, 250, 0.72);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.preview-count:empty {
+    display: none;
+}
+
+.preview-info {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 18px;
+    width: 340px;
+    padding: var(--spacing-24);
+    overflow: auto;
+}
+
+.preview-head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-12);
+}
+
+.preview-head > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.preview-head h2 {
+    color: var(--color-midnight);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 26px;
+    overflow-wrap: anywhere;
+}
+
+.preview-kind {
+    color: var(--color-dusk);
+    font-size: 13px;
+}
+
+.preview-close {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: -8px -8px 0 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--color-paper);
+    color: var(--color-midnight);
+    cursor: pointer;
+}
+
+.preview-close:hover {
+    background: #dce3f0;
+}
+
+.preview-summary {
+    color: var(--color-midnight);
+    font-size: 14px;
+    line-height: 21px;
+}
+
+.preview-summary:empty {
+    display: none;
+}
+
+.preview-facts {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 10px 12px;
+    font-size: 14px;
+}
+
+.preview-facts dt,
+.preview-label {
+    color: var(--color-dusk);
+    font-family: var(--font-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.preview-facts dt {
+    align-self: center;
+}
+
+.preview-facts dd {
+    color: var(--color-midnight);
+}
+
+.preview-new,
+.preview-where {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--color-midnight);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.preview-new {
+    padding: 12px 14px;
+    border: 1px solid var(--surface-line);
+    border-radius: 10px;
+    background: var(--surface-tint);
+    font-weight: 600;
+}
+
+.preview-where span:last-child {
+    color: var(--color-dusk);
+}
+
+.preview-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.preview-actions .primary-button,
+.preview-actions .secondary-button {
+    justify-content: center;
+    width: 100%;
+}
+
+.preview-actions .hint {
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Previous and next: round dark buttons at the sides. */
+.preview-step {
+    position: absolute;
+    top: 50%;
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(238, 245, 250, 0.3);
+    border-radius: var(--radius-full);
+    background: rgba(8, 5, 28, 0.6);
+    color: var(--color-paper);
+    font-size: 20px;
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.preview-prev {
+    left: 64px;
+}
+
+.preview-next {
+    right: 64px;
+}
+
+.preview-step:hover {
+    background: var(--color-deep-space);
+}
+
+.preview-keys {
+    color: rgba(238, 245, 250, 0.85);
+    font-size: 13px;
 }
 
 /* Only the table scrolls sideways when long file names do not fit. */
@@ -1897,15 +2130,21 @@ td.editable {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     font-family: var(--font-label);
     font-size: 15px;
 }
 
+/* Headers: sentence case, 13 px SemiBold in Dusk, on a tint of the card. */
 .catalog-table th {
     text-align: left;
-    padding: var(--spacing-16) var(--spacing-12);
-    border-bottom: 1px solid var(--color-line);
+    padding: var(--spacing-12);
+    border-bottom: 1px solid var(--surface-line);
+    background: var(--surface-tint);
+    color: var(--color-dusk);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
     /* A long header breaks into two lines; it is never cut. */
     white-space: normal;
     vertical-align: bottom;
@@ -2156,78 +2395,80 @@ td.edit-error {
 /* Dashboard: four columns. A wide card takes two, a full one all four. */
 /* The first card is a little wider, so "Documents Classified" fits on
    one line beside its ring. */
+/* The answer first (1.6 parts), the two numbers beside it (1 part),
+   then Media Mix and Recent Activity across. */
 .dash-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 2fr);
-    gap: var(--card-gap);
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 20px;
 }
 
-.card-wide {
-    grid-column: span 1;
+.dash-side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .card-full {
     grid-column: 1 / -1;
 }
 
+/* White cards on Paper: one line around them, no shadow. */
 .stat-card,
 .panel {
-    padding: var(--spacing-24);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    -webkit-backdrop-filter: var(--glass-blur-card);
-    backdrop-filter: var(--glass-blur-card);
+    padding: 22px var(--spacing-24);
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
 }
 
-/* The number sits under its label, so each card reads as one block. */
 .stat-card {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-8);
-    min-height: 168px;
+    gap: 10px;
 }
 
 .stat-text {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: var(--spacing-8);
+    gap: var(--spacing-4);
     min-width: 0;
 }
 
-/* Big numbers in Archivo Light: 72 px, and 96 px for the main ones. */
+/* Small labels in sentence case: the number under them says the rest. */
+.stat-label {
+    color: var(--color-dusk);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Big numbers in Archivo Light (BRAND.md). */
 .stat-number {
     font-family: var(--font-body);
     font-weight: 300;
-    font-size: 72px;
-    line-height: 72px;
+    font-size: 56px;
+    line-height: 1;
     color: var(--color-midnight);
-}
-
-.stat-hero {
-    font-size: 96px;
-    line-height: 96px;
 }
 
 .stat-sub {
     color: var(--color-dusk);
-    font-size: 15px;
+    font-size: 14px;
 }
 
-/* Documents Classified: the number, and the ring beside it. */
-/* 72 px, so the ring fits beside it in a quarter of the row; a long number wraps. */
-.classified-row {
-    display: flex;
-    flex-wrap: wrap;
+/* Documents classified: the number on the left, the ring on the right. */
+.classified-card {
+    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-8);
+    gap: 20px;
 }
 
 .progress-ring {
     position: relative;
     flex: none;
-    width: 64px;
-    height: 64px;
+    width: 92px;
+    height: 92px;
 }
 
 .progress-ring svg {
@@ -2240,11 +2481,11 @@ td.edit-error {
 .ring-rail,
 .ring-fill {
     fill: none;
-    stroke-width: 7;
+    stroke-width: 6;
 }
 
 .ring-rail {
-    stroke: var(--color-lavender);
+    stroke: #dce3f0;
 }
 
 /* pathLength is 100, so --ring-left is the part still empty (dashboard.js). */
@@ -2262,36 +2503,103 @@ td.edit-error {
     display: grid;
     place-items: center;
     color: var(--color-midnight);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
 }
 
-/* Needs Manual Review: Violet to Midnight. White and Ice keep 4.5:1 on both ends. */
+/* Needs Manual Review: Violet to Midnight, drifting. Paper keeps 4.5:1 on every stop. */
 .review-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    gap: var(--spacing-16);
+    padding: 26px 28px;
     border-color: transparent;
-    background-color: var(--color-violet);
-    background-image: linear-gradient(135deg, var(--color-violet),
-        var(--color-midnight));
-}
-
-.review-card .stat-label {
+    border-radius: 16px;
+    background-color: var(--color-nebula);
     color: var(--color-paper);
 }
 
-.review-card .stat-number {
-    color: var(--color-white);
+/* The gradient on its own layer, bigger than the card. It moves with
+   transform only, so the card is never painted again for it. */
+.review-card::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    z-index: -1;
+    background: linear-gradient(120deg, var(--color-violet) 20%,
+        var(--color-nebula) 50%, var(--color-midnight) 80%);
+    will-change: transform;
 }
 
-/* Go Review: an Ice pill with Violet text. */
+.review-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--spacing-16);
+}
+
+.review-title {
+    color: var(--color-paper);
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.review-number {
+    margin-right: var(--spacing-8);
+    font-size: 44px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+/* Up to five files with why, on a lighter step of the card. */
+.review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    list-style: none;
+}
+
+.review-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-16);
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(238, 245, 250, 0.1);
+    font-size: 14px;
+}
+
+.review-file {
+    flex: none;
+    overflow: hidden;
+    width: 200px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Why the file waits, in the Dashboard card. */
+.review-reason {
+    min-width: 0;
+    color: rgba(238, 245, 250, 0.85);
+}
+
+.review-done {
+    color: rgba(238, 245, 250, 0.85);
+    font-size: 15px;
+}
+
+/* Go Review: a Paper pill with Violet text, 44 px high. */
 .review-go {
-    align-self: flex-start;
-    margin-top: auto;
-    padding: 6px var(--spacing-16);
+    flex: none;
+    height: 44px;
+    padding: 0 22px;
     border: none;
     border-radius: var(--radius-full);
     background: var(--color-paper);
     color: var(--color-violet);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
 }
@@ -2300,29 +2608,15 @@ td.edit-error {
     background: var(--color-white);
 }
 
-/* Sources Tracked: the number, and the top sources beside it. */
+/* Sources tracked: the top three, each a link to its documents. */
 .sources-card {
-    flex-direction: row;
-    gap: var(--spacing-32);
-}
-
-.top-sources {
     flex: 1;
-    min-width: 0;
-    padding-top: var(--spacing-24);
-}
-
-.top-sources-title {
-    margin-bottom: var(--spacing-8);
-    color: var(--color-dusk);
-    font-size: 13px;
 }
 
 .top-sources-list {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-8);
 }
 
 .top-sources-list li {
@@ -2330,12 +2624,18 @@ td.edit-error {
     align-items: baseline;
     justify-content: space-between;
     gap: var(--spacing-12);
-    padding-bottom: var(--spacing-8);
-    border-bottom: 1px solid var(--color-line);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--surface-line);
+}
+
+.top-sources-list li:last-child {
+    border-bottom: 0;
 }
 
 .source-link {
     overflow: hidden;
+    font-size: 15px;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: left;
@@ -2343,11 +2643,10 @@ td.edit-error {
 
 .source-count {
     color: var(--color-dusk);
-    font-size: 14px;
 }
 
 .panel h2 {
-    margin-bottom: var(--spacing-24);
+    margin-bottom: 14px;
 }
 
 /* Media Mix: one bar, a segment per type, sized by its count (dashboard.js). */
@@ -2436,44 +2735,47 @@ td.edit-error {
     color: var(--color-dusk);
 }
 
-/* Recent activity: soft rows with the action as a badge. */
+/* Recent activity: one line per event, divided by a thin rule. */
 .activity-list {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-8);
 }
 
 .activity-list li {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto 90px;
     align-items: center;
-    gap: var(--spacing-12);
-    padding: var(--spacing-12) var(--spacing-16);
-    border-radius: var(--radius-md);
-    background: var(--color-paper);
+    gap: var(--spacing-16);
+    padding: var(--spacing-8) 0;
+    border-bottom: 1px solid var(--surface-line);
     font-size: 14px;
 }
 
+.activity-list li:last-child {
+    border-bottom: 0;
+}
+
+.activity-name {
+    font-weight: 600;
+}
+
 .activity-badge {
-    padding: 2px var(--spacing-12);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-full);
-    background: var(--color-white);
     color: var(--color-midnight);
-    font-family: var(--font-label);
-    font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
 }
 
-.activity-badge.is-review {
-    border: 1.5px solid var(--color-violet);
-    color: var(--color-violet);
+/* Undone and the other states that change nothing: quieter, in Dusk. */
+.activity-list li.is-quiet .activity-name,
+.activity-list li.is-quiet .activity-badge {
+    color: var(--color-dusk);
+    font-weight: 400;
 }
 
 .activity-when {
     color: var(--color-dusk);
+    text-align: right;
     white-space: nowrap;
 }
 
@@ -2506,10 +2808,7 @@ td.edit-error {
     display: flex;
     flex-direction: column;
     padding: var(--spacing-24);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    -webkit-backdrop-filter: var(--glass-blur-card);
-    backdrop-filter: var(--glass-blur-card);
+    border-radius: var(--radius-md);
 }
 
 .settings-card h2 {
@@ -2699,34 +2998,6 @@ td.edit-error {
     font-family: var(--font-label);
     font-size: 12px;
     font-weight: 600;
-}
-
-/* "2 of 4 ready", and a thin bar that fills smoothly. */
-.settings-progress {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--spacing-8);
-    margin: calc(-1 * var(--spacing-16)) 0 var(--spacing-16);
-    color: var(--color-dusk);
-    font-size: 14px;
-}
-
-.progress-thin {
-    width: 220px;
-    height: 4px;
-    border-radius: var(--radius-full);
-    background: var(--color-lavender);
-    overflow: hidden;
-}
-
-.progress-thin span {
-    display: block;
-    width: 0;
-    height: 100%;
-    border-radius: inherit;
-    background: var(--color-violet);
-    transition: width 0.4s ease-out;
 }
 
 /* AI Provider: a dot and one line. Green, gray or orange; the words say it too. */
@@ -2961,12 +3232,10 @@ td.edit-error {
     gap: var(--spacing-16);
     /* Room on the right for the chat button, which floats there. */
     padding: var(--spacing-12) 80px var(--spacing-12) var(--spacing-16);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--surface-line);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg-strong);
+    background: var(--surface);
     box-shadow: var(--shadow-card);
-    -webkit-backdrop-filter: var(--glass-blur-card);
-    backdrop-filter: var(--glass-blur-card);
 }
 
 .settings-actions .form-message {
@@ -3253,7 +3522,8 @@ td.edit-error {
 
 /* ======== Chat ======== */
 
-/* Chat button: a 56 px circle of Nebula glass fixed at the bottom right, with the Nebula logomark. */
+/* Chat button: a 56 px Deep Space circle at the bottom right. Open, it
+   turns Violet with ×. It floats, so it keeps the float shadow. */
 .chat-toggle {
     position: fixed;
     right: var(--spacing-24);
@@ -3266,17 +3536,32 @@ td.edit-error {
     height: 56px;
     border: none;
     border-radius: var(--radius-full);
-    background: rgba(52, 36, 118, 0.2);
-    /* The inner line on top is the glass shine. */
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), var(--shadow-float);
-    -webkit-backdrop-filter: blur(8px) saturate(160%);
-    backdrop-filter: blur(8px) saturate(160%);
+    background: var(--color-deep-space);
+    box-shadow: 0 8px 24px rgba(8, 5, 28, 0.24);
+    color: var(--color-paper);
     cursor: pointer;
 }
 
-.chat-toggle:hover,
-.chat-toggle[aria-expanded="true"] {
-    background: rgba(52, 36, 118, 0.32);
+.chat-toggle:hover {
+    background: var(--color-midnight);
+}
+
+.chat-toggle.is-open {
+    background: var(--color-violet);
+}
+
+.chat-toggle-close {
+    display: none;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.chat-toggle.is-open .chat-logomark {
+    display: none;
+}
+
+.chat-toggle.is-open .chat-toggle-close {
+    display: block;
 }
 
 /* 28 px wide keeps the logomark above the 16 px minimum of BRAND.md. */
@@ -3286,24 +3571,26 @@ td.edit-error {
     flex-shrink: 0;
 }
 
-/* Chat window: 560 px, or less so it never covers the top bar (196 = button 96 + top bar 100). */
+/* Chat window: 400 px, from the top of the window to above the button.
+   The one frosted surface left in the app, because it floats over the work.
+   Every text inside sits on something solid, so it reads without the blur. */
 .chat-panel {
     position: fixed;
+    top: var(--spacing-24);
     right: var(--spacing-24);
     bottom: 96px;
     z-index: 20;
-    width: 380px;
-    height: min(560px, calc(100vh - 196px));
+    width: 400px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    /* The same Nebula glass as the chat button, with a stronger blur. Everything with text inside is solid. */
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: var(--radius-lg);
-    background: rgba(52, 36, 118, 0.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), var(--shadow-float);
-    -webkit-backdrop-filter: blur(40px) saturate(160%);
-    backdrop-filter: blur(40px) saturate(160%);
+    background: linear-gradient(rgba(52, 36, 118, 0.22),
+        rgba(52, 36, 118, 0.22)), rgba(238, 245, 250, 0.28);
+    box-shadow: 0 16px 48px rgba(8, 5, 28, 0.18);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
     transform-origin: bottom right;
     animation: chat-open 180ms ease-out;
 }
@@ -3321,52 +3608,67 @@ td.edit-error {
     display: none;
 }
 
+/* A solid Deep Space header: nothing of the page shows through it, and
+   Paper text on it is 18:1. Only the body of the panel is frosted. */
 .chat-header {
     display: flex;
     align-items: center;
     gap: var(--spacing-12);
-    padding: var(--spacing-12) var(--spacing-16);
-    border-bottom: 1px solid var(--color-line);
-    /* A white frost over the glass keeps the title and × at 4.5:1 over dark banners. */
-    background: rgba(255, 255, 255, 0.45);
+    padding: var(--spacing-16) 18px;
+    background: var(--color-deep-space);
+    color: var(--color-paper);
+}
+
+.chat-heading {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
 }
 
 .chat-header h2 {
-    flex: 1;
-    line-height: 24px;
+    color: var(--color-paper);
+    font-size: 16px;
+    line-height: 22px;
+}
+
+.chat-scope {
+    overflow: hidden;
+    color: rgba(238, 245, 250, 0.72);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .chat-close {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border: none;
     border-radius: var(--radius-full);
     background: none;
-    /* Midnight keeps the × clear on the glass. */
-    color: var(--color-midnight);
+    color: var(--color-paper);
     font-size: 22px;
     cursor: pointer;
 }
 
 .chat-close:hover {
-    background: var(--color-paper);
-    color: var(--color-midnight);
+    background: rgba(238, 245, 250, 0.12);
 }
 
-/* Assistant avatar: the Midnight logomark on a light circle. */
+/* Assistant avatar: the logomark on a Violet circle. */
 .chat-avatar {
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: var(--radius-full);
-    background: var(--color-paper);
+    background: var(--color-violet);
 }
 
 .chat-avatar img {
-    width: 24px;
+    width: 20px;
     height: auto;
 }
 
@@ -3415,10 +3717,12 @@ td.edit-error {
     margin-top: var(--spacing-8);
 }
 
+/* Suggestions: pills, 36 px high. */
 .chat-example {
-    padding: 10px var(--spacing-16);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-md);
+    min-height: 36px;
+    padding: 6px 14px;
+    border: 1px solid rgba(34, 24, 84, 0.14);
+    border-radius: var(--radius-full);
     background: var(--color-white);
     color: var(--color-midnight);
     font-size: 14px;
@@ -3697,25 +4001,58 @@ td.edit-error {
     display: none;
 }
 
+/* The question, the round Send, and the line that says the limits. */
 .chat-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-8);
+    padding: 14px 18px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.chat-input-row {
     display: flex;
     align-items: center;
     gap: var(--spacing-8);
-    padding: var(--spacing-12) var(--spacing-16);
-    border-top: 1px solid var(--color-line);
 }
 
 .chat-form textarea {
     flex: 1;
-    /* Two lines. */
-    height: 62px;
+    height: 44px;
     resize: none;
-    padding: 10px var(--spacing-12);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-md);
+    padding: 11px 14px;
+    border: 1px solid rgba(34, 24, 84, 0.18);
+    border-radius: 22px;
     background: var(--color-white);
     font-size: 14px;
     line-height: 20px;
+}
+
+.chat-send {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--color-violet);
+    color: var(--color-paper);
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.chat-send:disabled {
+    background: var(--color-lavender);
+    color: var(--color-dusk);
+    cursor: not-allowed;
+}
+
+/* On the light frost: Midnight, SemiBold, so it reads without the blur. */
+.chat-limits {
+    color: var(--color-midnight);
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .chat-form textarea:focus {
@@ -3728,15 +4065,13 @@ td.edit-error {
 
 .confirm-dialog {
     margin: auto;
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--surface-line);
     border-radius: var(--radius-lg);
     max-width: 420px;
     padding: var(--spacing-32);
     color: var(--color-deep-space);
-    background: var(--glass-bg-strong);
+    background: var(--surface);
     box-shadow: var(--shadow-float);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
 }
 
 /* The page behind the open dialog is dimmed. */
@@ -3767,13 +4102,510 @@ td.edit-error {
     outline-width: 1.5px;
 }
 
+/* ======== Calm frame screens (Nov 9, mockup-calm) ======== */
+
+/* A title with its scope beside it: "Dashboard  Harbor Swimmers". */
+.view-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.view-head .view-title {
+    margin-bottom: 0;
+}
+
+.view-scope {
+    color: var(--color-dusk);
+    font-size: 15px;
+}
+
+/* No project yet, in Home: the logomark, one sentence, one button, three steps. */
+.start-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    margin: 0 auto;
+    padding: 48px var(--spacing-16);
+    text-align: center;
+}
+
+.start-mark {
+    width: 132px;
+    height: auto;
+}
+
+.start-empty h1 {
+    color: var(--color-midnight);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 38px;
+}
+
+.start-lead {
+    max-width: 520px;
+    margin-top: -16px;
+    color: var(--color-dusk);
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.start-button {
+    gap: 10px;
+    height: 48px;
+    padding: 0 28px;
+    font-size: 16px;
+}
+
+.start-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--spacing-16);
+    width: 100%;
+    max-width: 760px;
+    margin-top: var(--spacing-24);
+    list-style: none;
+    text-align: left;
+}
+
+.start-steps li {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px;
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--color-dusk);
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.start-steps b {
+    color: var(--color-midnight);
+    font-size: 15px;
+}
+
+.start-step {
+    font-family: var(--font-label);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* No project in the Dashboard, Catalog or To Approve: a plain line and the button. */
+.empty-start {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-16);
+    color: var(--color-dusk);
+    font-size: 16px;
+}
+
+#catalog-start,
+#plan-start {
+    align-self: flex-start;
+    margin-bottom: var(--spacing-16);
+}
+
+/* With no project, the line sits left, over its button, as in the Dashboard. */
+#plan-message,
+#catalog-message {
+    padding: 0 0 var(--spacing-16);
+    font-size: 16px;
+    text-align: left;
+}
+
+.start-empty .start-button {
+    align-self: center;
+}
+
+.icon-folder-open {
+    mask-image: url("../assets/icons/folder-open.svg");
+    -webkit-mask-image: url("../assets/icons/folder-open.svg");
+}
+
+/* Home: the title at the app's scale, one line of counts under it. */
+.home-counts {
+    margin-top: 6px;
+}
+
+/* To Approve: title and line on the left, Apply on the right. */
+.plan-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--spacing-24);
+    margin-bottom: 18px;
+}
+
+.plan-head .view-title {
+    margin-bottom: 0;
+}
+
+.plan-head-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-12);
+}
+
+.plan-apply {
+    height: 48px;
+    padding: 0 26px;
+    font-size: 16px;
+}
+
+.plan-apply-hint {
+    margin: -10px 0 var(--spacing-12);
+    text-align: right;
+}
+
+.plan-show {
+    margin-bottom: 18px;
+}
+
+/* The changes: one white card, a tinted header per destination folder. */
+.plan-list-wrap {
+    min-height: 0;
+    overflow: auto;
+}
+
+.plan-list {
+    overflow: hidden;
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+}
+
+.plan-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px var(--spacing-24);
+    border-bottom: 1px solid var(--surface-line);
+    background: var(--surface-tint);
+}
+
+.plan-group-name {
+    color: var(--color-midnight);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.plan-group-facts {
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* Box | as it is | → | as it will be | Skip. */
+.plan-row {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 24px minmax(0, 1.4fr) 72px;
+    align-items: center;
+    gap: var(--spacing-12);
+    padding: var(--spacing-12) var(--spacing-24);
+    border-bottom: 1px solid var(--surface-line);
+}
+
+.plan-row:last-child {
+    border-bottom: 0;
+}
+
+.plan-before,
+.plan-after {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.plan-old-line {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-4);
+    min-width: 0;
+}
+
+/* The name as it is: gray and struck through. */
+.plan-old-name {
+    overflow: hidden;
+    color: var(--color-placeholder);
+    font-size: 14px;
+    text-decoration: line-through;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.plan-where {
+    color: var(--color-placeholder);
+    font-size: 12px;
+}
+
+.plan-arrow {
+    color: var(--color-dusk);
+    text-align: center;
+}
+
+/* The new name in ink, SemiBold. It is a field that looks like text. */
+.plan-new-name {
+    width: 100%;
+    overflow: hidden;
+    padding: 2px 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-deep-space);
+    font-size: 15px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+input.plan-new-name:hover,
+input.plan-new-name:focus {
+    padding: 2px 6px;
+    border-color: rgba(34, 24, 84, 0.18);
+    background: var(--surface);
+}
+
+.plan-why {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-dusk);
+    font-size: 13px;
+}
+
+/* The folder can change here: a quiet select, Dusk until it is used. */
+.plan-folder-select {
+    max-width: 200px;
+    height: 28px;
+    padding: 0 26px 0 8px;
+    border: 1px solid rgba(34, 24, 84, 0.14);
+    border-radius: var(--radius-sm);
+    background: var(--surface) url("../assets/icons/chevron-down.svg")
+        no-repeat right 6px center / 14px;
+    color: var(--color-dusk);
+    font-size: 13px;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.plan-row-action {
+    justify-self: end;
+    color: var(--color-dusk);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* A skipped change: the old name in ink, the new one gray, Undo in Violet. */
+.plan-row.is-skipped {
+    background: var(--surface-tint);
+}
+
+.plan-row.is-skipped .plan-old-name {
+    color: var(--color-midnight);
+    text-decoration: none;
+}
+
+.plan-row.is-skipped .plan-new-name {
+    color: var(--color-placeholder);
+    font-weight: 400;
+}
+
+.plan-row.is-skipped .plan-row-action {
+    color: var(--color-violet);
+}
+
+.plan-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-12);
+    color: var(--color-dusk);
+    font-size: 13px;
+}
+
+/* Catalog: "Showing 8 of 30 files" on the left, the two switches right. */
+.table-tools {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: var(--spacing-12);
+}
+
+.showing-line {
+    flex: 1;
+    color: var(--color-dusk);
+    font-size: 13px;
+}
+
+.worksheet-button {
+    height: 36px;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-16);
+    padding: var(--spacing-12) 0;
+    color: var(--color-dusk);
+    font-size: 14px;
+}
+
+/* New Project: its own screen. Only Create project finishes it. */
+#view-new .card-confirm,
+#view-new .card-check,
+#view-new #project-form-title,
+#view-settings .optional-heading {
+    display: none;
+}
+
+.settings-form .optional-heading {
+    margin: var(--spacing-4) 0 calc(var(--spacing-8) - var(--card-gap));
+    color: var(--color-dusk);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* When should Cataloga read it: Now / Later as a segmented control. */
+#read-section .option-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 28px;
+}
+
+#read-section .archive-options {
+    display: inline-flex;
+    padding: 4px;
+    border-radius: var(--radius-full);
+    background: var(--color-paper);
+}
+
+#read-section .archive-options label {
+    display: flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 22px;
+    border-radius: var(--radius-full);
+    color: var(--color-midnight);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+}
+
+#read-section .archive-options input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+#read-section .archive-options label:has(input:checked) {
+    background: var(--color-violet);
+    color: var(--color-paper);
+}
+
+#read-section .archive-options label:has(input:focus-visible) {
+    outline: 2px solid var(--color-violet);
+    outline-offset: 2px;
+}
+
+/* The two boxes: sentence case, 15 px (not uppercase field labels). */
+#read-section .catalog-only-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 24px;
+    color: var(--color-midnight);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+/* Settings > Account: the recovery key under the password. */
+.recovery-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-16);
+    margin-top: var(--spacing-16);
+    padding-top: var(--spacing-16);
+    border-top: 1px solid var(--surface-line);
+}
+
+.recovery-row-text {
+    flex: 1;
+    min-width: 200px;
+}
+
+.recovery-row-title {
+    color: var(--color-midnight);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.recovery-confirm {
+    margin-top: var(--spacing-12);
+}
+
+.recovery-confirm-row {
+    display: flex;
+    gap: var(--spacing-8);
+}
+
+.recovery-confirm-row input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Legal: one row, the version at the right. */
+.legal-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-24);
+    padding: 18px var(--spacing-24);
+    font-size: 14px;
+}
+
+.legal-card h2 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.legal-card a {
+    color: var(--color-violet);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.legal-version {
+    margin-left: auto;
+    color: var(--color-dusk);
+}
+
+.autosave-line {
+    margin-top: calc(var(--spacing-8) - var(--card-gap));
+}
+
 /* ======== Media queries ======== */
 
 /* Less motion: no growing bars or chat animation. countUp() skips counting too. */
 @media (prefers-reduced-motion: reduce) {
     .ring-fill,
     .progress-fill,
-    .progress-thin span,
     .card-fold,
     .nav-link,
     .logout-button,
@@ -3814,7 +4646,7 @@ td.edit-error {
     }
 
     .dash-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .catalog-header {
@@ -3824,10 +4656,6 @@ td.edit-error {
 
     .catalog-progress {
         width: 100%;
-    }
-
-    .card-wide {
-        grid-column: 1 / -1;
     }
 
     /* Rows stack, with the same space between the cards. */
@@ -3891,77 +4719,37 @@ td.edit-error {
 
 /* gradient-drift: every gradient is drawn bigger than its box and slides slowly.
    Each one only uses dark brand colors, or none under text, so contrast never drops. */
-.auth-screen,
-.review-card,
-.progress-fill {
-    background-size: 300% 300%;
-    animation: gradient-drift 20s ease-in-out infinite alternate;
-}
-
-.review-card {
-    animation-duration: 16s;
+/* Only two gradients move in the app: Needs Manual Review and the login. */
+.review-card::before {
+    animation: gradient-drift 18s ease-in-out infinite alternate;
 }
 
 @keyframes gradient-drift {
     from {
-        background-position: 0% 0%;
+        transform: translate3d(-12%, -8%, 0);
     }
 
     to {
-        background-position: 100% 100%;
+        transform: translate3d(12%, 8%, 0);
     }
 }
 
 /* Less motion asked by the system: no drop, no drift, no fade. */
-/* Settings and Dashboard (motion.js): the two big backgrounds glide back to
-   their start in 300 ms and stay there. The small gradients keep moving. */
-.view-static-bg::before {
-    animation: backdrop-settle 300ms ease-out forwards;
-}
-
-.view-static-bg .sidebar::before {
-    animation: sidebar-settle 300ms ease-out forwards;
-}
-
-@keyframes backdrop-settle {
-    from {
-        transform: var(--backdrop-from, none);
-    }
-
-    to {
-        transform: translate3d(-6%, -4%, 0);
-    }
-}
-
-@keyframes sidebar-settle {
-    from {
-        transform: var(--sidebar-from, none);
-    }
-
-    to {
-        transform: translate3d(0, -20%, 0);
-    }
-}
-
 /* A hidden or unfocused window stops every moving gradient (motion.js). */
-.motion-paused body::before,
-.motion-paused .auth-screen,
-.motion-paused .sidebar::before,
-.motion-paused .review-card,
-.motion-paused .progress-fill,
-.motion-paused .folder-banner {
+.motion-paused .login-glow,
+.motion-paused .auth-logo,
+.motion-paused .review-card::before {
     animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .card-drop,
     .card-quick,
-    body::before,
-    .view-static-bg::before,
-    .auth-screen,
-    .sidebar::before,
-    .view-static-bg .sidebar::before,
-    .review-card,
+    .auth-logo,
+    .auth-form,
+    .glow-a,
+    .glow-b,
+    .review-card::before,
     .progress-fill {
         animation: none;
     }

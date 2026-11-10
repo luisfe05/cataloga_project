@@ -10,7 +10,8 @@ import pytest
 FRONTEND = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
 # The five "?" of Settings, as approved on Nov 9.
-FIVE = ["help.drop_zone", "help.archive", "naming.help_names",
+# In page order: Now / Later comes before Use a Drop Zone since Nov 9.
+FIVE = ["help.archive", "help.drop_zone", "naming.help_names",
         "help.folders", "help.language"]
 
 

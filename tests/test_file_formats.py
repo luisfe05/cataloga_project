@@ -386,13 +386,15 @@ def test_tagged_mp3_gets_a_name_and_a_source(setup):
 
 
 def test_mp3_without_tags_goes_to_manual_review(setup):
-    """No useful metadata: Manual Review, with the file date."""
+    """No useful metadata: Manual Review, no date, its own name."""
     ai = FakeAI()
     doc = setup["build"](ai).classify_document(
         mp3(setup["drop"] / "audio 13.mp3"))
     assert doc.status == "Manual Review"
     assert doc.review_note.startswith(archive_rules.MEDIA_NOTE)
-    assert doc.date_source == "file"
+    # Never the disk date, and never a name that is only a number.
+    assert doc.document_date is None and doc.date_source is None
+    assert doc.filename == "audio 13.mp3"
     assert ai.text_calls == 0
 
 
@@ -437,7 +439,8 @@ def test_real_names_are_not_generic(name):
 
 @pytest.mark.parametrize("topic", [None, "DSC 0042"])
 def test_photo_without_a_useful_topic_goes_to_manual_review(setup, topic):
-    """DSC_0042.jpg with no topic from the AI: no camera name in its name."""
+    """DSC_0042.jpg with no topic from the AI: Manual Review, and with
+    nothing to name it by it keeps its name (never a bare number)."""
     ai = FakeAI()
     ai_metadata = json.dumps({"source": None, "document_date": None,
                               "topic": topic})
@@ -451,8 +454,7 @@ def test_photo_without_a_useful_topic_goes_to_manual_review(setup, topic):
     assert doc.status == "Manual Review"
     assert doc.review_note == archive_rules.TOPIC_NOTE
     assert doc.topic is None
-    assert "dsc" not in doc.filename.lower()
-    assert doc.filename[:4].isdigit()
+    assert doc.filename == "DSC_0042.jpg"
 
 
 def test_photo_topic_comes_from_what_it_shows(setup):

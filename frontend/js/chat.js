@@ -20,9 +20,18 @@ function chatElement(tag, className, text) {
 
 function toggleChat(open) {
     document.getElementById("chat-panel").classList.toggle("hidden", !open);
-    document.getElementById("chat-toggle")
-        .setAttribute("aria-expanded", String(open));
+    const button = document.getElementById("chat-toggle");
+    button.setAttribute("aria-expanded", String(open));
+    // Open, the round button turns Violet with ×; it closes the panel.
+    button.classList.toggle("is-open", open);
     if (open) {
+        // "Harbor Swimmers · 30 files": what the answers are about.
+        const parts = [activeProjectName()];
+        if (catalogTotal) {
+            parts.push(t("home.files", { n: catalogTotal }));
+        }
+        document.getElementById("chat-scope").textContent =
+            parts.filter(Boolean).join(" · ");
         document.getElementById("chat-input").focus();
     }
 }

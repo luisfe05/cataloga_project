@@ -23,26 +23,30 @@
     top: 12px;
 }
 
+/* Home / Catalog List: the same segmented control as the filters. */
 .home-tabs {
     display: inline-flex;
     padding: 4px;
+    border: 1px solid var(--surface-line);
     border-radius: var(--radius-full);
-    background: rgba(73, 59, 178, 0.08);
+    background: var(--surface);
 }
 
 .home-tabs button {
-    padding: 8px 16px;
+    height: 36px;
+    padding: 0 18px;
     border: 0;
     border-radius: var(--radius-full);
     background: none;
-    color: var(--color-deep-space);
+    color: var(--color-midnight);
     font: inherit;
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
 }
 
 .home-tabs button.on {
-    background: var(--color-violet);
+    background: var(--color-midnight);
     color: var(--color-paper);
 }
 
@@ -83,12 +87,11 @@
 
 .home-head h1 {
     margin: 0;
-    color: var(--color-deep-space);
-    font-size: 28px;
+    color: var(--color-midnight);
+    font-size: 32px;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 38px;
 }
-
 
 .home-crumbs {
     display: flex;
@@ -115,25 +118,7 @@
     font-weight: 600;
 }
 
-.home-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.home-chip {
-    padding: 5px 12px;
-    border-radius: var(--radius-full);
-    background: rgba(73, 59, 178, 0.08);
-    color: var(--color-midnight);
-    font-size: 13px;
-}
-
-.home-chip b {
-    font-weight: 600;
-}
-
-/* The folder's banner: this gradient in every state. */
+/* The folder's banner: flat Deep Space in every state. */
 .folder-banner {
     display: flex;
     flex-wrap: wrap;
@@ -142,11 +127,9 @@
     margin: var(--spacing-12) var(--spacing-32) 0;
     padding: 18px 20px;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, #08051c, #221854);
+    /* Flat Deep Space: only the login and Needs Manual Review move. */
+    background: var(--color-deep-space);
     color: var(--color-paper);
-    /* gradient-drift lives in main.css; both ends are dark under Paper text. */
-    background-size: 300% 300%;
-    animation: gradient-drift 18s ease-in-out infinite alternate;
 }
 
 .folder-banner p {
@@ -270,10 +253,12 @@
     min-height: 0;
 }
 
+/* White surfaces on Paper, like every card. */
 .home-pane {
     overflow: auto;
-    border: 1px solid rgba(70, 65, 123, 0.22);
-    border-radius: var(--radius-lg);
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
 }
 
 /* Icon view. */
@@ -337,13 +322,13 @@
     font-size: 12px;
 }
 
-/* A real small picture; the gradient only while there is none. */
+/* A real small picture; a flat tone only while there is none. */
 .home-thumb {
     display: block;
     width: 64px;
     height: 64px;
     border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, var(--color-dusk), var(--color-violet));
+    background: #dce3f0;
     box-shadow: 0 0 0 1px rgba(70, 65, 123, 0.22);
     object-fit: cover;
 }
@@ -453,7 +438,7 @@
     height: 24px;
     margin: 0 3px;
     border-radius: var(--radius-sm);
-    background: linear-gradient(135deg, var(--color-dusk), var(--color-violet));
+    background: #dce3f0;
     object-fit: cover;
 }
 
@@ -515,9 +500,10 @@
     flex-direction: column;
     gap: 12px;
     overflow: auto;
-    padding: 18px;
-    border: 1px solid rgba(70, 65, 123, 0.22);
-    border-radius: var(--radius-lg);
+    padding: 20px;
+    border: 1px solid var(--surface-line);
+    border-radius: 16px;
+    background: var(--surface);
 }
 
 .home-big {

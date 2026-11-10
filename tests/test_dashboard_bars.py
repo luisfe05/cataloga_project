@@ -78,8 +78,8 @@ def test_every_gradient_drifts_with_one_animation():
     assert css.count("@keyframes gradient-drift") == 1
     assert "auth-drift" not in css
     reduced = css[css.rindex("@media (prefers-reduced-motion: reduce)"):]
-    for selector in (".auth-screen", ".sidebar::before", ".review-card",
-                     ".card-drop"):
+    # Since Nov 9 only Needs Manual Review drifts; the login has its glows.
+    for selector in (".review-card", ".glow-a", ".glow-b", ".card-drop"):
         assert selector in reduced
 
 

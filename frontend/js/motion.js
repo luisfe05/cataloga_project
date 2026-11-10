@@ -1,4 +1,4 @@
-/** motion.js: numbers that count up, bars that grow, and pausing the gradients. */
+/** motion.js: numbers that count up, bars that grow, and pausing what drifts. */
 
 // Longest time a number takes to count up, in milliseconds.
 const COUNT_UP_MS = 600;
@@ -40,8 +40,8 @@ function growBar(element, name, from, to) {
     element.style.setProperty(name, to);
 }
 
-// The gradients that move all the time (main.css, home.css).
-const DRIFT_ANIMATIONS = ["backdrop-drift", "sidebar-drift", "gradient-drift"];
+// The only things that move all the time: Needs Manual Review and the login.
+const DRIFT_ANIMATIONS = ["gradient-drift", "glow-drift", "logo-float"];
 
 /** Stop every moving gradient while the window is hidden or not in front. */
 function setMotionPaused(paused) {
@@ -56,28 +56,6 @@ function setMotionPaused(paused) {
             }
         }
     });
-}
-
-// Views with many glass cards: the page and sidebar backgrounds stay still,
-// because every card is blurred again on each frame they move.
-const STILL_BACKGROUND_VIEWS = ["settings", "dashboard"];
-
-/** Keep the two big backgrounds still in some views; showView() calls this. */
-function setStillBackground(view) {
-    const body = document.body;
-    const still = STILL_BACKGROUND_VIEWS.includes(view);
-    if (still === body.classList.contains("view-static-bg")) {
-        return;
-    }
-    if (still) {
-        // Each layer glides back to its start from where it is now: no jump.
-        body.style.setProperty("--backdrop-from",
-            getComputedStyle(body, "::before").transform);
-        const sidebar = document.querySelector(".sidebar");
-        body.style.setProperty("--sidebar-from",
-            getComputedStyle(sidebar, "::before").transform);
-    }
-    body.classList.toggle("view-static-bg", still);
 }
 
 document.addEventListener("visibilitychange", () => {

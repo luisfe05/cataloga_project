@@ -6,7 +6,7 @@ import re
 import shutil
 from datetime import datetime
 
-from backend.config import account
+from backend.config import account, recovery
 
 ACCOUNTS_FILE = "accounts.json"
 
@@ -117,6 +117,46 @@ class AccountStore:
             if entry["username"].lower() == username.lower():
                 entry["password_hash"] = account.hash_password(new_password)
         self.save(data)
+
+    def update(self, username, fields):
+        """Change some fields of one account and save the file."""
+        data = self.load()
+        for entry in data["accounts"]:
+            if entry["username"].lower() == username.lower():
+                entry.update(fields)
+        self.save(data)
+
+    def set_recovery_key(self, username, key):
+        """Keep a new recovery key: its hash here, not yet saved to a file."""
+        self.update(username, {"recovery_hash": recovery.hash_key(key),
+                               "recovery_saved": ""})
+
+    def recovery_key_matches(self, username, key):
+        """Say whether a typed recovery key is this account's key."""
+        entry = self.find(username)
+        if entry is None:
+            return False
+        return recovery.key_matches(key, entry.get("recovery_hash", ""))
+
+    def mark_recovery_saved(self, username, day):
+        """Remember the day the key was saved to a file."""
+        self.update(username, {"recovery_saved": day})
+
+    def recovery_saved(self, username):
+        """Return the day the key was saved to a file, or ''."""
+        entry = self.find(username)
+        return entry.get("recovery_saved", "") if entry else ""
+
+    def accept_terms(self, username, version):
+        """Keep the version of the terms this account accepted, and when."""
+        self.update(username, {"terms": {"version": version,
+                                         "accepted": now_timestamp()}})
+
+    def terms_version(self, username):
+        """Return the version of the terms this account accepted, or ''."""
+        entry = self.find(username)
+        terms = entry.get("terms") if entry else None
+        return terms.get("version", "") if isinstance(terms, dict) else ""
 
     def remember_last(self, username):
         """Save who logged in last; the login screen uses their language."""

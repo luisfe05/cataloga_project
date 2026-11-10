@@ -39,6 +39,8 @@ RECENT_ACTIVITY_LIMIT = 10
 
 # How many sources the chat's project summary lists.
 TOP_SOURCES = 3
+# Files in Manual Review the Dashboard lists, with why.
+REVIEW_FILES = 5
 
 # GET /documents?sort=newest: the newest date first, documents with no date
 # last.
@@ -534,6 +536,12 @@ class CatalogRepository:
                 "GROUP BY media_type"
             ).fetchall()
             top_sources = self.top_sources(conn)
+            # The oldest first: they have waited the longest.
+            review_rows = conn.execute(
+                "SELECT id, filename, review_note FROM documents "
+                "WHERE status = 'Manual Review' ORDER BY id LIMIT ?",
+                (REVIEW_FILES,),
+            ).fetchall()
             activity_rows = conn.execute(
                 "SELECT documents.filename, activity_log.action, "
                 "activity_log.timestamp FROM activity_log "
@@ -560,6 +568,9 @@ class CatalogRepository:
             "needs_manual_review": manual_review,
             "sources_tracked": sources,
             "top_sources": top_sources,
+            "review_files": [{"id": row["id"], "filename": row["filename"],
+                              "note": row["review_note"] or ""}
+                             for row in review_rows],
             "media_type_breakdown": breakdown,
             "recent_activity": recent,
         }

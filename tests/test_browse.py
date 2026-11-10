@@ -138,8 +138,9 @@ def test_preview_and_reveal_work_by_path(flask_client, project, monkeypatch):
     assert flask_client.post("/browse/reveal",
                              json={"path": "nota.txt"}).status_code == 200
     assert started == [["open", "-R", os.path.join(root, "nota.txt")]]
+    # Outside the project: refused before anything runs (G5, Nov 9).
     assert flask_client.post("/browse/reveal",
-                             json={"path": "../x"}).status_code == 409
+                             json={"path": "../x"}).status_code == 400
 
 
 def test_the_token_in_an_address_opens_only_pictures_and_recordings(

@@ -6,7 +6,7 @@ import os
 import pytest
 
 from backend.app import create_app
-from backend.config import account, projects
+from backend.config import account, projects, recovery
 from backend.config.accounts import AccountStore
 from backend.db.catalog_repository import CatalogRepository
 from backend.db.schema import init_db
@@ -67,6 +67,19 @@ def no_real_keys(monkeypatch, tmp_path):
     monkeypatch.delenv(ollama_cloud.ENV_KEY_NAME, raising=False)
     monkeypatch.setattr(ollama_cloud, "ENV_PATH",
                         str(tmp_path / "missing.env"))
+
+
+@pytest.fixture(autouse=True)
+def fake_keychain(monkeypatch):
+    """Recovery keys go to a dict, never to the real Keychain."""
+    saved = {}
+    monkeypatch.setattr(recovery, "keep_in_keychain",
+                        lambda username, key: saved.__setitem__(
+                            recovery.keychain_name(username), key))
+    monkeypatch.setattr(recovery, "read_from_keychain",
+                        lambda username: saved.get(
+                            recovery.keychain_name(username), ""))
+    return saved
 
 
 @pytest.fixture(autouse=True)
