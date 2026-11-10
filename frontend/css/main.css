@@ -3022,6 +3022,13 @@ td.edit-error {
     color: var(--color-midnight);
     font-size: 16px;
     font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Change keeps its place at the right: a long summary never pushes it. */
+.card-row .card-change {
+    flex: none;
+    margin-left: auto;
 }
 
 .card-row-text {
@@ -3768,7 +3775,7 @@ td.edit-error {
     background: rgba(238, 245, 250, 0.12);
 }
 
-/* Assistant avatar: the logomark on a Violet circle. */
+/* Assistant avatar: the Paper logomark on a Violet circle. */
 .chat-avatar {
     display: flex;
     align-items: center;

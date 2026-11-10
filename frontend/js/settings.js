@@ -384,6 +384,11 @@ function foldersSummary() {
         : t("folders.count", { n: count });
 }
 
+/** A text on one line: line breaks and runs of spaces become one space. */
+function oneLine(text) {
+    return String(text || "").replace(/\s+/g, " ").trim();
+}
+
 /** Progress, summaries, Done links and the Create button, after any change. */
 function refreshCards() {
     // A card still in its dotted place is not ready yet.
@@ -403,9 +408,11 @@ function refreshCards() {
     });
     document.getElementById("project-summary").textContent =
         projectSummary();
+    // The folded row is one line: every line break shows as a space, and
+    // what does not fit ends in "…" (CSS). The text itself is unchanged.
     const sheet = document.getElementById("project-sheet").value.trim();
     document.getElementById("sheet-summary").textContent =
-        sheet.split("\n")[0];
+        oneLine(sheet);
     document.getElementById("naming-summary").textContent = namingSummary();
     document.getElementById("folders-summary").textContent =
         foldersSummary();

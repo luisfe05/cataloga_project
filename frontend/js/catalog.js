@@ -769,6 +769,10 @@ async function renderScan(settings) {
     }
     const active = ["running", "paused"].includes(scan.status);
     const waiting = ["unread", "stopped"].includes(scan.status);
+    // A reading just ended: Folder Names gets the counts of what it read.
+    if (["running", "paused"].includes(scanStatus) && !active) {
+        refreshFolderCounts();
+    }
     scanStatus = scan.status;
     box.classList.toggle("hidden", !active && !waiting && !scan.retryable);
     showScanWords(scan);

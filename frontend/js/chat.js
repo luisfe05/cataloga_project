@@ -72,7 +72,8 @@ function addAssistantMessage() {
     const item = chatElement("div", "chat-message chat-assistant");
     const avatar = chatElement("span", "chat-avatar");
     const image = document.createElement("img");
-    image.src = "assets/logomark-midnight.svg";
+    // Paper on the Violet circle: Midnight there could not be seen.
+    image.src = "assets/logomark-paper.svg";
     image.alt = "";
     avatar.appendChild(image);
     const body = chatElement("div", "chat-body");

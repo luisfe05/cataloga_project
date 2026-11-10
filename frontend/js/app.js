@@ -42,6 +42,9 @@ function showView(name) {
             } else {
                 showSettingsTab("general", false);
             }
+        } else {
+            // Files read since Settings loaded must count in Folder Names.
+            refreshFolderCounts();
         }
         dropSettingsCards();
     }

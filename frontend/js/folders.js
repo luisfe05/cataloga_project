@@ -460,6 +460,41 @@ function showFolderSection(settings, isNew) {
     updateFolderNotes();
 }
 
+/** Fresh folder counts from the server, keeping what the user is editing.
+
+Settings is loaded once; files read later would still count 0, and a
+folder with files would be removed without asking where they go. Called
+when Settings opens and when a reading ends. Untouched folders reload
+whole (a reading can make the tree); edited ones only get their counts.
+ */
+async function refreshFolderCounts() {
+    if (projectMode === "new" || !hasProjects) {
+        return;
+    }
+    let settings;
+    try {
+        settings = await getSettings();
+    } catch (error) {
+        return;
+    }
+    if (projectMode === "new") {
+        return;
+    }
+    if (!foldersTouched) {
+        showFolderSection(settings, false);
+        return;
+    }
+    const counts = settings.folder_counts || {};
+    folderRows.forEach((row) => {
+        if (row.saved) {
+            row.count = counts[pathOf(row)] || 0;
+        }
+    });
+    filesRead = settings.files_read || 0;
+    renderFolderRows();
+    updateFolderNotes();
+}
+
 /** The one line under the title: To Approve, or Catalog only with its link. */
 function updateFolderNotes() {
     const isNew = projectMode === "new";
