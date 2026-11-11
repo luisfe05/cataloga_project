@@ -180,7 +180,7 @@ def test_get_settings_of_the_active_project(flask_client, app):
         "fallback_provider": None, "fallback_model": None,
         "media_provider": None, "media_model": None, "server_url": "",
         "old_inbox_has_files": False, "project_status": "ok",
-        "providers_with_key": [], "username": "test",
+        "providers_with_key": [], "legacy_keys": [], "username": "test",
         "industry": "", "categories": [],
         "folder_mode": "media", "project_description": "",
         "folder_tree": [], "numbered_folders": False,

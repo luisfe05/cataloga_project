@@ -7,13 +7,15 @@ import time
 from flask import Blueprint, current_app, jsonify, request
 from keyring.errors import KeyringError
 
-from backend.config import ai_settings, projects
+from backend.config import ai_settings, api_keys, projects
 from backend.config.app_config import LANGUAGES, AppConfig
 from backend.db.schema import init_db
 from backend.folder_watcher import old_inbox_has_files
 from backend.pipeline.ai_providers import (MEDIA_PROVIDER, PROVIDERS, ROLES,
-                                           create_client, text_client)
-from backend.pipeline.ai_providers.base import save_api_key
+                                           account_client, create_client,
+                                           text_client)
+from backend.pipeline.ai_providers.base import (save_api_key,
+                                                use_account_key)
 from backend.pipeline import (archive_rules, assistant_guard, folder_tree,
                               naming, project_sheet, refile, time_budget)
 from backend.pipeline.file_organizer import MEDIA_TYPES, FileOrganizer
@@ -110,6 +112,9 @@ def settings_view():
     settings["old_inbox_has_files"] = (
         status == "ok" and old_inbox_has_files(FileOrganizer(folder)))
     settings["providers_with_key"] = providers_with_key()
+    # Old keys saved before each account had its own: "Is it yours?"
+    settings["legacy_keys"] = api_keys.pending_legacy(projects_path(),
+                                                      list(PROVIDERS))
     settings["username"] = session_user()
     return settings
 
@@ -168,11 +173,16 @@ def start_refile(app, folder, repo, tree, skip=()):
     return True
 
 
+def account_name():
+    """Whose keys this session reads and saves."""
+    return api_keys.account_of(projects_path())
+
+
 def providers_with_key():
-    """Return the names of the providers that have an API key ready."""
+    """Return the providers this account has an API key ready for."""
     names = []
     for name, client_class in PROVIDERS.items():
-        if client_class().api_key:
+        if use_account_key(client_class(), account_name()).api_key:
             names.append(name)
     return names
 
@@ -536,7 +546,8 @@ def update_ai_provider():
     api_key = body.get("api_key")
     if isinstance(api_key, str) and api_key.strip():
         try:
-            save_api_key(values["provider_name"], api_key.strip())
+            save_api_key(account_name(), values["provider_name"],
+                         api_key.strip())
         except KeyringError:
             # Like macOS error -25244. Nothing is saved, not even the provider.
             return error_response(
@@ -563,6 +574,31 @@ def clear_ai_provider(role):
     return jsonify({"role": role, "provider_name": None}), 200
 
 
+@settings_bp.route("/settings/ai-provider/legacy-key", methods=["POST"])
+def answer_legacy_key():
+    """Answer "Is it yours?" about an old shared key: claim or decline.
+
+    claim moves the key to this account and removes the shared entry, so
+    no other account can use it. decline only stops asking this account.
+    """
+    body = request.get_json(silent=True)
+    if not isinstance(body, dict) or body.get("provider_name") not in \
+            PROVIDERS or body.get("answer") not in ("claim", "decline"):
+        return error_response(
+            "invalid_field",
+            "provider_name and answer (claim or decline) are needed.", 400)
+    provider = body["provider_name"]
+    if body["answer"] == "decline":
+        api_keys.decline(projects_path(), provider)
+        return jsonify({"provider_name": provider, "claimed": False}), 200
+    if not api_keys.move_legacy_key(account_name(), provider):
+        # Another account took it first, or the keychain refused.
+        return error_response("legacy_key_gone",
+                              "That key is no longer available.", 409)
+    status_cache.clear()
+    return jsonify({"provider_name": provider, "claimed": True}), 200
+
+
 @settings_bp.route("/settings/ai-provider/test", methods=["POST"])
 def test_ai_provider():
     """Test whether the provided AI credentials can connect."""
@@ -579,6 +615,8 @@ def test_ai_provider():
                                server_url)
     except ValueError as error:
         return error_response("unsupported_provider", str(error), 400)
+    # Without a typed key, the test uses this account's saved key.
+    use_account_key(client, account_name())
 
     api_key = body.get("api_key")
     if isinstance(api_key, str) and api_key.strip():
@@ -626,7 +664,8 @@ def patch_setting():
 def check_connection(client):
     """Return connected or error after one short call, kept for minutes."""
     # Saving a provider, a key or a server clears the cache.
-    cache_key = (client.provider_name, client.model,
+    # Per account: each one has its own key.
+    cache_key = (account_name(), client.provider_name, client.model,
                  getattr(client, "base_url", None))
     saved = status_cache.get(cache_key)
     if saved and time.monotonic() - saved[0] < STATUS_CACHE_SECONDS:
@@ -650,7 +689,7 @@ def ai_status():
     ai = ai_settings.load(projects_path())
     provider = ai["text"]["provider_name"]
     model = ai["text"]["model"]
-    client = create_client(provider, model, ai.get("server_url") or None)
+    client = account_client(ai, provider, model)
     has_key = bool(client.api_key)
     status = check_connection(client) if has_key else "no_key"
     # Only yes or no about the key: the key itself never leaves.

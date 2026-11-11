@@ -59,13 +59,15 @@ def summary_should_update(fields):
 def regenerate_summary(repo, doc):
     """Ask the active AI provider for a new summary of one document."""
     config = repo.get_app_config()
-    client = text_client(ai_settings.load(projects_path()))
+    ai = ai_settings.load(projects_path())
+    client = text_client(ai)
     if not config or client is None:
         return doc
     pipeline = ClassificationPipeline(
         client,
         repo,
         FileOrganizer(config["target_directory"]),
+        language=ai.get("language"),
     )
     return pipeline.regenerate_summary(doc)
 

@@ -1,13 +1,13 @@
 """The AI provider of an account: one for every project, like the language.
 
 It lives in users/<username>/projects.json under "ai", next to "language".
-API keys stay in the keyring, saved by provider name as before.
+API keys are in the keyring, one set per account (backend/config/api_keys).
 """
 
 import os
 import sqlite3
 
-from backend.config import projects
+from backend.config import api_keys, projects
 from backend.db.catalog_repository import CatalogRepository
 from backend.pipeline.ai_providers import (DEFAULT_MODEL, DEFAULT_PROVIDER,
                                            ROLES)
@@ -64,15 +64,21 @@ def migrate(path):
 def load(path):
     """Return the account's AI settings; the first read migrates them."""
     migrate(path)
+    data = projects.load_projects(path)
     ai = default_ai()
-    ai.update(projects.load_projects(path)[AI_KEY])
+    ai.update(data[AI_KEY])
+    # Whose keys the clients read, and the language the AI writes the
+    # catalog in (Settings). Never saved under "ai".
+    ai["account"] = api_keys.account_of(path)
+    ai["language"] = data.get("language")
     return ai
 
 
 def save(path, ai):
     """Write the account's AI settings back to its project list."""
     data = projects.load_projects(path)
-    data[AI_KEY] = ai
+    data[AI_KEY] = {name: value for name, value in ai.items()
+                    if name not in ("account", "language")}
     projects.save_projects(path, data)
 
 

@@ -247,6 +247,16 @@ async function suggestSheet(folder) {
     return handleResponse(response);
 }
 
+/** POST /settings/ai-provider/legacy-key: answer "Is it yours?" (claim or decline). */
+async function answerLegacyKey(provider, answer) {
+    const response = await apiFetch(`${BASE_URL}/settings/ai-provider/legacy-key`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider_name: provider, answer: answer }),
+    });
+    return handleResponse(response);
+}
+
 /** DELETE /settings/ai-provider/<role>: take the fallback or media provider away. */
 async function deleteAIProvider(role) {
     const response = await apiFetch(`${BASE_URL}/settings/ai-provider/${role}`,

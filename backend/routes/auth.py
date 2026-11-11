@@ -9,10 +9,11 @@ from datetime import date
 
 from flask import Blueprint, current_app, jsonify, request
 
-from backend.config import account, ai_settings, projects, recovery
+from backend.config import (account, ai_settings, api_keys, projects,
+                            recovery)
 from backend.config.accounts import username_problem
 from backend.config.terms import TERMS_VERSION
-from backend.pipeline.ai_providers.base import forget_api_key
+from backend.pipeline.ai_providers import PROVIDERS
 from backend.routes import error_response, session_user
 from backend.routes.settings import status_cache
 
@@ -66,7 +67,20 @@ def start_session(username):
     store().remember_last(username)
     # Once per account: the AI provider moves out of the projects.
     ai_settings.migrate(store().projects_path(username))
+    adopt_legacy_keys()
     return token
+
+
+def adopt_legacy_keys():
+    """With one account on this Mac, the old shared keys are surely its own.
+
+    With two or more nobody knows whose they are: AI Provider asks.
+    """
+    names = store().usernames()
+    if len(names) == 1:
+        api_keys.move_all_legacy(
+            api_keys.account_of(store().projects_path(names[0])),
+            list(PROVIDERS))
 
 
 def has_valid_token():
@@ -213,6 +227,8 @@ def register_account():
         return error_response("terms_not_accepted",
                               "Accept the Terms and Privacy Policy first.",
                               400)
+    # Before a second account exists, the old keys go to the first one.
+    adopt_legacy_keys()
     try:
         store().create(username, password)
     except ValueError:
@@ -290,17 +306,13 @@ def update_password():
 
 
 def forget_api_keys(username):
-    """Remove the API keys of this account's providers from the Keychain.
+    """Remove every API key of this account from the Keychain.
 
-    A key is saved per provider, so one another account also uses stays.
+    Each account has its own keys, so no other account loses one.
     """
-    mine = ai_settings.providers_used(store().projects_path(username))
-    others = set()
-    for other in store().usernames():
-        if other.lower() != username.lower():
-            others |= ai_settings.providers_used(store().projects_path(other))
-    for provider in mine - others:
-        forget_api_key(provider)
+    api_keys.forget_account(
+        api_keys.account_of(store().projects_path(username)),
+        list(PROVIDERS))
 
 
 @auth_bp.route("/auth/delete-account", methods=["POST"])
@@ -308,7 +320,7 @@ def delete_account():
     """Delete the account after its password. Project folders are not touched.
 
     Goes: the account, its password hash, its recovery key (hash and
-    Keychain entry), the API keys no other account uses, its settings and
+    Keychain entry), its own API keys, its settings and
     its project list. Stays: every project folder, its files and its
     .cataloga catalog.
     """

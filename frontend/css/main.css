@@ -3123,6 +3123,18 @@ td.edit-error {
     background: #e07b00;
 }
 
+/* "Is it yours?" about an old key saved before each account had its own. */
+.legacy-key {
+    margin-bottom: var(--spacing-16);
+    padding: var(--spacing-12) var(--spacing-16);
+    border: 1px solid var(--color-dusk);
+    border-radius: var(--radius-sm);
+}
+
+.legacy-key p {
+    margin: 0 0 var(--spacing-12);
+}
+
 /* "A key is saved." under a key field. */
 .key-status {
     margin: calc(-1 * var(--spacing-8)) 0 var(--spacing-16);

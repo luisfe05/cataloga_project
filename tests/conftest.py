@@ -64,6 +64,11 @@ def no_real_keys(monkeypatch, tmp_path):
     """Hide the real keyring, OLLAMA_API_KEY, and cataloga/.env."""
     monkeypatch.setattr(base.keyring, "get_password",
                         lambda service, name: None)
+    # Saving and deleting never reach the real Keychain either.
+    monkeypatch.setattr(base.keyring, "set_password",
+                        lambda service, name, key: None)
+    monkeypatch.setattr(base.keyring, "delete_password",
+                        lambda service, name: None)
     monkeypatch.delenv(ollama_cloud.ENV_KEY_NAME, raising=False)
     monkeypatch.setattr(ollama_cloud, "ENV_PATH",
                         str(tmp_path / "missing.env"))

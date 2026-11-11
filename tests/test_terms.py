@@ -147,6 +147,9 @@ def test_the_privacy_policy_says_what_happens_to_secrets_and_accounts():
             in privacy
         assert "Delete your account in Settings › Account" in privacy
         assert "project folders stay exactly where they are" in privacy
+        # API keys belong to one account (Nov 10).
+        assert "Each account on the same Mac has its own keys" in privacy
+        assert "also uses stays" not in privacy
         assert "Effective date: November 9, 2026" in privacy
         with open(os.path.join(folder, "terms.html"),
                   encoding="utf-8") as file:

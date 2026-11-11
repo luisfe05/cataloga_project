@@ -41,6 +41,8 @@ TOO_LONG_NOTE = "Path too long for Windows (over 240 characters)"
 SECRET_NOTE = "Possible secret, not read"
 TIMEOUT_NOTE = "Timed out while reading"
 CUT_OFF_NOTE = "AI answer was cut off"
+# The AI wrote twice in another language: the summary was not saved.
+LANGUAGE_NOTE = "Summary not in {}, not saved"
 ICLOUD_NOTE = "In iCloud, not downloaded"
 NAME_MATCH_REASON = "File name matches this folder"
 

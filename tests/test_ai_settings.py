@@ -1,6 +1,7 @@
 """Tests for the account's AI provider: one for every project, migrated."""
 
 import json
+import os
 
 import pytest
 
@@ -62,7 +63,12 @@ def test_migration_runs_once(tmp_path):
 def test_migration_with_no_projects_uses_the_default(tmp_path):
     """Ollama Cloud with gemma4:31b, and nothing else."""
     path = str(tmp_path / "projects.json")
-    assert ai_settings.load(path) == ai_settings.default_ai()
+    loaded = ai_settings.load(path)
+    # The account comes from the folder; it is never saved in the file.
+    assert loaded.pop("account") == os.path.basename(str(tmp_path))
+    assert loaded.pop("language") == "en"
+    assert loaded == ai_settings.default_ai()
+    assert "account" not in saved_ai(path)
     assert saved_ai(path)["text"] == {"provider_name": "ollama",
                                       "model": "gemma4:31b"}
 

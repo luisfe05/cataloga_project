@@ -27,7 +27,7 @@
 <li>Your account: username and password. The password is stored as a secure hash, never as plain text.</li>
 <li>Your recovery key: stored as a secure hash, plus a copy in the macOS Keychain so Cataloga can show it to you again after you confirm your password. If you save it as a file, it goes only where you choose.</li>
 <li>The date and version of the Terms you accepted.</li>
-<li>Your API keys, stored in the macOS Keychain.</li>
+<li>Your API keys, stored in the macOS Keychain under your account. Each account on the same Mac has its own keys and cannot use the keys of another account.</li>
 <li>Your settings.</li>
 <li>A local log file, in Cataloga&#x27;s own data folder, with errors and, when the assistant blocks a request, the date, the kind of block and the project name. The log never keeps the text of your messages or of your files.</li>
 </ul>
@@ -71,7 +71,7 @@
 <li>Choose which folders Cataloga reads.</li>
 <li>Use &quot;Catalog only&quot; to catalog files without moving or renaming them.</li>
 <li>Delete a project&#x27;s catalog by deleting the &quot;.cataloga&quot; folder inside its project folder.</li>
-<li>Delete your account in Settings › Account, after typing your password. That removes from your computer your account, your password, your recovery key, your settings, the list of projects of that account, and the API keys saved for that account (a key that another account on the same computer also uses stays). Your files and project folders stay exactly where they are, including the &quot;.cataloga&quot; catalog folder of each project; delete those by hand if you want them gone too.</li>
+<li>Delete your account in Settings › Account, after typing your password. That removes from your computer your account, your password, your recovery key, your settings, the list of projects of that account, and the API keys saved for that account. The keys of other accounts on the same computer are not touched. Your files and project folders stay exactly where they are, including the &quot;.cataloga&quot; catalog folder of each project; delete those by hand if you want them gone too.</li>
 <li>Your account and settings live in Cataloga&#x27;s own data folder on your computer, and your keys in the macOS Keychain. You can also remove them by hand: delete that folder and the Cataloga items in Keychain Access, or uninstall the app and do the same.</li>
 <li>Do not add files to Cataloga that you do not want sent to an AI provider.</li>
 </ul>

@@ -1,6 +1,7 @@
 """AI provider modules."""
 
-from backend.pipeline.ai_providers.base import ClientWithFallback
+from backend.pipeline.ai_providers.base import (ClientWithFallback,
+                                                use_account_key)
 from backend.pipeline.ai_providers.claude import ClaudeClient
 from backend.pipeline.ai_providers.gemini import GeminiClient
 from backend.pipeline.ai_providers.groq_provider import GroqClient
@@ -40,6 +41,16 @@ def create_client(provider_name, model, base_url=None):
     return PROVIDERS[provider_name](model=model, base_url=base_url)
 
 
+def account_client(ai, provider_name, model):
+    """Build a client with the account's own key and server.
+
+    ai is the account's settings (ai_settings.load); ai["account"] says
+    whose keys are read. Another account's keys are never used.
+    """
+    client = create_client(provider_name, model, ai.get("server_url") or None)
+    return use_account_key(client, ai.get("account"))
+
+
 def fallback_for(ai, main_name):
     """Return the fallback client of the account's settings, or None."""
     saved = ai.get("fallback")
@@ -48,8 +59,7 @@ def fallback_for(ai, main_name):
         if main_name == FALLBACK_PROVIDER:
             return None
         saved = {"provider_name": FALLBACK_PROVIDER, "model": FALLBACK_MODEL}
-    client = create_client(saved["provider_name"], saved["model"],
-                           ai.get("server_url") or None)
+    client = account_client(ai, saved["provider_name"], saved["model"])
     # A fallback without a key would never answer.
     return client if getattr(client, "api_key", None) else None
 
@@ -62,8 +72,7 @@ def text_client(ai):
     main = ai.get("text")
     if not main:
         return None
-    client = create_client(main["provider_name"], main["model"],
-                           ai.get("server_url") or None)
+    client = account_client(ai, main["provider_name"], main["model"])
     return ClientWithFallback(client,
                               fallback_for(ai, main["provider_name"]))
 
@@ -73,8 +82,7 @@ def media_client(ai):
     saved = ai.get("media")
     if not saved:
         return None
-    return create_client(saved["provider_name"], saved["model"],
-                         ai.get("server_url") or None)
+    return account_client(ai, saved["provider_name"], saved["model"])
 
 
 def ready_media_client(ai):

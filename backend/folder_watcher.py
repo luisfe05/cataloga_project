@@ -87,7 +87,8 @@ def scan_once(projects_path, owner=None, scan_busy=False):
         if client is None:
             return []
         return scanner.watch_once(folder, repo, client, owner,
-                                  ready_media_client(ai))
+                                  ready_media_client(ai),
+                                  ai.get("language"))
 
     # Only a project's own Inbox is migrated: Cataloga made it.
     organizer = FileOrganizer(folder)
@@ -110,6 +111,7 @@ def scan_once(projects_path, owner=None, scan_busy=False):
         organizer,
         owner=owner,
         media_client=ready_media_client(ai),
+        language=ai.get("language"),
     )
     return pipeline.process_batch(files)
 

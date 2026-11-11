@@ -70,7 +70,7 @@ def files_of(folder):
 def two_accounts(client, tmp_path, api_keys, fake_keychain):
     """Marta and Beto, each with a project; Marta also has a Claude key.
 
-    Both use Ollama Cloud (the default), so its key is shared.
+    Both use Ollama Cloud (the default), each with a key of their own.
     """
     register(client, "beto")
     store = client.application.config["ACCOUNTS"]
@@ -82,8 +82,9 @@ def two_accounts(client, tmp_path, api_keys, fake_keychain):
     make_project(store.projects_path("marta"), folder,
                  name="Harbor Swimmers")
     (folder / "Documents" / "notes.txt").write_text("Dawn swim notes.")
-    api_keys[("cataloga", "ollama")] = "ollama-test-key-000"
-    api_keys[("cataloga", "claude")] = "sk-ant-test-000000000000000000000"
+    api_keys[("Cataloga/marta/ollama", "ollama")] = "ollama-test-key-000"
+    api_keys[("Cataloga/marta/claude", "claude")] = "fake-claude-key-000"
+    api_keys[("Cataloga/beto/ollama", "ollama")] = "ollama-test-key-111"
     ai_settings.set_role(store.projects_path("marta"), "fallback", "claude",
                          "claude-sonnet-5-5")
     return {"client": client, "store": store, "folder": folder,
@@ -102,7 +103,7 @@ def test_a_wrong_password_deletes_nothing(two_accounts, api_keys,
     assert store.find("marta") is not None
     assert os.path.isfile(store.projects_path("marta"))
     assert "marta" in fake_keychain
-    assert ("cataloga", "claude") in api_keys
+    assert ("Cataloga/marta/claude", "claude") in api_keys
     # Still logged in: the session was not cut.
     assert client.get("/settings").status_code == 200
 
@@ -128,9 +129,11 @@ def test_the_right_password_deletes_the_account_and_its_keys(
     with open(store.path, encoding="utf-8") as file:
         assert "marta" not in file.read().lower()
     assert "marta" not in fake_keychain
-    # Claude was Marta's alone; Ollama Cloud is Beto's too and stays.
-    assert ("cataloga", "claude") not in api_keys
-    assert ("cataloga", "ollama") in api_keys
+    # Every key of Marta goes; Beto's own Ollama Cloud key stays.
+    assert ("Cataloga/marta/claude", "claude") not in api_keys
+    assert ("Cataloga/marta/ollama", "ollama") not in api_keys
+    assert api_keys[("Cataloga/beto/ollama", "ollama")] == \
+        "ollama-test-key-111"
     # The session ended.
     assert client.get("/settings").status_code == 401
 

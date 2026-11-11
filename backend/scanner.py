@@ -213,8 +213,12 @@ def write_sheet_if_empty(repo, folder, client):
         logger.warning("could not write the project sheet: %s", error)
 
 
-def scan_folder(job, folder, repo, client, owner=None, media_client=None):
-    """Read every new or changed file of a folder in place, one by one."""
+def scan_folder(job, folder, repo, client, owner=None, media_client=None,
+                language=None):
+    """Read every new or changed file of a folder in place, one by one.
+
+    language is the app's: the summaries and names are written in it.
+    """
     files = find_files(folder)
     job.folder = folder
     job.total = len(files)
@@ -229,7 +233,8 @@ def scan_folder(job, folder, repo, client, owner=None, media_client=None):
         job.status = "running"
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
                                       owner=owner, in_place=True,
-                                      media_client=media_client)
+                                      media_client=media_client,
+                                      language=language)
     for number, path in enumerate(files, start=1):
         # Pause holds here; stop ends here.
         job.check_stalled()
@@ -261,14 +266,16 @@ def scan_folder(job, folder, repo, client, owner=None, media_client=None):
     repo.save_config_value("scan_state", SCAN_DONE)
 
 
-def read_new_files(folder, repo, client, owner=None, media_client=None):
+def read_new_files(folder, repo, client, owner=None, media_client=None,
+                   language=None):
     """Read the new or changed files of a folder in place, without a job.
 
     The watcher calls this every few seconds; the index makes it cheap.
     """
     pipeline = ClassificationPipeline(client, repo, FileOrganizer(folder),
                                       owner=owner, in_place=True,
-                                      media_client=media_client)
+                                      media_client=media_client,
+                                      language=language)
     documents = []
     for path in find_files(folder):
         try:
@@ -328,9 +335,11 @@ def apply_proposal(repo, organizer, doc):
     return apply_proposals(repo, organizer, [doc])[0]
 
 
-def watch_once(folder, repo, client, owner=None, media_client=None):
+def watch_once(folder, repo, client, owner=None, media_client=None,
+               language=None):
     """Read what is new in an in-place project and apply the marked moves."""
-    documents = read_new_files(folder, repo, client, owner, media_client)
+    documents = read_new_files(folder, repo, client, owner, media_client,
+                               language)
     if repo.is_catalog_project():
         return documents
     marked = [doc for doc in documents if auto_apply_place(repo, doc)]
@@ -425,7 +434,8 @@ def start_scan(app, projects_path, owner=None):
     job.__init__()
     job.thread = threading.Thread(
         target=scan_folder,
-        args=(job, folder, repo, client, owner, ready_media_client(ai)),
+        args=(job, folder, repo, client, owner, ready_media_client(ai),
+              ai.get("language")),
         daemon=True)
     job.status = "running"
     job.thread.start()

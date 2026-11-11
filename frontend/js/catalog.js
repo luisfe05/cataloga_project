@@ -227,6 +227,8 @@ function reviewNoteText(note) {
         "Timed out while reading": "catalog.note_timeout",
         "AI answer was cut off": "catalog.note_cut_off",
         "In iCloud, not downloaded": "catalog.note_icloud",
+        "Summary not in English, not saved": "catalog.note_language_en",
+        "Summary not in Spanish, not saved": "catalog.note_language_es",
     };
     if (notes[note]) {
         return t(notes[note]);

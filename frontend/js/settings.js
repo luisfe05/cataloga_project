@@ -1009,6 +1009,71 @@ function updateKeyPlaceholder(role) {
         .toggle("hidden", !saved);
 }
 
+/** The row that uses this provider, or the main row. */
+function rowOfProvider(provider) {
+    return Object.keys(PROVIDER_ROWS).find((role) => rowProvider(role) === provider)
+        || "text";
+}
+
+/** "Is it yours?" for each old key saved before each account had its own. */
+function showLegacyKeys(providers) {
+    const box = document.getElementById("legacy-keys");
+    box.replaceChildren();
+    providers.forEach((provider) => {
+        const known = AI_PROVIDERS[provider];
+        const item = document.createElement("div");
+        item.className = "legacy-key";
+        const question = document.createElement("p");
+        question.textContent = t("settings.legacy_key_question",
+            { provider: known ? known.label : provider });
+        const buttons = document.createElement("div");
+        buttons.className = "form-buttons";
+        const claim = document.createElement("button");
+        claim.type = "button";
+        claim.className = "primary-button";
+        claim.textContent = t("settings.legacy_key_claim");
+        const own = document.createElement("button");
+        own.type = "button";
+        own.className = "secondary-button";
+        own.textContent = t("settings.legacy_key_own");
+        const note = document.createElement("p");
+        note.className = "field-note";
+        note.setAttribute("aria-live", "polite");
+        claim.addEventListener("click", () => answerLegacy(provider, "claim", item, note));
+        own.addEventListener("click", () => answerLegacy(provider, "decline", item, note));
+        buttons.append(claim, own);
+        item.append(question, buttons, note);
+        box.append(item);
+    });
+}
+
+/** Use it for my account moves the key here; Add my own key opens the key field. */
+async function answerLegacy(provider, answer, item, note) {
+    item.querySelectorAll("button").forEach((button) => {
+        button.disabled = true;
+    });
+    try {
+        await answerLegacyKey(provider, answer);
+        item.remove();
+        if (answer === "claim") {
+            if (!providerHasKey(provider)) {
+                providersWithKey.push(provider);
+            }
+            Object.keys(PROVIDER_ROWS).forEach(updateKeyPlaceholder);
+            loadAIStatus();
+            return;
+        }
+        document.getElementById("ai-advanced").open = true;
+        rowField(rowOfProvider(provider), "key").focus();
+    } catch (error) {
+        note.className = "field-note error";
+        note.textContent = errorText(error);
+        item.querySelectorAll("button").forEach((button) => {
+            button.disabled = false;
+        });
+    }
+}
+
 /** Show a row's provider and model as saved. */
 function showProvider(role, provider, model) {
     rowField(role, "provider").value = provider;
@@ -1233,6 +1298,7 @@ async function loadSettings() {
         showFolderSection(settings, false);
 
         providersWithKey = settings.providers_with_key;
+        showLegacyKeys(settings.legacy_keys || []);
         // A project with no provider saved yet gets Ollama Cloud.
         const provider = settings.active_provider in AI_PROVIDERS
             ? settings.active_provider : "ollama";
