@@ -45,7 +45,9 @@ class GeminiClient(AIProviderClient):
 
     def send_prompt(self, system_prompt, text):
         """Send one request to the Gemini API and return its answer."""
-        response = self.sdk_client().models.generate_content(
+        # Kept in a variable: the library closes a client nothing holds.
+        client = self.sdk_client()
+        response = client.models.generate_content(
             model=self.model,
             contents=text,
             config={"system_instruction": system_prompt,
@@ -63,7 +65,9 @@ class GeminiClient(AIProviderClient):
             parts.append(types.Part.from_bytes(
                 data=base64.b64decode(data), mime_type=media_type))
         parts.append(prompt)
-        response = self.sdk_client().models.generate_content(
+        # Kept in a variable, like send_prompt.
+        client = self.sdk_client()
+        response = client.models.generate_content(
             model=self.model, contents=parts,
             config={"max_output_tokens": OTHER_TOKENS})
         return response.text or ""
